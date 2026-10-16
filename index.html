@@ -160,6 +160,18 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .achl b{font:400 16px var(--display);letter-spacing:.03em;color:var(--text)} .achl li.on b{color:var(--gold)}
 .achl p{margin:2px 0 0;font-weight:700;font-size:12.5px;color:var(--dim)}
 .achl small{display:block;margin-top:3px;font-weight:900;font-size:11px;color:var(--gold)}
+.teamBtn{background:linear-gradient(#7fd8ff,#3a9ad8);box-shadow:0 6px 0 #1f5f8e,0 12px 24px rgba(0,0,0,.4);color:#08243a}
+.teamBtn small{display:block;font:900 11px var(--body);opacity:.75}
+#lobby{z-index:30}
+.lsub{margin:-6px 0 4px;font-weight:800;color:var(--dim);text-align:center;max-width:90vw}
+.lbox{display:grid;gap:12px;width:min(340px,88vw);background:rgba(10,13,16,.75);border-radius:18px;padding:18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.ljoin{display:grid;grid-template-columns:1fr auto;gap:8px}
+.ljoin input{font:400 24px var(--display);letter-spacing:.2em;text-align:center;border-radius:14px;border:0;padding:8px;background:#f4efe4;color:#2a1600;min-width:0}
+.lstat{margin:0;min-height:1.4em;text-align:center;font-weight:800;color:var(--gold)}
+.lstat b{font:400 34px var(--display);letter-spacing:.15em;display:block;color:#fff}
+.partner{margin-left:6px;font:900 10px var(--body);text-transform:uppercase;letter-spacing:.06em;color:#7fd8ff;background:rgba(127,216,255,.14);padding:2px 7px;border-radius:999px}
+#netWarn{position:absolute;left:50%;top:150px;transform:translateX(-50%);z-index:35;background:#5a1010;color:#fff;font-weight:800;padding:8px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+#netWarn[hidden]{display:none}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   padding:16px;text-align:center;background:radial-gradient(ellipse at center,rgba(8,10,12,.3),rgba(8,10,12,.8))}
 .logo{font-family:var(--display);font-size:clamp(52px,13vw,112px);line-height:.9;letter-spacing:.02em;color:var(--gold);
@@ -352,6 +364,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   <div id="stage">
     <canvas id="gl" aria-label="Kitchen board"></canvas>
     <div id="dmg" aria-hidden="true"></div>
+    <div id="netWarn" hidden></div>
     <div id="achToast" hidden role="status"></div>
     <div id="tut" hidden><p id="tutTxt"></p><button type="button" id="tutSkip">Skip tutorial</button></div>
     <div id="tcard" hidden role="dialog" aria-live="polite"></div>
@@ -361,7 +374,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v64</div>
+    <div id="ver">v66</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -387,12 +400,24 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <h1 class="logo">Pest<span>Panic Defense</span></h1>
       <p class="sub">The bugs found the birthday cake. It's on the counter. Set out swatters, sprays and zappers along the sugar trail and save every slice you can.</p>
       <div class="lvls" id="lvls"></div>
+      <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
       <button class="btn dark" id="guideT" type="button">Field guide</button>
       <button class="btn dark" id="achT" type="button">Achievements</button>
       <button class="btn dark" id="setT" type="button">Settings</button>
       <button class="btn dark" id="fullT" type="button" hidden>Full screen</button>
       <p class="rotTip">Tip: turn your phone sideways for a bigger board with your tools on the right.</p>
       <p class="hint">Pick a tool below to see its range, then place it on the floor beside the trail. 20 waves, with a boss every 5th.</p>
+    </div>
+    <div class="screen" id="lobby" hidden>
+      <h2 class="t">Team Kitchen</h2>
+      <p class="lsub">Side Doors: two lanes, one cake. Each of you builds on your own half.</p>
+      <div class="lbox">
+        <button class="btn" id="lbCreate" type="button">Create room</button>
+        <div class="ljoin"><input id="lbCode" inputmode="numeric" maxlength="4" placeholder="Room code" autocomplete="off"><button class="btn" id="lbJoin" type="button">Join</button></div>
+        <p id="lbStatus" class="lstat"></p>
+        <button class="btn dark" id="lbPractice" type="button">Practice solo</button>
+        <button class="btn dark" id="lbBack" type="button">Back</button>
+      </div>
     </div>
     <div class="screen" id="achs" hidden>
       <h2 class="t">Achievements</h2>
@@ -534,12 +559,15 @@ function perfCheck(dt) {
 composer.addPass(new OutputPass());
 
 // ---------------------------------------------------------------- board layout
-const COLS = 14, ROWS = 10, CS = 3, X0 = -21, Z0 = -15;
+let COLS = 14, X0 = -21;
+const ROWS = 10, CS = 3, Z0 = -15;
+// board size can change per level (the Team Kitchen is wider, with the cake in the middle)
+const BOARD = { cakeCol: 12, ex: 21, fridgeX: -9, stoveX: 2, built: false };
 const ccx = c => X0 + CS * (c + 0.5), ccz = r => Z0 + CS * (r + 0.5);
 const key = (c, r) => c + ',' + r;
 // the cake sits on the back counter: bugs climb the cabinet front, then cross the countertop
 const TOP_Y = 4.545, CLIMB_Z = ccz(-0.05);
-const CAKE_POS = new V3(ccx(12), TOP_Y, -16.9);
+const CAKE_POS = new V3(ccx(BOARD.cakeCol), TOP_Y, -16.9);
 // each level is one or more trails (cell waypoints) that all end climbing up to the cake
 const LEVELS = [
   { name: 'The Long Way', sub: 'A winding trail with three U-bends', intro: 'Pick a tool below and place it by the trail', hp: 1, money: 160, shift: 0,
@@ -553,7 +581,12 @@ const LEVELS = [
   { name: 'Two Holes', sub: 'Two trails that meet halfway', intro: 'Two holes now. Cover both trails.', hp: 1.25, money: 190, shift: 2,
     routes: [[[1, -0.6], [1, 8], [5, 8], [5, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]],
              [[9, -0.6], [9, 2], [7, 2], [7, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]]] },
+  // Team Kitchen (co-op): 21 tiles wide, bugs come in through both side walls, lanes join halfway up the middle
+  { name: 'Side Doors', sub: 'Team Kitchen', intro: 'Two lanes, one cake. Hold your side!', hp: 1.25, money: 170, shift: 1, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+    routes: [[[-0.6, 8], [3, 8], [3, 2], [6, 2], [6, 6], [10, 6], [10, -0.05]],
+             [[20.6, 8], [17, 8], [17, 2], [14, 2], [14, 6], [10, 6], [10, -0.05]]] },
 ];
+const CAMPAIGN = 5, TEAM_LV = 5;
 // every level is a different house with its own kitchen
 const HOUSES = [
   { name: "Grandma's Kitchen", bg: '#16110d',
@@ -581,16 +614,22 @@ const HOUSES = [
     cab: { base: '#22345c', handle: '#e2b84e' }, side: '#18233e', kick: '#0e1018', top: '#e4e0d8', wall: '#2f4a3c', trim: '#3a2a1a',
     fridge: { color: '#2a2d33', metal: 0.75, rough: 0.3 }, stove: { color: '#2a2d33', metal: 0.7 }, handle: '#e2b84e',
     rooms: { living: '#6a2430', bed: '#343c5c', couch: '#2e4a3a', rug: '#c9a24a', blanket: '#8a2a3a', wood: '#3a2414', paint: '#c8bfa8', hall: '#5a3420' } },
+  { name: 'Team Kitchen', bg: '#101418',
+    floor: { style: 'tile', a: [178, 150, 112], b: [160, 132, 98], grout: '#e6dcc4', seed: 17 },
+    cab: { base: '#5b86b0', handle: '#f2ead6' }, side: '#476c92', kick: '#2c3e52', top: '#d9cbb0', wall: '#f0e2c2', trim: '#7a5a3a',
+    fridge: { color: '#e9edf0', metal: 0.4, rough: 0.35 }, stove: { color: '#2a2d33', metal: 0.6 }, handle: '#c9ced6',
+    rooms: { living: '#7a8a6a', bed: '#9a7a9a', couch: '#c0603a', rug: '#3e6e8a', blanket: '#f2c46a', wood: '#8a5a32', paint: '#ece2cc', hall: '#a87a4a' } },
 ];
 // countertop clutter: the same set of things, arranged differently in every house
 // B(x) = back counter, L(z) = left counter, Rt(z) = right counter
-const CB = x => [x, -16.9, 0], CL = z => [-22.9, z, Math.PI / 2], CR = z => [22.9, z, -Math.PI / 2];
+const CB = x => [x, -16.9, 0], CL = z => [-22.9, z, Math.PI / 2], CR = z => [22.9, z, -Math.PI / 2], CL2 = z => [-33.4, z, Math.PI / 2], CR2 = z => [33.4, z, -Math.PI / 2];
 const PROP_LAYOUT = [
   { accent: '#7fc8a2', sink: CB(-17), toaster: CB(-3.8), mixer: CB(9), jars: CB(12.2), kettle: CB(21.2), fruit: CL(-10), board: CL(0), knives: CL(9), microwave: CR(-8), coffee: CR(3), towel: CR(10) },
   { accent: '#d43a2b', microwave: CB(-17), coffee: CB(-3.8), sink: CB(9.5), blender: CB(21.2), toaster: CL(-9), mixer: CL(2), jars: CL(10), knives: CR(-9), fruit: CR(0), kettle: CR(8) },
   { accent: '#e8333c', coffee: CB(-18.5), blender: CB(-14.6), kettle: CB(-3.8), toaster: CB(9), mixer: CB(12.4), jars: CB(21.2), sink: CL(-8), towel: CL(3), fruit: CL(10), microwave: CR(-6), board: CR(6) },
   { accent: '#3aa7c9', fruit: CB(-17), towel: CB(-3.8), blender: CB(8.5), coffee: CB(11.8), knives: CB(21.2), sink: CL(-6), mixer: CL(6), toaster: CR(-9), jars: CR(1), board: CR(9) },
   { accent: '#e2b84e', sink: CB(-17), toaster: CB(-3.8), coffee: CB(9), kettle: CB(12.2), fruit: CB(21.2), mixer: CL(-10), knives: CL(-2), board: CL(7), microwave: CR(-8), blender: CR(2), jars: CR(10) },
+  { accent: '#e8733a', sink: CB(-27.5), toaster: CB(-13), mixer: CB(-5), jars: CB(5.5), kettle: CB(9.5), coffee: CB(23), blender: CB(28.5), fruit: CL2(-10), board: CL2(-1), knives: CR2(-10), microwave: CR2(-1), towel: CR2(1.5) },
 ];
 function buildCounterProps() {
   const P = {}, steel = std({ color: '#c6ccd4', metalness: 0.9, roughness: 0.25, envMapIntensity: 1 }), dark = std({ color: '#1c1d22', roughness: 0.4 });
@@ -695,7 +734,7 @@ function applyHouse(i) {
   }
 }
 function buildRoute(wp) {
-  const pts = wp.map(([c, r]) => [ccx(c), 0, ccz(r)]).concat([[ccx(12), TOP_Y + 0.05, CLIMB_Z], [CAKE_POS.x, TOP_Y + 0.05, CAKE_POS.z]]);
+  const pts = wp.map(([c, r]) => [ccx(c), 0, ccz(r)]).concat([[ccx(BOARD.cakeCol), TOP_Y + 0.05, CLIMB_Z], [CAKE_POS.x, TOP_Y + 0.05, CAKE_POS.z]]);
   const seg = []; let len = 0;
   for (let i = 0, px = 1, pz = 0; i < pts.length - 1; i++) {
     const [ax, ay, az] = pts[i], [bx, by, bz] = pts[i + 1], l = Math.hypot(bx - ax, by - ay, bz - az), hl = Math.hypot(bx - ax, bz - az);
@@ -707,11 +746,28 @@ function buildRoute(wp) {
 }
 let LV = 0, ROUTES = [];
 const PATH = new Set(), KIT = {};
+function setBoard(i) {
+  const L = LEVELS[i], cols = L.cols || 14, cakeCol = L.cakeCol ?? 12, fx = L.fridgeX ?? -9, sx = L.stoveX ?? 2;
+  if (cols === COLS && cakeCol === BOARD.cakeCol && BOARD.built) return;
+  COLS = cols; X0 = -cols * CS / 2;
+  Object.assign(BOARD, { cakeCol, ex: -X0, fridgeX: fx, stoveX: sx });
+  CAKE_POS.x = ccx(cakeCol);
+  if (!BOARD.built) return;
+  // rebuild the room around the new board
+  scene.remove(KIT.group); KIT.group = buildKitchen(); scene.add(KIT.group);
+  scene.remove(ROOM.group); ROOM.group = buildRooms(); scene.add(ROOM.group);
+  cake.root.position.copy(CAKE_POS); if (KIT.shaker) KIT.shaker.position.x = ccx(PROPS.shaker[0]);
+  TEX.grid.dispose(); TEX.grid = gridTexture(); gridMesh.material.map = TEX.grid; gridMesh.geometry.dispose(); gridMesh.geometry = new THREE.PlaneGeometry(COLS * CS, ROWS * CS);
+  Object.assign(sun.shadow.camera, { left: -BOARD.ex - 9, right: BOARD.ex + 9 }); sun.shadow.camera.updateProjectionMatrix();
+  setCorners(); requestAnimationFrame(resize);
+}
 function loadLevel(i) {
+  setBoard(i);
   LV = i; ROUTES = LEVELS[i].routes.map(buildRoute); PATH.clear();
   for (const wp of LEVELS[i].routes) for (let k = 0; k < wp.length - 1; k++) {
-    let c = wp[k][0], r = Math.max(0, Math.round(wp[k][1]));
-    const c1 = wp[k + 1][0], r1 = Math.max(0, Math.round(wp[k + 1][1])), sc = Math.sign(c1 - c), sr = Math.sign(r1 - r);
+    const cc = v => clamp(Math.round(v), 0, COLS - 1);
+    let c = cc(wp[k][0]), r = Math.max(0, Math.round(wp[k][1]));
+    const c1 = cc(wp[k + 1][0]), r1 = Math.max(0, Math.round(wp[k + 1][1])), sc = Math.sign(c1 - c), sr = Math.sign(r1 - r);
     for (;;) { PATH.add(key(c, r)); if (c === c1 && r === r1) break; c += sc; r += sr; }
   }
   if (KIT.floorMat) applyHouse(i);
@@ -948,8 +1004,10 @@ function glueTexture() {
 }
 // the sugar trail the bugs follow, painted to match the board 1:1
 function trailTexture() {
-  const PX = 24, [c, x] = cnv(42 * PX, 30 * PX), r = rng(5);
-  const lines = ROUTES.map(R => { const pts = R.floor.map(([px, pz]) => [(px - X0) * PX, (pz - Z0) * PX]); pts[0][1] = -20; pts[pts.length - 1][1] = -10; return pts; });
+  const PX = 24, W = COLS * CS, [c, x] = cnv(W * PX, 30 * PX), r = rng(5);
+  const lines = ROUTES.map(R => { const pts = R.floor.map(([px, pz]) => [(px - X0) * PX, (pz - Z0) * PX]);
+    const c0 = R.wp[0][0]; if (c0 < 0) pts[0][0] = -20; else if (c0 > COLS - 1) pts[0][0] = W * PX + 20; else pts[0][1] = -20;
+    pts[pts.length - 1][1] = -10; return pts; });
   const stroke = (w, col) => { x.lineWidth = w; x.strokeStyle = col; x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); for (const pts of lines) pts.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.stroke(); };
   stroke(2.75 * PX, 'rgba(40,26,12,.28)');
   stroke(2.35 * PX, 'rgba(226,212,178,.55)');
@@ -965,10 +1023,10 @@ function trailTexture() {
   return tex(c);
 }
 function gridTexture() {
-  const PX = 32, [c, x] = cnv(42 * PX, 30 * PX);
+  const PX = 32, W = COLS * CS, [c, x] = cnv(W * PX, 30 * PX);
   x.strokeStyle = 'rgba(255,255,255,.22)'; x.lineWidth = 2; x.setLineDash([10, 8]);
   for (let i = 0; i <= COLS; i++) { x.beginPath(); x.moveTo(i * 3 * PX, 0); x.lineTo(i * 3 * PX, 30 * PX); x.stroke(); }
-  for (let j = 0; j <= ROWS; j++) { x.beginPath(); x.moveTo(0, j * 3 * PX); x.lineTo(42 * PX, j * 3 * PX); x.stroke(); }
+  for (let j = 0; j <= ROWS; j++) { x.beginPath(); x.moveTo(0, j * 3 * PX); x.lineTo(W * PX, j * 3 * PX); x.stroke(); }
   return tex(c, false);
 }
 function tileTex() {
@@ -999,14 +1057,14 @@ function buildKitchen() {
     KIT.floorMat = std({ normalScale: new THREE.Vector2(0.8, 0.8), roughness: 0.55, envMapIntensity: 0.6 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; g.add(floor);
   // sugar trail and crumbs
-  const trail = KIT.trail = new THREE.Mesh(new THREE.PlaneGeometry(42, 30), std({ map: TEX.trail, transparent: true, roughness: 0.9, envMapIntensity: 0.2, depthWrite: false }));
+  const trail = KIT.trail = new THREE.Mesh(new THREE.PlaneGeometry(COLS * CS, 30), std({ map: TEX.trail, transparent: true, roughness: 0.9, envMapIntensity: 0.2, depthWrite: false }));
   trail.rotation.x = -Math.PI / 2; trail.position.y = 0.03; trail.receiveShadow = true; trail.renderOrder = 1; g.add(trail);
   for (const [k, x, z, s, rot] of [[0, -8, -10, 4.5, 0.4], [1, 15, 11, 4, 2.2], [0, -17, 12, 4, 1.1], [1, 18, -11, 4, 0.7]]) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(s, s), std({ map: TEX.crumbs[k], transparent: true, roughness: 0.85, envMapIntensity: 0.15, depthWrite: false }));
     m.rotation.x = -Math.PI / 2; m.rotation.z = rot; m.position.set(x, 0.04, z); m.receiveShadow = true; m.renderOrder = 1; g.add(m);
   }
   // counters on three sides
-  const H = 4.2, D = 3.6, EX = 21, EZ = 15;
+  const H = 4.2, D = 3.6, EX = BOARD.ex, EZ = 15;
   TEX.subway.wrapS = TEX.subway.wrapT = THREE.RepeatWrapping; TEX.top.wrapS = TEX.top.wrapT = THREE.RepeatWrapping;
   const side = (x, z, rotY, len) => {
     const grp = new THREE.Group(), dark = std({ color: '#2f555e', roughness: 0.7 }), face = std({ roughness: 0.6, envMapIntensity: 0.3 });
@@ -1036,15 +1094,15 @@ function buildKitchen() {
   // fridge and stove on the back wall
   const fridge = new THREE.Mesh(new THREE.BoxGeometry(7, 13, 5), KIT.fridgeMat = std({ color: '#6f757b', metalness: 0.6, roughness: 0.5, envMapIntensity: 0.4 }));
   KIT.handleMat = std({ color: '#7a8086', metalness: 1, roughness: 0.2 });
-  fridge.position.set(-9, 6.5, -EZ - 2); fridge.castShadow = true; g.add(fridge);
-  for (const [y, h] of [[9.2, 6.4], [3.1, 5.4]]) { const hd = new THREE.Mesh(new THREE.BoxGeometry(0.3, h * 0.6, 0.4), KIT.handleMat); hd.position.set(-11.9, y, -EZ + 0.6); g.add(hd); }
+  fridge.position.set(BOARD.fridgeX, 6.5, -EZ - 2); fridge.castShadow = true; g.add(fridge);
+  for (const [y, h] of [[9.2, 6.4], [3.1, 5.4]]) { const hd = new THREE.Mesh(new THREE.BoxGeometry(0.3, h * 0.6, 0.4), KIT.handleMat); hd.position.set(BOARD.fridgeX - 2.9, y, -EZ + 0.6); g.add(hd); }
   const stove = new THREE.Group();
   const sBody = new THREE.Mesh(new THREE.BoxGeometry(8, H + 0.4, D + 0.4), KIT.stoveMat = std({ color: '#6c7074', metalness: 0.5, roughness: 0.5, envMapIntensity: 0.4 }));
   sBody.position.set(0, (H + 0.4) / 2, -D / 2); sBody.castShadow = true; stove.add(sBody);
   const win = new THREE.Mesh(new THREE.PlaneGeometry(5, 1.6), std({ color: '#5a2a12', emissive: '#ff6a1a', emissiveIntensity: 0.35, roughness: 0.4 }));
   win.position.set(0, 1.9, 0.22); stove.add(win);
   for (const dx of [-2, 2]) for (const dz of [-1, 1]) { const b = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.12, 8, 24), std({ color: '#222', roughness: 0.5 })); b.rotation.x = Math.PI / 2; b.position.set(dx, H + 0.45, -D / 2 + dz * 0.8); stove.add(b); }
-  stove.position.set(2, 0, -EZ); g.add(stove);
+  stove.position.set(BOARD.stoveX, 0, -EZ); g.add(stove);
   // sugar the bugs track up the cabinet and across the counter
   const sugar = (() => { const [c, x] = cnv(96, 256), r = rng(12); for (let i = 0; i < 900; i++) { x.fillStyle = r() < 0.12 ? 'rgba(150,100,50,.7)' : r() < 0.5 ? 'rgba(255,255,255,.85)' : 'rgba(250,236,200,.8)'; const u = 48 + (r() - 0.5) * 80 * (0.4 + 0.6 * r()); x.fillRect(u, r() * 256, 1 + r() * 2.5, 1 + r() * 2.5); } return tex(c); })();
   const smat = new THREE.MeshStandardMaterial({ map: sugar, transparent: true, roughness: 0.9, depthWrite: false });
@@ -1060,7 +1118,7 @@ function buildKitchen() {
   KIT.holes = new THREE.Group(); g.add(KIT.holes);
   return g;
 }
-scene.add(buildKitchen());
+KIT.group = buildKitchen(); scene.add(KIT.group);
 // ---------------------------------------------------------------- rooms around the kitchen: living room (left), bedroom (right), garage (front)
 function carpetTex(seed) {
   const [c, x] = cnv(256, 256), r = rng(seed), img = x.createImageData(256, 256), d = img.data;
@@ -1100,7 +1158,7 @@ function rugTex() {
 }
 const ROOM = {};
 function buildRooms() {
-  const g = new THREE.Group(), EX = 21, EZ = 15, D = 3.6;
+  const g = new THREE.Group(), EX = BOARD.ex, EZ = 15, D = 3.6;
   const ctex = carpetTex(31); ctex.repeat.set(14, 30);
   const flat = (w, d, mat, x, z, y = 0.02) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat); m.rotation.x = -Math.PI / 2; m.position.set(x, y, z); m.receiveShadow = true; g.add(m); return m; };
   ROOM.living = std({ map: ctex, roughness: 1, envMapIntensity: 0.15 });
@@ -1199,15 +1257,17 @@ function buildRooms() {
   g.traverse(m => { if (m.isMesh) m.castShadow = false; });
   return g;
 }
-scene.add(buildRooms());
+ROOM.group = buildRooms(); scene.add(ROOM.group); BOARD.built = true;
 KIT.props = buildCounterProps();
 applyHouse(LV);
 function setHoles() {
   KIT.holes.clear();
   for (const R of ROUTES) {
-    const x = ccx(R.wp[0][0]);
-    const h = new THREE.Mesh(KIT.holeGeo, KIT.holeMat); h.position.set(x, 0.01, -14.79); KIT.holes.add(h);
-    const rim = new THREE.Mesh(KIT.rimGeo, KIT.rimMat); rim.scale.x = 1.1; rim.position.set(x, 0.02, -14.78); KIT.holes.add(rim);
+    const c0 = R.wp[0][0], side = c0 < 0 ? -1 : c0 > COLS - 1 ? 1 : 0, g = new THREE.Group();
+    g.add(new THREE.Mesh(KIT.holeGeo, KIT.holeMat)); const rim = new THREE.Mesh(KIT.rimGeo, KIT.rimMat); rim.scale.x = 1.1; rim.position.z = 0.01; g.add(rim);
+    if (side) { g.position.set(side * (BOARD.ex - 0.21), 0.01, ccz(R.wp[0][1])); g.rotation.y = -side * Math.PI / 2; }
+    else g.position.set(ccx(c0), 0.01, -14.79);
+    KIT.holes.add(g);
   }
 }
 setHoles();
@@ -1219,7 +1279,7 @@ function buildProps() {
   sh.add(mesh(cyl(0.48, 0.55, 1.4, 20), new THREE.MeshStandardMaterial({ color: '#e8f2f6', transparent: true, opacity: 0.6, roughness: 0.05, envMapIntensity: 1.4 })));
   const salt = mesh(cyl(0.44, 0.5, 0.9, 20), std({ color: '#ffffff', roughness: 0.9 })); salt.position.y = -0.22; sh.add(salt);
   const cap = mesh(new THREE.SphereGeometry(0.5, 20, 10, 0, TAU, 0, Math.PI / 2), std({ color: '#c6ccd4', metalness: 0.9, roughness: 0.25 })); cap.position.y = 0.7; sh.add(cap);
-  sh.position.set(ccx(PROPS.shaker[0]), 0.7, ccz(PROPS.shaker[1])); g.add(sh);
+  sh.position.set(ccx(PROPS.shaker[0]), 0.7, ccz(PROPS.shaker[1])); g.add(sh); KIT.shaker = sh;
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   scene.add(g);
 }
@@ -1699,7 +1759,7 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
   scene.add(root);
   return root;
 }
-const EXT = buildPlayer();
+const EXT = buildPlayer(), EXT2 = buildPlayer('#c8342a', '#2f6fd0');
 const EXT_SPEED = 15, WORK_TIME = { build: 1.0, item: 0.55, up: 0.9 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
@@ -1710,14 +1770,24 @@ function makeMarker(x, z) {
   const tape = mesh(new THREE.BoxGeometry(0.82, 0.08, 0.2), std({ color: '#d43a2b', roughness: 0.5 })); tape.position.y = 0.6; tape.rotation.y = 0.4; g.add(tape);
   g.position.set(x, 0, z); scene.add(g); return g;
 }
+// team games: S holds the player we're acting for; S.p2 holds the other player's stuff. withPlayer swaps them.
+const PF = ['money', 'ext', 'jobs', 'abilCd', 'lic', 'dmgMul', 'itemUsed'];
+function swapP() { const o = S.p2; for (const k of PF) { const v = S[k]; S[k] = o[k]; o[k] = v; } S.cur = 1 - S.cur; }
+function withPlayer(pid, fn) { if (!S.p2 || pid === S.cur) return fn(); swapP(); try { return fn(); } finally { swapP(); } }
+function addGold(pid, g) { if (!S.p2 || pid === S.cur) S.money += g; else S.p2.money += g; }
+// which half of the Team Kitchen a tile is on: 0 left, 1 right, -1 the shared middle column
+function sideOf(c) { return !LEVELS[LV].team ? -1 : c < BOARD.cakeCol ? 0 : c > BOARD.cakeCol ? 1 : -1; }
+function mySide(c) { const sd = sideOf(c); return !S.p2 || sd < 0 || sd === S.cur; }
 function addJob(kind, obj) {
   const j = { kind, obj };
   if (kind !== 'up') obj.marker = makeMarker(obj.x, obj.z);
   S.jobs.push(j);
 }
 function cancelJobs(obj) {
-  S.jobs = S.jobs.filter(j => j.obj !== obj);
-  if (S.ext.job && S.ext.job.obj === obj) { S.ext.job = null; S.ext.state = 'idle'; }
+  for (const P of S.p2 ? [S, S.p2] : [S]) {
+    P.jobs = P.jobs.filter(j => j.obj !== obj);
+    if (P.ext.job && P.ext.job.obj === obj) { P.ext.job = null; P.ext.state = 'idle'; }
+  }
   if (obj.marker) { scene.remove(obj.marker); obj.marker = null; }
 }
 function finishJob(j) {
@@ -1741,6 +1811,7 @@ function leadBug() {
 }
 function useAbility() {
   if (S.mode !== 'play' || S.paused) return;
+  if (S.net === 'guest') { if ((S.abilCd || 0) > 0 || S.money < ABIL.cost) { SND.play('err'); return; } netSend({ k: 'abil' }); return; }
   if ((S.abilCd || 0) > 0) { SND.play('err'); return; }
   if (S.money < ABIL.cost) { SND.play('err'); banner('Backpack Spray', 'Needs ' + ABIL.cost + ' coins', true, 1100); return; }
   const lead = leadBug();
@@ -1839,18 +1910,23 @@ function findRest(e) {
   for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
     if (!restFree(c, r)) continue;
     const edge = c === 0 || c === COLS - 1 || r === 0 || r === ROWS - 1;
-    const sc = Math.hypot(ccx(c) - e.x, ccz(r) - e.z) + (nearTrail(c, r) ? 14 : 0) + (edge ? 0 : 10);
+    const sc = Math.hypot(ccx(c) - e.x, ccz(r) - e.z) + (nearTrail(c, r) ? 14 : 0) + (edge ? 0 : 10) + (mySide(c) ? 0 : 200);
     if (sc < bs) { bs = sc; best = { c, r }; }
   }
   return best;
 }
+// both exterminators: yours (S.ext) and, in a team game, your partner's (S.p2.ext)
 function drawExt(dt) {
-  const show = S.mode === 'play' || S.mode === 'over';
-  EXT.visible = show; if (!show) return;
-  const e = S.ext, u = EXT.userData;
+  const show = S.mode === 'play' || S.mode === 'over', me = S.me || 0, M = [EXT, EXT2];
+  drawOneExt(dt, M[me], S.ext, show);
+  drawOneExt(dt, M[1 - me], S.p2 && S.p2.ext, show && !!S.p2);
+}
+function drawOneExt(dt, EXTM, e, show) {
+  EXTM.visible = !!(show && e); if (!EXTM.visible) return;
+  const u = EXTM.userData;
   e.lift = (e.lift || 0) + ((e.held ? 1.4 : 0) - (e.lift || 0)) * Math.min(1, dt * 14);
-  EXT.position.set(e.x, e.lift, e.z);
-  let da = e.yaw - EXT.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); EXT.rotation.y += da * Math.min(1, dt * 12);
+  EXTM.position.set(e.x, e.lift, e.z);
+  let da = e.yaw - EXTM.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); EXTM.rotation.y += da * Math.min(1, dt * 12);
   const walk = e.state === 'walk', work = e.state === 'work', spray = e.state === 'spray' && !!e.abil;
   u.legs.forEach((l, i) => l.rotation.x = walk ? Math.sin(e.phase + i * Math.PI) * 0.75 : e.held ? Math.sin(e.phase + i * Math.PI) * 0.45 : 0);
   u.arms[0].rotation.x = spray ? -0.9 : walk ? Math.sin(e.phase) * 0.6 : work ? -0.5 : e.held ? -2.6 + Math.sin(e.phase) * 0.3 : 0;
@@ -1859,7 +1935,7 @@ function drawExt(dt) {
   u.body.rotation.x = work ? 0.35 : spray ? 0.12 : 0;
   u.wand.visible = spray || (walk && !!e.abil);
   if (spray && dt > 0) {
-    u.tip.getWorldPosition(tmpV); const fx = Math.sin(EXT.rotation.y), fz = Math.cos(EXT.rotation.y);
+    u.tip.getWorldPosition(tmpV); const fx = Math.sin(EXTM.rotation.y), fz = Math.cos(EXTM.rotation.y);
     for (let i = 0; i < 4; i++) {
       const j = (Math.random() - 0.5) * 0.9, c = Math.cos(j), sn = Math.sin(j), sp = 9 + Math.random() * 5;
       FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: (fx * c - fz * sn) * sp, vy: -0.6 + Math.random() * 1.2, vz: (fz * c + fx * sn) * sp, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.82, 0.96, 0.85], a0: 0.5 });
@@ -1874,7 +1950,7 @@ function dropCell(x, z) {
   let best = null, bs = Infinity;
   for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
     if (!restFree(c, r)) continue;
-    const d = Math.hypot(ccx(c) - x, ccz(r) - z);
+    const d = Math.hypot(ccx(c) - x, ccz(r) - z) + (mySide(c) ? 0 : 200);
     if (d < bs) { bs = d; best = { c, r }; }
   }
   return best;
@@ -2378,12 +2454,12 @@ function bossesFor(n) {
 function bossHp(t) { return Math.round(BT[t].hp * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1)); }
 const MAXW = 20;
 function makeWave(n, sh = 0) {
-  const r = rng(n * 131 + 7 + sh * 977), q = [], cnt = 8 + Math.floor(n * 2.2), pool = ['ant'], u = n + sh;
+  const team = LEVELS[LV] && LEVELS[LV].team, r = rng(n * 131 + 7 + sh * 977), q = [], cnt = Math.round((8 + Math.floor(n * 2.2)) * (team ? 1.6 : 1)), pool = ['ant'], u = n + sh;
   if (u >= 2) pool.push('fly'); if (u >= 4) pool.push('spider'); if (u >= 8) pool.push('fly', 'spider'); if (u >= 6) pool.push('dung'); if (u >= 12) pool.push('dung');
   while (q.length < cnt) { const t = pool[Math.floor(r() * pool.length)], g = t === 'dung' ? 1 + Math.floor(r() * 2) : 3 + Math.floor(r() * 4); for (let i = 0; i < g && q.length < cnt; i++) q.push(t); }
   // bed bug swarms from wave 7: each 'bed' entry is a cloud of a dozen
   if (u >= 7) for (let i = 0; i < Math.floor((u - 4) / 3); i++) q.splice(Math.floor(r() * q.length), 0, 'bed');
-  q.push(...bossesFor(n));
+  q.push(...bossesFor(n)); if (team) q.push(...bossesFor(n));
   return q;
 }
 const bestKey = lv => lv ? 'ppd-best-' + (lv + 1) : 'ppd-best';
@@ -2399,7 +2475,7 @@ function unlocked(lv) { return lv === 0 || loadBest(lv - 1) >= MAXW; }
 
 let S = null;
 function newState(mode) {
-  return { mode, lives: 20, money: LEVELS[LV].money, wave: 0, active: false, queue: [], spawnT: 0, gap: 0.8, hpMul: 1, bugs: [], towers: [], decals: [], zaps: [], coins: [], rings: [],
+  return { me: 0, cur: 0, p2: null, net: null, mode, lives: 20, money: LEVELS[LV].money, wave: 0, active: false, queue: [], spawnT: 0, gap: 0.8, hpMul: 1, bugs: [], towers: [], decals: [], zaps: [], coins: [], rings: [],
     kills: 0, earlyCalls: 0, items: [], lic: 0, dmgMul: 1, speed: 1, paused: false, nid: 1, shake: 0, placing: null, pick: null, prev: null, demoT: 0, jobs: [], ext: { x: 0, z: 12, yaw: Math.PI, state: 'idle', t: 0, job: null, phase: 0 } };
 }
 
@@ -2417,9 +2493,10 @@ function spawnBug(t, route = nextRoute()) {
 }
 function startWave() {
   if (S.mode !== 'play' || S.active || S.over) return;
+  if (S.net === 'guest') { netSend({ k: 'send' }); return; }
   const eb = earlyBonus(); S.nextT = 0; hideBelt();
   for (const tw of S.towers) tw.fresh = 0;
-  if (eb) { S.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
+  if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
   if (S.endless && S.wave + 1 >= 30) ACH.unlock('end30');
   if (S.endless && S.wave + 1 >= 50) ACH.unlock('end50');
   S.wave++; S.queue = makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
@@ -2471,6 +2548,7 @@ let CUR_SRC = null;
 function statFor(src) { const st = S.stats || (S.stats = {}); return st[src] || (st[src] = { dmg: 0, kills: 0 }); }
 function hit(b, d, raw) {
   if (b.dead) return;
+  if (S.net === 'guest') { if (!raw) { b.flash = 0.08; if (b.ball && b.ball.hp > 0) b.ball.flash = 0.08; } return; }
   d *= S.dmgMul * (1 + CUR_AMP);
   const show = S.mode === 'play';
   if (b.ball && b.ball.hp > 0) { const bd = Math.min(d, b.ball.hp); b.ball.hp -= d; b.ball.flash = 0.08; if (show) { b.db = (b.db || 0) + bd; if (CUR_SRC) statFor(CUR_SRC).dmg += bd; } if (b.ball.hp <= 0) breakBall(b); return; }
@@ -2505,7 +2583,8 @@ function kill(b) {
   if (S.mode === 'play') { b.dn = Math.ceil(b.dn || 0); b.dr = Math.ceil(b.dr || 0); b.db = Math.ceil(b.db || 0); flushDmg(b); }
   b.dead = true; const bt = BT[b.t], y = bugY(b) + 0.4;
   const g = Math.max(1, Math.round((bt.gold + Math.floor(S.wave / 3)) * goldMul()));
-  if (S.mode === 'play') { S.money += g; S.kills++; bumpStat('stCoins'); ACH.kill(b.t); if (CUR_SRC === 'abil' && S.ext.abil && ++S.ext.abil.kills >= 5) ACH.unlock('spray5'); }
+  if (S.mode === 'play' && S.net === 'guest') ACH.kill(b.t);
+  else if (S.mode === 'play') { addGold(S.p2 ? b.route : 0, g); S.kills++; bumpStat('stCoins'); ACH.kill(b.t); if (CUR_SRC === 'abil' && S.ext.abil && ++S.ext.abil.kills >= 5) ACH.unlock('spray5'); }
   for (let i = 0; i < (bt.boss ? 40 : b.t === 'bed' || b.t === 'baby' ? 4 : 12); i++) {
     const a = Math.random() * TAU, v = 2 + Math.random() * (bt.boss ? 7 : 4);
     FX.goo.spawn({ x: b.x, y, z: b.z, vx: Math.cos(a) * v, vy: 3 + Math.random() * 4, vz: Math.sin(a) * v, grav: 16, life: 0.55 + Math.random() * 0.3, s0: bt.boss ? 0.6 : 0.34, s1: 0.12, c: bt.goo, a0: 1, a1: 0.9 });
@@ -2671,25 +2750,26 @@ function update(dt) {
     if (b.s >= ROUTES[b.route].end) {
       b.dead = true;
       if (b.mesh) b.mesh.visible = false;
-      if (S.mode === 'play') biteCake(bt.lives);
+      if (S.mode === 'play' && S.net !== 'guest') biteCake(bt.lives);
     }
   }
   // citronella glow: every tool standing in a candle's glow gets that candle's boost (the strongest one counts)
   syncCandles();
-  for (const tw of S.towers) { CUR_AMP = tw.amp || 0; CUR_SRC = tw.t; towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
+  for (const tw of S.towers) { CUR_AMP = tw.amp || 0; CUR_SRC = tw.t; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
   itemsAct(dt);
-  if (S.mode === 'play') extUpdate(dt);
+  if (S.mode === 'play' && S.net !== 'guest') { extUpdate(dt); if (S.p2) withPlayer(1 - S.cur, () => extUpdate(dt)); }
+  if (S.net === 'guest') netGuestTick(dt);
   for (const z of S.zaps) { z.t += dt; if (z.left > 0 && z.t >= ZAP_HOP) zapHop(z); }
   S.zaps = S.zaps.filter(z => z.left > 0);
   S.bugs = S.bugs.filter(b => !b.dead);
   if (!S.bugs.some(b => b.mesh) && !S.queue.some(t => BT[t].boss)) $('queen').hidden = true;
-  if (S.mode !== 'play') return;
+  if (S.mode !== 'play' || S.net === 'guest') return;
   if (S.lives <= 0) { gameOver(false); return; }
   if (S.active && !S.queue.length && !S.bugs.length) {
     S.active = false;
     for (const it of [...S.items]) if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it);
     if (S.wave >= MAXW && !S.endless) { gameOver(true); return; }
-    const bonus = Math.round((25 + S.wave * 3) * goldMul()); S.money += bonus; bumpStat('stCoins');
+    const bonus = Math.round((25 + S.wave * 3) * goldMul()); S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
     banner('Wave ' + S.wave + ' cleared', '+' + bonus + ' coins', false, 1600); SND.play('clear'); renderShop();
     S.nextT = NEXT_WAIT; showBelt(); syncTray();
     syncTray();
@@ -2701,13 +2781,14 @@ function cellOk(t, c, r) {
   if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return false;
   const k = key(c, r);
   if (BLOCK.has(k) || S.towers.some(tw => tw.c === c && tw.r === r) || S.items.some(it => it.c === c && it.r === r)) return false;
+  if (!mySide(c)) return false;
   return TT[t].path ? PATH.has(k) : !PATH.has(k);
 }
 function placeItem(t, c, r) {
   const T = TT[t];
   if (itemUsed(t) || !cellOk(t, c, r) || S.money < T.cost) { SND.play('err'); return false; }
   S.money -= T.cost; markUsed(t);
-  const o = makeTower(t), it = { id: S.nid++, t, c, r, x: ccx(c), z: ccz(r), o, bites: T.bites || 0, waveEnd: S.active ? S.wave : S.wave + 1, pending: true };
+  const o = makeTower(t), it = { id: S.nid++, t, c, r, owner: S.cur || 0, x: ccx(c), z: ccz(r), o, bites: T.bites || 0, waveEnd: S.active ? S.wave : S.wave + 1, pending: true };
   o.root.position.set(it.x, 0, it.z); o.root.visible = false; scene.add(o.root); S.items.push(it);
   addJob('item', it);
   SND.play('tap'); bumpStat('stCoins');
@@ -2718,6 +2799,7 @@ function removeItem(it) {
   for (let i = 0; i < 8; i++) FX.smoke.spawn({ x: it.x + (Math.random() - 0.5) * 2, y: 0.3, z: it.z + (Math.random() - 0.5) * 2, vy: 1.2, life: 0.5, s0: 0.5, s1: 1.2, c: [0.95, 0.9, 0.75], a0: 0.4 });
 }
 function buyLicense() {
+  if (S.net === 'guest') { netSend({ k: 'lic' }); return; }
   const c = costOf('license');
   if (S.lic >= 3 || S.money < c || itemUsed('license')) { SND.play('err'); return; }
   S.money -= c; S.lic++; markUsed('license'); S.dmgMul = 1 + 0.05 * S.lic; if (S.lic >= 3) ACH.unlock('license');
@@ -2737,7 +2819,7 @@ function itemsAct(dt) {
         const boss = BT[b.t].boss; b.eatT = boss ? 3 : 1.5; it.bites -= boss ? 5 : 1;
       }
       it.o.root.scale.setScalar(1.25 * (0.45 + 0.55 * Math.max(0, it.bites) / T.bites));
-      if (it.bites <= 0) removeItem(it);
+      if (it.bites <= 0 && S.net !== 'guest') removeItem(it);
     } else if (it.t === 'sticky') {
       it.o.top.opacity = armed ? 1 : 0.55;
       if (!armed) continue;
@@ -2758,12 +2840,13 @@ function itemsAct(dt) {
 }
 function placeTower(t, c, r) {
   const T = TT[t];
+  if (S.net === 'guest') { if (!cellOk(t, c, r) || S.money < costOf(t) || itemUsed(t)) { SND.play('err'); return false; } netSend({ k: 'place', t, c, r }); SND.play('tap'); return true; }
   if (T.item) return placeItem(t, c, r);
   if (!cellOk(t, c, r)) { SND.play('err'); return false; }
   if (S.money < T.cost) { SND.play('err'); return false; }
   S.money -= T.cost;
   if (S.mode === 'play') { S.built = (S.built || 0) + 1; (S.usedTools || (S.usedTools = new Set())).add(t); }
-  const o = makeTower(t), tw = { id: S.nid++, t, c, r, x: ccx(c), z: ccz(r), lv: 1, cd: 0.2, anim: 9, yaw: 0, yawT: 0, spent: T.cost, fresh: S.active ? 0 : T.cost, uses: 0, o };
+  const o = makeTower(t), tw = { id: S.nid++, t, c, r, x: ccx(c), z: ccz(r), lv: 1, cd: 0.2, anim: 9, yaw: 0, yawT: 0, spent: T.cost, fresh: S.active ? 0 : T.cost, uses: 0, owner: S.cur || 0, o };
   o.root.position.set(tw.x, 0, tw.z); o.pips.forEach((p, i) => p.visible = i < 1);
   o.root.scale.setScalar(0.01); tw.pop = 0;
   scene.add(o.root); S.towers.push(tw);
@@ -2778,8 +2861,10 @@ function removeTower(tw, usedUp) {
   for (let i = 0; i < 10; i++) FX.smoke.spawn({ x: tw.x + (Math.random() - 0.5) * 2, y: 0.3, z: tw.z + (Math.random() - 0.5) * 2, vy: 1.5, life: 0.5, s0: 0.6, s1: 1.4, c: [0.95, 0.9, 0.7], a0: 0.45 });
   if (S.pick === tw) unpick();
 }
-function upgrade() {
-  const tw = S.pick; if (!tw || tw.lv >= 3) return;
+function upgrade(tw = S.pick) {
+  if (!tw || tw.lv >= 3) return;
+  if (S.p2 && (tw.owner || 0) !== S.cur) return;
+  if (S.net === 'guest') { if (S.money < upCost(tw) || tw.upPending || tw.pending) { SND.play('err'); return; } netSend({ k: 'up', id: tw.id }); SND.play('tap'); return; }
   const c = upCost(tw); if (S.money < c) { SND.play('err'); return; }
   if (tw.upPending || tw.pending) return;
   S.money -= c; tw.spent += c; if (!S.active) tw.fresh = (tw.fresh || 0) + c; tw.upPending = true; addJob('up', tw);
@@ -2792,8 +2877,10 @@ function applyUpgrade(tw) {
   for (let i = 0; i < 12; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 2, y: 0.5 + Math.random() * 2, z: tw.z + (Math.random() - 0.5) * 2, vy: 2, life: 0.6, s0: 0.6, s1: 0.1, c: [1, 0.85, 0.4], a0: 1 });
   SND.play('up'); if (S.pick === tw) syncTray();
 }
-function sell() {
-  const tw = S.pick; if (!tw) return;
+function sell(tw = S.pick) {
+  if (!tw) return;
+  if (S.p2 && (tw.owner || 0) !== S.cur) return;
+  if (S.net === 'guest') { netSend({ k: 'sell', id: tw.id }); unpick(); SND.play('sell'); return; }
   S.money += sellVal(tw); SND.play('sell'); bumpStat('stCoins'); removeTower(tw); syncTray();
 }
 function pick(tw) { S.pick = tw; S.placing = null; S.prev = null; syncTray(); }
@@ -2810,7 +2897,13 @@ function choose(t) {
 
 // ---------------------------------------------------------------- camera fit
 const view = { w: 1, h: 1, pitch: 0.98, yaw: 0, dist: 50, target: new V3(0, 0, 0.5) };
-const CORNERS = [[-21.4, 0, -15.4], [21.4, 0, -15.4], [-21.4, 0, 15.4], [21.4, 0, 15.4], [-21.4, 1.5, -15.4], [21.4, 1.5, -15.4], [-21.4, 1.5, 15.4], [CAKE_POS.x, CAKE_POS.y + 2, CAKE_POS.z - 1]].map(a => new V3(...a));
+const CORNERS = [];
+function setCorners() {
+  const e = BOARD.ex + 0.4;
+  CORNERS.length = 0;
+  for (const a of [[-e, 0, -15.4], [e, 0, -15.4], [-e, 0, 15.4], [e, 0, 15.4], [-e, 1.5, -15.4], [e, 1.5, -15.4], [-e, 1.5, 15.4], [CAKE_POS.x, CAKE_POS.y + 2, CAKE_POS.z - 1]]) CORNERS.push(new V3(...a));
+}
+setCorners();
 function aim(sx = 0, sz = 0) {
   const t = view.target, d = view.dist, p = view.pitch;
   const h = Math.cos(p) * d;
@@ -3032,7 +3125,24 @@ function drawTowers(dt, t) {
     }
   }
 }
+const TEAMVIS = { tape: null, dim: null };
+function drawTeam() {
+  const team = LEVELS[LV] && LEVELS[LV].team && S.mode !== 'title';
+  if (!TEAMVIS.tape) {
+    const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: '#ffd23a', transparent: true, opacity: 0.9, depthWrite: false });
+    for (let z = 0; z < 7; z++) { const q = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.9), m); q.rotation.x = -Math.PI / 2; q.position.set(0, 0.06, z * 1.3); q.renderOrder = 4; g.add(q); }
+    scene.add(g); TEAMVIS.tape = g;
+    TEAMVIS.dim = new THREE.Mesh(new THREE.PlaneGeometry(1, 30), new THREE.MeshBasicMaterial({ color: '#2a0606', transparent: true, opacity: 0.62, depthWrite: false }));
+    TEAMVIS.dim.rotation.x = -Math.PI / 2; TEAMVIS.dim.position.y = 0.065; TEAMVIS.dim.renderOrder = 6; scene.add(TEAMVIS.dim);
+  }
+  TEAMVIS.tape.visible = !!team;
+  if (team) TEAMVIS.tape.position.set(ccx(BOARD.cakeCol), 0, ccz(6) + 1.9);
+  const dim = !!(team && S.p2 && S.placing);
+  TEAMVIS.dim.visible = dim;
+  if (dim) { const w = BOARD.cakeCol * CS; TEAMVIS.dim.scale.x = w; TEAMVIS.dim.position.set(S.cur === 0 ? X0 + COLS * CS - w / 2 : X0 + w / 2, 0.065, 0); }
+}
 function drawPlacement(t) {
+  drawTeam();
   const sel = S.placing, cell = previewCell();
   gridMesh.visible = !!sel;
   for (const k in GHOST) GHOST[k].root.visible = false;
@@ -3144,9 +3254,10 @@ function floorAt(e) {
   return ray.ray.intersectPlane(floorPlane, hitV) ? { x: hitV.x, z: hitV.z } : null;
 }
 function onExt(e) {
-  if (!EXT.visible) return false;
+  const M = [EXT, EXT2][S.me || 0];
+  if (!M.visible) return false;
   floorAt(e);
-  if (ray.intersectObject(EXT, true).length) return true;
+  if (ray.intersectObject(M, true).length) return true;
   const f = { x: hitV.x, z: hitV.z };
   return Math.hypot(f.x - S.ext.x, f.z - S.ext.z) < (ptrType === 'mouse' ? 1.6 : 3.2);
 }
@@ -3163,6 +3274,7 @@ function endDrag() {
   const e = S.ext; e.held = false;
   const d = dropCell(e.x, e.z);
   e.home = d; e.rest = d;
+  if (S.net === 'guest' && d) netSend({ k: 'home', c: d.c, r: d.r });
   if (e.job) e.state = 'walk';
   SND.play('tap');
   canvas.style.cursor = '';
@@ -3204,7 +3316,7 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (!$('settings').hidden) { if (k === 'escape' || k === 'enter') { e.preventDefault(); closeSettings(); } return; }
   if (!$('guide').hidden) { if (k === 'escape' || k === 'enter') { e.preventDefault(); closeGuide(); } return; }
-  if (S.mode !== 'play') { if ((k === 'enter' || k === ' ') && !$('title').hidden) { e.preventDefault(); let lv = 0; while (lv < LEVELS.length - 1 && unlocked(lv + 1)) lv++; startGame(lv); } return; }
+  if (S.mode !== 'play') { if ((k === 'enter' || k === ' ') && !$('title').hidden) { e.preventDefault(); let lv = 0; while (lv < CAMPAIGN - 1 && unlocked(lv + 1)) lv++; startGame(lv); } return; }
   const kn = k >= '0' && k <= '9' ? (+k || 10) : 0;
   if (kn && kn <= SHOP.length) { setTab('tools'); choose(SHOP[kn - 1]); }
   else if (kn && kn - SHOP.length <= ITEMS.length) { setTab('items'); choose(ITEMS[kn - SHOP.length - 1]); }
@@ -3272,10 +3384,10 @@ function showToolCard(t) {
 addEventListener('pointerdown', e => { const el = $('tcard'); if (!el.hidden && !e.target.closest('#shop')) el.hidden = true; }, true);
 shop.addEventListener('pointerdown', () => { const el = $('tcard'); if (!el.hidden) el.hidden = true; }, true);
 $('go').addEventListener('click', () => { SND.init(); startWave(); });
-$('bUp').addEventListener('click', upgrade);
+$('bUp').addEventListener('click', () => upgrade());
 
 $('abil').addEventListener('click', () => { SND.init(); useAbility(); });
-$('bSell').addEventListener('click', sell);
+$('bSell').addEventListener('click', () => sell());
 $('bClose').addEventListener('click', unpick);
 $('bSpeed').addEventListener('click', toggleSpeed);
 $('bPause').addEventListener('click', () => setPaused(true));
@@ -3304,11 +3416,11 @@ $('setTut').addEventListener('click', () => { try { localStorage.removeItem('ppd
 $('setT').addEventListener('click', () => { SND.init(); openSettings(); });
 $('setP').addEventListener('click', () => { $('paused').hidden = true; syncSettings(); $('settings').hidden = false; });
 $('resume').addEventListener('click', () => setPaused(false));
-$('quit').addEventListener('click', toTitle);
-$('lvls').innerHTML = LEVELS.map((L, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${i}"><b>Level ${i + 1}</b><span>${HOUSES[i].name}</span><em>${L.name}</em><small id="best${i}"></small></button>`).join('');
+$('quit').addEventListener('click', () => { netLeave(); toTitle(); });
+$('lvls').innerHTML = LEVELS.slice(0, CAMPAIGN).map((L, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${i}"><b>Level ${i + 1}</b><span>${HOUSES[i].name}</span><em>${L.name}</em><small id="best${i}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
 $('nextLv').addEventListener('click', () => { SND.init(); startGame(LV + 1); });
-$('again').addEventListener('click', () => { SND.init(); startGame(); });
+$('again').addEventListener('click', () => { SND.init(); if (S.net === 'host') { netSend({ k: 'start' }); startGame(TEAM_LV, 'host'); } else startGame(); });
 // endless: pick up right where the win left off, same tools and cake, waves keep coming and keep getting harder
 $('endless').addEventListener('click', () => {
   SND.init(); if (!S || S.mode !== 'over') return;
@@ -3316,7 +3428,7 @@ $('endless').addEventListener('click', () => {
   banner('Endless mode', 'How long can you hold out?', true, 1800);
   S.nextT = NEXT_WAIT; showBelt(); syncTray(); syncGo();
 });
-$('totitle').addEventListener('click', toTitle);
+$('totitle').addEventListener('click', () => { netLeave(); toTitle(); });
 const BUGINFO = [
   ['ant', 'Ant', 'Every wave', 'Marches steadily along the trail. Weak on its own, but they come in lines.', '1 slice'],
   ['fly', 'Fly', 'From wave 2', 'Fast, and flies over the floor, so the Newspaper can\'t reach it. The Bug Zapper does 60% extra to flies.', '1 slice'],
@@ -3365,13 +3477,14 @@ $('fullT').addEventListener('click', () => { FULL.toggle(); setTimeout(syncFull,
 $('bFull').addEventListener('click', () => { FULL.toggle(); setTimeout(syncFull, 350); });
 for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => { syncFull(); requestAnimationFrame(resize); });
 $('guideBack').addEventListener('click', closeGuide);
-function toggleSpeed() { S.speed = S.speed > 1 ? 1 : 2; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
-function setPaused(p) { if (S.mode !== 'play') return; S.paused = p; $('paused').hidden = !p; }
+function toggleSpeed() { if (S.net === 'guest') { netSend({ k: 'speed', v: S.speed > 1 ? 1 : 2 }); return; } S.speed = S.speed > 1 ? 1 : 2; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
+function setPaused(p, remote) { if (S.mode !== 'play') return; S.paused = p; $('paused').hidden = !p; if (S.net && !remote) netSend({ k: 'pause', p }); }
 function toggleSound() { SND.init(); SND.toggle(); syncSnd(); }
 function syncSnd() { if ($('setSfx')) syncSettings(); }
 function bumpStat(id) { const el = $(id); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 let bannerTimer = 0;
 function banner(txt, sub, red, ms) {
+  if (S && S.p2 && S.cur !== (S.me || 0)) return;   // don't show the partner's messages on this screen
   const el = $('banner'); clearTimeout(bannerTimer);
   if (!txt) { return; }
   el.innerHTML = txt + (sub ? `<small>${sub}</small>` : ''); el.classList.toggle('red', !!red); el.classList.add('on');
@@ -3403,8 +3516,10 @@ function syncTray() {
     const T = TT[tw.t], max = tw.lv >= 3, c = max ? 0 : upCost(tw);
     $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
     $('iStats').innerHTML = statsHtml(tw); $('iDesc').textContent = T.d;
-    const busy = tw.pending || tw.upPending;
-    $('bUp').disabled = max || busy || S.money < c; $('bUpC').textContent = max ? 'Maxed' : tw.pending ? 'Being built' : tw.upPending ? 'On the way' : c + ' coins';
+    const busy = tw.pending || tw.upPending, theirs = S.p2 && (tw.owner || 0) !== S.cur;
+    if (theirs) $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t) + ' <span class="partner">Partner\'s tool</span>';
+    $('bSell').disabled = !!theirs;
+    $('bUp').disabled = theirs || max || busy || S.money < c; $('bUpC').textContent = max ? 'Maxed' : tw.pending ? 'Being built' : tw.upPending ? 'On the way' : c + ' coins';
     if (tw.pending) $('iLv').textContent = 'Being built';
     $('bSellC').textContent = '+' + sellVal(tw) + (!tw.pending && tw.fresh && tw.fresh >= tw.spent ? ' · full' : '');
   }
@@ -3425,6 +3540,7 @@ function syncTip() {
   let line;
   if (S.money < costOf(t)) line = `<span class="bad">Need ${costOf(t)} coins</span>`;
   else if (!cell) line = ptrType === 'mouse' ? (T.path ? 'Point at the sugar trail' : 'Point at an empty floor tile') : (T.path ? 'Tap the sugar trail to preview' : 'Tap a floor tile to preview');
+  else if (!mySide(cell.c)) line = `<span class="bad">That's your partner's side</span>`;
   else if (!cellOk(t, cell.c, cell.r)) line = `<span class="bad">${T.path ? (PATH.has(key(cell.c, cell.r)) ? 'Something is already there' : 'This goes on the sugar trail') : PATH.has(key(cell.c, cell.r)) ? 'Keep the trail clear' : 'That spot is taken'}</span>`;
   else line = ptrType === 'mouse' ? 'Click to place' : 'Tap again to place';
   const html = `<b>${T.name}</b> ${hitTag(t)} · ${T.path ? 'goes on the trail' : 'range ' + T.range[0]}<span class="td">${T.d}</span><span class="tl">${line}</span>`;
@@ -3438,7 +3554,7 @@ function syncHud() {
   for (const k in v) if (shown[k] !== v[k]) { $(k).textContent = v[k]; shown[k] = v[k]; }
   if (shown.money !== shown._m) { shown._m = shown.money; for (const el of shop.children) el.classList.toggle('poor', S.money < costOf(el.dataset.t)); if (S.pick) { const c = upCost(S.pick); $('bUp').disabled = S.pick.lv >= 3 || S.pick.pending || S.pick.upPending || S.money < c; } }
   if (S.qTotal && !$('queen').hidden) {
-    let cur = S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHp(t), 0);
+    let cur = S.net === 'guest' ? (S.qQueued || 0) : S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHp(t), 0);
     for (const b of S.bugs) if (b.mesh) cur += Math.max(0, b.hp);
     $('qfill').style.width = Math.max(0, cur / S.qTotal * 100) + '%';
   }
@@ -3457,7 +3573,7 @@ function toTitle() {
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['swat', 2, 1, 2], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
   $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
-  LEVELS.forEach((L, lv) => {
+  LEVELS.slice(0, CAMPAIGN).forEach((L, lv) => {
     const b = loadBest(lv), el = $('best' + lv);
     const st = loadNum(starKey(lv)), en = loadNum(endKey(lv));
     el.innerHTML = !unlocked(lv) ? '🔒 Beat Level ' + lv + ' to unlock' : b >= MAXW ? `<span class="lstars">${starStr(Math.max(1, st))}</span>${en > MAXW ? `<span class="lend">Endless best: wave ${en}</span>` : ''}` : b ? 'Best: wave ' + b : L.sub;
@@ -3465,20 +3581,197 @@ function toTitle() {
   });
   requestAnimationFrame(resize);
 }
-function startGame(lv = LV) {
-  clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools'; renderShop();
+function startGame(lv = LV, net = null) {
+  clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools';
+  if (LEVELS[lv].team) {
+    S.ext.x = ccx(4); S.ext.z = ccz(9);
+    if (net) {
+      S.net = net; S.me = S.cur = net === 'guest' ? 1 : 0;
+      S.p2 = { money: LEVELS[lv].money, ext: { x: ccx(16), z: ccz(9), yaw: Math.PI, state: 'idle', t: 0, job: null, phase: 0 }, jobs: [], abilCd: 0, lic: 0, dmgMul: 1, itemUsed: {} };
+      if (S.me === 1) { const t = S.ext; S.ext = S.p2.ext; S.p2.ext = t; }
+    } else S.money = 260;   // practice: one player holds both lanes
+  }
+  renderShop();
   setCake(20);
   $('title').hidden = true; $('over').hidden = true; $('paused').hidden = true; $('hud').hidden = false; $('tray').hidden = false;
   $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on');
   $('waveMax').textContent = '/20';
   syncTray(); syncHud(); showBelt();
-  banner(HOUSES[LV].name, 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 2600);
+  banner(LEVELS[LV].team ? 'Team Kitchen' : HOUSES[LV].name, LEVELS[LV].team ? (S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes.') : 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   tutStart();
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
   requestAnimationFrame(resize);
 }
+// ---------------------------------------------------------------- online team play
+// The host runs the whole game and streams it to the guest ~10x a second. The guest's taps go to the host as requests.
+const SB_URL = 'https://ljrnzpqepssnkidlcgha.supabase.co', SB_KEY = 'sb_publishable_DWik0p9owlUHmoh2v1U9lA_pDlntvoc';
+const NET = { link: null, role: null, code: '', last: 0, snapT: 0, pingT: 0, helloT: 0, lost: false, sb: null };
+async function netOpen(code, onMsg) {
+  if (/local/.test(location.hash) || !navigator.onLine && 'BroadcastChannel' in window) {
+    const bc = new BroadcastChannel('ppd-' + code); bc.onmessage = e => onMsg(e.data);
+    return { send: m => bc.postMessage(m), close: () => bc.close() };
+  }
+  const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm');
+  NET.sb ||= createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 40 } } });
+  const ch = NET.sb.channel('ppd-' + code, { config: { broadcast: { self: false, ack: false } } });
+  ch.on('broadcast', { event: 'm' }, ({ payload }) => onMsg(payload));
+  await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('timed out')), 12000); ch.subscribe(st => { if (st === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error(st)); } }); });
+  return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), close: () => NET.sb.removeChannel(ch) };
+}
+function netSend(m) { try { if (NET.link) NET.link.send(m); } catch (e) {} }
+function netLeave() { if (NET.link) { netSend({ k: 'bye' }); try { NET.link.close(); } catch (e) {} } NET.link = null; NET.role = null; $('netWarn').hidden = true; }
+function lobbyStatus(h) { $('lbStatus').innerHTML = h; }
+async function netCreate() {
+  netLeave(); const code = String(1000 + Math.floor(Math.random() * 9000)); NET.code = code; NET.role = 'host';
+  lobbyStatus('Opening a room…');
+  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { lobbyStatus('Could not open a room. Check your internet and try again.'); NET.role = null; return; }
+  lobbyStatus(`Room code<b>${code}</b>Tell your friend to tap Join and type it in. Waiting…`);
+}
+async function netJoin(code) {
+  code = (code || '').replace(/\D/g, ''); if (code.length !== 4) { lobbyStatus('Type the 4-digit room code'); return; }
+  netLeave(); NET.code = code; NET.role = 'guest'; lobbyStatus('Joining room ' + code + '…');
+  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { lobbyStatus('Could not connect. Check the code and your internet.'); NET.role = null; return; }
+  NET.helloT = 0; lobbyStatus('Connected. Waiting for the host…');
+}
+function netOnMsg(m) {
+  if (!m || !m.k) return;
+  NET.last = performance.now();
+  if (NET.role === 'host') {
+    if (m.k === 'hello' && (!S || S.net !== 'host' || S.mode !== 'play')) { netSend({ k: 'start' }); $('lobby').hidden = true; startGame(TEAM_LV, 'host'); return; }
+    if (m.k === 'bye') { netWarn('Your partner left the game. Their side keeps defending on its own.'); return; }
+    if (!S || S.net !== 'host' || S.mode !== 'play') return;
+    netHostCmd(m);
+  } else if (NET.role === 'guest') {
+    if (m.k === 'start') { $('lobby').hidden = true; $('over').hidden = true; startGame(TEAM_LV, 'guest'); return; }
+    if (m.k === 'bye') { netWarn('The host left the game.'); return; }
+    if (!S || S.net !== 'guest') return;
+    if (m.k === 's') netApply(m);
+    else if (m.k === 'over') { S.lives = m.l; S.wave = m.w; S.kills = m.kills; gameOver(m.won); }
+  }
+}
+function netWarn(t) { const el = $('netWarn'); el.textContent = t; el.hidden = false; clearTimeout(netWarn.t); netWarn.t = setTimeout(() => el.hidden = true, 6000); }
+// host: carry out the guest's request as player 2
+function netHostCmd(m) {
+  const tw = m.id != null ? S.towers.find(t => t.id === m.id) : null;
+  withPlayer(1, () => {
+    if (m.k === 'place') placeTower(m.t, m.c, m.r);
+    else if (m.k === 'up' && tw && tw.owner === 1) upgrade(tw);
+    else if (m.k === 'sell' && tw && tw.owner === 1) { S.money += sellVal(tw); removeTower(tw); }
+    else if (m.k === 'lic') buyLicense();
+    else if (m.k === 'abil') useAbility();
+    else if (m.k === 'home') { const e = S.ext, d = { c: m.c, r: m.r }; if (restFree(d.c, d.r)) { e.home = d; e.rest = d; } }
+  });
+  if (m.k === 'send') startWave();
+  else if (m.k === 'pause') setPaused(!!m.p, true);
+  else if (m.k === 'speed') { S.speed = m.v; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
+}
+const EST = ['idle', 'walk', 'work', 'spray'];
+const r2 = v => Math.round(v * 100) / 100;
+function extSnap(e) { return [r2(e.x), r2(e.z), r2(e.yaw), Math.max(0, EST.indexOf(e.state)), e.held ? 1 : 0, e.abil ? 1 : 0]; }
+// host: what the guest needs to draw the game (always in absolute player order: [blue, red])
+function netSnap() {
+  const P = [S, S.p2], g = k => P[0][k], h = k => P[1][k];
+  return { k: 's', w: S.wave, a: S.active ? 1 : 0, l: S.lives, nt: r2(S.nextT || 0), sp: S.speed, pz: S.paused ? 1 : 0,
+    m: [Math.floor(g('money')), Math.floor(h('money'))], cd: [r2(g('abilCd') || 0), r2(h('abilCd') || 0)], lic: [g('lic'), h('lic')], iu: [g('itemUsed') || {}, h('itemUsed') || {}],
+    qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHp(t), 0), qn: $('qname').textContent, hp: S.hpMul,
+    b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
+      (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0)]),
+    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0)]),
+    i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd]),
+    e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
+}
+function remoteTower(id, t, c, r, owner) {
+  const o = makeTower(t), tw = { id, t, c, r, x: ccx(c), z: ccz(r), lv: 1, cd: 0.2, anim: 9, yaw: 0, yawT: 0, spent: TT[t].cost, fresh: 0, uses: 0, owner, o, pending: true };
+  o.root.position.set(tw.x, 0, tw.z); o.pips.forEach((p, i) => p.visible = i < 1); o.root.visible = false; o.root.scale.setScalar(0.01); tw.pop = 0;
+  scene.add(o.root); tw.marker = makeMarker(tw.x, tw.z); S.towers.push(tw); return tw;
+}
+// guest: bring the local picture in line with the host's
+function netApply(m) {
+  const me = S.me, them = 1 - me;
+  const wasActive = S.active, oldWave = S.wave;
+  S.wave = m.w; S.active = !!m.a; S.lives = m.l; S.nextT = m.nt; S.speed = m.sp; S.hpMul = m.hp;
+  if (!!m.pz !== !!S.paused) { S.paused = !!m.pz; $('paused').hidden = !S.paused; }
+  $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1);
+  S.money = m.m[me]; S.p2.money = m.m[them]; S.abilCd = m.cd[me]; S.p2.abilCd = m.cd[them];
+  S.lic = m.lic[me]; S.dmgMul = 1 + 0.05 * S.lic; S.itemUsed = m.iu[me];
+  S.qTotal = m.qt; S.qQueued = m.qq; if (m.qn) $('qname').textContent = m.qn;
+  // cake
+  for (let i = 0; i < 20; i++) { const sl = cake.slices[i]; if (sl) { const on = i < S.lives; if (sl.visible && !on) { cake.biting.push({ s: sl, t: 0 }); S.shake = 0.3; SND.play('bite'); } } }
+  // waves starting and ending
+  if (S.wave > oldWave && S.active) {
+    hideBelt(); const boss = m.b.some(b => BT[b[1]].boss) || m.qq > 0;
+    banner(boss ? (m.qn || 'Boss') : 'Wave ' + S.wave, '', boss, 1700); SND.play(boss ? 'boss' : 'wave'); for (const t of S.towers) t.fresh = 0;
+  }
+  if (wasActive && !S.active) { banner('Wave ' + S.wave + ' cleared', '', false, 1500); SND.play('clear'); showBelt(); }
+  if (!S.active && S.nextT > 0) syncBeltT();
+  // bugs
+  const seen = new Set(), byId = new Map(S.bugs.map(b => [b.id, b]));
+  for (const [id, t, route, sv, off, hp, max, bh, bm, fl] of m.b) {
+    seen.add(id); let b = byId.get(id);
+    if (!b) { b = spawnBug(t, route); b.id = id; b.s = sv; b.off = off; if (b.ball && bh < 0) b.ball = null; }
+    else { const d = sv - b.s; b.s += Math.abs(d) > 2.5 ? d : d * 0.35; }
+    b.hp = hp; b.max = max; b.off = off;
+    if (b.ball) { if (bh <= 0 && b.ball.hp > 0) { b.ball.hp = 0; breakBall(b); } else if (bh > 0) { b.ball.hp = bh; b.ball.max = bm; } }
+    if (fl & 1) b.psnT = Math.max(b.psnT, 0.3); if (fl & 2) { b.stuck = Math.max(b.stuck, 0.15); b.slowF = Math.min(b.slowF, 0.5); } if (fl & 4) b.angry = true; b.eatT = fl & 8 ? Math.max(b.eatT || 0, 0.2) : 0;
+  }
+  for (const b of S.bugs) if (!b.dead && !seen.has(b.id)) {
+    if (b.s >= ROUTES[b.route].end - 1.5) { b.dead = true; if (b.mesh) b.mesh.visible = false; } else kill(b);
+  }
+  S.bugs = S.bugs.filter(b => !b.dead);
+  if (!S.bugs.some(b => b.mesh) && !(m.qq > 0)) $('queen').hidden = true; else if (m.qq > 0 || S.bugs.some(b => b.mesh)) $('queen').hidden = false;
+  // towers
+  const tseen = new Set();
+  for (const [id, t, c, r, lv, owner, fl] of m.t) {
+    tseen.add(id); let tw = S.towers.find(x => x.id === id);
+    if (!tw) tw = remoteTower(id, t, c, r, owner);
+    if (tw.pending && !(fl & 1)) finishJob({ kind: 'build', obj: tw });
+    while (tw.lv < lv) applyUpgrade(tw);
+    tw.upPending = !!(fl & 2);
+  }
+  for (const tw of [...S.towers]) if (!tseen.has(tw.id)) removeTower(tw);
+  // items
+  const iseen = new Set();
+  for (const [id, t, c, r, owner, pend, bites, waveEnd] of m.i) {
+    iseen.add(id); let it = S.items.find(x => x.id === id);
+    if (!it) { const o = makeTower(t); it = { id, t, c, r, owner, x: ccx(c), z: ccz(r), o, bites, waveEnd, pending: true }; o.root.position.set(it.x, 0, it.z); o.root.visible = false; scene.add(o.root); it.marker = makeMarker(it.x, it.z); S.items.push(it); }
+    if (it.pending && !pend) finishJob({ kind: 'item', obj: it });
+    it.bites = bites; it.waveEnd = waveEnd;
+  }
+  for (const it of [...S.items]) if (!iseen.has(it.id)) removeItem(it);
+  // exterminators
+  for (const [P, d] of [[S.ext, m.e[me]], [S.p2.ext, m.e[them]]]) {
+    if (P.held) continue;
+    P.tx = d[0]; P.tz = d[1]; P.yaw = d[2]; P.state = EST[d[3]] || 'idle';
+    P.abil = d[5] ? (P.abil || { phase: 'spray' }) : null;
+    if (P.x === undefined || Math.hypot(P.x - d[0], P.z - d[1]) > 8) { P.x = d[0]; P.z = d[1]; }
+  }
+  renderShopIfNeeded(); syncTray();
+}
+function renderShopIfNeeded() { const k = JSON.stringify(S.itemUsed) + S.lic + (S.active ? 1 : 0); if (k !== NET.shopK) { NET.shopK = k; renderShop(); } }
+function netGuestTick(dt) {
+  for (const e of [S.ext, S.p2.ext]) {
+    if (e.held || e.tx === undefined) continue;
+    const k = Math.min(1, dt * 10); e.x += (e.tx - e.x) * k; e.z += (e.tz - e.z) * k;
+    if (e.state === 'walk') e.phase += dt * 13; if (e.state === 'work') e.t += dt;
+  }
+}
+// called every frame (real time)
+function netFrame(dt) {
+  if (!NET.link) return;
+  const now = performance.now();
+  if (NET.role === 'host' && S.net === 'host' && S.mode === 'play') { NET.snapT -= dt; if (NET.snapT <= 0) { NET.snapT = 0.1; netSend(netSnap()); } }
+  if (S && S.net && S.mode === 'play' && NET.last && now - NET.last > 6000) { if (!NET.lost) { NET.lost = true; netWarn('Connection to your partner is lost…'); } }
+  else NET.lost = false;
+}
+setInterval(() => { if (NET.link && NET.role === 'guest') netSend({ k: S && S.net === 'guest' ? 'ping' : 'hello' }); }, 1000);
+$('teamT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); });
+$('lbBack').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; $('title').hidden = false; });
+$('lbPractice').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV); });
+$('lbCreate').addEventListener('click', () => { SND.init(); netCreate(); });
+$('lbJoin').addEventListener('click', () => { SND.init(); netJoin($('lbCode').value); });
+$('lbCode').addEventListener('keydown', e => { if (e.key === 'Enter') netJoin($('lbCode').value); });
 // ---------------------------------------------------------------- achievements (saved on this device)
 const ACH_LIST = [
   ['first', 'First Squash', 'Squash your first bug.'],
@@ -3538,8 +3831,8 @@ function achWin() {
   if (!used.has('lens')) ACH.unlock('nolens');
   if (used.size && [...used].every(t => t === 'swat')) ACH.unlock('swatonly');
   if ((S.built || 0) <= 6) ACH.unlock('thrifty');
-  if (LEVELS.every((L, i) => i === LV || loadBest(i) >= MAXW)) ACH.unlock('allwin');
-  if (LEVELS.every((L, i) => (i === LV ? starsFor(S.lives) : loadNum(starKey(i))) >= 3)) ACH.unlock('allstar');
+  if (LEVELS.slice(0, CAMPAIGN).every((L, i) => i === LV || loadBest(i) >= MAXW)) ACH.unlock('allwin');
+  if (LEVELS.slice(0, CAMPAIGN).every((L, i) => (i === LV ? starsFor(S.lives) : loadNum(starKey(i))) >= 3)) ACH.unlock('allstar');
 }
 function renderAch() {
   $('achCount').textContent = ACH.count() + ' / ' + ACH_LIST.length;
@@ -3602,10 +3895,12 @@ function tutTick(dt) {
 }
 $('tutSkip').addEventListener('click', tutEnd);
 function gameOver(won) {
+  if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills });
   S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
   const reached = won ? MAXW : S.wave, wasLocked = !unlocked(LV + 1);
   if (Math.min(reached, MAXW) > loadBest()) saveBest(Math.min(reached, MAXW));
-  const ostars = $('ostars'); ostars.hidden = !won; $('endless').hidden = !won;
+  const ostars = $('ostars'); ostars.hidden = !won; $('endless').hidden = !won || !!S.net;
+  $('again').hidden = S.net === 'guest'; $('again').textContent = S.net === 'host' ? 'Play again together' : 'Play again';
   if (won && !S.endless) achWin(); ACH.save();
   if (won) {
     const n = starsFor(S.lives); if (n > loadNum(starKey(LV))) saveNum(starKey(LV), n);
@@ -3623,7 +3918,7 @@ function gameOver(won) {
     return;
   }
   $('overt').textContent = won ? 'Cake saved!' : 'Cake devoured!';
-  const hasNext = won && LV < LEVELS.length - 1;
+  const hasNext = won && LV < CAMPAIGN - 1;
   $('nextLv').hidden = !hasNext; $('nextLv').textContent = hasNext ? 'Next: ' + HOUSES[LV + 1].name : '';
   if (hasNext && wasLocked) banner('New house unlocked!', HOUSES[LV + 1].name + ' · Level ' + (LV + 2), false, 2600);
   showStats();
@@ -3654,7 +3949,7 @@ function frame(now) {
   try {
     if (raw > 0 && raw < 1 && !document.hidden) perfCheck(raw);
     if (!S.paused && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; for (let i = 0; i < n; i++) update(dt); }
-    if (S.mode === 'play' && !S.paused && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0) {
+    if (S.mode === 'play' && !S.paused && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0 && S.net !== 'guest') {
       const was = Math.ceil(S.nextT); S.nextT -= dt;
       if (S.nextT <= 0) { S.nextT = 0; startWave(); }
       else if (Math.ceil(S.nextT) !== was) { syncBeltT(); syncGo(); if (S.nextT <= 3) SND.play('tap'); }
@@ -3668,6 +3963,7 @@ function frame(now) {
   } catch (e) { showErr('draw', e); }
   try { if (S.mode === 'play') syncHud(); syncAbil(); } catch (e) { showErr('hud', e); }
   try { tutTick(dt); } catch (e) { showErr('tutorial', e); }
+  try { netFrame(raw > 0 && raw < 1 ? raw : dt); } catch (e) { showErr('net', e); }
   try { MUSIC.set(S.mode === 'play' && !$('queen').hidden ? 'boss' : 'calm'); } catch (e) {}
   try { composer.render(); } catch (e) { showErr('render', e); }
 }
