@@ -165,6 +165,19 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .gtabs button.on{background:var(--gold);color:#2a1600}
 .tmain{display:grid;gap:12px;width:min(340px,86vw)}
 .tmain .btn{font-size:26px;padding:12px 18px;line-height:1.1}
+.btn.vsBtn{background:linear-gradient(#ffa27e,#e0503c);box-shadow:0 6px 0 #8e261c,0 12px 24px rgba(0,0,0,.4);color:#3a0904}
+.vsBtn small{display:block;font:900 11px var(--body);opacity:.75}
+@media (max-height:500px) and (min-width:560px){.tmain{grid-template-columns:repeat(3,1fr);width:min(780px,94vw);gap:10px}.tmain .btn{font-size:20px;padding:10px 8px}#title .sub{margin-bottom:4px}}
+#foe{pointer-events:auto;cursor:pointer;border:0;color:var(--text);gap:5px;padding-right:10px}
+#foe small{font:900 10px var(--body);letter-spacing:.06em;color:#ffb3a4;background:#7a1d14;border-radius:6px;padding:3px 5px}
+#foe i{font-style:normal;font-size:15px;color:var(--sky)} #foe i.ok{color:#9be37a}
+#foe.nudge{animation:foeNudge 1.2s ease-in-out infinite}
+@keyframes foeNudge{50%{box-shadow:inset 0 0 0 2px #ff8a6a,0 0 14px rgba(255,120,90,.6)}}
+#peek{position:absolute;left:10px;top:104px;z-index:6;width:min(46%,360px);background:rgba(11,14,17,.92);border-radius:12px;padding:6px;box-shadow:0 8px 22px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.08)}
+#peek .ph{display:flex;align-items:center;gap:8px;font:800 12px var(--body);color:var(--dim);margin:0 2px 5px}
+#peek .ph b{color:#ffb3a4;font-weight:900} #peek .ph span{flex:1}
+#peek .ph button{border:0;background:rgba(255,255,255,.1);color:var(--text);border-radius:8px;width:26px;height:24px;cursor:pointer;font:900 13px var(--body)}
+#peek canvas{display:block;width:100%;border-radius:8px}
 .soloBtn small,.teamBtn small{display:block;font:900 12px var(--body);opacity:.75;letter-spacing:.02em}
 .tsmall{display:flex;gap:10px;justify-content:center}
 .tsmall button{width:66px;height:62px;border-radius:16px;border:0;cursor:pointer;background:rgba(20,26,32,.9);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:800 11px var(--body)}
@@ -391,7 +404,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v72</div>
+    <div id="ver">v73</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -400,6 +413,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <div class="stat st-coins" id="stCoins" title="Coins"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="17" fill="#b07a10"/><circle cx="24" cy="22" r="17" fill="#ffd447"/><circle cx="24" cy="22" r="12" fill="none" stroke="#e0a820" stroke-width="3"/><path d="M18 15a10 10 0 0 1 9-3" stroke="#fff6b0" stroke-width="3" fill="none" stroke-linecap="round"/></svg><b id="money">0</b></div>
         <div class="stat st-lic" id="stLic" hidden title="Exterminator License bonus"><svg viewBox="0 0 48 48"><rect x="4" y="10" width="40" height="28" rx="4" fill="#f4efe4"/><rect x="4" y="10" width="40" height="8" rx="4" fill="#3a86bd"/><circle cx="37" cy="31" r="6" fill="#ffcf4a"/></svg><b id="lic">+5%</b></div>
         <div class="stat st-wave">WAVE&nbsp;<b id="wave">0</b><span id="waveMax">/20</span></div>
+        <button class="stat st-foe" id="foe" type="button" hidden aria-label="Watch your friend's kitchen"></button>
       </div>
       <div class="ctl">
         <button id="bSpeed" type="button" aria-label="Game speed">1×</button>
@@ -411,6 +425,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     </div>
     <div id="queen" hidden><div class="n" id="qname">ROACH KING</div><div class="bar"><i id="qfill"></i></div></div>
     <div id="tip" hidden></div>
+    <div id="peek" hidden><div class="ph"><b>Friend's kitchen</b><span id="peekS"></span><button type="button" id="peekX" aria-label="Close">✕</button></div><canvas id="peekC"></canvas></div>
     <div id="banner"></div>
 
     <div class="screen" id="title">
@@ -419,6 +434,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <div class="tmain">
         <button class="btn soloBtn" id="soloT" type="button">Solo <small>5 houses · 20 waves each</small></button>
         <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
+        <button class="btn vsBtn" id="vsT" type="button">Bug Battle <small>2 players · send bugs at each other</small></button>
       </div>
       <div class="tsmall">
         <button id="guideT" type="button" aria-label="Field guide and achievements" title="Field guide and achievements"><svg viewBox="0 0 24 24"><path d="M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Guide</span></button>
@@ -435,8 +451,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <button class="btn dark" id="soloBack" type="button">Back</button>
     </div>
     <div class="screen" id="lobby" hidden>
-      <h2 class="t">Team Kitchen</h2>
-      <p class="lsub">Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.</p>
+      <h2 class="t" id="lbH">Team Kitchen</h2>
+      <p class="lsub" id="lbSub">Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.</p>
       <div class="tmaps" id="tmaps"></div>
       <div class="lbox">
         <button class="btn" id="lbCreate" type="button">Create room</button>
@@ -508,7 +524,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   </div>
 
   <div id="tray">
-    <div id="shopWrap"><div class="stabs" role="tablist"><button type="button" class="on" data-tab="tools">Tools</button><button type="button" data-tab="items">Items</button></div><div id="shop"></div></div>
+    <div id="shopWrap"><div class="stabs" role="tablist"><button type="button" class="on" data-tab="tools">Tools</button><button type="button" data-tab="items">Items</button><button type="button" data-tab="send" hidden>Send bugs</button></div><div id="shop"></div></div>
     <div id="info" hidden>
       <div class="ic" id="iIc"></div>
       <div><div class="nm"><b id="iName"></b><span id="iLv"></span></div><p class="desc" id="iDesc"></p><ul id="iStats"></ul></div>
@@ -2050,6 +2066,7 @@ for (const t of SHOP) for (const k of ['dmg', 'dot', 'dps']) if (TT[t][k]) TT[t]
 function itemWave() { return S.active ? S.wave : S.wave + 1; }
 function itemUsed(t) { return !!(TT[t] && TT[t].item && S && S.itemUsed && S.itemUsed[t] === itemWave()); }
 function markUsed(t) { (S.itemUsed ||= {})[t] = itemWave(); renderShop(); }
+function elCost(el) { return el.dataset.send != null ? SENDS[+el.dataset.send].cost : costOf(el.dataset.t); }
 function costOf(t) { return t === 'license' ? (S.lic >= 3 ? Infinity : TT.license.costs[S.lic]) : TT[t].cost; }
 const upCost = tw => Math.round(TT[tw.t].cost * [0.8, 1.3][tw.lv - 1]);
 // money spent since the last wave started comes back in full; older money at 60%
@@ -2550,6 +2567,7 @@ function spawnBug(t, route = nextRoute()) {
 function startWave() {
   if (S.mode !== 'play' || S.active || S.over) return;
   if (S.net === 'guest') { netSend({ k: 'send' }); return; }
+  if (S.net === 'vs' && !VSGO) { vsReady(); return; }
   const eb = earlyBonus(); S.nextT = 0; hideBelt();
   for (const tw of S.towers) tw.fresh = 0;
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
@@ -2573,7 +2591,7 @@ function startWave() {
 }
 // ---- next-wave belt and the between-wave countdown
 const NEXT_WAIT = 10;
-const BELT_NAME = { ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarms', queen: 'Roach Queen', widow: 'Black Widow', hornet: 'Hornet Queen' };
+const BELT_NAME = { ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarms', queen: 'Roach King', widow: 'Black Widow', hornet: 'Hornet Queen' };
 function showBelt() {
   if (S.mode !== 'play' || (S.wave >= MAXW && !S.endless)) { hideBelt(); return; }
   const n = S.wave + 1, q = makeWave(n, LEVELS[LV].shift), cnt = {};
@@ -2638,7 +2656,7 @@ function breakBall(b) {
 function kill(b) {
   if (S.mode === 'play') { b.dn = Math.ceil(b.dn || 0); b.dr = Math.ceil(b.dr || 0); b.db = Math.ceil(b.db || 0); flushDmg(b); }
   b.dead = true; const bt = BT[b.t], y = bugY(b) + 0.4;
-  const g = Math.max(1, Math.round((bt.gold + Math.floor(S.wave / 3)) * goldMul()));
+  const g = Math.max(1, Math.round((bt.gold + Math.floor(S.wave / 3)) * goldMul() * (b.sent ? 0.5 : 1)));
   if (S.mode === 'play' && S.net === 'guest') ACH.kill(b.t);
   else if (S.mode === 'play') { addGold(S.p2 ? b.route : 0, g); S.kills++; bumpStat('stCoins'); ACH.kill(b.t); if (CUR_SRC === 'abil' && S.ext.abil && ++S.ext.abil.kills >= 5) ACH.unlock('spray5'); }
   for (let i = 0; i < (bt.boss ? 40 : b.t === 'bed' || b.t === 'baby' ? 4 : 12); i++) {
@@ -2783,6 +2801,7 @@ function update(dt) {
       S.spawnT = t === 'spider' ? S.gap * 1.6 : BT[t].boss ? 2 : t === 'bed' ? S.gap * 3 : S.gap;
     }
   }
+  if (S.vs && S.mode === 'play') vsInbox(dt);
   for (const b of S.bugs) {
     const bt = BT[b.t];
     if (b.psnT > 0) {
@@ -2822,13 +2841,13 @@ function update(dt) {
   if (!S.bugs.some(b => b.mesh) && !S.queue.some(t => BT[t].boss)) $('queen').hidden = true;
   if (S.mode !== 'play' || S.net === 'guest') return;
   if (S.lives <= 0) { gameOver(false); return; }
-  if (S.active && !S.queue.length && !S.bugs.length) {
+  if (S.active && !S.queue.length && !S.bugs.length && !(S.vs && S.vs.inbox.length)) {
     S.active = false;
     for (const it of [...S.items]) if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it);
-    if (S.wave >= MAXW && !S.endless) { gameOver(true); return; }
-    const bonus = Math.round((25 + S.wave * 3) * goldMul()); S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
+    if (S.wave >= MAXW && !S.endless) { if (S.vs) vsFinish(); else gameOver(true); return; }
+    const bonus = Math.round((25 + S.wave * 3) * goldMul()) + (S.vs ? S.vs.eco : 0); S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
     banner('Wave ' + S.wave + ' cleared', '+' + bonus + ' coins', false, 1600); SND.play('clear'); renderShop();
-    S.nextT = LEVELS[LV].team ? 5 : NEXT_WAIT; showBelt(); syncTray();   // co-op: next wave 5 seconds after the last bug on either side is gone
+    S.nextT = S.vs ? 0 : LEVELS[LV].team ? 5 : NEXT_WAIT; showBelt(); if (S.vs) { netSend(vsStatus()); syncGo(); } syncTray();   // co-op: next wave 5 seconds after the last bug on either side is gone
     syncTray();
   }
 }
@@ -3396,6 +3415,7 @@ addEventListener('keydown', e => {
 const shop = $('shop');
 let shopTab = 'tools';
 function renderShop() {
+  if (shopTab === 'send' && S && S.vs) { renderSend(); return; }
   const list = shopTab === 'tools' ? SHOP : ITEMS, off = shopTab === 'tools' ? 1 : SHOP.length + 1;
   shop.style.setProperty('--n', list.length);
   shop.innerHTML = list.map((t, i) => {
@@ -3422,14 +3442,14 @@ renderShop();
 // hold a tool (or item) for a moment to read the full description; a normal tap still picks it
 let holdT = 0, holdXY = null, holdFired = false;
 shop.addEventListener('pointerdown', e => {
-  const b = e.target.closest('.tc'); if (!b) return;
+  const b = e.target.closest('.tc'); if (!b || b.dataset.send != null) return;
   holdFired = false; holdXY = [e.clientX, e.clientY]; clearTimeout(holdT);
   holdT = setTimeout(() => { holdFired = true; showToolCard(b.dataset.t); if (navigator.vibrate) try { navigator.vibrate(15); } catch (_) {} }, 550);
 });
 for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) shop.addEventListener(ev, () => clearTimeout(holdT));
 shop.addEventListener('pointermove', e => { if (holdXY && Math.hypot(e.clientX - holdXY[0], e.clientY - holdXY[1]) > 10) clearTimeout(holdT); });
 shop.addEventListener('contextmenu', e => e.preventDefault());
-shop.addEventListener('click', e => { const b = e.target.closest('.tc'); if (!b) return; if (holdFired) { holdFired = false; return; } SND.init(); choose(b.dataset.t); });
+shop.addEventListener('click', e => { const b = e.target.closest('.tc'); if (!b) return; if (holdFired) { holdFired = false; return; } SND.init(); if (b.dataset.send != null) { vsSend(+b.dataset.send); return; } choose(b.dataset.t); });
 function showToolCard(t) {
   const T = TT[t], el = $('tcard');
   const cost = T.costs ? T.costs.join(' / ') : T.cost;
@@ -3489,7 +3509,7 @@ $('quit').addEventListener('click', () => { netLeave(); toTitle(); });
 $('lvls').innerHTML = LEVELS.slice(0, CAMPAIGN).map((L, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${i}"><b>Level ${i + 1}</b><span>${HOUSES[i].name}</span><em>${L.name}</em><small id="best${i}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
 $('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = LV + 1; netSend({ k: 'start', lv: LV + 1 }); startGame(LV + 1, 'host'); } else startGame(LV + 1); });
-$('again').addEventListener('click', () => { SND.init(); if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
+$('again').addEventListener('click', () => { SND.init(); if (S.vs) { if (NET.role === 'host') { netSend({ k: 'start', lv: LV, vs: 1 }); startGame(LV, 'vs'); } return; } if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
 // endless: pick up right where the win left off, same tools and cake, waves keep coming and keep getting harder
 $('endless').addEventListener('click', () => {
   SND.init(); if (!S || S.mode !== 'over') return;
@@ -3592,12 +3612,13 @@ function syncTray() {
     if (tw.pending) $('iLv').textContent = 'Being built';
     $('bSellC').textContent = '+' + sellVal(tw) + (!tw.pending && tw.fresh && tw.fresh >= tw.spent ? ' · full' : '');
   }
-  for (const el of shop.children) { const t = el.dataset.t; el.classList.toggle('sel', S.placing === t); el.classList.toggle('poor', S.money < costOf(t)); }
+  for (const el of shop.children) { const t = el.dataset.t; el.classList.toggle('sel', !!t && S.placing === t); el.classList.toggle('poor', S.money < elCost(el)); }
   syncGo();
   syncTip();
 }
 function syncGo() {
   const go = $('go');
+  if (S.vs && !S.active) { vsGoText(go); return; }
   if (S.active) { go.classList.add('busy'); go.innerHTML = `${S.queue.length + S.bugs.length} bugs<small>Wave ${S.wave} in progress</small>`; }
   else if (S.nextT > 0) { go.classList.remove('busy'); go.innerHTML = `Next wave early<small>+${earlyBonus()} coins · starts in ${Math.ceil(S.nextT)}s</small>`; }
   else { go.classList.remove('busy'); go.innerHTML = `Send bugs<small>Wave ${S.wave + 1}${S.endless ? ' · Endless' : ' of ' + MAXW}</small>`; }
@@ -3621,7 +3642,7 @@ function syncHud() {
   const v = { lives: S.lives, money: S.money, wave: S.wave };
   if (shown.licN !== S.lic) { shown.licN = S.lic; $('stLic').hidden = !S.lic; $('lic').textContent = '+' + S.lic * 5 + '%'; renderShop(); }
   for (const k in v) if (shown[k] !== v[k]) { $(k).textContent = v[k]; shown[k] = v[k]; }
-  if (shown.money !== shown._m) { shown._m = shown.money; for (const el of shop.children) el.classList.toggle('poor', S.money < costOf(el.dataset.t)); if (S.pick) { const c = upCost(S.pick); $('bUp').disabled = S.pick.lv >= 3 || S.pick.pending || S.pick.upPending || S.money < c; } }
+  if (shown.money !== shown._m) { shown._m = shown.money; for (const el of shop.children) el.classList.toggle('poor', S.money < elCost(el)); if (S.pick) { const c = upCost(S.pick); $('bUp').disabled = S.pick.lv >= 3 || S.pick.pending || S.pick.upPending || S.money < c; } }
   if (S.qTotal && !$('queen').hidden) {
     let cur = S.net === 'guest' ? (S.qQueued || 0) : S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHp(t), 0);
     for (const b of S.bugs) if (b.mesh) cur += Math.max(0, b.hp);
@@ -3641,7 +3662,7 @@ function toTitle() {
   clearBoard(); loadLevel(0); S = newState('title'); shown = {};
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['swat', 2, 1, 2], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
-  $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
+  $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('peek').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
   LEVELS.slice(0, CAMPAIGN).forEach((L, lv) => {
     const b = loadBest(lv), el = $('best' + lv);
     const st = loadNum(starKey(lv)), en = loadNum(endKey(lv));
@@ -3660,16 +3681,19 @@ function startGame(lv = LV, net = null) {
       if (S.me === 1) { const t = S.ext; S.ext = S.p2.ext; S.p2.ext = t; }
     } else S.money = 260;   // practice: one player holds both lanes
   }
+  if (net === 'vs') { S.net = 'vs'; vsInit(); }
+  document.querySelector('.stabs [data-tab="send"]').hidden = !S.vs; $('foe').hidden = !S.vs; $('peek').hidden = true; $('foe').innerHTML = '';
   renderShop();
   setCake(20);
   $('title').hidden = true; $('solo').hidden = true; $('over').hidden = true; $('paused').hidden = true; $('hud').hidden = false; $('tray').hidden = false;
   $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on');
   $('waveMax').textContent = '/20';
   syncTray(); syncHud(); showBelt();
+  if (S.vs) banner('Bug Battle: ' + HOUSES[LV].name, 'Same waves for both of you. Spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
   banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
-  tutStart();
+  if (!S.vs) tutStart();
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
   requestAnimationFrame(resize);
 }
@@ -3707,7 +3731,7 @@ function botThink() {
 // ---------------------------------------------------------------- online team play
 // The host runs the whole game and streams it to the guest ~10x a second. The guest's taps go to the host as requests.
 const SB_URL = 'https://ljrnzpqepssnkidlcgha.supabase.co', SB_KEY = 'sb_publishable_DWik0p9owlUHmoh2v1U9lA_pDlntvoc';
-const NET = { link: null, role: null, code: '', last: 0, snapT: 0, pingT: 0, helloT: 0, lost: false, sb: null };
+const NET = { mode: 'team', link: null, role: null, code: '', last: 0, snapT: 0, pingT: 0, helloT: 0, lost: false, sb: null };
 async function netOpen(code, onMsg) {
   if (/local/.test(location.hash) || !navigator.onLine && 'BroadcastChannel' in window) {
     const bc = new BroadcastChannel('ppd-' + code); bc.onmessage = e => onMsg(e.data);
@@ -3738,13 +3762,17 @@ async function netJoin(code) {
 function netOnMsg(m) {
   if (!m || !m.k) return;
   NET.last = performance.now();
+  if (S && S.net === 'vs' && m.k !== 'start' && m.k !== 'hello') { vsMsg(m); return; }
   if (NET.role === 'host') {
-    if (m.k === 'hello' && (!S || S.net !== 'host' || S.mode !== 'play')) { netSend({ k: 'start', lv: TEAM_LV }); $('lobby').hidden = true; startGame(TEAM_LV, 'host'); return; }
+    if (m.k === 'hello' && (!S || !S.net || S.net === 'bot' || S.mode !== 'play')) {
+      const vs = NET.mode === 'vs', lv = vs ? VS_LV : TEAM_LV;
+      netSend({ k: 'start', lv, vs: vs ? 1 : 0 }); $('lobby').hidden = true; startGame(lv, vs ? 'vs' : 'host'); return;
+    }
     if (m.k === 'bye') { netWarn('Your partner left the game. Their side keeps defending on its own.'); return; }
     if (!S || S.net !== 'host' || S.mode !== 'play') return;
     netHostCmd(m);
   } else if (NET.role === 'guest') {
-    if (m.k === 'start') { TEAM_LV = m.lv || TEAM0; $('lobby').hidden = true; $('over').hidden = true; startGame(TEAM_LV, 'guest'); return; }
+    if (m.k === 'start') { $('lobby').hidden = true; $('over').hidden = true; if (m.vs) { startGame(m.lv || 0, 'vs'); return; } TEAM_LV = m.lv || TEAM0; startGame(TEAM_LV, 'guest'); return; }
     if (m.k === 'bye') { netWarn('The host left the game.'); return; }
     if (!S || S.net !== 'guest') return;
     if (m.k === 's') netApply(m);
@@ -3859,22 +3887,236 @@ function netGuestTick(dt) {
 }
 // called every frame (real time)
 function netFrame(dt) {
+  if (S && S.vs) vsFrame(dt);
   if (!NET.link) return;
   const now = performance.now();
   if (NET.role === 'host' && S.net === 'host' && S.mode === 'play') { NET.snapT -= dt; if (NET.snapT <= 0) { NET.snapT = 0.1; netSend(netSnap()); } }
   if (S && S.net && S.mode === 'play' && NET.last && now - NET.last > 6000) { if (!NET.lost) { NET.lost = true; netWarn('Connection to your partner is lost…'); } }
   else NET.lost = false;
 }
-setInterval(() => { if (NET.link && NET.role === 'guest') netSend({ k: S && S.net === 'guest' ? 'ping' : 'hello' }); }, 1000);
+setInterval(() => { if (NET.link && NET.role === 'guest') netSend({ k: S && (S.net === 'guest' || S.net === 'vs') ? 'ping' : 'hello' }); }, 1000);
+
+// ---------------------------------------------------------------- Bug Battle: two kitchens, same waves, send bugs at each other
+// Each player runs their own kitchen. The host only decides when the next wave starts (when both of you are clear).
+// Every quarter second each side sends a little status report: cake, wave, tools and bugs, so the other can watch.
+let VS_LV = 0, VSGO = false;
+const SENDS = [
+  { t: 'ant', n: 6, cost: 30, w: 0 },
+  { t: 'fly', n: 5, cost: 45, w: 2 },
+  { t: 'spider', n: 3, cost: 60, w: 3 },
+  { t: 'dung', n: 2, cost: 85, w: 5 },
+  { t: 'bed', n: 1, cost: 90, w: 7 },
+  { t: 'queen', n: 1, cost: 450, w: 10, cd: 40 },
+];
+const SEND_NAME = { ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarm', queen: 'Roach King' };
+function vsInit() { S.vs = { foe: null, fin: false, rdy: false, foeRdy: false, counting: false, eco: 0, sent: 0, cd: {}, inbox: [], inT: 0, stT: 0, goAt: 0, shopK: '' }; }
+function vsCleared() { return !S.active && !S.bugs.length && !S.vs.inbox.length; }
+function vsStatus() {
+  return { k: 'v', l: S.lives, w: S.wave, a: S.active ? 1 : 0, c: vsCleared() ? 1 : 0, f: S.vs.fin ? 1 : 0, r: S.vs.rdy ? 1 : 0, ks: S.kills, sn: S.vs.sent, m: Math.floor(S.money), o: S.mode === 'over' ? 1 : 0,
+    t: S.towers.filter(t => !t.pending).map(t => [t.t, t.c, t.r, t.lv]),
+    b: S.bugs.filter(b => !b.dead).slice(0, 150).map(b => [b.route, r2(b.s), b.t, r2(b.off)]) };
+}
+function vsMsg(m) {
+  const v = S.vs;
+  if (m.k === 'v') { m.at = performance.now(); v.foe = m; syncFoe(); vsCheckEnd(); }
+  else if (m.k === 'atk') vsIncoming(m.t, m.n);
+  else if (m.k === 'cd') { if (S.mode === 'play' && !S.active && S.wave === m.w) { v.counting = true; S.nextT = m.t; showBelt(); syncGo(); } }
+  else if (m.k === 'go') { if (S.mode === 'play' && S.wave === m.n - 1) vsStart(); }
+  else if (m.k === 'rdy') v.foeRdy = true;
+  else if (m.k === 'pause') setPaused(!!m.p, true);
+  else if (m.k === 'bye') { if (S.mode === 'play') vsEnd('win', 'Your friend left the game'); else netWarn('Your friend left.'); }
+}
+// the host starts the countdown once both kitchens are clear of bugs, and the wave when it runs out (or both tap Ready)
+function vsHostTick() {
+  const v = S.vs, f = v.foe;
+  if (NET.role !== 'host' || S.mode !== 'play' || !f) return;
+  const now = performance.now();
+  // the friend missed the start message: send it again
+  if (S.active && f.w === S.wave - 1 && f.c && now - v.goAt > 1500) { v.goAt = now; netSend({ k: 'go', n: S.wave }); }
+  if (S.wave >= MAXW || !vsCleared() || !f.c || f.w !== S.wave) return;
+  if (!v.counting) { v.counting = true; S.nextT = S.wave ? NEXT_WAIT : 20; netSend({ k: 'cd', t: S.nextT, w: S.wave }); showBelt(); syncGo(); }
+  else if (now - v.goAt > 2000) { v.goAt = now; netSend({ k: 'cd', t: S.nextT, w: S.wave }); }
+  if (v.rdy && (v.foeRdy || f.r)) vsGo();
+}
+function vsGo() { S.vs.goAt = performance.now(); netSend({ k: 'go', n: S.wave + 1 }); vsStart(); }
+function vsStart() {
+  const v = S.vs; v.counting = false; v.rdy = false; v.foeRdy = false;
+  VSGO = true; try { startWave(); } finally { VSGO = false; }
+}
+function vsTimeUp() { if (NET.role === 'host' && S.vs.counting) vsGo(); else syncGo(); }
+function vsReady() {
+  const v = S.vs;
+  if (S.mode !== 'play' || S.active || v.fin || v.rdy || !vsCleared()) { SND.play('err'); return; }
+  v.rdy = true; netSend({ k: 'rdy' }); SND.play('tap'); syncGo();
+}
+function vsGoText(go) {
+  const v = S.vs, f = v.foe;
+  let h, busy = true;
+  if (v.fin) h = `All 20 done!<small>Waiting for your friend to finish</small>`;
+  else if (!vsCleared()) h = `${S.bugs.length + v.inbox.length} bugs<small>Sent by your friend</small>`;
+  else if (!v.counting) h = `Waiting for friend<small>${f ? (f.a || !f.c ? 'They are still fighting wave ' + f.w : 'Getting ready…') : 'Connecting…'}</small>`;
+  else if (v.rdy) h = `Ready!<small>Starts in ${Math.ceil(S.nextT)}s or when your friend is ready</small>`;
+  else { busy = false; h = S.wave ? `Ready for wave ${S.wave + 1}<small>Starts in ${Math.ceil(S.nextT)}s · tap to go early</small>` : `Ready!<small>Wave 1 starts in ${Math.ceil(S.nextT)}s · tap to go early</small>`; }
+  go.classList.toggle('busy', busy); if (go.innerHTML !== h) go.innerHTML = h;
+}
+function vsFinish() {
+  S.vs.fin = true; S.nextT = 0; hideBelt();
+  banner('All 20 waves done!', 'Your cake made it. Now your friend has to survive too…', false, 2600); SND.play('clear');
+  netSend(vsStatus()); syncGo(); vsCheckEnd();
+}
+function vsCheckEnd() {
+  const v = S.vs, f = v && v.foe;
+  if (!f || S.mode !== 'play') return;
+  if (f.l <= 0) { vsEnd('win', 'The bugs ate your friend\'s whole cake'); return; }
+  if (v.fin && f.f) { const d = S.lives - f.l; vsEnd(d > 0 ? 'win' : d < 0 ? 'lose' : 'tie', d ? 'You both survived all 20 waves. More cake left wins.' : 'You both survived with the same cake left!'); }
+}
+// ---- sending bugs
+function renderSend() {
+  const v = S.vs;
+  shop.style.setProperty('--n', SENDS.length);
+  shop.innerHTML = SENDS.map((d, i) => {
+    const lock = S.wave < d.w, cd = (v.cd[i] || 0) > 0, eco = Math.round(d.cost * 0.1);
+    const note = lock ? `<em class="used">From wave ${d.w}</em>` : cd ? `<em class="used">Wait ${Math.ceil(v.cd[i])}s</em>` : `<em>+${eco} coins a wave</em>`;
+    return `<button class="tc${lock || cd ? ' spent' : ''}" type="button" data-send="${i}">${BUGICON[d.t]}<span><b>${d.n > 1 ? d.n + ' ' : ''}${SEND_NAME[d.t]}</b>${note}<small>${d.cost}</small></span></button>`;
+  }).join('');
+  for (const b of document.querySelectorAll('.stabs button')) b.classList.toggle('on', b.dataset.tab === shopTab);
+  for (const el of shop.children) el.classList.toggle('poor', S.money < elCost(el));
+  requestAnimationFrame(syncMore);
+}
+function sendKey() { const v = S.vs; return SENDS.map((d, i) => (S.wave < d.w ? 'L' : (v.cd[i] || 0) > 0 ? Math.ceil(v.cd[i]) : 'o')).join(','); }
+function vsSend(i) {
+  const d = SENDS[i], v = S.vs; if (!v || !d) return;
+  const f = v.foe;
+  let why = '';
+  if (S.mode !== 'play') why = 'x';
+  else if (S.wave < d.w) why = 'Unlocks at wave ' + d.w;
+  else if ((v.cd[i] || 0) > 0) why = 'Wait ' + Math.ceil(v.cd[i]) + 's';
+  else if (v.fin || (f && (f.f || f.o))) why = 'The battle is nearly over';
+  else if (S.money < d.cost) why = 'Need ' + d.cost + ' coins';
+  if (why) { SND.play('err'); if (why !== 'x') banner(why, '', false, 900); return; }
+  S.money -= d.cost; v.eco += Math.round(d.cost * 0.1); v.sent += d.n * (d.t === 'bed' ? BT.bed.swarm : 1); v.cd[i] = d.cd || 2.5;
+  netSend({ k: 'atk', t: d.t, n: d.n });
+  banner('Sent ' + (d.n > 1 ? d.n + ' ' : '') + SEND_NAME[d.t] + '!', 'Income +' + v.eco + ' coins a wave', false, 1000);
+  SND.play('wave'); renderShop(); syncTray();
+}
+function vsIncoming(t, n) {
+  if (S.mode !== 'play' || !BT[t]) return;
+  for (let i = 0; i < Math.min(n, 12); i++) S.vs.inbox.push(t);
+  banner('Incoming!', 'Your friend sent ' + (n > 1 ? n + ' ' : 'a ') + SEND_NAME[t], BT[t].boss, 1500); SND.play(BT[t].boss ? 'boss' : 'wave');
+  syncGo();
+}
+function vsInbox(dt) {
+  const v = S.vs; if (!v.inbox.length || (v.inT -= dt) > 0) return;
+  const t = v.inbox.shift();
+  if (t === 'bed') { const rt = nextRoute(); for (let i = 0; i < BT.bed.swarm; i++) { const b = spawnBug('bed', rt); b.sent = 1; b.s = -i * 0.35 - Math.random() * 0.3; b.off = (Math.random() - 0.5) * 1.8; } }
+  else {
+    const b = spawnBug(t); b.sent = 1;
+    if (BT[t].boss) { S.qTotal = S.queue.filter(q => BT[q].boss).reduce((a, q) => a + bossHp(q), 0) + S.bugs.filter(x => x.mesh).reduce((a, x) => a + x.max, 0); $('qname').textContent = BT[t].name.toUpperCase(); }
+  }
+  v.inT = BT[t].boss ? 1.5 : t === 'bed' ? 1.2 : t === 'spider' ? 0.7 : 0.4;
+}
+// ---- the friend's kitchen: a little live map you can open from the VS chip
+const CAKE_ICON = '<svg viewBox="0 0 48 48"><path d="M6 30 24 12l18 18v10H6z" fill="#f3d9a8"/><path d="M6 30 24 12l18 18v4c-3 3-5-1-8 2s-5-1-8 2-5-1-8 2-5-1-8 2z" fill="#ff8fb8"/><rect x="6" y="36" width="36" height="3" fill="#fff4e6"/><circle cx="24" cy="10" r="4" fill="#d6183c"/></svg>';
+function syncFoe() {
+  const v = S.vs, f = v && v.foe, el = $('foe'); if (!f) return;
+  const ok = !f.a && f.c, h = `<small>VS</small>${CAKE_ICON}<b>${Math.max(0, f.l)}</b><i class="${ok ? 'ok' : ''}">W${f.w}${ok ? ' ✓' : ''}</i>`;
+  if (el.innerHTML !== h) el.innerHTML = h;
+  el.classList.toggle('nudge', $('peek').hidden && S.mode === 'play' && !S.active && f.a && !v.peeked);
+  $('peekS').textContent = `Wave ${f.w} · ${Math.max(0, f.l)} slices · ${f.ks} squashed`;
+}
+const PEEK = { img: {} };
+function peekImg(svg) {
+  let im = PEEK.img[svg];
+  if (!im) { im = new Image(); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')); PEEK.img[svg] = im; }
+  return im;
+}
+function togglePeek(on = $('peek').hidden) {
+  if (!S || !S.vs) return;
+  $('peek').hidden = !on; S.vs.peeked = true; syncFoe(); SND.play('tap');
+}
+$('foe').addEventListener('click', e => { e.stopPropagation(); togglePeek(); });
+$('peekX').addEventListener('click', e => { e.stopPropagation(); togglePeek(false); });
+for (const ev of ['pointerdown', 'pointerup', 'click']) $('peek').addEventListener(ev, e => e.stopPropagation());
+function drawPeek() {
+  const f = S.vs.foe, cv = $('peekC'); if (!f || $('peek').hidden) return;
+  const xa = X0 - 0.5, xb = X0 + COLS * CS + 0.5, za = Z0 - 4, zb = Z0 + ROWS * CS + 0.5;
+  const dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(cv.clientWidth * dpr) || 300, H = Math.round(W * (zb - za) / (xb - xa));
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const g = cv.getContext('2d'), k = W / (xb - xa), X = x => (x - xa) * k, Z = z => (z - za) * k, cs = CS * k;
+  g.fillStyle = '#2a1d16'; g.fillRect(0, 0, W, H);
+  // counter strip with the cake
+  g.fillStyle = '#4a3a30'; g.fillRect(0, 0, W, Z(Z0));
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
+    const kk = key(c, r), x = X(X0 + c * CS), z = Z(Z0 + r * CS);
+    g.fillStyle = PATH.has(kk) ? '#e8cf96' : BLOCK.has(kk) ? '#3a3a3a' : (c + r) % 2 ? '#7a573f' : '#83604a';
+    g.fillRect(x + 0.5, z + 0.5, cs - 1, cs - 1);
+  }
+  // cake: a pie that shrinks as slices go
+  const cx = X(CAKE_POS.x), cz = Z(CAKE_POS.z), cr = cs * 0.85, fr = Math.max(0, f.l) / 20;
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(cx, cz, cr + 2, 0, TAU); g.fill();
+  if (fr > 0) { g.fillStyle = '#ff8fb8'; g.beginPath(); g.moveTo(cx, cz); g.arc(cx, cz, cr, -Math.PI / 2, -Math.PI / 2 + TAU * fr); g.closePath(); g.fill(); g.fillStyle = '#fff4e6'; g.beginPath(); g.arc(cx, cz, cr * 0.3, 0, TAU); g.fill(); }
+  // tools
+  for (const [t, c, r, lv] of f.t) {
+    const x = X(ccx(c)), z = Z(ccz(r)), im = peekImg(ICON[t] || '');
+    g.fillStyle = 'rgba(10,13,16,.55)'; g.beginPath(); g.arc(x, z, cs * 0.46, 0, TAU); g.fill();
+    if (im.complete && im.naturalWidth) g.drawImage(im, x - cs * 0.42, z - cs * 0.42, cs * 0.84, cs * 0.84);
+    g.fillStyle = '#ffd447'; for (let i = 0; i < lv; i++) { g.beginPath(); g.arc(x - cs * 0.22 + i * cs * 0.22, z + cs * 0.42, Math.max(1.5, cs * 0.07), 0, TAU); g.fill(); }
+  }
+  // bugs keep walking between reports so they glide instead of jumping
+  const el = Math.min(0.5, (performance.now() - f.at) / 1000);
+  for (const [route, s, t, off] of f.b) {
+    if (!ROUTES[route] || !BT[t]) continue;
+    pathAt(Math.max(0, s + BT[t].spd * el), tmpP, route);
+    const x = X(tmpP.x + tmpP.px * off), z = Z(tmpP.z + tmpP.pz * off), sz = cs * (BT[t].boss ? 1.5 : t === 'bed' || t === 'baby' ? 0.32 : t === 'dung' ? 0.75 : 0.55), im = peekImg(BUGICON[t] || BUGICON.ant);
+    if (im.complete && im.naturalWidth) g.drawImage(im, x - sz / 2, z - sz / 2, sz, sz);
+    else { g.fillStyle = '#300'; g.beginPath(); g.arc(x, z, sz / 3, 0, TAU); g.fill(); }
+  }
+  if (f.o || f.f) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, H / 2 - 20, W, 40); g.fillStyle = '#fff'; g.font = `900 ${Math.round(16 * dpr)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(f.l <= 0 ? 'Cake devoured!' : 'All 20 waves done', W / 2, H / 2); }
+}
+function vsFrame(dt) {
+  const v = S.vs;
+  if (S.mode === 'play' && !S.paused) for (const i in v.cd) if (v.cd[i] > 0) v.cd[i] -= dt;
+  if ((v.stT -= dt) <= 0 && NET.link && (S.mode === 'play' || S.mode === 'over')) { v.stT = 0.25; netSend(vsStatus()); if (S.mode === 'play') { if (!S.active) syncGo(); syncFoe(); } }
+  if (shopTab === 'send') { const k = sendKey(); if (k !== v.shopK) { v.shopK = k; renderShop(); syncTray(); } }
+  vsHostTick();
+  try { drawPeek(); } catch (e) { showErr('peek', e); }
+}
+function vsEnd(res, why) {
+  if (S.mode !== 'play') return;
+  const v = S.vs, f = v.foe || { l: '?', w: '?', ks: '?', sn: 0 };
+  S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt(); unpick();
+  netSend(vsStatus());
+  $('overt').textContent = res === 'win' ? 'You win!' : res === 'lose' ? 'Your friend wins' : 'It\'s a tie!';
+  $('ostars').hidden = true; $('endless').hidden = true; $('nextLv').hidden = true;
+  $('again').hidden = NET.role !== 'host'; $('again').textContent = 'Rematch';
+  $('ores').innerHTML = (why ? `<dt>How</dt><dd>${why}</dd>` : '') + `<dt>Your cake</dt><dd>${Math.max(0, S.lives)} / 20 slices</dd><dt>Friend's cake</dt><dd>${typeof f.l === 'number' ? Math.max(0, f.l) : f.l} / 20 slices</dd><dt>Wave reached</dt><dd>You ${S.wave} · Friend ${f.w}</dd><dt>Bugs squashed</dt><dd>You ${S.kills} · Friend ${f.ks}</dd><dt>Bugs sent</dt><dd>You ${v.sent} · Friend ${f.sn || 0}</dd>`;
+  showStats();
+  $('over').hidden = false; $('tip').hidden = true; $('queen').hidden = true; $('peek').hidden = true;
+  if (NET.role !== 'host') banner(res === 'win' ? 'You win!' : res === 'lose' ? 'Better luck next time' : 'Tie!', 'The host can start a rematch', false, 2600);
+  syncTray(); SND.play(res === 'lose' ? 'lose' : 'clear');
+  if (res === 'win') ACH.save();
+}
 function renderTeamMaps() {
+  if (NET.mode === 'vs') {
+    $('tmaps').innerHTML = HOUSES.slice(0, CAMPAIGN).map((H, lv) => `<button class="tmap${lv === VS_LV ? ' on' : ''}" type="button" data-lv="${lv}"><b>${lv + 1}. ${H.name}</b><small>${LEVELS[lv].name}</small></button>`).join('');
+    return;
+  }
   if (!teamUnlocked(TEAM_LV)) TEAM_LV = TEAM0;
   $('tmaps').innerHTML = [0, 1, 2].map(i => { const lv = TEAM0 + i, L = LEVELS[lv], ok = teamUnlocked(lv), b = loadBest(lv), st = loadNum(starKey(lv));
     return `<button class="tmap${lv === TEAM_LV ? ' on' : ''}" type="button" data-lv="${lv}" ${ok ? '' : 'disabled'}><b>${i + 1}. ${L.name}</b><em class="d${i}">${L.sub}</em><small>${!ok ? '🔒 Beat map ' + i + ' first' : b >= MAXW ? starStr(Math.max(1, st)) : b ? 'Best: wave ' + b : HOUSES[lv].name}</small></button>`; }).join('');
 }
-$('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); });
+$('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (NET.mode === 'vs') VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); });
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
 $('soloBack').addEventListener('click', () => { $('solo').hidden = true; $('title').hidden = false; });
-$('teamT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps(); });
+function openLobby(mode) {
+  SND.init(); NET.mode = mode; const vs = mode === 'vs';
+  $('lbH').textContent = vs ? 'Bug Battle' : 'Team Kitchen';
+  $('lbSub').textContent = vs ? 'You and a friend each defend your own cake against the same waves. Squash bugs, earn coins, and send extra bugs at each other. Last cake standing wins.' : 'Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.';
+  $('lbBot').hidden = vs; $('lbPractice').hidden = vs;
+  $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps();
+}
+$('teamT').addEventListener('click', () => openLobby('team'));
+$('vsT').addEventListener('click', () => openLobby('vs'));
 $('lbBack').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; $('title').hidden = false; });
 $('lbPractice').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV); });
 $('lbBot').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV, 'bot'); });
@@ -4004,6 +4246,7 @@ function tutTick(dt) {
 }
 $('tutSkip').addEventListener('click', tutEnd);
 function gameOver(won) {
+  if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
   if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills });
   S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
   const reached = won ? MAXW : S.wave, wasLocked = !unlocked(LV + 1);
@@ -4061,7 +4304,7 @@ function frame(now) {
     if (!S.paused && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; for (let i = 0; i < n; i++) update(dt); }
     if (S.mode === 'play' && !S.paused && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0 && S.net !== 'guest') {
       const was = Math.ceil(S.nextT); S.nextT -= dt;
-      if (S.nextT <= 0) { S.nextT = 0; startWave(); }
+      if (S.nextT <= 0) { S.nextT = 0; if (S.net === 'vs') vsTimeUp(); else startWave(); }
       else if (Math.ceil(S.nextT) !== was) { syncBeltT(); syncGo(); if (S.nextT <= 3) SND.play('tap'); }
     }
   } catch (e) { showErr('update', e); }
