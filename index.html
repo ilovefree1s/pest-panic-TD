@@ -391,7 +391,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v71</div>
+    <div id="ver">v72</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -409,7 +409,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <button id="bSet" type="button" aria-label="Settings"><svg viewBox="0 0 20 20"><path d="M8.6 2h2.8l.4 2.1 1.5.7 1.8-1.2 2 2-1.2 1.8.7 1.5 2.1.4v2.8l-2.1.4-.7 1.5 1.2 1.8-2 2-1.8-1.2-1.5.7-.4 2.1H8.6l-.4-2.1-1.5-.7-1.8 1.2-2-2 1.2-1.8-.7-1.5L1.3 11.4V8.6l2.1-.4.7-1.5-1.2-1.8 2-2 1.8 1.2 1.5-.7z" fill="currentColor"/><circle cx="10" cy="10" r="2.8" fill="#1a1f25"/></svg></button>
       </div>
     </div>
-    <div id="queen" hidden><div class="n" id="qname">ROACH QUEEN</div><div class="bar"><i id="qfill"></i></div></div>
+    <div id="queen" hidden><div class="n" id="qname">ROACH KING</div><div class="bar"><i id="qfill"></i></div></div>
     <div id="tip" hidden></div>
     <div id="banner"></div>
 
@@ -1490,7 +1490,7 @@ const IM = {
   coin: instanced(GEO.coin, MAT.coin, 80),
 };
 
-// Roach Queen (from Pest Panic HD)
+// Roach King (from Pest Panic HD): big crown and a royal red cape
 function buildQueen() {
   const root = new THREE.Group();
   const shell = std({ color: '#3e1f0d', roughness: 0.28, metalness: 0.1, envMapIntensity: 0.9 });
@@ -1509,12 +1509,15 @@ function buildQueen() {
     const eye = mesh(sph(0.2, 12, 10), std({ color: '#120604', roughness: 0.05, metalness: 0.3 })); eye.position.set(0.38 * s, 0.12, 0.25); head.add(eye);
     head.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new V3(0.2 * s, 0.3, 0.4), new V3(1.2 * s, 1.2, 2.2), new V3(2.6 * s, 0.9, 4.2), new V3(3.6 * s, 0.4, 5.4)]), 24, 0.05, 6), legM));
   }
-  const crown = new THREE.Group(); crown.position.set(0, 0.5, 0); head.add(crown);
+  const crown = new THREE.Group(); crown.position.set(0, 0.55, 0); crown.scale.setScalar(1.35); head.add(crown);
   crown.add(mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.22, 20, 1, true), gold));
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 7; i++) {
     const a = i / 5 * TAU, sp = mesh(new THREE.ConeGeometry(0.1, 0.38, 8), gold); sp.position.set(Math.cos(a) * 0.43, 0.26, Math.sin(a) * 0.43); crown.add(sp);
     const gm = mesh(sph(0.07, 8, 6), gem, false); gm.position.set(Math.cos(a) * 0.45, 0.02, Math.sin(a) * 0.45); crown.add(gm);
   }
+  const capeM = std({ color: '#7e0d1a', roughness: 0.6, side: THREE.DoubleSide }), furM = std({ color: '#f4efe4', roughness: 0.9 });
+  const cape = mesh(new THREE.CylinderGeometry(0.85, 1.25, 2.6, 20, 1, true, Math.PI * 0.6, Math.PI * 0.8), capeM); cape.rotation.x = Math.PI / 2 - 0.12; cape.scale.set(1.15, 1, 0.9); cape.position.set(0, 1.0, -0.9); body.add(cape);
+  const fur = mesh(new THREE.TorusGeometry(1.15, 0.16, 8, 24), furM); fur.rotation.x = Math.PI / 2; fur.scale.set(1.15, 0.7, 1); fur.position.set(0, 1.6, 0.45); body.add(fur);
   const legs = [], legGeo = mergeGeometries([seg([0, 0, 0], [1.6, 1.1, 0], 0.14, 0.11, '#ffffff', 8), seg([1.6, 1.1, 0], [3.4, -1.0, 0], 0.11, 0.04, '#ffffff', 8)]);
   for (const [z, yaw] of [[1.1, 0.6], [0.2, 0.0], [-0.7, -0.6]]) for (const s of [-1, 1]) {
     const g = new THREE.Group(); g.position.set(0.9 * s, 1.0, z);
@@ -2493,7 +2496,7 @@ const BT = {
   widow:  { hp: 2500, spd: 1.3, gold: 130, lives: 5, armor: 2, boss: true, name: 'Black Widow', sub: 'She lays spiderlings when she gets hurt', goo: [0.3, 0.12, 0.35] },
   hornet: { hp: 3135, spd: 1.45, gold: 160, lives: 5, fly: true, boss: true, name: 'Hornet Queen', sub: 'She flies, so the Newspaper can\'t touch her', goo: [0.85, 0.7, 0.15] },
   herc:   { hp: 3300, spd: 0.95, gold: 160, lives: 5, armor: 9, heavy: true, boss: true, name: 'Hercules Beetle', sub: 'Thick shell, and nothing slows it down', goo: [0.5, 0.48, 0.22] },
-  queen:  { hp: 1260, spd: 1.15, gold: 100, lives: 5, armor: 3, boss: true, name: 'Roach Queen', sub: 'She is heading for the cake', goo: [0.42, 0.24, 0.1] },
+  queen:  { hp: 1260, spd: 1.15, gold: 100, lives: 5, armor: 3, boss: true, name: 'Roach King', sub: 'He is heading for the cake', goo: [0.42, 0.24, 0.1] },
 };
 const BOSS_AT = { 5: ['queen'], 10: ['widow'], 15: ['hornet'], 20: ['hornet', 'widow', 'queen'] };
 // wave 20 brings all three, each a bit lighter so the total stays fair
@@ -2564,7 +2567,7 @@ function startWave() {
   if (bb) $('qname').textContent = trio ? 'ALL THREE BOSSES' : bb.name.toUpperCase();
   renderShop();
   const boss = !!bb;
-  banner(boss ? (trio ? 'All three bosses!' : bb.name + '!') : 'Wave ' + S.wave, boss ? (trio ? 'Hornet, Widow and Queen. Final wave!' : bb.sub) : eb ? 'Called early: +' + eb + ' coins' : '', boss, 1900);
+  banner(boss ? (trio ? 'All three bosses!' : bb.name + '!') : 'Wave ' + S.wave, boss ? (trio ? 'Hornet Queen, Black Widow and Roach King. Final wave!' : bb.sub) : eb ? 'Called early: +' + eb + ' coins' : '', boss, 1900);
   SND.play(boss ? 'boss' : 'wave');
   syncTray();
 }
@@ -3501,7 +3504,7 @@ const BUGINFO = [
   ['spider', 'Spider', 'From wave 4', 'Slow and tough. Its hard shell takes 3 off every hit, which hurts the Swatter most. Bug Spray poison and the Magnifying Glass burn straight through.', '2 slices'],
   ['bed', 'Bed Bugs', 'From wave 7', 'Tiny and fast, and they come in swarms of a dozen. One hit kills each one, but single-target tools can\'t keep up. Bring area damage: Bug Spray, the Zapper, the Newspaper and Bug Bombs. It takes 4 bed bugs to eat a slice.', '¼ slice'],
   ['dung', 'Dung Beetle', 'From wave 6', 'Pushes a ball of dung in front of it. The ball soaks up every hit, poison and fog included, until it breaks apart. Then the beetle gets angry and runs 45% faster. Hard-hitting tools like the Newspaper crack the ball quickly.', '1 slice'],
-  ['queen', 'Roach Queen', 'Boss, waves 5 and 20', 'Huge health and a shell that takes 3 off every hit. Park a Magnifying Glass near the end of the trail to cook her.', '5 slices'],
+  ['queen', 'Roach King', 'Boss, waves 5 and 20', 'Huge health and a shell that takes 3 off every hit. Park a Magnifying Glass near the end of the trail to cook him.', '5 slices'],
   ['widow', 'Black Widow', 'Boss, waves 10 and 20', 'Big and tough, with a shell that takes 2 off every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 20', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
 ];
@@ -3883,7 +3886,7 @@ const ACH_LIST = [
   ['first', 'First Squash', 'Squash your first bug.'],
   ['k1000', 'Pest Control', 'Squash 1,000 bugs in total.', 'kills', 1000],
   ['k10000', 'Exterminator of the Year', 'Squash 10,000 bugs in total.', 'kills', 10000],
-  ['queen', 'Royal Flush', 'Squash a Roach Queen.'],
+  ['queen', 'Royal Flush', 'Squash a Roach King.'],
   ['widow', 'Widow Maker', 'Squash a Black Widow.'],
   ['hornet', 'Hive Mind', 'Squash a Hornet Queen.'],
   ['win', 'Cake Saver', 'Beat any level.'],
