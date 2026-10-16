@@ -235,6 +235,10 @@ h2.t{font-family:var(--display);font-weight:400;font-size:clamp(34px,8vw,56px);m
 @media (pointer:coarse) and (orientation:portrait){.rotTip{display:block}}
 .lvls{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 .lvls{max-width:760px}
+#solo{overflow-y:auto;justify-content:safe center}
+#solo>*{flex:none}
+@media (max-height:820px){#solo .hint{display:none}}
+@media (max-height:560px){#solo{gap:8px;padding-top:10px}#solo .lvls{max-width:none;gap:8px}#solo .lvl{min-width:150px;flex:1 1 150px;max-width:180px;padding:6px 10px}#solo .lvl b{font-size:18px}#solo .lvl .lstars{font-size:16px}#solo .lsub{display:none}}
 .lvl{display:grid;gap:2px;min-width:150px;flex:1 1 150px;max-width:190px;padding:10px 16px;border-radius:18px;border:0;cursor:pointer;color:#2a1600;background:linear-gradient(#ffd85a,#ffb31f);box-shadow:0 6px 0 #a3600a,0 12px 24px rgba(0,0,0,.4);font:inherit}
 .lvl b{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:.05em;line-height:1}
 .lvl span{font-weight:900;font-size:14px}
@@ -404,7 +408,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v78</div>
+    <div id="ver">v79</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -432,7 +436,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <h1 class="logo">Pest<span>Panic Defense</span></h1>
       <p class="sub">The bugs found the birthday cake. It's on the counter. Set out swatters, sprays and zappers along the sugar trail and save every slice you can.</p>
       <div class="tmain">
-        <button class="btn soloBtn" id="soloT" type="button">Solo <small>5 houses · 20 waves each</small></button>
+        <button class="btn soloBtn" id="soloT" type="button">Solo <small>10 houses · 20 waves each</small></button>
         <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
         <button class="btn vsBtn" id="vsT" type="button">Bug Battle <small>2 players · send bugs at each other</small></button>
       </div>
@@ -638,8 +642,25 @@ const LEVELS = [
   { name: 'Long Haul', sub: 'Hard', intro: 'Long lanes that only meet at the cake. Don\'t be the weak link!', hp: 1.3, money: 170, shift: 2, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[1, 10.6], [1, 6], [8, 6], [8, 4], [2, 4], [2, 1], [10, 1], [10, -0.05]],
              [[19, 10.6], [19, 6], [12, 6], [12, 4], [18, 4], [18, 1], [10, 1], [10, -0.05]]] },
+  // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
+  { name: 'Lunch Line', sub: 'One long line, back and forth', intro: 'The bugs snake through the lunch line. Cover two rows at once!', hp: 1.34, money: 190, shift: 2,
+    routes: [[[-0.6, 1], [10, 1], [10, 3], [2, 3], [2, 5], [10, 5], [10, 7], [2, 7], [2, 9], [12, 9], [12, -0.05]]] },
+  { name: 'Hot Delivery', sub: 'A side door and a back door', intro: 'A second trail comes in the back door, close to the cake. Watch it!', hp: 1.36, money: 200, shift: 2,
+    routes: [[[-0.6, 2], [3, 2], [3, 8], [7, 8], [7, 4], [12, 4], [12, -0.05]],
+             [[10, 10.6], [10, 9], [13, 9], [13, 6], [12, 6], [12, -0.05]]] },
+  { name: 'Switchbacks', sub: 'The cake is on the left this time', intro: 'The cake is on the other side. They come in from the right.', hp: 1.44, money: 200, shift: 3, cakeCol: 1, fridgeX: 6, stoveX: 15,
+    routes: [[[13.6, 8], [10, 8], [10, 2], [7, 2], [7, 8], [4, 8], [4, 3], [1, 3], [1, -0.05]]] },
+  { name: 'Sugar Rush', sub: 'Two trails share the last stretch', intro: 'The bakery smells amazing. Two trails meet near the cake.', hp: 1.52, money: 205, shift: 3,
+    routes: [[[1, -0.6], [1, 4], [5, 4], [5, 8], [9, 8], [9, 4], [12, 4], [12, -0.05]],
+             [[13.6, 9], [11, 9], [11, 6], [9, 6], [9, 4], [12, 4], [12, -0.05]]] },
+  { name: 'Creepy Crawl', sub: 'The final house. Good luck.', intro: 'Something is crawling in the walls. Two doors, the toughest bugs yet.', hp: 1.62, money: 215, shift: 3,
+    routes: [[[1, -0.6], [1, 3], [5, 3], [5, 1], [9, 1], [9, 6], [12, 6], [12, -0.05]],
+             [[-0.6, 8], [4, 8], [4, 6], [9, 6], [12, 6], [12, -0.05]]] },
 ];
 const CAMPAIGN = 5, TEAM0 = 5, TEAMN = 3;
+// the solo houses in play order (the last five come after the team maps in the list)
+const SOLO = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12];
+const soloNum = lv => SOLO.indexOf(lv) + 1, soloNext = lv => { const i = SOLO.indexOf(lv); return i >= 0 && i < SOLO.length - 1 ? SOLO[i + 1] : null; };
 let TEAM_LV = TEAM0;
 function teamUnlocked(lv) { return lv === TEAM0 || loadBest(lv - 1) >= MAXW; }
 // every level is a different house with its own kitchen
@@ -684,6 +705,31 @@ const HOUSES = [
     cab: { base: '#9aa2ac', handle: '#e6ebf0' }, side: '#6e7680', kick: '#18191c', top: '#d6dade', wall: '#3a3f46', trim: '#1c1d22',
     fridge: { color: '#c6ccd4', metal: 0.9, rough: 0.2 }, stove: { color: '#1c1d22', metal: 0.7 }, handle: '#e2b84e',
     rooms: { living: '#3a3a42', bed: '#4a2a2a', couch: '#7a1a1a', rug: '#c9a24a', blanket: '#e2b84e', wood: '#2a1a12', paint: '#b8b0a0', hall: '#3a2414' } },
+  { name: 'School Cafeteria', bg: '#0d1216',
+    floor: { style: 'tile', a: [150, 148, 136], b: [64, 96, 140], grout: '#6a7278', seed: 31 },
+    cab: { base: '#4f8fd6', handle: '#e6ebf0' }, side: '#3a72b0', kick: '#2a3440', top: '#c9cdd2', wall: '#f1e6b8', trim: '#5a6a7a',
+    fridge: { color: '#c6ccd4', metal: 0.85, rough: 0.25 }, stove: { color: '#b8bec6', metal: 0.85 }, handle: '#e6ebf0',
+    rooms: { living: '#7a8a9a', bed: '#8a7a5a', couch: '#e2a83a', rug: '#d84a3a', blanket: '#4f8fd6', wood: '#8a6a4a', paint: '#ece6d4', hall: '#a08a6a' } },
+  { name: 'Pizza Parlor', bg: '#120c0b',
+    floor: { style: 'tile', a: [150, 36, 32], b: [176, 168, 156], grout: '#3a2a26', seed: 33 },
+    cab: { base: '#2f7a46', handle: '#f2ead6' }, side: '#245e36', kick: '#1a1412', top: '#d8c8a8', wall: '#f2e2c2', trim: '#6a3a22',
+    fridge: { color: '#c6ccd4', metal: 0.85, rough: 0.25 }, stove: { color: '#8a3a2a', metal: 0.3 }, handle: '#e6ebf0',
+    rooms: { living: '#8a5a3a', bed: '#7a6a5a', couch: '#b8302a', rug: '#2f7a46', blanket: '#f2c46a', wood: '#5a3a22', paint: '#efe2c8', hall: '#8a5a3a' } },
+  { name: 'Cabin in the Woods', bg: '#0b0e0a',
+    floor: { style: 'plank', a: [146, 98, 56], b: [128, 84, 46], grout: '#3a2614', seed: 35 },
+    cab: { base: '#8a5a32', handle: '#2a2a2a' }, side: '#6e4626', kick: '#2a1a0e', top: '#4a4a46', wall: '#b88a5a', trim: '#4a2e16',
+    fridge: { color: '#e8e0cc', metal: 0.1, rough: 0.4 }, stove: { color: '#2a2a2a', metal: 0.5 }, handle: '#2a2a2a',
+    rooms: { living: '#7a5a3a', bed: '#5a6a4a', couch: '#8a2a22', rug: '#3a5a3a', blanket: '#c8402a', wood: '#5a3a1e', paint: '#c8a87a', hall: '#7a5230' } },
+  { name: 'Corner Bakery', bg: '#140f12',
+    floor: { style: 'tile', a: [240, 196, 208], b: [196, 228, 212], grout: '#f6efe6', seed: 37 },
+    cab: { base: '#f2b8c8', handle: '#e2b84e' }, side: '#d898aa', kick: '#8a5a68', top: '#f6f2ea', wall: '#fbe8d2', trim: '#c8a07a',
+    fridge: { color: '#bfe4d6', metal: 0.2, rough: 0.35 }, stove: { color: '#f4efe4', metal: 0.2 }, handle: '#e2b84e',
+    rooms: { living: '#c8a08a', bed: '#b8a0c8', couch: '#8ac8b4', rug: '#f2b8c8', blanket: '#ffe08a', wood: '#b88a5a', paint: '#fbefe0', hall: '#d2a87a' } },
+  { name: 'Haunted House', bg: '#07060b',
+    floor: { style: 'plank', a: [62, 52, 60], b: [50, 42, 50], grout: '#141016', seed: 39 },
+    cab: { base: '#3a2a4a', handle: '#a8b0a0' }, side: '#2a1e38', kick: '#0e0a12', top: '#4a4650', wall: '#3a4a3a', trim: '#1e1418',
+    fridge: { color: '#6a6a5a', metal: 0.3, rough: 0.6 }, stove: { color: '#2a2a2e', metal: 0.5 }, handle: '#a8b0a0',
+    rooms: { living: '#3a2a3a', bed: '#2a2a3e', couch: '#4a1a2a', rug: '#5a3a1a', blanket: '#6a5a7a', wood: '#2a1a14', paint: '#5a5a4a', hall: '#3a2418' } },
 ];
 // countertop clutter: the same set of things, arranged differently in every house
 // B(x) = back counter, L(z) = left counter, Rt(z) = right counter
@@ -697,6 +743,11 @@ const PROP_LAYOUT = [
   { accent: '#e8733a', sink: CB(-27.5), toaster: CB(-13), mixer: CB(-5), jars: CB(5.5), kettle: CB(9.5), coffee: CB(23), blender: CB(28.5), fruit: CL2(-10), board: CL2(-1), knives: CR2(-10), microwave: CR2(-1), towel: CR2(1.5) },
   { accent: '#e2a83a', microwave: CB(-27), jars: CB(-12.5), fruit: CB(-5), kettle: CB(5.5), toaster: CB(9.5), coffee: CB(23), sink: CB(28.5), board: CL2(-8), towel: CL2(4), blender: CR2(-8), mixer: CR2(3) },
   { accent: '#c0302a', sink: CB(-27.5), coffee: CB(-13), blender: CB(-5), mixer: CB(5.5), knives: CB(9.5), kettle: CB(23), jars: CB(28.5), board: CL2(-9), toaster: CL2(1), fruit: CR2(-9), microwave: CR2(1) },
+  { accent: '#e2a83a', microwave: CB(-17), jars: CB(-3.8), fruit: CB(9), toaster: CB(12.2), coffee: CB(21.2), sink: CL(-8), board: CL(4), kettle: CR(-9), blender: CR(1), towel: CR(9) },
+  { accent: '#2f7a46', board: CB(-17), knives: CB(-3.8), sink: CB(9.5), towel: CB(12.4), jars: CB(21.2), mixer: CL(-9), fruit: CL(2), microwave: CR(-7), coffee: CR(4) },
+  { accent: '#c8402a', kettle: CB(-11), board: CB(-4.5), coffee: CB(0.8), knives: CB(20.3), sink: CL(-8), jars: CL(4), fruit: CR(-9), toaster: CR(1), towel: CR(9) },
+  { accent: '#f2b8c8', mixer: CB(-17), jars: CB(-3.8), blender: CB(8.5), board: CB(12), kettle: CB(21.2), toaster: CL(-9), fruit: CL(1), sink: CR(-6), coffee: CR(5) },
+  { accent: '#6a8a5a', kettle: CB(-17), jars: CB(-3.8), knives: CB(9), towel: CB(12.2), coffee: CB(21.2), sink: CL(-6), board: CL(5), microwave: CR(-7), fruit: CR(4) },
 ];
 function buildCounterProps() {
   const P = {}, steel = std({ color: '#c6ccd4', metalness: 0.9, roughness: 0.25, envMapIntensity: 1 }), dark = std({ color: '#1c1d22', roughness: 0.4 });
@@ -2546,7 +2597,7 @@ function saveNum(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {
 // stars for saving the cake: 3 = lost 3 slices or fewer, 2 = lost 10 or fewer, 1 = any win
 function starsFor(lives) { return lives >= 17 ? 3 : lives >= 10 ? 2 : 1; }
 const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
-function unlocked(lv) { return lv === 0 || loadBest(lv - 1) >= MAXW; }
+function unlocked(lv) { const i = SOLO.indexOf(lv); return i <= 0 || loadBest(SOLO[i - 1]) >= MAXW; }
 
 let S = null;
 function newState(mode) {
@@ -3403,7 +3454,7 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (!$('settings').hidden) { if (k === 'escape' || k === 'enter') { e.preventDefault(); closeSettings(); } return; }
   if (!$('guide').hidden || !$('achs').hidden) { if (k === 'escape' || k === 'enter') { e.preventDefault(); $('achs').hidden = true; $('guide').hidden = false; closeGuide(); } return; }
-  if (S.mode !== 'play') { if ((k === 'enter' || k === ' ') && !$('title').hidden) { e.preventDefault(); let lv = 0; while (lv < CAMPAIGN - 1 && unlocked(lv + 1)) lv++; startGame(lv); } return; }
+  if (S.mode !== 'play') { if ((k === 'enter' || k === ' ') && !$('title').hidden) { e.preventDefault(); let i = 0; while (i < SOLO.length - 1 && unlocked(SOLO[i + 1])) i++; startGame(SOLO[i]); } return; }
   const kn = k >= '0' && k <= '9' ? (+k || 10) : 0;
   if (kn && kn <= SHOP.length) { setTab('tools'); choose(SHOP[kn - 1]); }
   else if (kn && kn - SHOP.length <= ITEMS.length) { setTab('items'); choose(ITEMS[kn - SHOP.length - 1]); }
@@ -3523,9 +3574,9 @@ $('quit').addEventListener('click', () => {
   netLeave(); toTitle();
 });
 $('restart').addEventListener('click', () => { if (S.net && S.net !== 'bot') return; SND.init(); startGame(LV, S.net); });
-$('lvls').innerHTML = LEVELS.slice(0, CAMPAIGN).map((L, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${i}"><b>Level ${i + 1}</b><span>${HOUSES[i].name}</span><em>${L.name}</em><small id="best${i}"></small></button>`).join('');
+$('lvls').innerHTML = SOLO.map((lv, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${lv}"><b>Level ${i + 1}</b><span>${HOUSES[lv].name}</span><em>${LEVELS[lv].name}</em><small id="best${lv}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
-$('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = LV + 1; netSend({ k: 'start', lv: LV + 1 }); startGame(LV + 1, 'host'); } else startGame(LV + 1); });
+$('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = LV + 1; netSend({ k: 'start', lv: LV + 1 }); startGame(LV + 1, 'host'); } else startGame(LEVELS[LV].team ? LV + 1 : soloNext(LV)); });
 $('again').addEventListener('click', () => { SND.init(); if (S.vs) { if (NET.role === 'host') { netSend({ k: 'start', lv: LV, vs: 1 }); startGame(LV, 'vs'); } return; } if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
 // endless: pick up right where the win left off, same tools and cake, waves keep coming and keep getting harder
 $('endless').addEventListener('click', () => {
@@ -3686,11 +3737,11 @@ function toTitle() {
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['swat', 2, 1, 2], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
   $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('peek').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
-  LEVELS.slice(0, CAMPAIGN).forEach((L, lv) => {
-    const b = loadBest(lv), el = $('best' + lv);
+  SOLO.forEach((lv, i) => {
+    const L = LEVELS[lv], b = loadBest(lv), el = $('best' + lv);
     const st = loadNum(starKey(lv)), en = loadNum(endKey(lv));
-    el.innerHTML = !unlocked(lv) ? '🔒 Beat Level ' + lv + ' to unlock' : b >= MAXW ? `<span class="lstars">${starStr(Math.max(1, st))}</span>${en > MAXW ? `<span class="lend">Endless best: wave ${en}</span>` : ''}` : b ? 'Best: wave ' + b : L.sub;
-    $(lv ? 'play' + (lv + 1) : 'play').disabled = !unlocked(lv);
+    el.innerHTML = !unlocked(lv) ? '🔒 Beat Level ' + i + ' to unlock' : b >= MAXW ? `<span class="lstars">${starStr(Math.max(1, st))}</span>${en > MAXW ? `<span class="lend">Endless best: wave ${en}</span>` : ''}` : b ? 'Best: wave ' + b : L.sub;
+    $(i ? 'play' + (i + 1) : 'play').disabled = !unlocked(lv);
   });
   requestAnimationFrame(resize);
 }
@@ -3713,7 +3764,7 @@ function startGame(lv = LV, net = null) {
   $('waveMax').textContent = '/20';
   syncTray(); syncHud(); showBelt();
   if (S.vs) banner('Bug Battle: ' + HOUSES[LV].name, 'Same waves for both of you. From wave 6 you can spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
-  banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
+  banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + soloNum(LV) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   if (!S.vs) tutStart();
@@ -4171,7 +4222,7 @@ function vsEnd(res, why) {
 }
 function renderTeamMaps() {
   if (NET.mode === 'vs') {
-    $('tmaps').innerHTML = HOUSES.slice(0, CAMPAIGN).map((H, lv) => `<button class="tmap${lv === VS_LV ? ' on' : ''}" type="button" data-lv="${lv}"><b>${lv + 1}. ${H.name}</b><small>${LEVELS[lv].name}</small></button>`).join('');
+    $('tmaps').innerHTML = SOLO.map((lv, i) => `<button class="tmap${lv === VS_LV ? ' on' : ''}" type="button" data-lv="${lv}"><b>${i + 1}. ${HOUSES[lv].name}</b><small>${LEVELS[lv].name}</small></button>`).join('');
     return;
   }
   if (!teamUnlocked(TEAM_LV)) TEAM_LV = TEAM0;
@@ -4205,7 +4256,7 @@ const ACH_LIST = [
   ['widow', 'Widow Maker', 'Squash a Black Widow.'],
   ['hornet', 'Hive Mind', 'Squash a Hornet Queen.'],
   ['win', 'Cake Saver', 'Beat any level.'],
-  ['allwin', 'House Calls', 'Beat all five houses.'],
+  ['allwin', 'House Calls', 'Beat all ten houses.'],
   ['star3', 'Perfect Party', 'Get 3 stars on any level.'],
   ['allstar', 'Gold Standard', 'Get 3 stars on every house.'],
   ['flawless', 'Not a Crumb', 'Beat a level without losing a single slice.'],
@@ -4255,8 +4306,8 @@ function achWin() {
   if (!used.has('lens')) ACH.unlock('nolens');
   if (used.size && [...used].every(t => t === 'swat')) ACH.unlock('swatonly');
   if ((S.built || 0) <= 6) ACH.unlock('thrifty');
-  if (LEVELS.slice(0, CAMPAIGN).every((L, i) => i === LV || loadBest(i) >= MAXW)) ACH.unlock('allwin');
-  if (LEVELS.slice(0, CAMPAIGN).every((L, i) => (i === LV ? starsFor(S.lives) : loadNum(starKey(i))) >= 3)) ACH.unlock('allstar');
+  if (SOLO.every(i => i === LV || loadBest(i) >= MAXW)) ACH.unlock('allwin');
+  if (SOLO.every(i => (i === LV ? starsFor(S.lives) : loadNum(starKey(i))) >= 3)) ACH.unlock('allstar');
 }
 function renderAch() {
   $('achCount').textContent = ACH.count() + ' / ' + ACH_LIST.length;
@@ -4322,7 +4373,7 @@ function gameOver(won) {
   if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
   if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills });
   S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
-  const reached = won ? MAXW : S.wave, wasLocked = !unlocked(LV + 1);
+  const reached = won ? MAXW : S.wave, NX = LEVELS[LV].team ? LV + 1 : soloNext(LV), wasLocked = LEVELS[LV].team ? !teamUnlocked(LV + 1) : NX != null && !unlocked(NX);
   if (Math.min(reached, MAXW) > loadBest()) saveBest(Math.min(reached, MAXW));
   const ostars = $('ostars'); ostars.hidden = !won; $('endless').hidden = !won || !!S.net;
   $('again').hidden = S.net === 'guest'; $('again').textContent = S.net === 'host' ? 'Play again together' : 'Play again';
@@ -4343,9 +4394,9 @@ function gameOver(won) {
     return;
   }
   $('overt').textContent = won ? 'Cake saved!' : 'Cake devoured!';
-  const team = !!LEVELS[LV].team, hasNext = won && (team ? LV < TEAM0 + TEAMN - 1 && S.net !== 'guest' : LV < CAMPAIGN - 1);
-  $('nextLv').hidden = !hasNext; $('nextLv').textContent = hasNext ? (team ? 'Next map: ' + LEVELS[LV + 1].name : 'Next: ' + HOUSES[LV + 1].name) : '';
-  if (hasNext && wasLocked) banner(team ? 'New team map unlocked!' : 'New house unlocked!', team ? LEVELS[LV + 1].name + ' · ' + LEVELS[LV + 1].sub : HOUSES[LV + 1].name + ' · Level ' + (LV + 2), false, 2600);
+  const team = !!LEVELS[LV].team, hasNext = won && (team ? LV < TEAM0 + TEAMN - 1 && S.net !== 'guest' : NX != null);
+  $('nextLv').hidden = !hasNext; $('nextLv').textContent = hasNext ? (team ? 'Next map: ' + LEVELS[LV + 1].name : 'Next: ' + HOUSES[NX].name) : '';
+  if (hasNext && wasLocked) banner(team ? 'New team map unlocked!' : 'New house unlocked!', team ? LEVELS[LV + 1].name + ' · ' + LEVELS[LV + 1].sub : HOUSES[NX].name + ' · Level ' + soloNum(NX), false, 2600);
   if (won && team && S.net === 'guest' && LV < TEAM0 + TEAMN - 1) banner('Next map unlocked!', 'Waiting for the host to start ' + LEVELS[LV + 1].name, false, 3000);
   showStats();
   $('ores').innerHTML = `<dt>Waves survived</dt><dd>${won ? MAXW : Math.max(0, S.wave - 1)} / ${MAXW}</dd><dt>Bugs squashed</dt><dd>${S.kills}</dd><dt>Slices left</dt><dd>${S.lives} / 20</dd><dt>House</dt><dd>${HOUSES[LV].name}</dd><dt>Best</dt><dd>Wave ${loadBest()}</dd>`;
