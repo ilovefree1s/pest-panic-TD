@@ -404,7 +404,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v73</div>
+    <div id="ver">v74</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3901,7 +3901,7 @@ setInterval(() => { if (NET.link && NET.role === 'guest') netSend({ k: S && (S.n
 // Every quarter second each side sends a little status report: cake, wave, tools and bugs, so the other can watch.
 let VS_LV = 0, VSGO = false;
 const SENDS = [
-  { t: 'ant', n: 6, cost: 30, w: 0 },
+  { t: 'ant', n: 6, cost: 30, w: 1 },
   { t: 'fly', n: 5, cost: 45, w: 2 },
   { t: 'spider', n: 3, cost: 60, w: 3 },
   { t: 'dung', n: 2, cost: 85, w: 5 },
@@ -3975,21 +3975,22 @@ function renderSend() {
   const v = S.vs;
   shop.style.setProperty('--n', SENDS.length);
   shop.innerHTML = SENDS.map((d, i) => {
-    const lock = S.wave < d.w, cd = (v.cd[i] || 0) > 0, eco = Math.round(d.cost * 0.1);
-    const note = lock ? `<em class="used">From wave ${d.w}</em>` : cd ? `<em class="used">Wait ${Math.ceil(v.cd[i])}s</em>` : `<em>+${eco} coins a wave</em>`;
-    return `<button class="tc${lock || cd ? ' spent' : ''}" type="button" data-send="${i}">${BUGICON[d.t]}<span><b>${d.n > 1 ? d.n + ' ' : ''}${SEND_NAME[d.t]}</b>${note}<small>${d.cost}</small></span></button>`;
+    const lock = S.wave < d.w, cd = (v.cd[i] || 0) > 0, eco = Math.round(d.cost * 0.1), idle = !S.active;
+    const note = lock ? `<em class="used">From wave ${d.w}</em>` : idle ? `<em class="used">During waves only</em>` : cd ? `<em class="used">Wait ${Math.ceil(v.cd[i])}s</em>` : `<em>+${eco} coins a wave</em>`;
+    return `<button class="tc${lock || cd || idle ? ' spent' : ''}" type="button" data-send="${i}">${BUGICON[d.t]}<span><b>${d.n > 1 ? d.n + ' ' : ''}${SEND_NAME[d.t]}</b>${note}<small>${d.cost}</small></span></button>`;
   }).join('');
   for (const b of document.querySelectorAll('.stabs button')) b.classList.toggle('on', b.dataset.tab === shopTab);
   for (const el of shop.children) el.classList.toggle('poor', S.money < elCost(el));
   requestAnimationFrame(syncMore);
 }
-function sendKey() { const v = S.vs; return SENDS.map((d, i) => (S.wave < d.w ? 'L' : (v.cd[i] || 0) > 0 ? Math.ceil(v.cd[i]) : 'o')).join(','); }
+function sendKey() { const v = S.vs; return (S.active ? 'A' : 'I') + SENDS.map((d, i) => (S.wave < d.w ? 'L' : (v.cd[i] || 0) > 0 ? Math.ceil(v.cd[i]) : 'o')).join(','); }
 function vsSend(i) {
   const d = SENDS[i], v = S.vs; if (!v || !d) return;
   const f = v.foe;
   let why = '';
   if (S.mode !== 'play') why = 'x';
   else if (S.wave < d.w) why = 'Unlocks at wave ' + d.w;
+  else if (!S.active) why = 'You can only send bugs during a wave';
   else if ((v.cd[i] || 0) > 0) why = 'Wait ' + Math.ceil(v.cd[i]) + 's';
   else if (v.fin || (f && (f.f || f.o))) why = 'The battle is nearly over';
   else if (S.money < d.cost) why = 'Need ' + d.cost + ' coins';
