@@ -404,7 +404,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v77</div>
+    <div id="ver">v78</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3754,7 +3754,7 @@ function botThink() {
 // ---------------------------------------------------------------- online team play
 // The host runs the whole game and streams it to the guest ~10x a second. The guest's taps go to the host as requests.
 const SB_URL = 'https://ljrnzpqepssnkidlcgha.supabase.co', SB_KEY = 'sb_publishable_DWik0p9owlUHmoh2v1U9lA_pDlntvoc';
-const NET = { mode: 'team', link: null, role: null, code: '', last: 0, snapT: 0, pingT: 0, helloT: 0, lost: false, sb: null };
+const NET = { mode: 'team', awayAt: 0, gaveUp: false, rejoinAt: 0, link: null, role: null, code: '', last: 0, snapT: 0, pingT: 0, helloT: 0, lost: false, sb: null };
 async function netOpen(code, onMsg) {
   if (/local/.test(location.hash) || !navigator.onLine && 'BroadcastChannel' in window) {
     const bc = new BroadcastChannel('ppd-' + code); bc.onmessage = e => onMsg(e.data);
@@ -3765,10 +3765,10 @@ async function netOpen(code, onMsg) {
   const ch = NET.sb.channel('ppd-' + code, { config: { broadcast: { self: false, ack: false } } });
   ch.on('broadcast', { event: 'm' }, ({ payload }) => onMsg(payload));
   await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('timed out')), 12000); ch.subscribe(st => { if (st === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error(st)); } }); });
-  return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), close: () => NET.sb.removeChannel(ch) };
+  return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), close: () => NET.sb.removeChannel(ch), state: () => ch.state };
 }
 function netSend(m) { try { if (NET.link) NET.link.send(m); } catch (e) {} }
-function netLeave() { if (NET.link) { netSend({ k: 'bye' }); try { NET.link.close(); } catch (e) {} } NET.link = null; NET.role = null; $('netWarn').hidden = true; }
+function netLeave() { NET.awayAt = 0; NET.gaveUp = false; NET.last = 0; if (S) S.hold = false; NET.code = ''; if (NET.link) { netSend({ k: 'bye' }); try { NET.link.close(); } catch (e) {} } NET.link = null; NET.role = null; $('netWarn').hidden = true; }
 function lobbyStatus(h) { $('lbStatus').innerHTML = h; }
 async function netCreate() {
   netLeave(); const code = String(1000 + Math.floor(Math.random() * 9000)); NET.code = code; NET.role = 'host';
@@ -3785,6 +3785,9 @@ async function netJoin(code) {
 function netOnMsg(m) {
   if (!m || !m.k) return;
   NET.last = performance.now();
+  if (m.k === 'away') { NET.awayAt = NET.last; return; }
+  NET.awayAt = 0;
+  if (m.k === 'back') return;
   if (S && S.net === 'vs' && m.k !== 'start' && m.k !== 'hello') { vsMsg(m); return; }
   if (NET.role === 'host') {
     if (m.k === 'hello' && (!S || !S.net || S.net === 'bot' || S.mode !== 'play')) {
@@ -3802,6 +3805,38 @@ function netOnMsg(m) {
     else if (m.k === 'over') { S.lives = m.l; S.wave = m.w; S.kills = m.kills; gameOver(m.won); }
   }
 }
+// A friend who switches apps or loses signal for a bit doesn't drop the game: everything holds still and waits
+// for them for up to a minute, then carries on without them. Nothing ever ends the game except tapping Quit.
+const HOLD_AFTER = 4000, HOLD_MAX = 60000;
+function netHoldCheck(now) {
+  if (!S || !S.net || S.net === 'bot' || S.mode !== 'play' || !NET.last) { if (S && S.hold) S.hold = false; return; }
+  const quiet = now - NET.last, gone = NET.awayAt > 0 || quiet > HOLD_AFTER;
+  const el = $('netWarn');
+  if (gone && !NET.gaveUp) {
+    const since = NET.awayAt ? now - NET.awayAt : quiet - HOLD_AFTER;
+    if (since < HOLD_MAX) {
+      S.hold = true; const left = Math.ceil((HOLD_MAX - since) / 1000);
+      el.textContent = (NET.awayAt ? 'Your friend switched apps.' : 'Your friend\'s connection dropped.') + ' Game paused while they come back… ' + left + 's';
+      el.hidden = false; clearTimeout(netWarn.t);
+    } else { NET.gaveUp = true; S.hold = false; netWarn('Your friend is still gone. Playing on. They can jump back in any time.'); }
+  } else if (!gone && (S.hold || NET.gaveUp)) {
+    S.hold = false; NET.gaveUp = false; el.hidden = true; banner('Your friend is back!', '', false, 1400); SND.play('tap');
+  }
+}
+async function netRejoin() {
+  if (!NET.code || !NET.role) return;
+  NET.rejoinAt = performance.now();
+  try { NET.link && NET.link.close(); } catch (e) {}
+  try { NET.link = await netOpen(NET.code, netOnMsg); netSend({ k: 'back' }); } catch (e) { NET.link = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (!NET.role) return;
+  if (document.hidden) { netSend({ k: 'away' }); return; }
+  NET.last = performance.now();   // give the friend a moment to show up again before deciding they're gone
+  netSend({ k: 'back' });
+  const st = NET.link && NET.link.state ? NET.link.state() : 'joined';
+  if (!NET.link || st === 'closed' || st === 'errored') netRejoin();
+});
 function netWarn(t) { const el = $('netWarn'); el.textContent = t; el.hidden = false; clearTimeout(netWarn.t); netWarn.t = setTimeout(() => el.hidden = true, 6000); }
 // host: carry out the guest's request as player 2
 function netHostCmd(m) {
@@ -3923,10 +3958,15 @@ function netFrame(dt) {
   if (!NET.link) return;
   const now = performance.now();
   if (NET.role === 'host' && S.net === 'host' && S.mode === 'play') { NET.snapT -= dt; if (NET.snapT <= 0) { NET.snapT = 0.1; netSend(netSnap()); } }
-  if (S && S.net && S.mode === 'play' && NET.last && now - NET.last > 6000) { if (!NET.lost) { NET.lost = true; netWarn('Connection to your partner is lost…'); } }
-  else NET.lost = false;
+  netHoldCheck(now);
 }
-setInterval(() => { if (NET.link && NET.role === 'guest') netSend({ k: S && (S.net === 'guest' || S.net === 'vs') ? 'ping' : 'hello' }); }, 1000);
+setInterval(() => {
+  if (!NET.role || document.hidden) return;
+  const st = NET.link && NET.link.state ? NET.link.state() : 'joined';
+  if ((!NET.link || st === 'closed' || st === 'errored') && performance.now() - NET.rejoinAt > 5000) { netRejoin(); return; }
+  if (NET.link && NET.role === 'host' && S && S.net === 'host') netSend({ k: 'back' });
+}, 1000);
+setInterval(() => { if (document.hidden) return; if (NET.link && NET.role === 'guest') netSend({ k: S && (S.net === 'guest' || S.net === 'vs') ? 'ping' : 'hello' }); }, 1000);
 
 // ---------------------------------------------------------------- Bug Battle: two kitchens, same waves, send bugs at each other
 // Each player runs their own kitchen. The host only decides when the next wave starts (when both of you are clear).
@@ -4334,8 +4374,8 @@ function frame(now) {
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now; clock += dt;
   try {
     if (raw > 0 && raw < 1 && !document.hidden) perfCheck(raw);
-    if (!S.paused && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; for (let i = 0; i < n; i++) update(dt); }
-    if (S.mode === 'play' && !S.paused && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0 && S.net !== 'guest') {
+    if (!S.paused && !S.hold && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; for (let i = 0; i < n; i++) update(dt); }
+    if (S.mode === 'play' && !S.paused && !S.hold && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0 && S.net !== 'guest') {
       const was = Math.ceil(S.nextT); S.nextT -= dt;
       if (S.nextT <= 0) { S.nextT = 0; if (S.net === 'vs') vsTimeUp(); else startWave(); }
       else if (Math.ceil(S.nextT) !== was) { syncBeltT(); syncGo(); if (S.nextT <= 3) SND.play('tap'); }
