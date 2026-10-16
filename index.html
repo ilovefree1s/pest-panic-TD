@@ -404,7 +404,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v75</div>
+    <div id="ver">v77</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -483,7 +483,9 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <button class="btn" id="resume" type="button">Resume</button>
       <button class="btn dark" id="setP" type="button">Settings</button>
       <button class="btn dark" id="guideP" type="button">Field guide</button>
-      <button class="btn dark" id="quit" type="button">Quit to title</button>
+      <button class="btn dark" id="restart" type="button">Restart level</button>
+      <button class="btn dark" id="quit" type="button">Quit to main menu</button>
+      <p class="lstat" id="quitNote"></p>
     </div>
     <div class="screen" id="guide" hidden>
       <div class="gtabs"><button type="button" data-g="guide">Field guide</button><button type="button" data-g="achs">Achievements</button></div>
@@ -851,7 +853,7 @@ function pathAt(s, o, route = 0) {
 }
 loadLevel(0);
 const PROPS = { mug: [7, 5], shaker: [13, 1] };
-const BLOCK = new Set([key(...PROPS.shaker)]);
+const BLOCK = new Set();   // nothing on the floor blocks a tile (the salt shaker is gone for now)
 
 // ---------------------------------------------------------------- canvas textures (from Pest Panic HD)
 function cnv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
@@ -1348,7 +1350,7 @@ function buildProps() {
   sh.add(mesh(cyl(0.48, 0.55, 1.4, 20), new THREE.MeshStandardMaterial({ color: '#e8f2f6', transparent: true, opacity: 0.6, roughness: 0.05, envMapIntensity: 1.4 })));
   const salt = mesh(cyl(0.44, 0.5, 0.9, 20), std({ color: '#ffffff', roughness: 0.9 })); salt.position.y = -0.22; sh.add(salt);
   const cap = mesh(new THREE.SphereGeometry(0.5, 20, 10, 0, TAU, 0, Math.PI / 2), std({ color: '#c6ccd4', metalness: 0.9, roughness: 0.25 })); cap.position.y = 0.7; sh.add(cap);
-  sh.position.set(ccx(PROPS.shaker[0]), 0.7, ccz(PROPS.shaker[1])); g.add(sh); KIT.shaker = sh;
+  sh.position.set(ccx(PROPS.shaker[0]), 0.7, ccz(PROPS.shaker[1])); g.add(sh); KIT.shaker = sh; sh.visible = false;
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   scene.add(g);
 }
@@ -2566,8 +2568,9 @@ function spawnBug(t, route = nextRoute()) {
 }
 function startWave() {
   if (S.mode !== 'play' || S.active || S.over) return;
-  if (S.net === 'guest') { netSend({ k: 'send' }); return; }
+  if (S.net === 'guest') { if (S.wave === 0) { (S.rdy ||= [0, 0])[S.me] = 1; syncGo(); } netSend({ k: 'send' }); return; }
   if (S.net === 'vs' && !VSGO) { vsReady(); return; }
+  if (S.net === 'host' && S.wave === 0 && !S.teamGo) { teamReady(0); return; }
   const eb = earlyBonus(); S.nextT = 0; hideBelt();
   for (const tw of S.towers) tw.fresh = 0;
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
@@ -2581,11 +2584,14 @@ function startWave() {
   // all of this wave's queens share one health bar
   const bq = S.queue.filter(t => BT[t].boss), bb = bq.length ? BT[bq[0]] : null;
   S.qCount = bq.length; S.qTotal = bq.reduce((a, t) => a + bossHp(t), 0);
-  const trio = S.qCount > 1;
-  if (bb) $('qname').textContent = trio ? 'ALL THREE BOSSES' : bb.name.toUpperCase();
+  // one of each boss = the final trio; two of the same one (Team Kitchen doubles them) get a pair name
+  const trio = new Set(bq).size > 1, pair = !trio && bq.length > 1, six = trio && bq.length > 3;
+  const PAIR = { queen: 'Roach Twins', widow: 'Widow Sisters', hornet: 'Hornet Sisters' };
+  const bname = bb ? (trio ? (six ? 'All six bosses' : 'All three bosses') : pair ? PAIR[bq[0]] || bb.name : bb.name) : '';
+  if (bb) $('qname').textContent = bname.toUpperCase();
   renderShop();
   const boss = !!bb;
-  banner(boss ? (trio ? 'All three bosses!' : bb.name + '!') : 'Wave ' + S.wave, boss ? (trio ? 'Hornet Queen, Black Widow and Roach King. Final wave!' : bb.sub) : eb ? 'Called early: +' + eb + ' coins' : '', boss, 1900);
+  banner(boss ? bname + '!' : 'Wave ' + S.wave, boss ? (trio ? (six ? 'Two Hornet Queens, two Black Widows and two Roach Kings. Final wave!' : 'Hornet Queen, Black Widow and Roach King. Final wave!') : pair ? 'Two ' + bb.name + 's at once' + (LEVELS[LV].team ? ', one for each lane!' : '!') : bb.sub) : eb ? 'Called early: +' + eb + ' coins' : '', boss, 1900);
   SND.play(boss ? 'boss' : 'wave');
   syncTray();
 }
@@ -3505,7 +3511,18 @@ $('setTut').addEventListener('click', () => { try { localStorage.removeItem('ppd
 $('setT').addEventListener('click', () => { SND.init(); openSettings(); });
 $('setP').addEventListener('click', () => { $('paused').hidden = true; syncSettings(); $('settings').hidden = false; });
 $('resume').addEventListener('click', () => setPaused(false));
-$('quit').addEventListener('click', () => { netLeave(); toTitle(); });
+// quitting an online game asks for a second tap, since it ends the game for your friend too
+let quitArm = 0;
+function syncPauseMenu() {
+  quitArm = 0; const on = S && S.net && S.net !== 'bot';
+  $('restart').hidden = !!on; $('quit').textContent = 'Quit to main menu';
+  $('quitNote').textContent = S && S.vs ? 'Quitting a Bug Battle counts as a loss.' : on ? 'Your partner keeps playing without you.' : '';
+}
+$('quit').addEventListener('click', () => {
+  if (S && S.net && S.net !== 'bot' && S.mode === 'play' && performance.now() - quitArm > 5000) { quitArm = performance.now(); $('quit').textContent = 'Tap again to quit'; SND.play('err'); return; }
+  netLeave(); toTitle();
+});
+$('restart').addEventListener('click', () => { if (S.net && S.net !== 'bot') return; SND.init(); startGame(LV, S.net); });
 $('lvls').innerHTML = LEVELS.slice(0, CAMPAIGN).map((L, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${i}"><b>Level ${i + 1}</b><span>${HOUSES[i].name}</span><em>${L.name}</em><small id="best${i}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
 $('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = LV + 1; netSend({ k: 'start', lv: LV + 1 }); startGame(LV + 1, 'host'); } else startGame(LV + 1); });
@@ -3567,7 +3584,7 @@ $('bFull').addEventListener('click', () => { FULL.toggle(); setTimeout(syncFull,
 for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => { syncFull(); requestAnimationFrame(resize); });
 $('guideBack').addEventListener('click', closeGuide);
 function toggleSpeed() { if (S.net === 'guest') { netSend({ k: 'speed', v: S.speed > 1 ? 1 : 2 }); return; } S.speed = S.speed > 1 ? 1 : 2; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
-function setPaused(p, remote) { if (S.mode !== 'play') return; S.paused = p; $('paused').hidden = !p; if (S.net && !remote) netSend({ k: 'pause', p }); }
+function setPaused(p, remote) { if (S.mode !== 'play') return; S.paused = p; if (p) syncPauseMenu(); $('paused').hidden = !p; if (S.net && !remote) netSend({ k: 'pause', p }); }
 function toggleSound() { SND.init(); SND.toggle(); syncSnd(); }
 function syncSnd() { if ($('setSfx')) syncSettings(); }
 function bumpStat(id) { const el = $(id); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
@@ -3619,6 +3636,12 @@ function syncTray() {
 function syncGo() {
   const go = $('go');
   if (S.vs && !S.active) { vsGoText(go); return; }
+  if ((S.net === 'host' || S.net === 'guest') && !S.wave && !S.active) {
+    const r = S.rdy || [0, 0], mine = r[S.me], theirs = r[1 - S.me];
+    go.classList.toggle('busy', !!mine);
+    const h = mine ? `Ready!<small>Waiting for your partner to tap Ready</small>` : theirs ? `Ready<small>Your partner is ready! Tap to start wave 1</small>` : `Ready<small>Wave 1 starts when you both tap Ready</small>`;
+    if (go.innerHTML !== h) go.innerHTML = h; return;
+  }
   if (S.active) { go.classList.add('busy'); go.innerHTML = `${S.queue.length + S.bugs.length} bugs<small>Wave ${S.wave} in progress</small>`; }
   else if (S.nextT > 0) { go.classList.remove('busy'); go.innerHTML = `Next wave early<small>+${earlyBonus()} coins · starts in ${Math.ceil(S.nextT)}s</small>`; }
   else { go.classList.remove('busy'); go.innerHTML = `Send bugs<small>Wave ${S.wave + 1}${S.endless ? ' · Endless' : ' of ' + MAXW}</small>`; }
@@ -3791,7 +3814,7 @@ function netHostCmd(m) {
     else if (m.k === 'abil') useAbility();
     else if (m.k === 'home') { const e = S.ext, d = { c: m.c, r: m.r }; if (restFree(d.c, d.r)) { e.home = d; e.rest = d; } }
   });
-  if (m.k === 'send') startWave();
+  if (m.k === 'send') { if (S.wave === 0) teamReady(1); else startWave(); }
   else if (m.k === 'pause') setPaused(!!m.p, true);
   else if (m.k === 'speed') { S.speed = m.v; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
 }
@@ -3799,9 +3822,17 @@ const EST = ['idle', 'walk', 'work', 'spray'];
 const r2 = v => Math.round(v * 100) / 100;
 function extSnap(e) { return [r2(e.x), r2(e.z), r2(e.yaw), Math.max(0, EST.indexOf(e.state)), e.held ? 1 : 0, e.abil ? 1 : 0]; }
 // host: what the guest needs to draw the game (always in absolute player order: [blue, red])
+// Team Kitchen: wave 1 only starts once both players have tapped Ready
+function teamReady(pid) {
+  const r = S.rdy ||= [0, 0]; if (r[pid]) return;
+  r[pid] = 1; SND.play('tap');
+  if (pid !== S.me && !r[S.me]) banner('Your partner is ready!', 'Tap Ready to start wave 1', false, 2200);
+  if (r[0] && r[1]) { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } }
+  syncTray();
+}
 function netSnap() {
   const P = [S, S.p2], g = k => P[0][k], h = k => P[1][k];
-  return { k: 's', w: S.wave, a: S.active ? 1 : 0, l: S.lives, nt: r2(S.nextT || 0), sp: S.speed, pz: S.paused ? 1 : 0,
+  return { k: 's', rd: S.rdy || [0, 0], w: S.wave, a: S.active ? 1 : 0, l: S.lives, nt: r2(S.nextT || 0), sp: S.speed, pz: S.paused ? 1 : 0,
     m: [Math.floor(g('money')), Math.floor(h('money'))], cd: [r2(g('abilCd') || 0), r2(h('abilCd') || 0)], lic: [g('lic'), h('lic')], iu: [g('itemUsed') || {}, h('itemUsed') || {}],
     qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHp(t), 0), qn: $('qname').textContent, hp: S.hpMul,
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
@@ -3819,6 +3850,7 @@ function remoteTower(id, t, c, r, owner) {
 function netApply(m) {
   const me = S.me, them = 1 - me;
   const wasActive = S.active, oldWave = S.wave;
+  if (m.rd && !S.wave && !m.w) { const was = (S.rdy || [0, 0])[them]; S.rdy = [m.rd[0], m.rd[1]]; if (m.rd[them] && !was && !m.rd[me]) banner('Your partner is ready!', 'Tap Ready to start wave 1', false, 2200); }
   S.wave = m.w; S.active = !!m.a; S.lives = m.l; S.nextT = m.nt; S.speed = m.sp; S.hpMul = m.hp;
   if (!!m.pz !== !!S.paused) { S.paused = !!m.pz; $('paused').hidden = !S.paused; }
   $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1);
