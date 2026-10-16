@@ -165,6 +165,12 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #lobby{z-index:30}
 .lsub{margin:-6px 0 4px;font-weight:800;color:var(--dim);text-align:center;max-width:90vw}
 .lbox{display:grid;gap:12px;width:min(340px,88vw);background:rgba(10,13,16,.75);border-radius:18px;padding:18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.tmaps{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:94vw}
+.tmap{display:grid;gap:1px;min-width:120px;padding:8px 12px;border-radius:14px;border:0;cursor:pointer;font:inherit;color:var(--text);background:rgba(20,26,32,.92);box-shadow:inset 0 0 0 2px rgba(255,255,255,.1)}
+.tmap b{font:400 17px var(--display);letter-spacing:.03em} .tmap small{font-weight:800;font-size:12px;color:var(--dim)} .tmap em{font-style:normal;font-weight:900;font-size:11px}
+.tmap.on{box-shadow:inset 0 0 0 3px var(--gold);background:rgba(60,46,10,.92)}
+.tmap:disabled{opacity:.45;cursor:default}
+.tmap .d0{color:#9be37a} .tmap .d1{color:#ffc93c} .tmap .d2{color:#ff8a7a}
 .ljoin{display:grid;grid-template-columns:1fr auto;gap:8px}
 .ljoin input{font:400 24px var(--display);letter-spacing:.2em;text-align:center;border-radius:14px;border:0;padding:8px;background:#f4efe4;color:#2a1600;min-width:0}
 .lstat{margin:0;min-height:1.4em;text-align:center;font-weight:800;color:var(--gold)}
@@ -374,7 +380,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v66</div>
+    <div id="ver">v67</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -410,7 +416,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     </div>
     <div class="screen" id="lobby" hidden>
       <h2 class="t">Team Kitchen</h2>
-      <p class="lsub">Side Doors: two lanes, one cake. Each of you builds on your own half.</p>
+      <p class="lsub">Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.</p>
+      <div class="tmaps" id="tmaps"></div>
       <div class="lbox">
         <button class="btn" id="lbCreate" type="button">Create room</button>
         <div class="ljoin"><input id="lbCode" inputmode="numeric" maxlength="4" placeholder="Room code" autocomplete="off"><button class="btn" id="lbJoin" type="button">Join</button></div>
@@ -582,11 +589,20 @@ const LEVELS = [
     routes: [[[1, -0.6], [1, 8], [5, 8], [5, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]],
              [[9, -0.6], [9, 2], [7, 2], [7, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]]] },
   // Team Kitchen (co-op): 21 tiles wide, bugs come in through both side walls, lanes join halfway up the middle
-  { name: 'Side Doors', sub: 'Team Kitchen', intro: 'Two lanes, one cake. Hold your side!', hp: 1.25, money: 170, shift: 1, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+  // Team campaign: three co-op kitchens, 21 tiles wide with the cake in the middle; each one harder than the last
+  { name: 'Side Doors', sub: 'Easy', intro: 'Two lanes, one cake. Hold your side!', hp: 0.95, money: 180, shift: 0, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[-0.6, 8], [3, 8], [3, 2], [6, 2], [6, 6], [10, 6], [10, -0.05]],
              [[20.6, 8], [17, 8], [17, 2], [14, 2], [14, 6], [10, 6], [10, -0.05]]] },
+  { name: 'The Funnel', sub: 'Medium', intro: 'Both lanes meet at the bottom. Guard the long middle together.', hp: 1.12, money: 175, shift: 1, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+    routes: [[[1, -0.6], [1, 7], [4, 7], [4, 2], [7, 2], [7, 9], [10, 9], [10, -0.05]],
+             [[19, -0.6], [19, 7], [16, 7], [16, 2], [13, 2], [13, 9], [10, 9], [10, -0.05]]] },
+  { name: 'Long Haul', sub: 'Hard', intro: 'Long lanes that only meet at the cake. Don\'t be the weak link!', hp: 1.3, money: 170, shift: 2, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+    routes: [[[1, 10.6], [1, 6], [8, 6], [8, 4], [2, 4], [2, 1], [10, 1], [10, -0.05]],
+             [[19, 10.6], [19, 6], [12, 6], [12, 4], [18, 4], [18, 1], [10, 1], [10, -0.05]]] },
 ];
-const CAMPAIGN = 5, TEAM_LV = 5;
+const CAMPAIGN = 5, TEAM0 = 5, TEAMN = 3;
+let TEAM_LV = TEAM0;
+function teamUnlocked(lv) { return lv === TEAM0 || loadBest(lv - 1) >= MAXW; }
 // every level is a different house with its own kitchen
 const HOUSES = [
   { name: "Grandma's Kitchen", bg: '#16110d',
@@ -619,6 +635,16 @@ const HOUSES = [
     cab: { base: '#5b86b0', handle: '#f2ead6' }, side: '#476c92', kick: '#2c3e52', top: '#d9cbb0', wall: '#f0e2c2', trim: '#7a5a3a',
     fridge: { color: '#e9edf0', metal: 0.4, rough: 0.35 }, stove: { color: '#2a2d33', metal: 0.6 }, handle: '#c9ced6',
     rooms: { living: '#7a8a6a', bed: '#9a7a9a', couch: '#c0603a', rug: '#3e6e8a', blanket: '#f2c46a', wood: '#8a5a32', paint: '#ece2cc', hall: '#a87a4a' } },
+  { name: 'School Cafeteria', bg: '#0e1214',
+    floor: { style: 'tile', a: [96, 140, 120], b: [214, 214, 200], grout: '#8a9a90', seed: 21 },
+    cab: { base: '#e2a83a', handle: '#3a3a3a' }, side: '#b8862a', kick: '#3a3a3a', top: '#c9cdd2', wall: '#b9d6c8', trim: '#5a6a62',
+    fridge: { color: '#c6ccd4', metal: 0.85, rough: 0.25 }, stove: { color: '#b8bec6', metal: 0.85 }, handle: '#e6ebf0',
+    rooms: { living: '#6a7a8a', bed: '#8a6a5a', couch: '#3a6aa8', rug: '#e2a83a', blanket: '#d84a3a', wood: '#7a5a3a', paint: '#e8e4d8', hall: '#9a8a6a' } },
+  { name: 'Restaurant Kitchen', bg: '#0a0a0c',
+    floor: { style: 'tile', a: [44, 44, 48], b: [120, 34, 30], grout: '#141416', seed: 25 },
+    cab: { base: '#9aa2ac', handle: '#e6ebf0' }, side: '#6e7680', kick: '#18191c', top: '#d6dade', wall: '#3a3f46', trim: '#1c1d22',
+    fridge: { color: '#c6ccd4', metal: 0.9, rough: 0.2 }, stove: { color: '#1c1d22', metal: 0.7 }, handle: '#e2b84e',
+    rooms: { living: '#3a3a42', bed: '#4a2a2a', couch: '#7a1a1a', rug: '#c9a24a', blanket: '#e2b84e', wood: '#2a1a12', paint: '#b8b0a0', hall: '#3a2414' } },
 ];
 // countertop clutter: the same set of things, arranged differently in every house
 // B(x) = back counter, L(z) = left counter, Rt(z) = right counter
@@ -630,6 +656,8 @@ const PROP_LAYOUT = [
   { accent: '#3aa7c9', fruit: CB(-17), towel: CB(-3.8), blender: CB(8.5), coffee: CB(11.8), knives: CB(21.2), sink: CL(-6), mixer: CL(6), toaster: CR(-9), jars: CR(1), board: CR(9) },
   { accent: '#e2b84e', sink: CB(-17), toaster: CB(-3.8), coffee: CB(9), kettle: CB(12.2), fruit: CB(21.2), mixer: CL(-10), knives: CL(-2), board: CL(7), microwave: CR(-8), blender: CR(2), jars: CR(10) },
   { accent: '#e8733a', sink: CB(-27.5), toaster: CB(-13), mixer: CB(-5), jars: CB(5.5), kettle: CB(9.5), coffee: CB(23), blender: CB(28.5), fruit: CL2(-10), board: CL2(-1), knives: CR2(-10), microwave: CR2(-1), towel: CR2(1.5) },
+  { accent: '#e2a83a', microwave: CB(-27), jars: CB(-12.5), fruit: CB(-5), kettle: CB(5.5), toaster: CB(9.5), coffee: CB(23), sink: CB(28.5), board: CL2(-8), towel: CL2(4), blender: CR2(-8), mixer: CR2(3) },
+  { accent: '#c0302a', sink: CB(-27.5), coffee: CB(-13), blender: CB(-5), mixer: CB(5.5), knives: CB(9.5), kettle: CB(23), jars: CB(28.5), board: CL2(-9), toaster: CL2(1), fruit: CR2(-9), microwave: CR2(1) },
 ];
 function buildCounterProps() {
   const P = {}, steel = std({ color: '#c6ccd4', metalness: 0.9, roughness: 0.25, envMapIntensity: 1 }), dark = std({ color: '#1c1d22', roughness: 0.4 });
@@ -766,8 +794,9 @@ function loadLevel(i) {
   LV = i; ROUTES = LEVELS[i].routes.map(buildRoute); PATH.clear();
   for (const wp of LEVELS[i].routes) for (let k = 0; k < wp.length - 1; k++) {
     const cc = v => clamp(Math.round(v), 0, COLS - 1);
-    let c = cc(wp[k][0]), r = Math.max(0, Math.round(wp[k][1]));
-    const c1 = cc(wp[k + 1][0]), r1 = Math.max(0, Math.round(wp[k + 1][1])), sc = Math.sign(c1 - c), sr = Math.sign(r1 - r);
+    const cr = v => clamp(Math.round(v), 0, ROWS - 1);
+    let c = cc(wp[k][0]), r = cr(wp[k][1]);
+    const c1 = cc(wp[k + 1][0]), r1 = cr(wp[k + 1][1]), sc = Math.sign(c1 - c), sr = Math.sign(r1 - r);
     for (;;) { PATH.add(key(c, r)); if (c === c1 && r === r1) break; c += sc; r += sr; }
   }
   if (KIT.floorMat) applyHouse(i);
@@ -1006,7 +1035,7 @@ function glueTexture() {
 function trailTexture() {
   const PX = 24, W = COLS * CS, [c, x] = cnv(W * PX, 30 * PX), r = rng(5);
   const lines = ROUTES.map(R => { const pts = R.floor.map(([px, pz]) => [(px - X0) * PX, (pz - Z0) * PX]);
-    const c0 = R.wp[0][0]; if (c0 < 0) pts[0][0] = -20; else if (c0 > COLS - 1) pts[0][0] = W * PX + 20; else pts[0][1] = -20;
+    const c0 = R.wp[0][0], r0 = R.wp[0][1]; if (c0 < 0) pts[0][0] = -20; else if (c0 > COLS - 1) pts[0][0] = W * PX + 20; else if (r0 > ROWS - 1) pts[0][1] = 30 * PX + 20; else pts[0][1] = -20;
     pts[pts.length - 1][1] = -10; return pts; });
   const stroke = (w, col) => { x.lineWidth = w; x.strokeStyle = col; x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); for (const pts of lines) pts.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.stroke(); };
   stroke(2.75 * PX, 'rgba(40,26,12,.28)');
@@ -1266,6 +1295,7 @@ function setHoles() {
     const c0 = R.wp[0][0], side = c0 < 0 ? -1 : c0 > COLS - 1 ? 1 : 0, g = new THREE.Group();
     g.add(new THREE.Mesh(KIT.holeGeo, KIT.holeMat)); const rim = new THREE.Mesh(KIT.rimGeo, KIT.rimMat); rim.scale.x = 1.1; rim.position.z = 0.01; g.add(rim);
     if (side) { g.position.set(side * (BOARD.ex - 0.21), 0.01, ccz(R.wp[0][1])); g.rotation.y = -side * Math.PI / 2; }
+    else if (R.wp[0][1] > ROWS - 1) { g.position.set(ccx(c0), 0.01, 14.79); g.rotation.y = Math.PI; }
     else g.position.set(ccx(c0), 0.01, -14.79);
     KIT.holes.add(g);
   }
@@ -3125,18 +3155,23 @@ function drawTowers(dt, t) {
     }
   }
 }
-const TEAMVIS = { tape: null, dim: null };
+const TEAMVIS = { tape: null, dim: null, lv: -1 };
 function drawTeam() {
   const team = LEVELS[LV] && LEVELS[LV].team && S.mode !== 'title';
-  if (!TEAMVIS.tape) {
-    const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: '#ffd23a', transparent: true, opacity: 0.9, depthWrite: false });
-    for (let z = 0; z < 7; z++) { const q = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.9), m); q.rotation.x = -Math.PI / 2; q.position.set(0, 0.06, z * 1.3); q.renderOrder = 4; g.add(q); }
-    scene.add(g); TEAMVIS.tape = g;
+  if (!TEAMVIS.dim) {
     TEAMVIS.dim = new THREE.Mesh(new THREE.PlaneGeometry(1, 30), new THREE.MeshBasicMaterial({ color: '#2a0606', transparent: true, opacity: 0.62, depthWrite: false }));
     TEAMVIS.dim.rotation.x = -Math.PI / 2; TEAMVIS.dim.position.y = 0.065; TEAMVIS.dim.renderOrder = 6; scene.add(TEAMVIS.dim);
   }
+  // yellow tape down the middle column, wherever the trail isn't
+  if (TEAMVIS.lv !== LV) {
+    TEAMVIS.lv = LV; if (TEAMVIS.tape) scene.remove(TEAMVIS.tape);
+    const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({ color: '#ffd23a', transparent: true, opacity: 0.9, depthWrite: false });
+    if (LEVELS[LV].team) for (let r = 0; r < ROWS; r++) if (!PATH.has(key(BOARD.cakeCol, r))) for (const dz of [-0.75, 0.75]) {
+      const q = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.9), m); q.rotation.x = -Math.PI / 2; q.position.set(ccx(BOARD.cakeCol), 0.06, ccz(r) + dz); q.renderOrder = 4; g.add(q);
+    }
+    scene.add(g); TEAMVIS.tape = g;
+  }
   TEAMVIS.tape.visible = !!team;
-  if (team) TEAMVIS.tape.position.set(ccx(BOARD.cakeCol), 0, ccz(6) + 1.9);
   const dim = !!(team && S.p2 && S.placing);
   TEAMVIS.dim.visible = dim;
   if (dim) { const w = BOARD.cakeCol * CS; TEAMVIS.dim.scale.x = w; TEAMVIS.dim.position.set(S.cur === 0 ? X0 + COLS * CS - w / 2 : X0 + w / 2, 0.065, 0); }
@@ -3419,8 +3454,8 @@ $('resume').addEventListener('click', () => setPaused(false));
 $('quit').addEventListener('click', () => { netLeave(); toTitle(); });
 $('lvls').innerHTML = LEVELS.slice(0, CAMPAIGN).map((L, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${i}"><b>Level ${i + 1}</b><span>${HOUSES[i].name}</span><em>${L.name}</em><small id="best${i}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
-$('nextLv').addEventListener('click', () => { SND.init(); startGame(LV + 1); });
-$('again').addEventListener('click', () => { SND.init(); if (S.net === 'host') { netSend({ k: 'start' }); startGame(TEAM_LV, 'host'); } else startGame(); });
+$('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = LV + 1; netSend({ k: 'start', lv: LV + 1 }); startGame(LV + 1, 'host'); } else startGame(LV + 1); });
+$('again').addEventListener('click', () => { SND.init(); if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
 // endless: pick up right where the win left off, same tools and cake, waves keep coming and keep getting harder
 $('endless').addEventListener('click', () => {
   SND.init(); if (!S || S.mode !== 'over') return;
@@ -3597,7 +3632,7 @@ function startGame(lv = LV, net = null) {
   $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on');
   $('waveMax').textContent = '/20';
   syncTray(); syncHud(); showBelt();
-  banner(LEVELS[LV].team ? 'Team Kitchen' : HOUSES[LV].name, LEVELS[LV].team ? (S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes.') : 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
+  banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   tutStart();
@@ -3639,12 +3674,12 @@ function netOnMsg(m) {
   if (!m || !m.k) return;
   NET.last = performance.now();
   if (NET.role === 'host') {
-    if (m.k === 'hello' && (!S || S.net !== 'host' || S.mode !== 'play')) { netSend({ k: 'start' }); $('lobby').hidden = true; startGame(TEAM_LV, 'host'); return; }
+    if (m.k === 'hello' && (!S || S.net !== 'host' || S.mode !== 'play')) { netSend({ k: 'start', lv: TEAM_LV }); $('lobby').hidden = true; startGame(TEAM_LV, 'host'); return; }
     if (m.k === 'bye') { netWarn('Your partner left the game. Their side keeps defending on its own.'); return; }
     if (!S || S.net !== 'host' || S.mode !== 'play') return;
     netHostCmd(m);
   } else if (NET.role === 'guest') {
-    if (m.k === 'start') { $('lobby').hidden = true; $('over').hidden = true; startGame(TEAM_LV, 'guest'); return; }
+    if (m.k === 'start') { TEAM_LV = m.lv || TEAM0; $('lobby').hidden = true; $('over').hidden = true; startGame(TEAM_LV, 'guest'); return; }
     if (m.k === 'bye') { netWarn('The host left the game.'); return; }
     if (!S || S.net !== 'guest') return;
     if (m.k === 's') netApply(m);
@@ -3766,7 +3801,13 @@ function netFrame(dt) {
   else NET.lost = false;
 }
 setInterval(() => { if (NET.link && NET.role === 'guest') netSend({ k: S && S.net === 'guest' ? 'ping' : 'hello' }); }, 1000);
-$('teamT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); });
+function renderTeamMaps() {
+  if (!teamUnlocked(TEAM_LV)) TEAM_LV = TEAM0;
+  $('tmaps').innerHTML = [0, 1, 2].map(i => { const lv = TEAM0 + i, L = LEVELS[lv], ok = teamUnlocked(lv), b = loadBest(lv), st = loadNum(starKey(lv));
+    return `<button class="tmap${lv === TEAM_LV ? ' on' : ''}" type="button" data-lv="${lv}" ${ok ? '' : 'disabled'}><b>${i + 1}. ${L.name}</b><em class="d${i}">${L.sub}</em><small>${!ok ? '🔒 Beat map ' + i + ' first' : b >= MAXW ? starStr(Math.max(1, st)) : b ? 'Best: wave ' + b : HOUSES[lv].name}</small></button>`; }).join('');
+}
+$('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); });
+$('teamT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps(); });
 $('lbBack').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; $('title').hidden = false; });
 $('lbPractice').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV); });
 $('lbCreate').addEventListener('click', () => { SND.init(); netCreate(); });
@@ -3918,9 +3959,10 @@ function gameOver(won) {
     return;
   }
   $('overt').textContent = won ? 'Cake saved!' : 'Cake devoured!';
-  const hasNext = won && LV < CAMPAIGN - 1;
-  $('nextLv').hidden = !hasNext; $('nextLv').textContent = hasNext ? 'Next: ' + HOUSES[LV + 1].name : '';
-  if (hasNext && wasLocked) banner('New house unlocked!', HOUSES[LV + 1].name + ' · Level ' + (LV + 2), false, 2600);
+  const team = !!LEVELS[LV].team, hasNext = won && (team ? LV < TEAM0 + TEAMN - 1 && S.net !== 'guest' : LV < CAMPAIGN - 1);
+  $('nextLv').hidden = !hasNext; $('nextLv').textContent = hasNext ? (team ? 'Next map: ' + LEVELS[LV + 1].name : 'Next: ' + HOUSES[LV + 1].name) : '';
+  if (hasNext && wasLocked) banner(team ? 'New team map unlocked!' : 'New house unlocked!', team ? LEVELS[LV + 1].name + ' · ' + LEVELS[LV + 1].sub : HOUSES[LV + 1].name + ' · Level ' + (LV + 2), false, 2600);
+  if (won && team && S.net === 'guest' && LV < TEAM0 + TEAMN - 1) banner('Next map unlocked!', 'Waiting for the host to start ' + LEVELS[LV + 1].name, false, 3000);
   showStats();
   $('ores').innerHTML = `<dt>Waves survived</dt><dd>${won ? MAXW : Math.max(0, S.wave - 1)} / ${MAXW}</dd><dt>Bugs squashed</dt><dd>${S.kills}</dd><dt>Slices left</dt><dd>${S.lives} / 20</dd><dt>House</dt><dd>${HOUSES[LV].name}</dd><dt>Best</dt><dd>Wave ${loadBest()}</dd>`;
   $('over').hidden = false; $('tip').hidden = true; $('queen').hidden = true;
