@@ -192,6 +192,10 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .tmaps{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:94vw}
 .tmap{display:grid;gap:1px;min-width:120px;padding:8px 12px;border-radius:14px;border:0;cursor:pointer;font:inherit;color:var(--text);background:rgba(20,26,32,.92);box-shadow:inset 0 0 0 2px rgba(255,255,255,.1)}
 .tmap b{font:400 17px var(--display);letter-spacing:.03em} .tmap small{font-weight:800;font-size:12px;color:var(--dim)} .tmap em{font-style:normal;font-weight:900;font-size:11px}
+.dtabs{display:flex;gap:4px;justify-content:center;background:rgba(10,13,16,.8);border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.dtabs button{flex:1;border:0;border-radius:999px;padding:7px 10px;font:900 14px var(--body);color:var(--dim);background:none;cursor:pointer}
+.dtabs button.on{background:var(--gold);color:#2a1600}
+#aiRow{display:grid;gap:8px}
 .tmap.on{box-shadow:inset 0 0 0 3px var(--gold);background:rgba(60,46,10,.92)}
 .tmap:disabled{opacity:.45;cursor:default}
 .tmap .d0{color:#9be37a} .tmap .d1{color:#ffc93c} .tmap .d2{color:#ff8a7a}
@@ -235,7 +239,9 @@ h2.t{font-family:var(--display);font-weight:400;font-size:clamp(34px,8vw,56px);m
 @media (pointer:coarse) and (orientation:portrait){.rotTip{display:block}}
 .lvls{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 .lvls{max-width:760px}
-#solo{overflow-y:auto;justify-content:safe center}
+#solo,#lobby{overflow-y:auto;justify-content:safe center}
+#lobby>*{flex:none}
+@media (max-width:700px) and (orientation:portrait){#peek{top:156px;width:min(62%,300px)}}
 #solo>*{flex:none}
 @media (max-height:820px){#solo .hint{display:none}}
 @media (max-height:560px){#solo{gap:8px;padding-top:10px}#solo .lvls{max-width:none;gap:8px}#solo .lvl{min-width:150px;flex:1 1 150px;max-width:180px;padding:6px 10px}#solo .lvl b{font-size:18px}#solo .lvl .lstars{font-size:16px}#solo .lsub{display:none}}
@@ -408,7 +414,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v79</div>
+    <div id="ver">v80</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -463,6 +469,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <div class="ljoin"><input id="lbCode" inputmode="numeric" maxlength="4" placeholder="Room code" autocomplete="off"><button class="btn" id="lbJoin" type="button">Join</button></div>
         <p id="lbStatus" class="lstat"></p>
         <button class="btn dark" id="lbBot" type="button">Play with AI teammate</button>
+        <div id="aiRow" hidden><div class="dtabs" id="aiDiff"><button type="button" data-d="0">Easy</button><button type="button" data-d="1" class="on">Normal</button><button type="button" data-d="2">Hard</button></div><button class="btn dark" id="lbAi" type="button">Play vs AI</button></div>
         <button class="btn dark" id="lbPractice" type="button">Solo: hold both lanes</button>
         <button class="btn dark" id="lbBack" type="button">Back</button>
       </div>
@@ -2858,7 +2865,7 @@ function update(dt) {
       S.spawnT = t === 'spider' ? S.gap * 1.6 : BT[t].boss ? 2 : t === 'bed' ? S.gap * 3 : S.gap;
     }
   }
-  if (S.vs && S.mode === 'play') vsInbox(dt);
+  if (S.vs && S.mode === 'play') { vsInbox(dt); if (S.vs.bot) aiUpdate(dt); }
   for (const b of S.bugs) {
     const bt = BT[b.t];
     if (b.psnT > 0) {
@@ -3565,19 +3572,19 @@ $('resume').addEventListener('click', () => setPaused(false));
 // quitting an online game asks for a second tap, since it ends the game for your friend too
 let quitArm = 0;
 function syncPauseMenu() {
-  quitArm = 0; const on = S && S.net && S.net !== 'bot';
+  quitArm = 0; const on = S && S.net && S.net !== 'bot' && !(S.vs && S.vs.bot);
   $('restart').hidden = !!on; $('quit').textContent = 'Quit to main menu';
-  $('quitNote').textContent = S && S.vs ? 'Quitting a Bug Battle counts as a loss.' : on ? 'Your partner keeps playing without you.' : '';
+  $('quitNote').textContent = S && S.vs && !S.vs.bot ? 'Quitting a Bug Battle counts as a loss.' : on ? 'Your partner keeps playing without you.' : '';
 }
 $('quit').addEventListener('click', () => {
-  if (S && S.net && S.net !== 'bot' && S.mode === 'play' && performance.now() - quitArm > 5000) { quitArm = performance.now(); $('quit').textContent = 'Tap again to quit'; SND.play('err'); return; }
+  if (S && S.net && S.net !== 'bot' && !(S.vs && S.vs.bot) && S.mode === 'play' && performance.now() - quitArm > 5000) { quitArm = performance.now(); $('quit').textContent = 'Tap again to quit'; SND.play('err'); return; }
   netLeave(); toTitle();
 });
-$('restart').addEventListener('click', () => { if (S.net && S.net !== 'bot') return; SND.init(); startGame(LV, S.net); });
+$('restart').addEventListener('click', () => { SND.init(); if (S.vs && S.vs.bot) { startGame(LV, 'vsbot', S.vs.bot.diff); return; } if (S.net && S.net !== 'bot') return; startGame(LV, S.net); });
 $('lvls').innerHTML = SOLO.map((lv, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${lv}"><b>Level ${i + 1}</b><span>${HOUSES[lv].name}</span><em>${LEVELS[lv].name}</em><small id="best${lv}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
 $('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = LV + 1; netSend({ k: 'start', lv: LV + 1 }); startGame(LV + 1, 'host'); } else startGame(LEVELS[LV].team ? LV + 1 : soloNext(LV)); });
-$('again').addEventListener('click', () => { SND.init(); if (S.vs) { if (NET.role === 'host') { netSend({ k: 'start', lv: LV, vs: 1 }); startGame(LV, 'vs'); } return; } if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
+$('again').addEventListener('click', () => { SND.init(); if (S.vs) { if (S.vs.bot) startGame(LV, 'vsbot', S.vs.bot.diff); else if (NET.role === 'host') { netSend({ k: 'start', lv: LV, vs: 1 }); startGame(LV, 'vs'); } return; } if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
 // endless: pick up right where the win left off, same tools and cake, waves keep coming and keep getting harder
 $('endless').addEventListener('click', () => {
   SND.init(); if (!S || S.mode !== 'over') return;
@@ -3745,7 +3752,7 @@ function toTitle() {
   });
   requestAnimationFrame(resize);
 }
-function startGame(lv = LV, net = null) {
+function startGame(lv = LV, net = null, aiDiff = 1) {
   clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools';
   if (LEVELS[lv].team) {
     S.ext.x = ccx(4); S.ext.z = ccz(9);
@@ -3755,7 +3762,7 @@ function startGame(lv = LV, net = null) {
       if (S.me === 1) { const t = S.ext; S.ext = S.p2.ext; S.p2.ext = t; }
     } else S.money = 260;   // practice: one player holds both lanes
   }
-  if (net === 'vs') { S.net = 'vs'; vsInit(); }
+  if (net === 'vs' || net === 'vsbot') { S.net = 'vs'; vsInit(); if (net === 'vsbot') aiInit(aiDiff); }
   document.querySelector('.stabs [data-tab="send"]').hidden = !S.vs; $('foe').hidden = !S.vs; $('peek').hidden = true; $('foe').innerHTML = '';
   renderShop();
   setCake(20);
@@ -3763,7 +3770,8 @@ function startGame(lv = LV, net = null) {
   $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on');
   $('waveMax').textContent = '/20';
   syncTray(); syncHud(); showBelt();
-  if (S.vs) banner('Bug Battle: ' + HOUSES[LV].name, 'Same waves for both of you. From wave 6 you can spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
+  $('peek').querySelector('b').textContent = S.vs && S.vs.bot ? 'AI\'s kitchen' : 'Friend\'s kitchen';
+  if (S.vs) banner(S.vs.bot ? 'Bug Battle vs AI (' + AI_DIFF[S.vs.bot.diff].name + ')' : 'Bug Battle: ' + HOUSES[LV].name, S.vs.bot ? 'You and the AI get the same waves. From wave 6 you can send bugs at each other during waves. Last cake standing wins!' : 'Same waves for both of you. From wave 6 you can spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
   banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + soloNum(LV) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
@@ -4047,12 +4055,12 @@ function vsMsg(m) {
   else if (m.k === 'go') { if (S.mode === 'play' && S.wave === m.n - 1) vsStart(); }
   else if (m.k === 'rdy') v.foeRdy = true;
   else if (m.k === 'pause') setPaused(!!m.p, true);
-  else if (m.k === 'bye') { if (S.mode === 'play') vsEnd('win', 'Your friend left the game'); else netWarn('Your friend left.'); }
+  else if (m.k === 'bye') { if (S.vs.bot) return; if (S.mode === 'play') vsEnd('win', 'Your friend left the game'); else netWarn('Your friend left.'); }
 }
 // the host starts the countdown once both kitchens are clear of bugs, and the wave when it runs out (or both tap Ready)
 function vsHostTick() {
   const v = S.vs, f = v.foe;
-  if (NET.role !== 'host' || S.mode !== 'play' || !f) return;
+  if ((NET.role !== 'host' && !v.bot) || S.mode !== 'play' || !f) return;
   const now = performance.now();
   // the friend missed the start message: send it again
   if (S.active && f.w === S.wave - 1 && f.c && now - v.goAt > 1500) { v.goAt = now; netSend({ k: 'go', n: S.wave }); }
@@ -4065,13 +4073,15 @@ function vsGo() { S.vs.goAt = performance.now(); netSend({ k: 'go', n: S.wave + 
 function vsStart() {
   const v = S.vs; v.counting = false; v.rdy = false; v.foeRdy = false;
   VSGO = true; try { startWave(); } finally { VSGO = false; }
+  if (v.bot) aiStartWave(S.wave);
 }
-function vsTimeUp() { if (NET.role === 'host' && S.vs.counting) vsGo(); else syncGo(); }
+function vsTimeUp() { if ((NET.role === 'host' || S.vs.bot) && S.vs.counting) vsGo(); else syncGo(); }
 function vsReady() {
   const v = S.vs;
   if (S.mode !== 'play' || S.active || v.fin || v.rdy || !vsCleared()) { SND.play('err'); return; }
   v.rdy = true; netSend({ k: 'rdy' }); SND.play('tap'); syncGo();
 }
+const FW = t => S && S.vs && S.vs.bot ? t.replace(/Your friend's/g, 'The AI\'s').replace(/your friend's/g, 'the AI\'s').replace(/Your friend/g, 'The AI').replace(/your friend/g, 'the AI').replace(/Friend's/g, 'AI\'s').replace(/\bFriend\b/g, 'AI').replace(/\bfriend\b/g, 'AI') : t;
 function vsGoText(go) {
   const v = S.vs, f = v.foe;
   let h, busy = true;
@@ -4080,17 +4090,17 @@ function vsGoText(go) {
   else if (!v.counting) h = `Waiting for friend<small>${f ? (f.a || !f.c ? 'They are still fighting wave ' + f.w : 'Getting ready…') : 'Connecting…'}</small>`;
   else if (v.rdy) h = `Ready!<small>Starts in ${Math.ceil(S.nextT)}s or when your friend is ready</small>`;
   else { busy = false; h = S.wave ? `Ready for wave ${S.wave + 1}<small>Starts in ${Math.ceil(S.nextT)}s · tap to go early</small>` : `Ready!<small>Wave 1 starts in ${Math.ceil(S.nextT)}s · tap to go early</small>`; }
-  go.classList.toggle('busy', busy); if (go.innerHTML !== h) go.innerHTML = h;
+  h = FW(h); go.classList.toggle('busy', busy); if (go.innerHTML !== h) go.innerHTML = h;
 }
 function vsFinish() {
   S.vs.fin = true; S.nextT = 0; hideBelt();
-  banner('All 20 waves done!', 'Your cake made it. Now your friend has to survive too…', false, 2600); SND.play('clear');
+  banner('All 20 waves done!', FW('Your cake made it. Now your friend has to survive too…'), false, 2600); SND.play('clear');
   netSend(vsStatus()); syncGo(); vsCheckEnd();
 }
 function vsCheckEnd() {
   const v = S.vs, f = v && v.foe;
   if (!f || S.mode !== 'play') return;
-  if (f.l <= 0) { vsEnd('win', 'The bugs ate your friend\'s whole cake'); return; }
+  if (f.l <= 0) { vsEnd('win', FW('The bugs ate your friend\'s whole cake')); return; }
   if (v.fin && f.f) { const d = S.lives - f.l; vsEnd(d > 0 ? 'win' : d < 0 ? 'lose' : 'tie', d ? 'You both survived all 20 waves. More cake left wins.' : 'You both survived with the same cake left!'); }
 }
 // ---- sending bugs
@@ -4119,14 +4129,14 @@ function vsSend(i) {
   else if (S.money < d.cost) why = 'Need ' + d.cost + ' coins';
   if (why) { SND.play('err'); if (why !== 'x') banner(why, '', false, 900); return; }
   S.money -= d.cost; v.eco += Math.round(d.cost * 0.1); v.sent += d.n * (d.t === 'bed' ? BT.bed.swarm : 1); v.cd[i] = d.cd || 2.5;
-  netSend({ k: 'atk', t: d.t, n: d.n });
+  netSend({ k: 'atk', t: d.t, n: d.n }); if (v.bot) aiIncoming(d.t, d.n);
   banner('Sent ' + (d.n > 1 ? d.n + ' ' : '') + SEND_NAME[d.t] + '!', 'Income +' + v.eco + ' coins a wave', false, 1000);
   SND.play('wave'); renderShop(); syncTray();
 }
 function vsIncoming(t, n) {
   if (S.mode !== 'play' || !BT[t]) return;
   for (let i = 0; i < Math.min(n, 12); i++) S.vs.inbox.push(t);
-  banner('Incoming!', 'Your friend sent ' + (n > 1 ? n + ' ' : 'a ') + SEND_NAME[t], BT[t].boss, 1500); SND.play(BT[t].boss ? 'boss' : 'wave');
+  banner('Incoming!', FW('Your friend sent ') + (n > 1 ? n + ' ' : 'a ') + SEND_NAME[t], BT[t].boss, 1500); SND.play(BT[t].boss ? 'boss' : 'wave');
   syncGo();
 }
 function vsInbox(dt) {
@@ -4146,7 +4156,7 @@ function syncFoe() {
   const ok = !f.a && f.c, h = `<small>VS</small>${CAKE_ICON}<b>${Math.max(0, f.l)}</b><i class="${ok ? 'ok' : ''}">W${f.w}${ok ? ' ✓' : ''}</i>`;
   if (el.innerHTML !== h) el.innerHTML = h;
   el.classList.toggle('nudge', $('peek').hidden && S.mode === 'play' && !S.active && f.a && !v.peeked);
-  $('peekS').textContent = `Wave ${f.w} · ${Math.max(0, f.l)} slices · ${f.ks} squashed`;
+  $('peekS').textContent = FW(`Wave ${f.w} · ${Math.max(0, f.l)} slices · ${f.ks} squashed`);
 }
 const PEEK = { img: {} };
 function peekImg(svg) {
@@ -4200,7 +4210,8 @@ function drawPeek() {
 function vsFrame(dt) {
   const v = S.vs;
   if (S.mode === 'play' && !S.paused) for (const i in v.cd) if (v.cd[i] > 0) v.cd[i] -= dt;
-  if ((v.stT -= dt) <= 0 && NET.link && (S.mode === 'play' || S.mode === 'over')) { v.stT = 0.25; netSend(vsStatus()); if (S.mode === 'play') { if (!S.active) syncGo(); syncFoe(); } }
+  if (v.bot && (v.stT -= dt) <= 0) { v.stT = 0.25; if (S.mode === 'play') { if (!S.active) syncGo(); syncFoe(); vsCheckEnd(); } }
+  if (!v.bot && (v.stT -= dt) <= 0 && NET.link && (S.mode === 'play' || S.mode === 'over')) { v.stT = 0.25; netSend(vsStatus()); if (S.mode === 'play') { if (!S.active) syncGo(); syncFoe(); } }
   if (shopTab === 'send') { const k = sendKey(); if (k !== v.shopK) { v.shopK = k; renderShop(); syncTray(); } }
   vsHostTick();
   try { drawPeek(); } catch (e) { showErr('peek', e); }
@@ -4210,15 +4221,137 @@ function vsEnd(res, why) {
   const v = S.vs, f = v.foe || { l: '?', w: '?', ks: '?', sn: 0 };
   S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt(); unpick();
   netSend(vsStatus());
-  $('overt').textContent = res === 'win' ? 'You win!' : res === 'lose' ? 'Your friend wins' : 'It\'s a tie!';
+  $('overt').textContent = FW(res === 'win' ? 'You win!' : res === 'lose' ? 'Your friend wins' : 'It\'s a tie!');
   $('ostars').hidden = true; $('endless').hidden = true; $('nextLv').hidden = true;
-  $('again').hidden = NET.role !== 'host'; $('again').textContent = 'Rematch';
-  $('ores').innerHTML = (why ? `<dt>How</dt><dd>${why}</dd>` : '') + `<dt>Your cake</dt><dd>${Math.max(0, S.lives)} / 20 slices</dd><dt>Friend's cake</dt><dd>${typeof f.l === 'number' ? Math.max(0, f.l) : f.l} / 20 slices</dd><dt>Wave reached</dt><dd>You ${S.wave} · Friend ${f.w}</dd><dt>Bugs squashed</dt><dd>You ${S.kills} · Friend ${f.ks}</dd><dt>Bugs sent</dt><dd>You ${v.sent} · Friend ${f.sn || 0}</dd>`;
+  $('again').hidden = NET.role !== 'host' && !v.bot; $('again').textContent = 'Rematch';
+  $('ores').innerHTML = FW((why ? `<dt>How</dt><dd>${why}</dd>` : '') + `<dt>Your cake</dt><dd>${Math.max(0, S.lives)} / 20 slices</dd><dt>Friend's cake</dt><dd>${typeof f.l === 'number' ? Math.max(0, f.l) : f.l} / 20 slices</dd><dt>Wave reached</dt><dd>You ${S.wave} · Friend ${f.w}</dd><dt>Bugs squashed</dt><dd>You ${S.kills} · Friend ${f.ks}</dd><dt>Bugs sent</dt><dd>You ${v.sent} · Friend ${f.sn || 0}</dd>`);
   showStats();
   $('over').hidden = false; $('tip').hidden = true; $('queen').hidden = true; $('peek').hidden = true;
-  if (NET.role !== 'host') banner(res === 'win' ? 'You win!' : res === 'lose' ? 'Better luck next time' : 'Tie!', 'The host can start a rematch', false, 2600);
+  if (NET.role !== 'host' && !v.bot) banner(res === 'win' ? 'You win!' : res === 'lose' ? 'Better luck next time' : 'Tie!', 'The host can start a rematch', false, 2600);
   syncTray(); SND.play(res === 'lose' ? 'lose' : 'clear');
   if (res === 'win') ACH.save();
+}
+
+// ---------------------------------------------------------------- Bug Battle vs AI
+// The AI's kitchen is a light simulation: same level, same waves, real trail positions, simple tool damage.
+// It builds and upgrades like the AI teammate, and from wave 6 it sends bugs at you during waves.
+const AI_DIFF = [
+  { name: 'Easy', dmg: 0.8, think: 1.6, send: 0.12, king: false, reserve: 140 },
+  { name: 'Normal', dmg: 1.0, think: 1.1, send: 0.28, king: true, reserve: 100 },
+  { name: 'Hard', dmg: 1.2, think: 0.8, send: 0.45, king: true, reserve: 60 },
+];
+const AI_ORDER = ['swat', 'spray', 'swat', 'paper', 'zap', 'spray', 'lens', 'zap', 'paper', 'broom', 'lens', 'zap', 'spray', 'paper'];
+let aiDiff = 1;
+$('aiDiff').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; aiDiff = +b.dataset.d; for (const x of $('aiDiff').children) x.classList.toggle('on', x === b); SND.play('tap'); });
+$('lbAi').addEventListener('click', () => { SND.init(); netLeave(); $('lobby').hidden = true; startGame(VS_LV, 'vsbot', aiDiff); });
+function aiInit(diff) {
+  S.vs.bot = { diff, D: AI_DIFF[diff], money: LEVELS[LV].money, lives: 20, acc: 0, wave: 0, active: false, fin: false, towers: [], bugs: [], queue: [], inbox: [], spawnT: 0, inT: 0, gap: 0.8, hpMul: 1,
+    eco: 0, sent: 0, ks: 0, thinkT: 2, cd: {}, routeN: 0, nid: 1 };
+  aiStatus();
+}
+function aiStatus() {
+  const A = S.vs.bot;
+  S.vs.foe = { k: 'v', l: A.lives, w: A.wave, a: A.active ? 1 : 0, c: !A.active && !A.bugs.length && !A.inbox.length ? 1 : 0, f: A.fin ? 1 : 0, r: 1, ks: A.ks, sn: A.sent, m: Math.floor(A.money), o: A.lives <= 0 ? 1 : 0,
+    t: A.towers.map(t => [t.t, t.c, t.r, t.lv]), b: A.bugs.map(b => [b.route, b.s, b.t, b.off]), at: performance.now() };
+}
+function aiStartWave(n) {
+  const A = S.vs.bot; if (A.fin || A.lives <= 0) return;
+  A.wave = n; A.active = true; A.queue = makeWave(n, LEVELS[LV].shift); A.spawnT = 0;
+  A.gap = Math.max(0.34, 0.9 - n * 0.026);
+  A.hpMul = (1 + 0.17 * (n - 1) + 0.011 * (n - 1) ** 2) * LEVELS[LV].hp;
+  A.trio = new Set(A.queue.filter(t => BT[t].boss)).size > 1;
+  aiStatus();
+}
+function aiSpawn(t, sent) {
+  const A = S.vs.bot, bt = BT[t];
+  const make = (s0, off) => {
+    const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1)) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1));
+    A.bugs.push({ id: A.nid++, t, route: A.routeN, s: s0, off, hp, ball: bt.ball ? Math.round(bt.ball * A.hpMul) : 0, sent: sent ? 1 : 0, push: 0 });
+  };
+  A.routeN = (A.routeN + 1) % ROUTES.length;
+  if (t === 'bed') for (let i = 0; i < bt.swarm; i++) make(-i * 0.35 - Math.random() * 0.3, (Math.random() - 0.5) * 1.8);
+  else make(0, (Math.random() - 0.5) * (bt.boss ? 0.2 : 1.3));
+}
+function aiIncoming(t, n) { const A = S.vs.bot; for (let i = 0; i < Math.min(n, 12); i++) A.inbox.push(t); }
+const aiPos = { x: 0, z: 0 };
+function aiBugXZ(b) { pathAt(Math.max(0, b.s), tmpP, b.route); aiPos.x = tmpP.x + tmpP.px * b.off; aiPos.z = tmpP.z + tmpP.pz * b.off; return aiPos; }
+function aiHit(b, d, raw) {
+  const A = S.vs.bot; if (b.hp <= 0) return;
+  d *= A.D.dmg;
+  if (b.ball > 0) { b.ball -= d; return; }
+  b.hp -= raw ? d : Math.max(1, d - (BT[b.t].armor || 0));
+  if (b.hp <= 0) { A.ks++; A.money += Math.max(1, Math.round((BT[b.t].gold + Math.floor(A.wave / 3)) * goldMul() * (b.sent ? 0.5 : 1))); if (b.t === 'widow') for (let i = 0; i < 6; i++) A.bugs.push({ id: A.nid++, t: 'baby', route: b.route, s: Math.max(0, b.s - 0.6 - i * 0.45), off: (Math.random() - 0.5) * 1.8, hp: Math.round(BT.baby.hp * A.hpMul), ball: 0, sent: 0, push: 0 }); }
+}
+function aiTowers(dt) {
+  const A = S.vs.bot, live = A.bugs.filter(b => b.hp > 0 && b.s >= 0);
+  const pos = new Map(live.map(b => { const p = aiBugXZ(b); return [b, [p.x, p.z]]; }));
+  for (const tw of A.towers) {
+    const T = TT[tw.t], L = tw.lv - 1, R = T.range[L], x = ccx(tw.c), z = ccz(tw.r);
+    const inR = live.filter(b => b.hp > 0 && (T.air || !BT[b.t].fly) && Math.hypot(pos.get(b)[0] - x, pos.get(b)[1] - z) <= R);
+    if (tw.t === 'lens') { const tg = inR.reduce((m, b) => !m || b.s > m.s ? b : m, null); if (tg) aiHit(tg, T.dps[L] * 2.5 * dt, true); continue; }
+    if ((tw.cd -= dt) > 0 || !inR.length) continue;
+    tw.cd = T.rate[L];
+    inR.sort((a, b) => b.s - a.s);
+    if (tw.t === 'swat') aiHit(inR[0], T.dmg[L]);
+    else if (tw.t === 'spray') for (const b of inR.slice(0, 4)) { aiHit(b, T.dmg[L]); aiHit(b, T.dot[L] * 2.2, true); }
+    else if (tw.t === 'paper') for (const b of inR) aiHit(b, T.dmg[L]);
+    else if (tw.t === 'zap') { const ch = live.filter(b => b.hp > 0).sort((a, b) => Math.hypot(pos.get(a)[0] - pos.get(inR[0])[0], pos.get(a)[1] - pos.get(inR[0])[1]) - Math.hypot(pos.get(b)[0] - pos.get(inR[0])[0], pos.get(b)[1] - pos.get(inR[0])[1])).slice(0, T.chain[L]); for (const b of ch) aiHit(b, T.dmg[L] * (BT[b.t].fly ? 1.6 : 1)); }
+    else if (tw.t === 'broom') for (const b of inR) { if (BT[b.t].fly) continue; aiHit(b, T.dmg[L]); if ((b.swept || 0) <= 0) { b.push = T.push[L] * (BT[b.t].boss ? 0.17 : 1); b.swept = 3; } }
+  }
+}
+function aiCellScore(t, c, r) {
+  const R = TT[t].range[0] * 0.95, x = ccx(c), z = ccz(r); let n = 0;
+  for (const k of PATH) { const [pc, pr] = k.split(',').map(Number); if (Math.hypot(ccx(pc) - x, ccz(pr) - z) <= R) n++; }
+  return n + (t === 'broom' ? -1 : 0) + Math.random() * 0.5;
+}
+function aiThink() {
+  const A = S.vs.bot, D = A.D;
+  // send bugs at the player (during waves, from wave 6)
+  if (A.active && S.active && A.wave >= 6 && !A.fin && Math.random() < D.send * (A.money > 900 ? 2 : 1)) {
+    const opts = SENDS.map((d, i) => [d, i]).filter(([d, i]) => A.wave >= d.w && (A.cd[i] || 0) <= 0 && A.money - d.cost >= D.reserve && (d.t !== 'queen' || (D.king && A.money > 700)));
+    if (opts.length) {
+      const [d, i] = opts[Math.random() < 0.5 ? opts.length - 1 : Math.floor(Math.random() * opts.length)];
+      A.money -= d.cost; A.eco += Math.round(d.cost * 0.1); A.sent += d.n * (d.t === 'bed' ? BT.bed.swarm : 1); A.cd[i] = d.cd || 2.5;
+      vsIncoming(d.t, d.n); return;
+    }
+  }
+  const want = Math.min(18, 2 + Math.ceil(A.wave * 0.65));
+  const ups = A.towers.filter(t => t.lv < 3 && t.t !== 'broom').sort((a, b) => TT[b.t].cost - TT[a.t].cost);
+  if (A.towers.length >= want || (A.towers.length >= 4 && Math.random() < 0.35)) {
+    const tw = ups.find(t => Math.round(TT[t.t].cost * [0.8, 1.3][t.lv - 1]) <= A.money - 10);
+    if (tw) { A.money -= Math.round(TT[tw.t].cost * [0.8, 1.3][tw.lv - 1]); tw.lv++; return; }
+    if (A.towers.length >= want) return;
+  }
+  const t = AI_ORDER[(A.towers.length + (A.skip || 0)) % AI_ORDER.length];
+  if (A.money < TT[t].cost) return;
+  let best = null, bs = 0;
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
+    if (PATH.has(key(c, r)) || A.towers.some(o => o.c === c && o.r === r)) continue;
+    const sc = aiCellScore(t, c, r); if (sc > bs) { bs = sc; best = [c, r]; }
+  }
+  if (best && bs >= 2) { A.money -= TT[t].cost; A.towers.push({ t, c: best[0], r: best[1], lv: 1, cd: 0.5 }); }
+  else A.skip = (A.skip || 0) + 1;   // no good spot for that tool: try the next one on the list
+}
+function aiUpdate(dt) {
+  const A = S.vs.bot; if (A.lives <= 0) return;
+  if (A.active && A.queue.length && (A.spawnT -= dt) <= 0) { const t = A.queue.shift(); aiSpawn(t); A.spawnT = t === 'spider' ? A.gap * 1.6 : BT[t].boss ? 2 : t === 'bed' ? A.gap * 3 : A.gap; }
+  if (A.inbox.length && (A.inT -= dt) <= 0) { const t = A.inbox.shift(); aiSpawn(t, true); A.inT = BT[t].boss ? 1.5 : t === 'bed' ? 1.2 : t === 'spider' ? 0.7 : 0.4; }
+  for (const b of A.bugs) {
+    if (b.push > 0) { const d = Math.min(b.push, dt * 16); b.push -= d; b.s = Math.max(0, b.s - d); continue; }
+    if (b.swept > 0) b.swept -= dt;
+    b.s += BT[b.t].spd * (b.ball === 0 && BT[b.t].ball ? 1.45 : 1) * dt;
+    if (b.s >= ROUTES[b.route].end) { b.hp = 0; b.gone = 1; A.acc += BT[b.t].lives; while (A.acc >= 1 - 1e-6 && A.lives > 0) { A.acc -= 1; A.lives--; } }
+  }
+  for (const b of A.bugs) if (b.ball < 0) b.ball = 0;
+  aiTowers(dt);
+  A.bugs = A.bugs.filter(b => b.hp > 0);
+  if ((A.thinkT -= dt) <= 0) { A.thinkT = A.D.think; aiThink(); }
+  if (A.active && !A.queue.length && !A.bugs.length && !A.inbox.length) {
+    A.active = false;
+    A.money += Math.round((25 + A.wave * 3) * goldMul()) + A.eco;
+    if (A.wave >= MAXW) A.fin = true;
+  }
+  aiStatus();
 }
 function renderTeamMaps() {
   if (NET.mode === 'vs') {
@@ -4236,7 +4369,7 @@ function openLobby(mode) {
   SND.init(); NET.mode = mode; const vs = mode === 'vs';
   $('lbH').textContent = vs ? 'Bug Battle' : 'Team Kitchen';
   $('lbSub').textContent = vs ? 'You and a friend each defend your own cake against the same waves. Squash bugs, earn coins, and send extra bugs at each other. Last cake standing wins.' : 'Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.';
-  $('lbBot').hidden = vs; $('lbPractice').hidden = vs;
+  $('lbBot').hidden = vs; $('lbPractice').hidden = vs; $('aiRow').hidden = !vs;
   $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps();
 }
 $('teamT').addEventListener('click', () => openLobby('team'));
