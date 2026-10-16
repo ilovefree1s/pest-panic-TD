@@ -421,7 +421,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v81</div>
+    <div id="ver">v82</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2637,7 +2637,7 @@ function startWave() {
   if (S.net === 'guest') { if (S.wave === 0) { (S.rdy ||= [0, 0])[S.me] = 1; syncGo(); } netSend({ k: 'send' }); return; }
   if (S.net === 'vs' && !VSGO) { vsReady(); return; }
   if (S.net === 'host' && S.wave === 0 && !S.teamGo) { teamReady(0); return; }
-  const eb = earlyBonus(); S.nextT = 0; hideBelt();
+  const eb = S.vs ? 0 : earlyBonus(); S.nextT = 0; hideBelt();   // Bug Battle pays the early bonus when you tap Ready instead
   for (const tw of S.towers) tw.fresh = 0;
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
   if (S.endless && S.wave + 1 >= 30) ACH.unlock('end30');
@@ -3435,7 +3435,7 @@ function endDrag() {
 canvas.addEventListener('pointermove', e => {
   if (e.pointerType === 'mouse') { ptrType = 'mouse'; hoverCell = cellAt(e); }
   if (dragId === e.pointerId) { dragTo(e); return; }
-  if (e.pointerType === 'mouse' && S.mode === 'play' && !S.paused) canvas.style.cursor = onExt(e) ? 'grab' : '';
+  if (e.pointerType === 'mouse' && S.mode === 'play' && !S.paused) canvas.style.cursor = !S.placing && onExt(e) ? 'grab' : '';
 });
 canvas.addEventListener('pointerup', e => { if (dragId === e.pointerId) endDrag(); });
 canvas.addEventListener('pointercancel', e => { if (dragId === e.pointerId) endDrag(); });
@@ -3444,7 +3444,7 @@ canvas.addEventListener('contextmenu', e => { e.preventDefault(); S.placing = nu
 canvas.addEventListener('pointerdown', e => {
   SND.init(); ptrType = e.pointerType || 'mouse';
   if (S.mode !== 'play' || S.paused) return;
-  if (dragId === null && onExt(e)) {
+  if (dragId === null && !S.placing && onExt(e)) {   // with a tool picked, a tap on him builds there and he steps aside
     dragId = e.pointerId; try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
     S.ext.held = true; S.ext.state = 'idle'; S.prev = null;
     canvas.style.cursor = 'grabbing'; SND.play('tap');
@@ -4062,7 +4062,7 @@ function vsMsg(m) {
   else if (m.k === 'atk') vsIncoming(m.t, m.n);
   else if (m.k === 'cd') { if (S.mode === 'play' && !S.active && S.wave === m.w) { v.counting = true; S.nextT = m.t; showBelt(); syncGo(); } }
   else if (m.k === 'go') { if (S.mode === 'play' && S.wave === m.n - 1) vsStart(); }
-  else if (m.k === 'rdy') v.foeRdy = true;
+  else if (m.k === 'rdy') { if (!v.foeRdy && !v.rdy && v.counting) banner('Your friend is ready!', 'Ready up now for +' + earlyBonus() + ' coins and the wave comes early', false, 2000); v.foeRdy = true; }
   else if (m.k === 'pause') setPaused(!!m.p, true);
   else if (m.k === 'bye') { if (S.vs.bot) return; if (S.mode === 'play') vsEnd('win', 'Your friend left the game'); else netWarn('Your friend left.'); }
 }
@@ -4074,7 +4074,7 @@ function vsHostTick() {
   // the friend missed the start message: send it again
   if (S.active && f.w === S.wave - 1 && f.c && now - v.goAt > 1500) { v.goAt = now; netSend({ k: 'go', n: S.wave }); }
   if (S.wave >= MAXW || !vsCleared() || !f.c || f.w !== S.wave) return;
-  if (!v.counting) { v.counting = true; S.nextT = S.wave ? NEXT_WAIT : 20; netSend({ k: 'cd', t: S.nextT, w: S.wave }); showBelt(); syncGo(); }
+  if (!v.counting) { v.counting = true; S.nextT = S.wave ? NEXT_WAIT : 20; netSend({ k: 'cd', t: S.nextT, w: S.wave }); showBelt(); syncGo(); if (v.bot) v.bot.money += Math.ceil(S.nextT) * 2; }
   else if (now - v.goAt > 2000) { v.goAt = now; netSend({ k: 'cd', t: S.nextT, w: S.wave }); }
   if (v.rdy && (v.foeRdy || f.r)) vsGo();
 }
@@ -4087,8 +4087,11 @@ function vsStart() {
 function vsTimeUp() { if ((NET.role === 'host' || S.vs.bot) && S.vs.counting) vsGo(); else syncGo(); }
 function vsReady() {
   const v = S.vs;
-  if (S.mode !== 'play' || S.active || v.fin || v.rdy || !vsCleared()) { SND.play('err'); return; }
+  if (S.mode !== 'play' || S.active || v.fin || v.rdy || !vsCleared() || !v.counting) { SND.play('err'); return; }
+  // game of chicken: readying up pays the early bonus right away, but the wave only comes early if you're BOTH ready
+  const eb = earlyBonus(); if (eb) { S.money += eb; bumpStat('stCoins'); }
   v.rdy = true; netSend({ k: 'rdy' }); SND.play('tap'); syncGo();
+  if (!(v.foeRdy || (v.foe && v.foe.r))) banner('Ready! +' + eb + ' coins', FW('If your friend readies up too, the wave comes early'), false, 1600);
 }
 const FW = t => S && S.vs && S.vs.bot ? t.replace(/Your friend's/g, 'The AI\'s').replace(/your friend's/g, 'the AI\'s').replace(/Your friend/g, 'The AI').replace(/your friend/g, 'the AI').replace(/Friend's/g, 'AI\'s').replace(/\bFriend\b/g, 'AI').replace(/\bfriend\b/g, 'AI') : t;
 function vsGoText(go) {
@@ -4098,7 +4101,7 @@ function vsGoText(go) {
   else if (!vsCleared()) h = `${S.bugs.length + v.inbox.length} bugs<small>Sent by your friend</small>`;
   else if (!v.counting) h = `Waiting for friend<small>${f ? (f.a || !f.c ? 'They are still fighting wave ' + f.w : 'Getting ready…') : 'Connecting…'}</small>`;
   else if (v.rdy) h = `Ready!<small>Starts in ${Math.ceil(S.nextT)}s or when your friend is ready</small>`;
-  else { busy = false; h = S.wave ? `Ready for wave ${S.wave + 1}<small>Starts in ${Math.ceil(S.nextT)}s · tap to go early</small>` : `Ready!<small>Wave 1 starts in ${Math.ceil(S.nextT)}s · tap to go early</small>`; }
+  else { busy = false; const fr = v.foeRdy || (f && f.r && !v.bot); h = `${fr ? 'Your friend is ready!' : 'Ready for wave ' + (S.wave + 1)}<small>+${earlyBonus()} coins now · starts in ${Math.ceil(S.nextT)}s</small>`; }
   h = FW(h); go.classList.toggle('busy', busy); if (go.innerHTML !== h) go.innerHTML = h;
 }
 function vsFinish() {
