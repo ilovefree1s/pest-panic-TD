@@ -160,7 +160,18 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .achl b{font:400 16px var(--display);letter-spacing:.03em;color:var(--text)} .achl li.on b{color:var(--gold)}
 .achl p{margin:2px 0 0;font-weight:700;font-size:12.5px;color:var(--dim)}
 .achl small{display:block;margin-top:3px;font-weight:900;font-size:11px;color:var(--gold)}
-.teamBtn{background:linear-gradient(#7fd8ff,#3a9ad8);box-shadow:0 6px 0 #1f5f8e,0 12px 24px rgba(0,0,0,.4);color:#08243a}
+.gtabs{display:flex;gap:4px;background:rgba(10,13,16,.8);border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.gtabs button{border:0;border-radius:999px;padding:8px 16px;font:400 17px var(--display);letter-spacing:.03em;color:var(--dim);background:none;cursor:pointer}
+.gtabs button.on{background:var(--gold);color:#2a1600}
+.tmain{display:grid;gap:12px;width:min(340px,86vw)}
+.tmain .btn{font-size:26px;padding:12px 18px;line-height:1.1}
+.soloBtn small,.teamBtn small{display:block;font:900 12px var(--body);opacity:.75;letter-spacing:.02em}
+.tsmall{display:flex;gap:10px;justify-content:center}
+.tsmall button{width:66px;height:62px;border-radius:16px;border:0;cursor:pointer;background:rgba(20,26,32,.9);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:800 11px var(--body)}
+.tsmall button[hidden]{display:none}
+.tsmall svg{width:24px;height:24px}
+#solo{z-index:30;justify-content:flex-start;overflow-y:auto;padding-block:20px}
+.btn.teamBtn{background:linear-gradient(#7fd8ff,#3a9ad8);box-shadow:0 6px 0 #1f5f8e,0 12px 24px rgba(0,0,0,.4);color:#08243a}
 .teamBtn small{display:block;font:900 11px var(--body);opacity:.75}
 #lobby{z-index:30}
 .lsub{margin:-6px 0 4px;font-weight:800;color:var(--dim);text-align:center;max-width:90vw}
@@ -380,7 +391,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v70</div>
+    <div id="ver">v71</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -405,14 +416,23 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div class="screen" id="title">
       <h1 class="logo">Pest<span>Panic Defense</span></h1>
       <p class="sub">The bugs found the birthday cake. It's on the counter. Set out swatters, sprays and zappers along the sugar trail and save every slice you can.</p>
-      <div class="lvls" id="lvls"></div>
-      <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
-      <button class="btn dark" id="guideT" type="button">Field guide</button>
-      <button class="btn dark" id="achT" type="button">Achievements</button>
-      <button class="btn dark" id="setT" type="button">Settings</button>
-      <button class="btn dark" id="fullT" type="button" hidden>Full screen</button>
+      <div class="tmain">
+        <button class="btn soloBtn" id="soloT" type="button">Solo <small>5 houses · 20 waves each</small></button>
+        <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
+      </div>
+      <div class="tsmall">
+        <button id="guideT" type="button" aria-label="Field guide and achievements" title="Field guide and achievements"><svg viewBox="0 0 24 24"><path d="M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Guide</span></button>
+        <button id="setT" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 20 20"><path d="M8.6 2h2.8l.4 2.1 1.5.7 1.8-1.2 2 2-1.2 1.8.7 1.5 2.1.4v2.8l-2.1.4-.7 1.5 1.2 1.8-2 2-1.8-1.2-1.5.7-.4 2.1H8.6l-.4-2.1-1.5-.7-1.8 1.2-2-2 1.2-1.8-.7-1.5L1.3 11.4V8.6l2.1-.4.7-1.5-1.2-1.8 2-2 1.8 1.2 1.5-.7z" fill="currentColor"/><circle cx="10" cy="10" r="2.8" fill="#1a1f25"/></svg><span>Settings</span></button>
+        <button id="fullT" type="button" hidden aria-label="Full screen" title="Full screen"><svg viewBox="0 0 20 20"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Full</span></button>
+      </div>
       <p class="rotTip">Tip: turn your phone sideways for a bigger board with your tools on the right.</p>
+    </div>
+    <div class="screen" id="solo" hidden>
+      <h2 class="t">Solo</h2>
+      <p class="lsub">Pick a house. Beat one to unlock the next.</p>
+      <div class="lvls" id="lvls"></div>
       <p class="hint">Pick a tool below to see its range, then place it on the floor beside the trail. 20 waves, with a boss every 5th.</p>
+      <button class="btn dark" id="soloBack" type="button">Back</button>
     </div>
     <div class="screen" id="lobby" hidden>
       <h2 class="t">Team Kitchen</h2>
@@ -428,7 +448,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       </div>
     </div>
     <div class="screen" id="achs" hidden>
-      <h2 class="t">Achievements</h2>
+      <div class="gtabs"><button type="button" data-g="guide">Field guide</button><button type="button" data-g="achs">Achievements</button></div>
       <div id="achCount" class="achc"></div>
       <ul id="achList" class="achl"></ul>
       <button class="btn" id="achBack" type="button">Back</button>
@@ -450,7 +470,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <button class="btn dark" id="quit" type="button">Quit to title</button>
     </div>
     <div class="screen" id="guide" hidden>
-      <h2 class="t">Field guide</h2>
+      <div class="gtabs"><button type="button" data-g="guide">Field guide</button><button type="button" data-g="achs">Achievements</button></div>
       <div class="gbody">
         <h3>Your tools</h3><ul class="glist" id="gTools"></ul>
         <h3>Items</h3><ul class="glist" id="gItems"></ul>
@@ -3354,7 +3374,7 @@ addEventListener('keydown', e => {
   SND.init();
   const k = e.key.toLowerCase();
   if (!$('settings').hidden) { if (k === 'escape' || k === 'enter') { e.preventDefault(); closeSettings(); } return; }
-  if (!$('guide').hidden) { if (k === 'escape' || k === 'enter') { e.preventDefault(); closeGuide(); } return; }
+  if (!$('guide').hidden || !$('achs').hidden) { if (k === 'escape' || k === 'enter') { e.preventDefault(); $('achs').hidden = true; $('guide').hidden = false; closeGuide(); } return; }
   if (S.mode !== 'play') { if ((k === 'enter' || k === ' ') && !$('title').hidden) { e.preventDefault(); let lv = 0; while (lv < CAMPAIGN - 1 && unlocked(lv + 1)) lv++; startGame(lv); } return; }
   const kn = k >= '0' && k <= '9' ? (+k || 10) : 0;
   if (kn && kn <= SHOP.length) { setTab('tools'); choose(SHOP[kn - 1]); }
@@ -3449,8 +3469,15 @@ $('setSfx').addEventListener('input', e => { if (SND.muted) SND.toggle(); SND.se
 $('setSfx').addEventListener('change', () => { SND.init(); SND.play('swat'); });
 $('setMus').addEventListener('input', e => { SND.init(); MUSIC.setVol(e.target.value / 100); $('setMusV').textContent = e.target.value + '%'; });
 $('setDone').addEventListener('click', closeSettings);
-$('achT').addEventListener('click', () => { SND.init(); renderAch(); $('achs').hidden = false; $('title').hidden = true; });
-$('achBack').addEventListener('click', () => { $('achs').hidden = true; $('title').hidden = false; });
+// field guide and achievements share one screen with two tabs
+function syncGTabs() { for (const b of document.querySelectorAll('.gtabs button')) b.classList.toggle('on', !$(b.dataset.g).hidden); }
+document.querySelectorAll('.gtabs').forEach(t => t.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; SND.play('tap');
+  if (b.dataset.g === 'achs') { renderAch(); $('guide').hidden = true; $('achs').hidden = false; $('achs').scrollTop = 0; }
+  else { $('achs').hidden = true; $('guide').hidden = false; }
+  syncGTabs();
+}));
+$('achBack').addEventListener('click', () => { $('achs').hidden = true; $('guide').hidden = false; closeGuide(); });
 $('setTut').addEventListener('click', () => { try { localStorage.removeItem('ppd-tut'); } catch (e) {} $('setTut').textContent = 'Tutorial on for Level 1'; });
 $('setT').addEventListener('click', () => { SND.init(); openSettings(); });
 $('setP').addEventListener('click', () => { $('paused').hidden = true; syncSettings(); $('settings').hidden = false; });
@@ -3486,7 +3513,7 @@ function openGuide(from) {
   guideFrom = from;
   if (S.mode === 'play') S.paused = true;
   for (const id of ['title', 'paused']) $(id).hidden = true;
-  $('guide').hidden = false; $('guide').scrollTop = 0;
+  $('guide').hidden = false; $('guide').scrollTop = 0; $('achs').hidden = true; syncGTabs();
 }
 function closeGuide() {
   $('guide').hidden = true;
@@ -3509,7 +3536,7 @@ const FULL = {
     } catch (e) {}
   },
 };
-function syncFull() { const on = FULL.on(); $('fullT').textContent = on ? 'Exit full screen' : 'Full screen'; $('fsIn').style.display = on ? 'none' : ''; $('fsOut').hidden = !on; $('bFull').classList.toggle('on', on); $('bFull').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); }
+function syncFull() { const on = FULL.on(); $('fullT').querySelector('span').textContent = on ? 'Exit' : 'Full'; $('fsIn').style.display = on ? 'none' : ''; $('fsOut').hidden = !on; $('bFull').classList.toggle('on', on); $('bFull').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); }
 $('bFull').hidden = !FULL.can();
 $('fullT').hidden = !FULL.can();
 $('fullT').addEventListener('click', () => { FULL.toggle(); setTimeout(syncFull, 350); });
@@ -3632,7 +3659,7 @@ function startGame(lv = LV, net = null) {
   }
   renderShop();
   setCake(20);
-  $('title').hidden = true; $('over').hidden = true; $('paused').hidden = true; $('hud').hidden = false; $('tray').hidden = false;
+  $('title').hidden = true; $('solo').hidden = true; $('over').hidden = true; $('paused').hidden = true; $('hud').hidden = false; $('tray').hidden = false;
   $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on');
   $('waveMax').textContent = '/20';
   syncTray(); syncHud(); showBelt();
@@ -3842,6 +3869,8 @@ function renderTeamMaps() {
     return `<button class="tmap${lv === TEAM_LV ? ' on' : ''}" type="button" data-lv="${lv}" ${ok ? '' : 'disabled'}><b>${i + 1}. ${L.name}</b><em class="d${i}">${L.sub}</em><small>${!ok ? '🔒 Beat map ' + i + ' first' : b >= MAXW ? starStr(Math.max(1, st)) : b ? 'Best: wave ' + b : HOUSES[lv].name}</small></button>`; }).join('');
 }
 $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); });
+$('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
+$('soloBack').addEventListener('click', () => { $('solo').hidden = true; $('title').hidden = false; });
 $('teamT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps(); });
 $('lbBack').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; $('title').hidden = false; });
 $('lbPractice').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV); });
