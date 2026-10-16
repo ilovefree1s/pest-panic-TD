@@ -178,6 +178,13 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #peek .ph b{color:#ffb3a4;font-weight:900} #peek .ph span{flex:1}
 #peek .ph button{border:0;background:rgba(255,255,255,.1);color:var(--text);border-radius:8px;width:26px;height:24px;cursor:pointer;font:900 13px var(--body)}
 #peek canvas{display:block;width:100%;border-radius:8px}
+#peek3d{display:block;width:100%;margin-top:6px;font-size:16px;padding:7px 10px}
+#spec{position:absolute;inset:0;z-index:30;pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:10px 12px calc(12px + env(safe-area-inset-bottom));box-shadow:inset 0 0 0 4px rgba(255,138,106,.55)}
+#spec .sbar{display:flex;gap:10px;align-items:center;background:rgba(122,29,20,.92);color:#fff;border-radius:999px;padding:7px 16px;font:800 14px var(--body);box-shadow:0 6px 18px rgba(0,0,0,.45)}
+#spec .sbar b{font:400 18px var(--display);letter-spacing:.03em}
+#spec .smine{margin-top:auto;margin-bottom:8px;background:rgba(10,13,16,.85);color:var(--text);border-radius:12px;padding:6px 12px;font:800 13px var(--body)}
+#spec .smine.hurt{background:#b3261e;animation:foeNudge .5s ease-in-out 3}
+#specBack{font-size:20px;padding:10px 22px}
 .soloBtn small,.teamBtn small{display:block;font:900 12px var(--body);opacity:.75;letter-spacing:.02em}
 .tsmall{display:flex;gap:10px;justify-content:center}
 .tsmall button{width:66px;height:62px;border-radius:16px;border:0;cursor:pointer;background:rgba(20,26,32,.9);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:800 11px var(--body)}
@@ -414,7 +421,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v80</div>
+    <div id="ver">v81</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -435,7 +442,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     </div>
     <div id="queen" hidden><div class="n" id="qname">ROACH KING</div><div class="bar"><i id="qfill"></i></div></div>
     <div id="tip" hidden></div>
-    <div id="peek" hidden><div class="ph"><b>Friend's kitchen</b><span id="peekS"></span><button type="button" id="peekX" aria-label="Close">✕</button></div><canvas id="peekC"></canvas></div>
+    <div id="peek" hidden><div class="ph"><b>Friend's kitchen</b><span id="peekS"></span><button type="button" id="peekX" aria-label="Close">✕</button></div><canvas id="peekC"></canvas><button type="button" class="btn" id="peek3d">Watch in 3D</button></div>
+    <div id="spec" hidden><div class="sbar"><b id="specT">Watching</b><span id="specS"></span></div><div class="smine" id="specMine"></div><button type="button" class="btn" id="specBack">Back to my kitchen</button></div>
     <div id="banner"></div>
 
     <div class="screen" id="title">
@@ -3735,6 +3743,7 @@ function syncHud() {
 
 // ---------------------------------------------------------------- flow
 function clearBoard() {
+  if (SPEC.on) exitSpec();
   if (S) { for (const o of [...(S.items || []), ...S.towers]) if (o.marker) scene.remove(o.marker); for (const it of S.items || []) scene.remove(it.o.root); for (const tw of S.towers) { scene.remove(tw.o.root); if (tw.o.tip) scene.remove(tw.o.tip); } for (const b of S.bugs) if (b.mesh) b.mesh.visible = false; }
   for (const k in BOSS_POOL) for (const q of BOSS_POOL[k]) q.visible = false;
   $('queen').hidden = true;
@@ -4045,7 +4054,7 @@ function vsCleared() { return !S.active && !S.bugs.length && !S.vs.inbox.length;
 function vsStatus() {
   return { k: 'v', l: S.lives, w: S.wave, a: S.active ? 1 : 0, c: vsCleared() ? 1 : 0, f: S.vs.fin ? 1 : 0, r: S.vs.rdy ? 1 : 0, ks: S.kills, sn: S.vs.sent, m: Math.floor(S.money), o: S.mode === 'over' ? 1 : 0,
     t: S.towers.filter(t => !t.pending).map(t => [t.t, t.c, t.r, t.lv]),
-    b: S.bugs.filter(b => !b.dead).slice(0, 150).map(b => [b.route, r2(b.s), b.t, r2(b.off)]) };
+    b: S.bugs.filter(b => !b.dead).slice(0, 150).map(b => [b.route, r2(b.s), b.t, r2(b.off), b.id, b.ball && b.ball.hp > 0 ? 1 : 0, r2(Math.max(0, b.hp) / b.max)]) };
 }
 function vsMsg(m) {
   const v = S.vs;
@@ -4218,6 +4227,7 @@ function vsFrame(dt) {
 }
 function vsEnd(res, why) {
   if (S.mode !== 'play') return;
+  if (SPEC.on) exitSpec();
   const v = S.vs, f = v.foe || { l: '?', w: '?', ks: '?', sn: 0 };
   S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt(); unpick();
   netSend(vsStatus());
@@ -4252,7 +4262,7 @@ function aiInit(diff) {
 function aiStatus() {
   const A = S.vs.bot;
   S.vs.foe = { k: 'v', l: A.lives, w: A.wave, a: A.active ? 1 : 0, c: !A.active && !A.bugs.length && !A.inbox.length ? 1 : 0, f: A.fin ? 1 : 0, r: 1, ks: A.ks, sn: A.sent, m: Math.floor(A.money), o: A.lives <= 0 ? 1 : 0,
-    t: A.towers.map(t => [t.t, t.c, t.r, t.lv]), b: A.bugs.map(b => [b.route, b.s, b.t, b.off]), at: performance.now() };
+    t: A.towers.map(t => [t.t, t.c, t.r, t.lv]), b: A.bugs.map(b => [b.route, b.s, b.t, b.off, b.id, b.ball > 0 ? 1 : 0, Math.max(0, b.hp) / (b.max || b.hp || 1)]), at: performance.now() };
 }
 function aiStartWave(n) {
   const A = S.vs.bot; if (A.fin || A.lives <= 0) return;
@@ -4266,7 +4276,7 @@ function aiSpawn(t, sent) {
   const A = S.vs.bot, bt = BT[t];
   const make = (s0, off) => {
     const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1)) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1));
-    A.bugs.push({ id: A.nid++, t, route: A.routeN, s: s0, off, hp, ball: bt.ball ? Math.round(bt.ball * A.hpMul) : 0, sent: sent ? 1 : 0, push: 0 });
+    A.bugs.push({ id: A.nid++, t, route: A.routeN, s: s0, off, hp, max: hp, ball: bt.ball ? Math.round(bt.ball * A.hpMul) : 0, sent: sent ? 1 : 0, push: 0 });
   };
   A.routeN = (A.routeN + 1) % ROUTES.length;
   if (t === 'bed') for (let i = 0; i < bt.swarm; i++) make(-i * 0.35 - Math.random() * 0.3, (Math.random() - 0.5) * 1.8);
@@ -4352,6 +4362,121 @@ function aiUpdate(dt) {
     if (A.wave >= MAXW) A.fin = true;
   }
   aiStatus();
+}
+
+// ---- watch the opponent's kitchen in full 3D: the board swaps to their tools and bugs while your own game keeps running
+const SPEC = { on: false, bugs: [], bm: new Map(), towers: [], tm: new Map(), decals: [], rings: [], lastF: null, myLives: 20 };
+function enterSpec() {
+  if (!S || !S.vs || !S.vs.foe || S.mode !== 'play') return;
+  SPEC.on = true; SPEC.lastF = null; SPEC.myLives = S.lives; S.placing = null; unpick();
+  $('peek').hidden = true; $('spec').hidden = false; $('tip').hidden = true;
+  $('specT').textContent = S.vs.bot ? 'Watching the AI' : 'Watching your friend';
+  SND.play('tap'); specTick(0);
+}
+function exitSpec() {
+  SPEC.on = false; $('spec').hidden = true;
+  for (const tw of SPEC.towers) { scene.remove(tw.o.root); if (tw.o.tip) scene.remove(tw.o.tip); }
+  for (const b of SPEC.bugs) if (b.mesh) b.mesh.visible = false;
+  SPEC.towers = []; SPEC.tm.clear(); SPEC.bugs = []; SPEC.bm.clear(); SPEC.decals = []; SPEC.rings = [];
+  if (S) {
+    for (const tw of S.towers) { tw.o.root.visible = !tw.pending; if (tw.marker) tw.marker.visible = true; }
+    for (const it of S.items || []) { it.o.root.visible = !it.pending; if (it.marker) it.marker.visible = true; }
+    for (const b of S.bugs) if (b.mesh && !b.dead) b.mesh.visible = true;
+    setCake(S.lives);
+  }
+}
+$('peek3d').addEventListener('click', e => { e.stopPropagation(); enterSpec(); });
+$('specBack').addEventListener('click', e => { e.stopPropagation(); exitSpec(); SND.play('tap'); });
+for (const ev of ['pointerdown', 'pointerup', 'pointermove', 'click', 'wheel']) $('spec').addEventListener(ev, e => e.stopPropagation());
+function specSplat(d) {
+  const bt = BT[d.t], y = bugY(d) + 0.4;
+  for (let i = 0; i < (bt.boss ? 30 : d.t === 'bed' || d.t === 'baby' ? 3 : 9); i++) { const a = Math.random() * TAU, v = 2 + Math.random() * (bt.boss ? 6 : 4); FX.goo.spawn({ x: d.x, y, z: d.z, vx: Math.cos(a) * v, vy: 3 + Math.random() * 4, vz: Math.sin(a) * v, grav: 16, life: 0.5 + Math.random() * 0.3, s0: bt.boss ? 0.6 : 0.34, s1: 0.12, c: bt.goo, a0: 1, a1: 0.9 }); }
+  SPEC.decals.push({ x: d.x, y: d.y0 + 0.035, z: d.z, s: bt.boss ? 5 : d.t === 'spider' ? 2.4 : d.t === 'bed' || d.t === 'baby' ? 0.9 : 1.6, rot: Math.random() * TAU, c: bt.goo, k: Math.random() < 0.5 ? 0 : 1 });
+  if (SPEC.decals.length > 120) SPEC.decals.shift();
+}
+function specTick(dt) {
+  const f = S.vs && S.vs.foe; if (!f) return;
+  if (f !== SPEC.lastF) {
+    SPEC.lastF = f;
+    // bugs: match by id so they keep walking smoothly between reports
+    const seen = new Set();
+    for (const [route, s, t, off, id, ball, hp] of f.b) {
+      if (!BT[t] || !ROUTES[route]) continue;
+      const key2 = id ?? (route + ':' + t + ':' + Math.round(s * 2)); seen.add(key2);
+      let d = SPEC.bm.get(key2);
+      if (!d) {
+        d = { id: key2, t, route, s, ts: s, off, x: 0, y0: 0, z: 0, ang: 0, pitch: 0, walk: Math.random() * 6, flash: 0, stuck: 0, psnT: 0, hp: 100, max: 100, dead: false };
+        pathAt(Math.max(0, s), tmpP, route); d.ang = Math.atan2(tmpP.dx, tmpP.dz);
+        if (BT[t].boss) d.mesh = getBoss(t);
+        SPEC.bm.set(key2, d); SPEC.bugs.push(d);
+      }
+      d.ts = s; d.route = route; d.off = off; d.hp = Math.max(1, (hp ?? 1) * 100);
+      d.ball = ball ? (d.ball || { hp: 1, max: 1, flash: 0 }) : null;
+    }
+    for (const d of SPEC.bugs) if (!seen.has(d.id)) { d.dead = true; if (d.mesh) d.mesh.visible = false; if (d.s < ROUTES[d.route].end - 1.5) specSplat(d); SPEC.bm.delete(d.id); }
+    SPEC.bugs = SPEC.bugs.filter(d => !d.dead);
+    // tools: one per tile
+    const tseen = new Set();
+    for (const [t, c, r, lv] of f.t) {
+      if (!TT[t]) continue;
+      const k = c + ',' + r; tseen.add(k);
+      let tw = SPEC.tm.get(k);
+      if (tw && tw.t !== t) { scene.remove(tw.o.root); if (tw.o.tip) scene.remove(tw.o.tip); SPEC.tm.delete(k); tw = null; }
+      if (!tw) {
+        const o = makeTower(t); tw = { id: 5000 + c * 100 + r, t, c, r, x: ccx(c), z: ccz(r), lv: 0, o, anim: 9, yaw: Math.PI, yawT: Math.PI, pop: 0, cd: Math.random(), heat: 0, fresh: 0, pending: false, uses: 0 };
+        o.root.position.set(tw.x, 0, tw.z); o.root.scale.setScalar(0.01); scene.add(o.root); SPEC.tm.set(k, tw);
+      }
+      if (tw.lv !== lv) { tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
+    }
+    for (const [k, tw] of SPEC.tm) if (!tseen.has(k)) { scene.remove(tw.o.root); if (tw.o.tip) scene.remove(tw.o.tip); SPEC.tm.delete(k); }
+    SPEC.towers = [...SPEC.tm.values()];
+    $('specS').textContent = FW(`Wave ${f.w} · ${Math.max(0, f.l)} slices left`) + (f.a ? '' : f.c ? ' · wave cleared' : '');
+  }
+  // move their bugs along the trail
+  for (const d of SPEC.bugs) {
+    const sp = BT[d.t].spd * (d.ball === null && BT[d.t].ball ? 1.45 : 1);
+    d.ts += sp * dt; d.s += sp * dt + (d.ts - d.s) * Math.min(1, dt * 3); if (Math.abs(d.ts - d.s) > 4) d.s = d.ts;
+    pathAt(Math.max(0, d.s), tmpP, d.route);
+    d.x = tmpP.x + tmpP.px * d.off; d.z = tmpP.z + tmpP.pz * d.off; d.y0 = tmpP.y;
+    if (tmpP.flat) { const want = Math.atan2(tmpP.dx, tmpP.dz); let da = want - d.ang; da = Math.atan2(Math.sin(da), Math.cos(da)); d.ang += da * Math.min(1, dt * 8); }
+    const pw = -Math.asin(clamp(tmpP.dy, -1, 1)) * (BT[d.t].fly ? 0.4 : 1); d.pitch += (pw - d.pitch) * Math.min(1, dt * 10);
+    d.walk += sp * dt * 2.6; d.flash -= dt;
+  }
+  // their tools swing at whatever is in reach (just for show; the real fight happens on their phone)
+  for (const tw of SPEC.towers) {
+    const T = TT[tw.t]; tw.anim += dt; if (T.support || !tw.lv) continue;
+    const R = T.range[tw.lv - 1]; let tg = null;
+    for (const b of SPEC.bugs) if ((T.air || !BT[b.t].fly) && (b.x - tw.x) ** 2 + (b.z - tw.z) ** 2 <= R * R && (!tg || b.s > tg.s)) tg = b;
+    if (tw.t === 'lens') { tw.lock = tg; tw.heat = tg ? Math.min(T.ramp, tw.heat + dt) : 0; if (tg) tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z); continue; }
+    if (!tg) continue;
+    tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
+    if ((tw.cd -= dt) <= 0) {
+      tw.cd = T.rate[tw.lv - 1]; tw.anim = 0; tg.flash = 0.08;
+      if (tw.t === 'paper') SPEC.rings.push({ x: tw.x, z: tw.z, r: R, t: 0, life: 0.35 });
+      else if (tw.t === 'zap') { const to = new V3(tg.x, bugY(tg) + 0.45, tg.z); arcs.spawn(new V3(tw.x, tw.o.top.position.y + (tw.lv >= 3 ? 1.45 : 0), tw.z), to, 0); }
+      else if (tw.t === 'broom') { pathAt(tg.s, tmpP, tg.route); const fl = Math.hypot(tmpP.dx, tmpP.dz) || 1, fx = tmpP.dx / fl, fz = tmpP.dz / fl; tw.sw = { x0: tg.x + fx * 1.4 - tw.x, z0: tg.z + fz * 1.4 - tw.z, x1: tg.x - fx * 3 - tw.x, z1: tg.z - fz * 3 - tw.z, fx, fz }; }
+    }
+  }
+  // keep an eye on your own cake while you're away
+  const mine = $('specMine');
+  const txt = `Your kitchen: wave ${S.wave} · ${S.lives} slices` + (S.active ? ` · ${S.queue.length + S.bugs.length} bugs` : ' · clear');
+  if (mine.textContent !== txt) mine.textContent = txt;
+  if (S.lives < SPEC.myLives) { mine.classList.remove('hurt'); void mine.offsetWidth; mine.classList.add('hurt'); mine.textContent = 'Bugs are eating YOUR cake! ' + txt; if (navigator.vibrate) try { navigator.vibrate([80, 40, 80]); } catch (e) {} }
+  SPEC.myLives = S.lives;
+}
+function specFrame(dt) {
+  if (S.mode !== 'play' || !S.vs) { exitSpec(); return; }
+  specTick(dt);
+  // hide your own things for this frame's picture
+  for (const tw of S.towers) { tw.o.root.visible = false; if (tw.o.tip) tw.o.tip.visible = false; if (tw.marker) tw.marker.visible = false; }
+  for (const it of S.items) { it.o.root.visible = false; if (it.marker) it.marker.visible = false; }
+  for (const b of S.bugs) if (b.mesh) b.mesh.visible = false;
+  const real = { bugs: S.bugs, towers: S.towers, decals: S.decals, coins: S.coins, rings: S.rings, items: S.items };
+  S.bugs = SPEC.bugs; S.towers = SPEC.towers; S.decals = SPEC.decals; S.coins = []; S.rings = SPEC.rings; S.items = [];
+  try { drawTowers(dt, clock); gridMesh.visible = false; drawFx(dt, clock); } finally { Object.assign(S, real); }
+  EXT.visible = false; EXT2.visible = false;
+  const fl = Math.max(0, S.vs.foe ? S.vs.foe.l : 20);
+  cake.biting.length = 0; cake.slices.forEach((sl, i) => { sl.visible = i < fl; sl.scale.setScalar(1); });
 }
 function renderTeamMaps() {
   if (NET.mode === 'vs') {
@@ -4569,7 +4694,7 @@ function frame(now) {
     S.shake = Math.max(0, S.shake - dt);
     const sk = S.shake > 0 ? S.shake * 0.8 : 0;
     aim((Math.random() - 0.5) * sk, (Math.random() - 0.5) * sk);
-    drawTowers(dt, clock); drawPlacement(clock); drawFx(S.paused ? 0 : dt, clock);
+    if (SPEC.on) specFrame(dt); else { drawTowers(dt, clock); drawPlacement(clock); drawFx(S.paused ? 0 : dt, clock); }
   } catch (e) { showErr('draw', e); }
   try { if (S.mode === 'play') syncHud(); syncAbil(); } catch (e) { showErr('hud', e); }
   try { tutTick(dt); } catch (e) { showErr('tutorial', e); }
