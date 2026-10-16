@@ -421,7 +421,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v84</div>
+    <div id="ver">v85</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3508,7 +3508,7 @@ function renderShop() {
   for (const b of document.querySelectorAll('.stabs button')) b.classList.toggle('on', b.dataset.tab === shopTab);
   requestAnimationFrame(syncMore);
 }
-function setTab(t) { if (shopTab === t) return; shopTab = t; shop.scrollTop = 0; shop.scrollLeft = 0; renderShop(); if (S) syncTray(); }
+function setTab(t) { if (shopTab === t) return; shopTab = t; if (S && S.mode === 'play') { S.placing = null; S.prev = null; if (S.pick) unpick(); }   /* switching tabs drops whatever tool was picked */ shop.scrollTop = 0; shop.scrollLeft = 0; renderShop(); if (S) syncTray(); }
 // little arrow that shows when more tools are hidden off the end of the tray
 function syncMore() {
   const w = $('shopWrap'); if (!w) return;
