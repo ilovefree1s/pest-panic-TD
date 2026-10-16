@@ -380,7 +380,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v69</div>
+    <div id="ver">v70</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2805,7 +2805,7 @@ function update(dt) {
     if (S.wave >= MAXW && !S.endless) { gameOver(true); return; }
     const bonus = Math.round((25 + S.wave * 3) * goldMul()); S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
     banner('Wave ' + S.wave + ' cleared', '+' + bonus + ' coins', false, 1600); SND.play('clear'); renderShop();
-    S.nextT = NEXT_WAIT; showBelt(); syncTray();
+    S.nextT = LEVELS[LV].team ? 5 : NEXT_WAIT; showBelt(); syncTray();   // co-op: next wave 5 seconds after the last bug on either side is gone
     syncTray();
   }
 }
