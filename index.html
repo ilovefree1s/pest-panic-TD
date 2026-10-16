@@ -404,7 +404,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v74</div>
+    <div id="ver">v75</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3689,7 +3689,7 @@ function startGame(lv = LV, net = null) {
   $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on');
   $('waveMax').textContent = '/20';
   syncTray(); syncHud(); showBelt();
-  if (S.vs) banner('Bug Battle: ' + HOUSES[LV].name, 'Same waves for both of you. Spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
+  if (S.vs) banner('Bug Battle: ' + HOUSES[LV].name, 'Same waves for both of you. From wave 6 you can spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
   banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
@@ -3901,10 +3901,10 @@ setInterval(() => { if (NET.link && NET.role === 'guest') netSend({ k: S && (S.n
 // Every quarter second each side sends a little status report: cake, wave, tools and bugs, so the other can watch.
 let VS_LV = 0, VSGO = false;
 const SENDS = [
-  { t: 'ant', n: 6, cost: 30, w: 1 },
-  { t: 'fly', n: 5, cost: 45, w: 2 },
-  { t: 'spider', n: 3, cost: 60, w: 3 },
-  { t: 'dung', n: 2, cost: 85, w: 5 },
+  { t: 'ant', n: 6, cost: 30, w: 6 },
+  { t: 'fly', n: 5, cost: 45, w: 6 },
+  { t: 'spider', n: 3, cost: 60, w: 6 },
+  { t: 'dung', n: 2, cost: 85, w: 6 },
   { t: 'bed', n: 1, cost: 90, w: 7 },
   { t: 'queen', n: 1, cost: 450, w: 10, cd: 40 },
 ];
