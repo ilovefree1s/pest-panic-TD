@@ -380,7 +380,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v68</div>
+    <div id="ver">v69</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -741,6 +741,8 @@ const houseTex = {};
 function applyHouse(i) {
   const H = HOUSES[i], T = houseTex[i] ||= { floor: floorTextures(H.floor), cab: cabinetTexture(H.cab) };
   const fm = KIT.floorMat; fm.map = T.floor.map; fm.normalMap = T.floor.normal; fm.roughnessMap = T.floor.rough; fm.needsUpdate = true;
+  // line the floor tiles up with the board's grid (the wide Team Kitchen is offset by half a tile)
+  { const u = (X0 + 120) / 12, off = -(u - Math.floor(u * 4) / 4); for (const t of [T.floor.map, T.floor.normal, T.floor.rough]) t.offset.x = off; }
   for (const { m, rep } of KIT.cabFaces) { const t = T.cab.clone(); t.wrapS = THREE.RepeatWrapping; t.repeat.set(rep, 1); t.needsUpdate = true; m.map?.dispose?.(); m.map = t; m.color.set('#ffffff'); m.needsUpdate = true; }
   for (const m of KIT.cabSides) m.color.set(H.side);
   for (const m of KIT.kicks) m.color.set(H.kick);
