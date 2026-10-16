@@ -421,7 +421,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v83</div>
+    <div id="ver">v84</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -522,6 +522,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
           <li>Sound and music volume: tap the gear button (top right) for the Settings sliders.</li>
           <li>Not sure what a tool does? Hold your finger on it in the tray for a second (or hold the mouse button) to see its full description.</li>
           <li>Tools aim at the bug closest to the cake.</li>
+          <li><b>Candles stack, up to two.</b> A tool standing in two Citronella Candle glows gets both boosts and shows two little flames. A third candle on the same tool adds nothing.</li>
           <li>Tap a placed tool to upgrade it (twice) or sell it back for 60% of what you spent.</li>
           <li>Every cleared wave pays a coin bonus. Squashed bugs drop coins too.</li>
           <li>At the end of the trail the bugs climb the cabinet to reach the cake. Tools in the back right corner can still hit them there.</li>
@@ -2110,7 +2111,7 @@ const TT = {
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.4, 3.3, 4.2], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08],
-  d: 'A support tool that does no damage itself. Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. A tool inside two glows just gets the stronger one.' };
+  d: 'A support tool that does no damage itself. Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
 const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle'];
 // items: one-off buys that go on the trail (or, for the license, apply right away)
 Object.assign(TT, {
@@ -2780,7 +2781,13 @@ function candleRng(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.c
 function candleAmp(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1]) ? TT.candle.amp[c.lv - 1] : 0; }
 function syncCandles() {
   const candles = S.towers.filter(c => c.t === 'candle' && !c.pending);
-  for (const tw of S.towers) { let a = 0, r = 0; if (tw.t !== 'candle' && !tw.pending) for (const c of candles) { a = Math.max(a, candleAmp(tw, c)); r = Math.max(r, candleRng(tw, c)); } tw.amp = a; tw.rmul = r; }
+  // up to two candles stack: add the two strongest boosts, a third candle does nothing
+  for (const tw of S.towers) {
+    const A = [], Rg = [];
+    if (tw.t !== 'candle' && !tw.pending) for (const c of candles) { const a = candleAmp(tw, c); if (a > 0) { A.push(a); Rg.push(candleRng(tw, c)); } }
+    A.sort((x, y) => y - x); Rg.sort((x, y) => y - x);
+    tw.amp = (A[0] || 0) + (A[1] || 0); tw.rmul = (Rg[0] || 0) + (Rg[1] || 0); tw.lit = Math.min(2, A.length);
+  }
 }
 function towerAct(tw, dt) {
   if (tw.pending) return;
@@ -2900,7 +2907,7 @@ function update(dt) {
       if (S.mode === 'play' && S.net !== 'guest') biteCake(bt.lives);
     }
   }
-  // citronella glow: every tool standing in a candle's glow gets that candle's boost (the strongest one counts)
+  // citronella glow: every tool standing in a candle's glow gets its boost (two candles stack, no more)
   syncCandles();
   for (const tw of S.towers) { CUR_AMP = tw.amp || 0; CUR_SRC = tw.t; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
   itemsAct(dt);
@@ -3204,15 +3211,16 @@ const BOOST = (() => {
     inner: flameTex(48, 80, [[0, '#fffbe0'], [0.5, '#ffe27a'], [1, '#ffb52e']], null),
   };
 })();
-function boostFlame(o) {
-  if (o.boost) return o.boost;
-  const f = new THREE.Group(); f.position.set(0.95, 0.24, 0.95);
+function boostFlame(o, n = 1) {
+  const slot = n === 2 ? 'boost2' : 'boost';
+  if (o[slot]) return o[slot];
+  const f = new THREE.Group(); f.position.set(n === 2 ? 0.35 : 0.95, 0.24, n === 2 ? 1.15 : 0.95);
   const mk = (map, sx, sy) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map, depthTest: false, transparent: true })); sp.center.set(0.5, 0.04); sp.scale.set(sx, sy, 1); sp.renderOrder = 25; sp.userData.base = [sx, sy]; return sp; };
   const outer = mk(BOOST.outer, 0.62, 1.05), inner = mk(BOOST.inner, 0.34, 0.62); inner.renderOrder = 26; inner.position.y = 0.01;
   f.add(outer, inner);
   const cup = mesh(cyl(0.2, 0.15, 0.17, 14), TM.gold, false); cup.position.y = -0.06; f.add(cup);
   f.userData = { outer, inner };
-  o.root.add(f); o.boost = f; return f;
+  o.root.add(f); o[slot] = f; return f;
 }
 // gentle candle-like motion: lean and stretch, slow and a little irregular (no fast pulsing)
 function animFlame(f, t, seed) {
@@ -3229,6 +3237,7 @@ function drawTowers(dt, t) {
     if (tw.amp > 0 || o.boost) {
       const f = boostFlame(o); f.visible = tw.amp > 0 && !tw.pending;
       if (f.visible) animFlame(f, t, tw.id * 2.3);
+      if ((tw.lit || 0) >= 2 || o.boost2) { const f2 = boostFlame(o, 2); f2.visible = f.visible && tw.lit >= 2; if (f2.visible) animFlame(f2, t, tw.id * 2.3 + 1.9); }
     }
     if (tw.pop < 1) { tw.pop = Math.min(1, tw.pop + dt * 5); const k = tw.pop, e = 1 + Math.sin(k * Math.PI) * 0.25; o.root.scale.setScalar(Math.max(0.01, k * e)); }
     if (o.turn) { let da = tw.yawT - tw.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); tw.yaw += da * Math.min(1, dt * 14); o.turn.rotation.y = tw.yaw; }
@@ -3667,7 +3676,7 @@ function statsHtml(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'glue') return fmtStat('Bugs left', T.cap[L] - tw.uses, N != null ? T.cap[N] - Math.max(0, tw.uses - 6) : null) + fmtStat('Slows to', Math.round(T.slow[L] * 100), N != null ? Math.round(T.slow[N] * 100) : null, '%') + fmtStat('Burn', T.dps[L], N != null ? T.dps[N] : null, '/s');
   if (tw.t === 'candle') return fmtStat('Tools in glow', '+' + Math.round(T.amp[L] * 100), N != null ? '+' + Math.round(T.amp[N] * 100) : null, '% damage') + fmtStat('and', '+' + Math.round(T.rng[L] * 100), N != null ? '+' + Math.round(T.rng[N] * 100) : null, '% range') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + `<li>Boosting <b>${S.towers.filter(o => o.t !== 'candle' && candleAmp(o, tw)).length}</b> tools</li>`;
-  if (tw.amp) return statsBase(tw) + `<li class="boost">🔥 Candle boost <b>+${Math.round(tw.amp * 100)}%</b> damage, <b>+${Math.round((tw.rmul || 0) * 100)}%</b> range</li>`;
+  if (tw.amp) return statsBase(tw) + `<li class="boost">${tw.lit >= 2 ? '🔥🔥 2 candles' : '🔥 Candle'} boost <b>+${Math.round(tw.amp * 100)}%</b> damage, <b>+${Math.round((tw.rmul || 0) * 100)}%</b> range</li>`;
   return statsBase(tw);
 }
 function statsBase(tw) {
