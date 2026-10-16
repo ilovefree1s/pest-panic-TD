@@ -380,7 +380,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v67</div>
+    <div id="ver">v68</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -422,7 +422,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <button class="btn" id="lbCreate" type="button">Create room</button>
         <div class="ljoin"><input id="lbCode" inputmode="numeric" maxlength="4" placeholder="Room code" autocomplete="off"><button class="btn" id="lbJoin" type="button">Join</button></div>
         <p id="lbStatus" class="lstat"></p>
-        <button class="btn dark" id="lbPractice" type="button">Practice solo</button>
+        <button class="btn dark" id="lbBot" type="button">Play with AI teammate</button>
+        <button class="btn dark" id="lbPractice" type="button">Solo: hold both lanes</button>
         <button class="btn dark" id="lbBack" type="button">Back</button>
       </div>
     </div>
@@ -2788,6 +2789,7 @@ function update(dt) {
   for (const tw of S.towers) { CUR_AMP = tw.amp || 0; CUR_SRC = tw.t; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
   itemsAct(dt);
   if (S.mode === 'play' && S.net !== 'guest') { extUpdate(dt); if (S.p2) withPlayer(1 - S.cur, () => extUpdate(dt)); }
+  if (S.mode === 'play' && S.net === 'bot' && (S.botT -= dt) <= 0) { S.botT = 1.1; withPlayer(1, botThink); }
   if (S.net === 'guest') netGuestTick(dt);
   for (const z of S.zaps) { z.t += dt; if (z.left > 0 && z.t >= ZAP_HOP) zapHop(z); }
   S.zaps = S.zaps.filter(z => z.left > 0);
@@ -2875,7 +2877,7 @@ function placeTower(t, c, r) {
   if (!cellOk(t, c, r)) { SND.play('err'); return false; }
   if (S.money < T.cost) { SND.play('err'); return false; }
   S.money -= T.cost;
-  if (S.mode === 'play') { S.built = (S.built || 0) + 1; (S.usedTools || (S.usedTools = new Set())).add(t); }
+  if (S.mode === 'play' && S.cur === S.me) { S.built = (S.built || 0) + 1; (S.usedTools || (S.usedTools = new Set())).add(t); }
   const o = makeTower(t), tw = { id: S.nid++, t, c, r, x: ccx(c), z: ccz(r), lv: 1, cd: 0.2, anim: 9, yaw: 0, yawT: 0, spent: T.cost, fresh: S.active ? 0 : T.cost, uses: 0, owner: S.cur || 0, o };
   o.root.position.set(tw.x, 0, tw.z); o.pips.forEach((p, i) => p.visible = i < 1);
   o.root.scale.setScalar(0.01); tw.pop = 0;
@@ -3552,7 +3554,7 @@ function syncTray() {
     $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
     $('iStats').innerHTML = statsHtml(tw); $('iDesc').textContent = T.d;
     const busy = tw.pending || tw.upPending, theirs = S.p2 && (tw.owner || 0) !== S.cur;
-    if (theirs) $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t) + ' <span class="partner">Partner\'s tool</span>';
+    if (theirs) $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t) + ` <span class="partner">${S.net === 'bot' ? 'AI teammate\'s' : 'Partner\'s'} tool</span>`;
     $('bSell').disabled = !!theirs;
     $('bUp').disabled = theirs || max || busy || S.money < c; $('bUpC').textContent = max ? 'Maxed' : tw.pending ? 'Being built' : tw.upPending ? 'On the way' : c + ' coins';
     if (tw.pending) $('iLv').textContent = 'Being built';
@@ -3621,7 +3623,7 @@ function startGame(lv = LV, net = null) {
   if (LEVELS[lv].team) {
     S.ext.x = ccx(4); S.ext.z = ccz(9);
     if (net) {
-      S.net = net; S.me = S.cur = net === 'guest' ? 1 : 0;
+      S.net = net; S.me = S.cur = net === 'guest' ? 1 : 0; S.botT = 2;
       S.p2 = { money: LEVELS[lv].money, ext: { x: ccx(16), z: ccz(9), yaw: Math.PI, state: 'idle', t: 0, job: null, phase: 0 }, jobs: [], abilCd: 0, lic: 0, dmgMul: 1, itemUsed: {} };
       if (S.me === 1) { const t = S.ext; S.ext = S.p2.ext; S.p2.ext = t; }
     } else S.money = 260;   // practice: one player holds both lanes
@@ -3632,12 +3634,43 @@ function startGame(lv = LV, net = null) {
   $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on');
   $('waveMax').textContent = '/20';
   syncTray(); syncHud(); showBelt();
-  banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
+  banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + (LV + 1) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   tutStart();
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
   requestAnimationFrame(resize);
+}
+// ---------------------------------------------------------------- AI teammate (plays the right side in practice)
+const BOT_ORDER = ['swat', 'spray', 'swat', 'paper', 'zap', 'spray', 'lens', 'candle', 'zap', 'paper', 'lens', 'broom', 'zap', 'spray'];
+function botCellScore(t, c, r) {
+  const R = TT[t].range[0] * 0.95, x = ccx(c), z = ccz(r);
+  if (t === 'candle') return S.towers.filter(o => o.owner === S.cur && Math.hypot(o.x - x, o.z - z) <= R).length * 10;
+  let n = 0;
+  for (const k of PATH) { const [pc, pr] = k.split(',').map(Number); if (sideOf(pc) !== S.cur && sideOf(pc) !== -1) continue; const d = Math.hypot(ccx(pc) - x, ccz(pr) - z); if (d <= R) n += 1 + (sideOf(pc) === -1 ? 0.5 : 0); }
+  return n + (t === 'broom' ? -2 : 0) + Math.random() * 0.5;
+}
+function botThink() {
+  if (S.mode !== 'play' || S.paused) return;
+  // special move when bugs are getting close in our lane (or a boss shows up)
+  const lane = S.bugs.filter(b => !b.dead && b.route === S.cur && b.s > ROUTES[b.route].len * 0.55);
+  if ((S.abilCd || 0) <= 0 && S.money >= ABIL.cost + 20 && (lane.length >= 5 || lane.some(b => BT[b.t].boss))) { useAbility(); return; }
+  const mine = S.towers.filter(t => t.owner === S.cur);
+  const want = Math.min(12, 2 + Math.ceil(S.wave * 0.55));
+  const ups = mine.filter(t => t.lv < 3 && !t.pending && !t.upPending && t.t !== 'broom').sort((a, b) => TT[b.t].cost - TT[a.t].cost);
+  if (mine.length >= want || (mine.length >= 4 && Math.random() < 0.35)) {
+    const tw = ups.find(t => upCost(t) <= S.money - 10);
+    if (tw) { upgrade(tw); return; }
+    if (mine.length >= want) return;
+  }
+  const t = BOT_ORDER[mine.length % BOT_ORDER.length];
+  if (S.money < TT[t].cost) return;   // save up for it
+  let best = null, bs = 0;
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
+    if (sideOf(c) !== S.cur || !cellOk(t, c, r)) continue;
+    const sc = botCellScore(t, c, r); if (sc > bs) { bs = sc; best = [c, r]; }
+  }
+  if (best && (t === 'candle' ? bs >= 20 : bs >= 2)) placeTower(t, best[0], best[1]);
 }
 // ---------------------------------------------------------------- online team play
 // The host runs the whole game and streams it to the guest ~10x a second. The guest's taps go to the host as requests.
@@ -3810,6 +3843,7 @@ $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap');
 $('teamT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps(); });
 $('lbBack').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; $('title').hidden = false; });
 $('lbPractice').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV); });
+$('lbBot').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV, 'bot'); });
 $('lbCreate').addEventListener('click', () => { SND.init(); netCreate(); });
 $('lbJoin').addEventListener('click', () => { SND.init(); netJoin($('lbCode').value); });
 $('lbCode').addEventListener('keydown', e => { if (e.key === 'Enter') netJoin($('lbCode').value); });
