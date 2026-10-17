@@ -425,7 +425,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v89</div>
+    <div id="ver">v90</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -616,7 +616,7 @@ canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); const el 
 canvas.addEventListener('webglcontextrestored', () => { const el = $('glLost'); if (el) el.hidden = true; });
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.35, 0.4, 0.95); bloom.enabled = !LITE; composer.addPass(bloom);
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.3, 0.4, 1.15); bloom.enabled = !LITE; composer.addPass(bloom);
 // if the computer is struggling (slow frames), drop to the lighter graphics automatically
 const PERF = { t: 0, n: 0, done: LITE };
 function perfCheck(dt) {
@@ -717,7 +717,7 @@ const HOUSES = [
     fridge: { color: '#e9edf0', metal: 0.4, rough: 0.35 }, stove: { color: '#2a2d33', metal: 0.6 }, handle: '#c9ced6',
     rooms: { living: '#7a8a6a', bed: '#9a7a9a', couch: '#c0603a', rug: '#3e6e8a', blanket: '#f2c46a', wood: '#8a5a32', paint: '#ece2cc', hall: '#a87a4a' } },
   { name: 'School Cafeteria', bg: '#0e1214',
-    floor: { style: 'tile', a: [96, 140, 120], b: [214, 214, 200], grout: '#8a9a90', seed: 21 },
+    floor: { style: 'tile', a: [58, 104, 84], b: [168, 166, 152], grout: '#4a5650', seed: 21 },
     cab: { base: '#e2a83a', handle: '#3a3a3a' }, side: '#b8862a', kick: '#3a3a3a', top: '#c9cdd2', wall: '#b9d6c8', trim: '#5a6a62',
     fridge: { color: '#c6ccd4', metal: 0.85, rough: 0.25 }, stove: { color: '#b8bec6', metal: 0.85 }, handle: '#e6ebf0',
     rooms: { living: '#6a7a8a', bed: '#8a6a5a', couch: '#3a6aa8', rug: '#e2a83a', blanket: '#d84a3a', wood: '#7a5a3a', paint: '#e8e4d8', hall: '#9a8a6a' } },
@@ -742,7 +742,7 @@ const HOUSES = [
     fridge: { color: '#e8e0cc', metal: 0.1, rough: 0.4 }, stove: { color: '#2a2a2a', metal: 0.5 }, handle: '#2a2a2a',
     rooms: { living: '#7a5a3a', bed: '#5a6a4a', couch: '#8a2a22', rug: '#3a5a3a', blanket: '#c8402a', wood: '#5a3a1e', paint: '#c8a87a', hall: '#7a5230' } },
   { name: 'Corner Bakery', bg: '#140f12',
-    floor: { style: 'tile', a: [240, 196, 208], b: [196, 228, 212], grout: '#f6efe6', seed: 37 },
+    floor: { style: 'tile', a: [172, 118, 136], b: [116, 152, 134], grout: '#8a7a74', seed: 37 },
     cab: { base: '#f2b8c8', handle: '#e2b84e' }, side: '#d898aa', kick: '#8a5a68', top: '#f6f2ea', wall: '#fbe8d2', trim: '#c8a07a',
     fridge: { color: '#bfe4d6', metal: 0.2, rough: 0.35 }, stove: { color: '#f4efe4', metal: 0.2 }, handle: '#e2b84e',
     rooms: { living: '#c8a08a', bed: '#b8a0c8', couch: '#8ac8b4', rug: '#f2b8c8', blanket: '#ffe08a', wood: '#b88a5a', paint: '#fbefe0', hall: '#d2a87a' } },
