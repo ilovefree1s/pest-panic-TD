@@ -321,6 +321,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #go{font-size:21px;padding:0 24px;min-width:160px;line-height:1.1;grid-column:2;grid-row:1}
 #go small{display:block;font-family:var(--body);font-weight:900;font-size:12px;letter-spacing:.02em;opacity:.75}
 #go.busy{background:#2a333b;color:var(--text);box-shadow:0 5px 0 #11161a;cursor:default}
+#go.busy.rush{cursor:pointer}
+#go.busy.armed{background:linear-gradient(#ff9a5a,#e0602a);color:#2a0c00;box-shadow:0 5px 0 #8a3410}
 #info{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px 14px;align-items:center;min-width:0;position:relative}
 #info .ic{width:52px;height:52px;border-radius:14px;background:#0e1317;display:grid;place-items:center}
 #info .ic svg{width:42px;height:42px}
@@ -425,7 +427,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v90</div>
+    <div id="ver">v91</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2113,7 +2115,7 @@ const TT = {
            d: 'Focuses a sunbeam on one bug. The burn grows the longer it stays on that bug, up to 5× after 3 seconds, then holds there. Switching to a new bug starts the burn over. Burns through shells and hits flies.' },
   zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [16, 26, 40], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). Flies take 60% extra.' },
 };
-TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.4, 3.3, 4.2], rate: [3.2, 2.8, 2.4],
+TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.2, 3.0, 3.8], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08],
   d: 'A support tool that does no damage itself. Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
@@ -2638,24 +2640,29 @@ function spawnBug(t, route = nextRoute()) {
   S.bugs.push(b);
   return b;
 }
+const RUSH_BONUS = 20;
+function canRush() { return S.mode === 'play' && S.active && !S.vs && (S.endless || S.wave < MAXW); }
 function startWave() {
-  if (S.mode !== 'play' || S.active || S.over) return;
+  if (S.mode !== 'play' || S.over) return;
+  if (S.active && !canRush()) return;
   if (S.net === 'guest') { if (S.wave === 0) { (S.rdy ||= [0, 0])[S.me] = 1; syncGo(); } netSend({ k: 'send' }); return; }
   if (S.net === 'vs' && !VSGO) { vsReady(); return; }
   if (S.net === 'host' && S.wave === 0 && !S.teamGo) { teamReady(0); return; }
-  const eb = S.vs ? 0 : earlyBonus(); S.nextT = 0; hideBelt();   // Bug Battle pays the early bonus when you tap Ready instead
+  const rush = S.active, eb = S.vs ? 0 : rush ? Math.round(RUSH_BONUS) : earlyBonus(); S.nextT = 0; hideBelt(); RUSHARM = -1e9;   // Bug Battle pays the early bonus when you tap Ready instead
   for (const tw of S.towers) tw.fresh = 0;
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
   if (S.endless && S.wave + 1 >= 30) ACH.unlock('end30');
   if (S.endless && S.wave + 1 >= 50) ACH.unlock('end50');
-  S.wave++; S.queue = makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
-  S.hpMul = (1 + 0.17 * (S.wave - 1) + 0.011 * (S.wave - 1) ** 2) * LEVELS[LV].hp; S.spawnT = 0; S.active = true;
+  S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
+  S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];   // every wave in this push pays its clear bonus at the end
+  S.hpMul = (1 + 0.17 * (S.wave - 1) + 0.011 * (S.wave - 1) ** 2) * LEVELS[LV].hp; if (!rush) S.spawnT = 0; S.active = true;
   // endless: past wave 20 every wave gets another 6% tougher on top, and they pour out faster
   if (S.wave > MAXW) { S.hpMul *= 1.06 ** (S.wave - MAXW); S.gap = Math.max(0.24, 0.34 - (S.wave - MAXW) * 0.005); }
   S.trio = new Set(S.queue.filter(t => BT[t].boss)).size > 1;
   // all of this wave's queens share one health bar
   const bq = S.queue.filter(t => BT[t].boss), bb = bq.length ? BT[bq[0]] : null;
   S.qCount = bq.length; S.qTotal = bq.reduce((a, t) => a + bossHp(t), 0);
+  if (rush) S.qTotal = S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHp(t), 0) + S.bugs.filter(b => b.mesh && !b.dead).reduce((a, b) => a + b.max, 0);
   // one of each boss = the final trio; two of the same one (Team Kitchen doubles them) get a pair name
   const trio = new Set(bq).size > 1, pair = !trio && bq.length > 1, six = trio && bq.length > 3;
   const PAIR = { queen: 'Roach Twins', widow: 'Widow Sisters', hornet: 'Hornet Sisters' };
@@ -2663,7 +2670,7 @@ function startWave() {
   if (bb) $('qname').textContent = bname.toUpperCase();
   renderShop();
   const boss = !!bb;
-  banner(boss ? bname + '!' : 'Wave ' + S.wave, boss ? (trio ? (six ? 'Two Hornet Queens, two Black Widows and two Roach Kings. Final wave!' : 'Hornet Queen, Black Widow and Roach King. Final wave!') : pair ? 'Two ' + bb.name + 's at once' + (LEVELS[LV].team ? ', one for each lane!' : '!') : bb.sub) : eb ? 'Called early: +' + eb + ' coins' : '', boss, 1900);
+  banner(boss ? bname + '!' : 'Wave ' + S.wave, boss ? (trio ? (six ? 'Two Hornet Queens, two Black Widows and two Roach Kings. Final wave!' : 'Hornet Queen, Black Widow and Roach King. Final wave!') : pair ? 'Two ' + bb.name + 's at once' + (LEVELS[LV].team ? ', one for each lane!' : '!') : bb.sub) : eb ? (rush ? 'Sent on top of wave ' + (S.wave - 1) + ': +' : 'Called early: +') + eb + ' coins' : '', boss, 1900);
   SND.play(boss ? 'boss' : 'wave');
   syncTray();
 }
@@ -2929,8 +2936,9 @@ function update(dt) {
     S.active = false;
     for (const it of [...S.items]) if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it);
     if (S.wave >= MAXW && !S.endless) { if (S.vs) vsFinish(); else gameOver(true); return; }
-    const bonus = Math.round((25 + S.wave * 3) * goldMul()) + (S.vs ? S.vs.eco : 0); S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
-    banner('Wave ' + S.wave + ' cleared', '+' + bonus + ' coins', false, 1600); SND.play('clear'); renderShop();
+    const cl = S.clears && S.clears.length ? S.clears : [S.wave];
+    const bonus = cl.reduce((a, w) => a + Math.round((25 + w * 3) * goldMul()), 0) + (S.vs ? S.vs.eco : 0); S.clears = null; S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
+    banner(cl.length > 1 ? 'Waves ' + cl[0] + '–' + cl[cl.length - 1] + ' cleared' : 'Wave ' + S.wave + ' cleared', '+' + bonus + ' coins', false, 1600); SND.play('clear'); renderShop();
     S.nextT = S.vs ? 0 : LEVELS[LV].team ? 5 : NEXT_WAIT; showBelt(); if (S.vs) { netSend(vsStatus()); syncGo(); } syncTray();   // co-op: next wave 5 seconds after the last bug on either side is gone
     syncTray();
   }
@@ -3574,7 +3582,21 @@ function showToolCard(t) {
 }
 addEventListener('pointerdown', e => { const el = $('tcard'); if (!el.hidden && !e.target.closest('#shop')) el.hidden = true; }, true);
 shop.addEventListener('pointerdown', () => { const el = $('tcard'); if (!el.hidden) el.hidden = true; }, true);
-$('go').addEventListener('click', () => { SND.init(); startWave(); });
+let RUSHARM = -1e9;
+$('go').addEventListener('click', () => {
+  SND.init();
+  if (S.active) {
+    if (!canRush()) return;
+    if (performance.now() - RUSHARM > 3000) { RUSHARM = performance.now(); SND.play('tap'); syncGo(); setTimeout(() => S && S.active && syncGo(), 3100); return; }
+    RUSHARM = -1e9;
+  }
+  startWave();
+});
+function goBusyText(n) {
+  const armed = performance.now() - RUSHARM < 3000 && canRush();
+  $('go').classList.toggle('armed', armed); $('go').classList.toggle('rush', canRush());
+  return armed ? `Tap again to send wave ${S.wave + 1}<small>+${RUSH_BONUS} coins · on top of this one</small>` : canRush() ? `${n} bugs<small>Wave ${S.wave} · tap to send wave ${S.wave + 1} now</small>` : `${n} bugs<small>Wave ${S.wave} in progress</small>`;
+}
 $('bUp').addEventListener('click', () => upgrade());
 
 $('abil').addEventListener('click', () => { SND.init(); useAbility(); });
@@ -3745,7 +3767,8 @@ function syncGo() {
     const h = mine ? `Ready!<small>Waiting for your partner to tap Ready</small>` : theirs ? `Ready<small>Your partner is ready! Tap to start wave 1</small>` : `Ready<small>Wave 1 starts when you both tap Ready</small>`;
     if (go.innerHTML !== h) go.innerHTML = h; return;
   }
-  if (S.active) { go.classList.add('busy'); go.innerHTML = `${S.queue.length + S.bugs.length} bugs<small>Wave ${S.wave} in progress</small>`; }
+  if (!S.active) go.classList.remove('armed', 'rush');
+  if (S.active) { go.classList.add('busy'); go.innerHTML = goBusyText(S.queue.length + S.bugs.length); }
   else if (S.nextT > 0) { go.classList.remove('busy'); go.innerHTML = `Next wave early<small>+${earlyBonus()} coins · starts in ${Math.ceil(S.nextT)}s</small>`; }
   else if (S.wave >= MAXW && !S.endless) { go.classList.add('busy'); go.innerHTML = `All ${MAXW} waves done<small>${S.mode === 'over' ? 'Level over' : 'Nice work!'}</small>`; }
   else { go.classList.remove('busy'); go.innerHTML = `Send bugs<small>Wave ${S.wave + 1}${S.endless ? ' · Endless' : ' of ' + MAXW}</small>`; }
@@ -3775,7 +3798,7 @@ function syncHud() {
     for (const b of S.bugs) if (b.mesh) cur += Math.max(0, b.hp);
     $('qfill').style.width = Math.max(0, cur / S.qTotal * 100) + '%';
   }
-  if (S.active) { const n = S.queue.length + S.bugs.length; if (shown.left !== n) { shown.left = n; $('go').innerHTML = `${n} bugs<small>Wave ${S.wave} in progress</small>`; } }
+  if (S.active) { const n = S.queue.length + S.bugs.length, k = n + ':' + S.wave + ':' + (performance.now() - RUSHARM < 3000); if (shown.left !== k) { shown.left = k; $('go').innerHTML = goBusyText(n); } }
   syncTip();
 }
 
