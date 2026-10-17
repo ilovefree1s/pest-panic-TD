@@ -69,6 +69,10 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #abil.cool{box-shadow:0 0 0 3px #5a6470,0 6px 16px rgba(0,0,0,.5);cursor:default}
 #abil:not(.cool):not(.busy){animation:abilReady 1.6s ease-in-out infinite}
 @keyframes abilReady{50%{box-shadow:0 0 0 3px var(--gold),0 0 18px 4px rgba(255,200,60,.55)}}
+#undo{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:22;display:flex;align-items:center;gap:10px;border:0;cursor:pointer;
+  background:rgba(14,18,22,.94);color:var(--text);border-radius:999px;padding:8px 8px 8px 16px;font:800 14px var(--body);box-shadow:0 8px 22px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.1);overflow:hidden}
+#undo b{background:var(--gold);color:#2a1600;border-radius:999px;padding:6px 14px;font:900 14px var(--body)}
+#undo i{position:absolute;left:0;bottom:0;height:3px;background:var(--gold);width:100%;transform-origin:left}
 @media (max-width:700px){#abil{width:58px;height:58px;left:8px;bottom:8px} #abil svg{width:32px;height:32px}}
 @media (orientation:landscape) and (max-height:560px){#abil{width:54px;height:54px;left:8px;bottom:8px} #abil svg{width:30px;height:30px}}
 #glLost{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(8,10,12,.92);text-align:center;padding:20px}
@@ -421,7 +425,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v86</div>
+    <div id="ver">v87</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -442,6 +446,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     </div>
     <div id="queen" hidden><div class="n" id="qname">ROACH KING</div><div class="bar"><i id="qfill"></i></div></div>
     <div id="tip" hidden></div>
+    <button type="button" id="undo" hidden><span id="undoT">Sold</span><b>↶ Undo</b><i id="undoBar"></i></button>
     <div id="peek" hidden><div class="ph"><b>Friend's kitchen</b><span id="peekS"></span><button type="button" id="peekX" aria-label="Close">✕</button></div><canvas id="peekC"></canvas><button type="button" class="btn" id="peek3d">Watch in 3D</button></div>
     <div id="spec" hidden><div class="sbar"><b id="specT">Watching</b><span id="specS"></span></div><div class="smine" id="specMine"></div><button type="button" class="btn" id="specBack">Back to my kitchen</button></div>
     <div id="banner"></div>
@@ -3036,8 +3041,30 @@ function sell(tw = S.pick) {
   if (!tw) return;
   if (S.p2 && (tw.owner || 0) !== S.cur) return;
   if (S.net === 'guest') { netSend({ k: 'sell', id: tw.id }); unpick(); SND.play('sell'); return; }
-  S.money += sellVal(tw); SND.play('sell'); bumpStat('stCoins'); removeTower(tw); syncTray();
+  const got = sellVal(tw);
+  // remember it for a few seconds so an accidental sell can be undone
+  if ((tw.owner || 0) === (S.me || 0) && S.cur === (S.me || 0)) S.undo = { t: tw.t, c: tw.c, r: tw.r, lv: tw.lv, spent: tw.spent, fresh: tw.fresh, uses: tw.uses || 0, owner: tw.owner || 0, pending: !!tw.pending, got, until: performance.now() + UNDO_MS };
+  S.money += got; SND.play('sell'); bumpStat('stCoins'); removeTower(tw); syncTray(); syncUndo();
 }
+const UNDO_MS = 8000;
+function syncUndo() {
+  const u = S && S.undo, el = $('undo');
+  if (!u || S.mode !== 'play' || performance.now() > u.until) { if (!el.hidden) el.hidden = true; if (u && S.mode === 'play' && performance.now() > u.until) S.undo = null; return; }
+  if (el.hidden) { $('undoT').textContent = 'Sold ' + (TT[u.t].short || TT[u.t].name) + ' +' + u.got; el.hidden = false; }
+  $('undoBar').style.transform = `scaleX(${Math.max(0, (u.until - performance.now()) / UNDO_MS)})`;
+}
+function undoSell() {
+  const u = S && S.undo; if (!u || S.mode !== 'play' || performance.now() > u.until) return;
+  if (S.money < u.got) { SND.play('err'); banner('Not enough coins to undo', 'You already spent the money from that sale', false, 1400); return; }
+  if (S.towers.some(o => o.c === u.c && o.r === u.r) || S.items.some(o => o.c === u.c && o.r === u.r)) { SND.play('err'); banner('Can\'t undo', 'Something else is on that tile now', false, 1400); return; }
+  S.undo = null; S.money -= u.got;
+  const o = makeTower(u.t), tw = { id: S.nid++, t: u.t, c: u.c, r: u.r, x: ccx(u.c), z: ccz(u.r), lv: u.lv, cd: 0.2, anim: 9, yaw: 0, yawT: 0, spent: u.spent, fresh: u.fresh, uses: u.uses, owner: u.owner, o };
+  o.setLevel(u.lv); o.pips.forEach((p, i) => p.visible = i < u.lv);
+  o.root.position.set(tw.x, 0, tw.z); o.root.scale.setScalar(0.01); tw.pop = 0; scene.add(o.root); S.towers.push(tw);
+  if (u.pending) { tw.pending = true; o.root.visible = false; addJob('build', tw); }
+  SND.play('up'); syncTray(); syncUndo();
+}
+$('undo').addEventListener('click', e => { e.stopPropagation(); SND.init(); undoSell(); });
 function pick(tw) { S.pick = tw; S.placing = null; S.prev = null; syncTray(); }
 function unpick() { S.pick = null; syncTray(); }
 function choose(t) {
@@ -3487,6 +3514,7 @@ addEventListener('keydown', e => {
   else if (k === 'p') setPaused(!S.paused);
   else if (k === 'm') toggleSound();
   else if (k === 'u') upgrade();
+  else if (k === 'z') undoSell();
   else if (k === 'e') useAbility();
   else if (k === 's') sell();
   else if (k === 'escape') { S.placing = null; S.prev = null; unpick(); }
@@ -4708,7 +4736,7 @@ function frame(now) {
     aim((Math.random() - 0.5) * sk, (Math.random() - 0.5) * sk);
     if (SPEC.on) specFrame(dt); else { drawTowers(dt, clock); drawPlacement(clock); drawFx(S.paused ? 0 : dt, clock); }
   } catch (e) { showErr('draw', e); }
-  try { if (S.mode === 'play') syncHud(); syncAbil(); } catch (e) { showErr('hud', e); }
+  try { if (S.mode === 'play') syncHud(); syncAbil(); syncUndo(); } catch (e) { showErr('hud', e); }
   try { tutTick(dt); } catch (e) { showErr('tutorial', e); }
   try { netFrame(raw > 0 && raw < 1 ? raw : dt); } catch (e) { showErr('net', e); }
   try { MUSIC.set(S.mode === 'play' && !$('queen').hidden ? 'boss' : 'calm'); } catch (e) {}
