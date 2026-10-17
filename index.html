@@ -425,7 +425,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v88</div>
+    <div id="ver">v89</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3747,6 +3747,7 @@ function syncGo() {
   }
   if (S.active) { go.classList.add('busy'); go.innerHTML = `${S.queue.length + S.bugs.length} bugs<small>Wave ${S.wave} in progress</small>`; }
   else if (S.nextT > 0) { go.classList.remove('busy'); go.innerHTML = `Next wave early<small>+${earlyBonus()} coins · starts in ${Math.ceil(S.nextT)}s</small>`; }
+  else if (S.wave >= MAXW && !S.endless) { go.classList.add('busy'); go.innerHTML = `All ${MAXW} waves done<small>${S.mode === 'over' ? 'Level over' : 'Nice work!'}</small>`; }
   else { go.classList.remove('busy'); go.innerHTML = `Send bugs<small>Wave ${S.wave + 1}${S.endless ? ' · Endless' : ' of ' + MAXW}</small>`; }
 }
 function syncTip() {
