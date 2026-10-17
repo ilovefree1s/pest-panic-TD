@@ -427,7 +427,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v92</div>
+    <div id="ver">v93</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3709,7 +3709,7 @@ $('bFull').addEventListener('click', () => { FULL.toggle(); setTimeout(syncFull,
 for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => { syncFull(); requestAnimationFrame(resize); });
 $('guideBack').addEventListener('click', closeGuide);
 function toggleSpeed() { if (S.net === 'guest') { netSend({ k: 'speed', v: S.speed > 1 ? 1 : 2 }); return; } S.speed = S.speed > 1 ? 1 : 2; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
-function setPaused(p, remote) { if (S.mode !== 'play') return; S.paused = p; if (p) syncPauseMenu(); $('paused').hidden = !p; if (S.net && !remote) netSend({ k: 'pause', p }); }
+function setPaused(p, remote) { if (S.mode !== 'play') return; S.paused = p; if (p) { syncPauseMenu(); if (S.net !== 'guest') S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }   /* pausing drops back to normal speed */ $('paused').hidden = !p; if (S.net && !remote) netSend({ k: 'pause', p }); }
 function toggleSound() { SND.init(); SND.toggle(); syncSnd(); }
 function syncSnd() { if ($('setSfx')) syncSettings(); }
 function bumpStat(id) { const el = $(id); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
