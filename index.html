@@ -427,7 +427,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v101</div>
+    <div id="ver">v102</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -647,7 +647,7 @@ const LEVELS = [
     routes: [[[1, -0.6], [1, 8], [4, 8], [4, 2], [7, 2], [7, 8], [10, 8], [10, 4], [12, 4], [12, -0.05]]] },
   { name: 'Kitchen Trail', sub: 'A shorter snake, tougher bugs', intro: 'A shorter trail, and the bugs are tougher', hp: 1.1, money: 165, shift: 0,
     routes: [[[1, -0.6], [1, 7], [5, 7], [5, 3], [9, 3], [9, 5], [12, 5], [12, -0.05]]] },
-  { name: 'Short Cut', sub: 'A short trail with few pockets', intro: 'Short trail. Every second counts.', hp: 1.12, money: 175, shift: 1,
+  { name: 'Short Cut', sub: 'A short trail with few pockets', intro: 'Short trail. Every second counts.', hp: 1.12, money: 235, bossHp: 0.9, shift: 1,
     routes: [[[1, -0.6], [1, 5], [6, 5], [6, 8], [12, 8], [12, -0.05]]] },
   { name: 'Zig Zag', sub: 'A new hole on the right', intro: 'They come from the right and cross the whole kitchen', hp: 1.18, money: 180, shift: 1,
     routes: [[[10, -0.6], [10, 2], [2, 2], [2, 6], [8, 6], [8, 8], [12, 8], [12, -0.05]]] },
@@ -2842,7 +2842,7 @@ function bossesFor(n) {
   const lap = (LEVELS[LV] && (LEVELS[LV].bosses || LEVELS[LV].team)) ? BL[(n / 5 - 1) % 4] : EL[(n / 5 - 5) % EL.length], extra = Math.floor((n - MAXW) / 20);
   const out = []; for (let i = 0; i <= extra; i++) out.push(...lap); return out;
 }
-function bossHp(t) { return Math.round(BT[t].hp * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1)); }   // bosses are 5% softer in Bug Battle and Team Kitchen
+function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1)); }   // bosses are 5% softer in Bug Battle and Team Kitchen
 const MAXW = 20;
 function makeWave(n, sh = 0) {
   const team = LEVELS[LV] && LEVELS[LV].team, r = rng(n * 131 + 7 + sh * 977), q = [], cnt = Math.round((8 + Math.floor(n * 2.2)) * (team ? 1.6 : 1)), pool = ['ant'], u = n + sh;
