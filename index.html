@@ -427,7 +427,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v99</div>
+    <div id="ver">v100</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4387,8 +4387,15 @@ const SENDS = [
   { t: 'dung', n: 2, cost: 85, w: 6 },
   { t: 'bed', n: 1, cost: 90, w: 7 },
   { t: 'queen', n: 1, cost: 450, w: 10, cd: 40 },
+  { t: 'hopper', n: 4, cost: 55, w: 8 },
+  { t: 'centi', n: 1, cost: 80, w: 9 },
+  { t: 'stink', n: 2, cost: 95, w: 10 },
+  { t: 'moth', n: 3, cost: 70, w: 11 },
+  { t: 'mantis', n: 1, cost: 140, w: 12 },
+  { t: 'gmantis', n: 1, cost: 650, w: 15, cd: 60 },
 ];
-const SEND_NAME = { ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarm', queen: 'Roach King' };
+const SEND_NAME = { ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarm', queen: 'Roach King', hopper: 'Grasshoppers', centi: 'Centipede', stink: 'Stink Bugs', moth: 'Moths', mantis: 'Praying Mantis', gmantis: 'Giant Mantis' };
+const sentCount = d => d.n * (d.t === 'bed' ? BT.bed.swarm : d.t === 'centi' ? BT.centi.segs : 1);
 function vsInit() { S.vs = { foe: null, fin: false, rdy: false, foeRdy: false, counting: false, eco: 0, sent: 0, cd: {}, inbox: [], inT: 0, stT: 0, goAt: 0, shopK: '' }; }
 function vsCleared() { return !S.active && !S.bugs.length && !S.vs.inbox.length; }
 function vsStatus() {
@@ -4480,7 +4487,7 @@ function vsSend(i) {
   else if (v.fin || (f && (f.f || f.o))) why = 'The battle is nearly over';
   else if (S.money < d.cost) why = 'Need ' + d.cost + ' coins';
   if (why) { SND.play('err'); if (why !== 'x') banner(why, '', false, 900); return; }
-  S.money -= d.cost; v.eco += Math.round(d.cost * 0.1); v.sent += d.n * (d.t === 'bed' ? BT.bed.swarm : 1); v.cd[i] = d.cd || 2.5;
+  S.money -= d.cost; v.eco += Math.round(d.cost * 0.1); v.sent += sentCount(d); v.cd[i] = d.cd || 2.5;
   netSend({ k: 'atk', t: d.t, n: d.n }); if (v.bot) aiIncoming(d.t, d.n);
   banner('Sent ' + (d.n > 1 ? d.n + ' ' : '') + SEND_NAME[d.t] + '!', 'Income +' + v.eco + ' coins a wave', false, 1000);
   SND.play('wave'); renderShop(); syncTray();
@@ -4662,10 +4669,10 @@ function aiThink() {
   const A = S.vs.bot, D = A.D;
   // send bugs at the player (during waves, from wave 6)
   if (A.active && S.active && A.wave >= 6 && !A.fin && Math.random() < D.send * (A.money > 900 ? 2 : 1)) {
-    const opts = SENDS.map((d, i) => [d, i]).filter(([d, i]) => A.wave >= d.w && (A.cd[i] || 0) <= 0 && A.money - d.cost >= D.reserve && (d.t !== 'queen' || (D.king && A.money > 700)));
+    const opts = SENDS.map((d, i) => [d, i]).filter(([d, i]) => A.wave >= d.w && (A.cd[i] || 0) <= 0 && A.money - d.cost >= D.reserve && (!BT[d.t].boss || (D.king && A.money > d.cost + 250)));
     if (opts.length) {
       const [d, i] = opts[Math.random() < 0.5 ? opts.length - 1 : Math.floor(Math.random() * opts.length)];
-      A.money -= d.cost; A.eco += Math.round(d.cost * 0.1); A.sent += d.n * (d.t === 'bed' ? BT.bed.swarm : 1); A.cd[i] = d.cd || 2.5;
+      A.money -= d.cost; A.eco += Math.round(d.cost * 0.1); A.sent += sentCount(d); A.cd[i] = d.cd || 2.5;
       vsIncoming(d.t, d.n); return;
     }
   }
