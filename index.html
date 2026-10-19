@@ -427,7 +427,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v96</div>
+    <div id="ver">v97</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -666,17 +666,17 @@ const LEVELS = [
     routes: [[[1, 10.6], [1, 6], [8, 6], [8, 4], [2, 4], [2, 1], [10, 1], [10, -0.05]],
              [[19, 10.6], [19, 6], [12, 6], [12, 4], [18, 4], [18, 1], [10, 1], [10, -0.05]]] },
   // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
-  { name: 'Lunch Line', sub: 'One long line, back and forth', intro: 'The bugs snake through the lunch line. Cover two rows at once!', hp: 1.34, money: 190, shift: 2,
+  { name: 'Lunch Line', nb: [['hopper', 3, 2]], sub: 'One long line, back and forth', intro: 'The bugs snake through the lunch line. Cover two rows at once!', hp: 1.34, money: 190, shift: 2,
     routes: [[[-0.6, 1], [10, 1], [10, 3], [2, 3], [2, 5], [10, 5], [10, 7], [2, 7], [2, 9], [12, 9], [12, -0.05]]] },
-  { name: 'Hot Delivery', sub: 'A side door and a back door', intro: 'A second trail comes in the back door, close to the cake. Watch it!', hp: 1.36, money: 200, shift: 2,
+  { name: 'Hot Delivery', nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a back door', intro: 'A second trail comes in the back door, close to the cake. Watch it!', hp: 1.36, money: 200, shift: 2,
     routes: [[[-0.6, 2], [3, 2], [3, 8], [7, 8], [7, 4], [12, 4], [12, -0.05]],
              [[10, 10.6], [10, 9], [13, 9], [13, 6], [12, 6], [12, -0.05]]] },
-  { name: 'Switchbacks', sub: 'The cake is on the left this time', intro: 'The cake is on the other side. They come in from the right.', hp: 1.44, money: 200, shift: 3, cakeCol: 1, fridgeX: 6, stoveX: 15,
+  { name: 'Switchbacks', nb: [['hopper', 3, 2], ['centi', 4, 1], ['stink', 5, 2]], sub: 'The cake is on the left this time', intro: 'The cake is on the other side. They come in from the right.', hp: 1.44, money: 200, shift: 3, cakeCol: 1, fridgeX: 6, stoveX: 15,
     routes: [[[13.6, 8], [10, 8], [10, 2], [7, 2], [7, 8], [4, 8], [4, 3], [1, 3], [1, -0.05]]] },
-  { name: 'Sugar Rush', sub: 'Two trails share the last stretch', intro: 'The bakery smells amazing. Two trails meet near the cake.', hp: 1.52, money: 205, shift: 3,
+  { name: 'Sugar Rush', nb: [['hopper', 2, 2], ['centi', 4, 1], ['stink', 5, 1], ['moth', 4, 2], ['mantis', 7, 1]], sub: 'Two trails share the last stretch', intro: 'The bakery smells amazing. Two trails meet near the cake.', hp: 1.52, money: 205, shift: 3,
     routes: [[[1, -0.6], [1, 4], [5, 4], [5, 8], [9, 8], [9, 4], [12, 4], [12, -0.05]],
              [[13.6, 9], [11, 9], [11, 6], [9, 6], [9, 4], [12, 4], [12, -0.05]]] },
-  { name: 'Creepy Crawl', sub: 'The final house. Good luck.', intro: 'Something is crawling in the walls. Two doors, the toughest bugs yet.', hp: 1.62, money: 215, shift: 3,
+  { name: 'Creepy Crawl', nb: [['hopper', 2, 2], ['centi', 3, 1], ['stink', 4, 2], ['moth', 4, 2], ['mantis', 6, 1]], sub: 'The final house. Good luck.', intro: 'Something is crawling in the walls. Two doors, the toughest bugs yet.', hp: 1.62, money: 215, shift: 3,
     routes: [[[1, -0.6], [1, 3], [5, 3], [5, 1], [9, 1], [9, 6], [12, 6], [12, -0.05]],
              [[-0.6, 8], [4, 8], [4, 6], [9, 6], [12, 6], [12, -0.05]]] },
 ];
@@ -1908,7 +1908,7 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
   return root;
 }
 const EXT = buildPlayer(), EXT2 = buildPlayer('#c8342a', '#2f6fd0');
-const EXT_SPEED = 15, WORK_TIME = { build: 1.0, item: 0.55, up: 0.9 };
+const EXT_SPEED = 15, WORK_TIME = { build: 1.0, item: 0.55, up: 0.9, relight: 0.8 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
 function makeMarker(x, z) {
@@ -1928,7 +1928,7 @@ function sideOf(c) { return !LEVELS[LV].team ? -1 : c < BOARD.cakeCol ? 0 : c > 
 function mySide(c) { const sd = sideOf(c); return !S.p2 || sd < 0 || sd === S.cur; }
 function addJob(kind, obj) {
   const j = { kind, obj };
-  if (kind !== 'up') obj.marker = makeMarker(obj.x, obj.z);
+  if (kind !== 'up' && kind !== 'relight') obj.marker = makeMarker(obj.x, obj.z);
   S.jobs.push(j);
 }
 function cancelJobs(obj) {
@@ -1942,6 +1942,7 @@ function finishJob(j) {
   const o = j.obj;
   if (o.marker) { scene.remove(o.marker); o.marker = null; }
   if (j.kind === 'up') { applyUpgrade(o); return; }
+  if (j.kind === 'relight') { o.snuff = false; o.relightPending = false; for (let i = 0; i < 12; i++) FX.glow.spawn({ x: o.x + (Math.random() - 0.5), y: 2 + Math.random(), z: o.z + (Math.random() - 0.5), vy: 2, life: 0.6, s0: 0.6, s1: 0.1, c: [1, 0.8, 0.3], a0: 1 }); SND.play('up'); if (S.pick === o) syncTray(); return; }
   o.pending = false; o.o.root.visible = true; o.pop = 0;
   if (j.kind === 'build') o.o.root.scale.setScalar(0.01);
   for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; FX.smoke.spawn({ x: o.x + Math.cos(a), y: 0.2, z: o.z + Math.sin(a), vx: Math.cos(a) * 3, vz: Math.sin(a) * 3, drag: 4, life: 0.45, s0: 0.5, s1: 1.2, c: [0.95, 0.92, 0.85], a0: 0.4 }); }
@@ -2164,6 +2165,11 @@ const ICON = {
 };
 
 const BUGICON = {
+  hopper: '<svg viewBox="0 0 48 48"><path d="M30 24l6-12 4 1-5 13M28 26l10 14" stroke="#3d7a1c" stroke-width="3" stroke-linecap="round" fill="none"/><ellipse cx="22" cy="28" rx="14" ry="6" fill="#5fae2e" transform="rotate(-12 22 28)"/><circle cx="35" cy="23" r="5" fill="#6cc036"/><circle cx="37" cy="21" r="1.6" fill="#111"/><path d="M38 19l8-9M36 18l4-11" stroke="#3d7a1c" stroke-width="1.4"/><path d="M14 31l-3 7M20 32l-1 7" stroke="#3d7a1c" stroke-width="2" stroke-linecap="round"/></svg>',
+  centi: '<svg viewBox="0 0 48 48"><g stroke="#c8743a" stroke-width="1.6" stroke-linecap="round"><path d="M8 15l-2-5M8 27l-2 5"/><path d="M15 21l-2-5M15 33l-2 5"/><path d="M22 15l-2-5M22 27l-2 5"/><path d="M29 21l-2-5M29 33l-2 5"/><path d="M36 15l-2-5M36 27l-2 5"/></g><ellipse cx="8" cy="21" rx="4.6" ry="6" fill="#7a2a14"/><ellipse cx="15" cy="27" rx="4.6" ry="6" fill="#7a2a14"/><ellipse cx="22" cy="21" rx="4.6" ry="6" fill="#7a2a14"/><ellipse cx="29" cy="27" rx="4.6" ry="6" fill="#7a2a14"/><ellipse cx="36" cy="21" rx="4.6" ry="6" fill="#7a2a14"/><circle cx="42" cy="24" r="4.5" fill="#3a140a"/><path d="M44 21l3-6M44 27l3 6" stroke="#c8743a" stroke-width="1.4"/></svg>',
+  stink: '<svg viewBox="0 0 48 48"><path d="M12 18L6 12M12 26L4 27M13 33l-6 6M36 18l6-6M36 26l8 1M35 33l6 6" stroke="#3a3020" stroke-width="2.4" stroke-linecap="round"/><path d="M24 8l13 10-2 18-11 6-11-6-2-18z" fill="#6e5a3a"/><path d="M24 12l8 7-8 9-8-9z" fill="#3a3020"/><circle cx="16" cy="33" r="1.8" fill="#c8b07a"/><circle cx="32" cy="33" r="1.8" fill="#c8b07a"/><circle cx="24" cy="7" r="3.4" fill="#3a3020"/><path d="M38 6c2 2 6 2 7-1M40 11c3 0 5 2 4 4" stroke="#8ab84a" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/></svg>',
+  moth: '<svg viewBox="0 0 48 48"><path d="M23 22C10 6 2 12 4 22s10 6 19 2zM25 22C38 6 46 12 44 22s-10 6-19 2z" fill="#b8a890"/><path d="M23 26C14 30 8 40 14 42s9-8 9-14zM25 26c9 4 15 14 9 16s-9-8-9-14z" fill="#a0907a"/><circle cx="12" cy="18" r="2.4" fill="#4a3e32"/><circle cx="36" cy="18" r="2.4" fill="#4a3e32"/><ellipse cx="24" cy="26" rx="3.4" ry="10" fill="#8a7a68"/><path d="M23 16l-5-8M25 16l5-8" stroke="#4a3e32" stroke-width="2" stroke-linecap="round"/></svg>',
+  mantis: '<svg viewBox="0 0 48 48"><path d="M14 40l6-10M20 42l4-12M30 42l-2-11" stroke="#4f8a22" stroke-width="2" stroke-linecap="round"/><path d="M10 38c8-4 14-8 18-14" stroke="#7cc43a" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M28 24l4-10" stroke="#7cc43a" stroke-width="4" stroke-linecap="round"/><path d="M33 9l6 3-4 5z" fill="#7cc43a"/><circle cx="34" cy="9" r="2" fill="#e8f2a0"/><path d="M31 18l8 2 2-6M30 20l6 6 3-4" stroke="#4f8a22" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
   widow: '<svg viewBox="0 0 48 48"><path d="M20 22L6 8M20 25L3 22M21 28L4 38M22 30L10 45M28 22l14-14M28 25l17-3M27 28l17 10M26 30l12 15" stroke="#18151a" stroke-width="2.2" stroke-linecap="round" fill="none"/><circle cx="24" cy="33" r="11" fill="#141216"/><circle cx="24" cy="20" r="6" fill="#221d26"/><path d="M20 28h8l-4 5 4 5h-8l4-5z" fill="#e0141e"/><circle cx="22" cy="17" r="1.2" fill="#ff2a3a"/><circle cx="26" cy="17" r="1.2" fill="#ff2a3a"/></svg>',
   hornet: '<svg viewBox="0 0 48 48"><ellipse cx="12" cy="18" rx="11" ry="5" fill="#e6f2ff" opacity=".75" transform="rotate(-20 12 18)"/><ellipse cx="36" cy="18" rx="11" ry="5" fill="#e6f2ff" opacity=".75" transform="rotate(20 36 18)"/><ellipse cx="24" cy="34" rx="7" ry="10" fill="#f2b51c"/><path d="M17.5 31h13M17.5 36h13M19 41h10" stroke="#1b1610" stroke-width="2.6"/><path d="M24 44l0 4" stroke="#1b1610" stroke-width="2"/><circle cx="24" cy="22" r="5" fill="#7a3c14"/><circle cx="24" cy="14" r="5" fill="#f2b51c"/><ellipse cx="20.5" cy="14" rx="2" ry="3" fill="#2a1a0c"/><ellipse cx="27.5" cy="14" rx="2" ry="3" fill="#2a1a0c"/><path d="M19 9l2-4 3 3 3-3 2 4z" fill="#f3c24a"/></svg>',
   herc: '<svg viewBox="0 0 48 48"><path d="M14 24L5 18M14 30L4 32M16 36l-8 8M34 24l9-6M34 30l10 2M32 36l8 8" stroke="#1e1a16" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="24" cy="33" rx="11" ry="13" fill="#a39a52"/><path d="M24 20v26" stroke="#5a5330" stroke-width="1.5"/><circle cx="19" cy="30" r="1.6" fill="#2a2618"/><circle cx="29" cy="36" r="1.6" fill="#2a2618"/><circle cx="28" cy="27" r="1.3" fill="#2a2618"/><ellipse cx="24" cy="18" rx="8" ry="5" fill="#141210"/><path d="M24 15C25 8 27 5 22 1" stroke="#141210" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg>',
@@ -2174,6 +2180,199 @@ const BUGICON = {
   dung: '<svg viewBox="0 0 48 48"><circle cx="31" cy="27" r="13" fill="#6e4b2a"/><path d="M24 22l5 2M33 31l4 3M27 34l3-1M35 20l3 2" stroke="#b8975a" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="12" cy="30" rx="8" ry="6" fill="#1b1815"/><ellipse cx="18" cy="28" rx="4" ry="3.5" fill="#24201b"/><path d="M8 25l-3-4M10 35l-3 4M14 35l-1 5M20 25l3-4M21 30l3 0" stroke="#3a3330" stroke-width="2" stroke-linecap="round"/></svg>',
   queen: '<svg viewBox="0 0 48 48"><path d="M14 18L4 10M14 26L2 28M15 33L6 42M34 18l10-8M34 26l12 2M33 33l9 9" stroke="#4b2a15" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="24" cy="29" rx="11" ry="14" fill="#3e1f0d"/><path d="M24 16v27" stroke="#2d170b" stroke-width="1.5"/><ellipse cx="24" cy="15" rx="8" ry="5" fill="#5a2e12"/><path d="M17 9l3-6 4 5 4-5 3 6z" fill="#f3c24a"/><circle cx="24" cy="6" r="1.5" fill="#ff3048"/></svg>',
 };
+
+// ---------------------------------------------------------------- new bugs for the later houses: grasshopper, centipede, stink bug, moth, mantis
+function limb(a, b, r0, r1, mat) { const g = seg(a, b, r0, r1, '#ffffff', 6); g.deleteAttribute('color'); return mesh(g, mat); }
+function legRig(root, mat, list, s) {
+  // list: [x, y, z, yaw, len, drop] per leg; s = which side (+1/-1)
+  const legs = [];
+  for (const [x, y, z, yaw, len, drop] of list) {
+    const g = new THREE.Group(); g.position.set(x * s, y, z); g.rotation.y = yaw * s; g.userData = { yaw: yaw * s, s };
+    g.add(limb([0, 0, 0], [len * 0.55 * s, 0.14, 0], 0.045, 0.035, mat)); g.add(limb([len * 0.55 * s, 0.14, 0], [len * s, -y + 0.02 + drop, 0], 0.035, 0.02, mat));
+    root.add(g); legs.push(g);
+  }
+  return legs;
+}
+function newBugRoot() { const root = new THREE.Group(), body = new THREE.Group(); root.add(body); root.userData = { body, legs: [], mats: [] }; return root; }
+function bm(u, o) { const m = std(o); u.mats.push(m); return m; }
+function buildHopper() {
+  const root = newBugRoot(), u = root.userData, B = u.body;
+  const skin = bm(u, { color: '#5fae2e', roughness: 0.5 }), dark = bm(u, { color: '#3d7a1c', roughness: 0.5 }), wing = bm(u, { color: '#8a7a3a', roughness: 0.6 });
+  const abd = mesh(sph(1, 16, 10), skin); abd.scale.set(0.3, 0.28, 0.72); abd.position.set(0, 0.48, -0.32); B.add(abd);
+  const th = mesh(sph(1, 14, 10), dark); th.scale.set(0.27, 0.3, 0.34); th.position.set(0, 0.52, 0.25); B.add(th);
+  const hd = mesh(sph(0.24, 14, 10), skin); hd.scale.set(1, 1.15, 1.05); hd.position.set(0, 0.6, 0.6); B.add(hd);
+  for (const s of [-1, 1]) { const e = mesh(sph(0.07, 8, 6), bm(u, { color: '#1a1a12', roughness: 0.2 })); e.position.set(0.15 * s, 0.72, 0.72); B.add(e); B.add(limb([0.06 * s, 0.78, 0.74], [0.3 * s, 1.15, 1.3], 0.02, 0.012, dark)); }
+  const wg = mesh(sph(1, 12, 8), wing); wg.scale.set(0.22, 0.08, 0.7); wg.position.set(0, 0.74, -0.3); B.add(wg);
+  u.legs = [...legRig(root, dark, [[0.2, 0.42, 0.42, -0.5, 0.42, 0], [0.22, 0.42, 0.2, 0.1, 0.42, 0]], 1), ...legRig(root, dark, [[0.2, 0.42, 0.42, -0.5, 0.42, 0], [0.22, 0.42, 0.2, 0.1, 0.42, 0]], -1)];
+  u.back = [];
+  for (const s of [-1, 1]) {   // the big jumping legs
+    const g = new THREE.Group(); g.position.set(0.24 * s, 0.5, 0.05); root.add(g);
+    g.add(limb([0, 0, 0], [0.14 * s, 0.42, -0.62], 0.08, 0.05, skin)); g.add(limb([0.14 * s, 0.42, -0.62], [0.2 * s, -0.45, -0.95], 0.04, 0.025, dark));
+    u.back.push(g);
+  }
+  u.shadow = 1.5; return root;
+}
+function buildCenti() {
+  const root = newBugRoot(), u = root.userData, B = u.body;
+  const shell = bm(u, { color: '#7a2a14', roughness: 0.35 }), leg = bm(u, { color: '#c8743a', roughness: 0.5 }), dark = bm(u, { color: '#3a140a', roughness: 0.4 });
+  const sg = mesh(sph(1, 14, 10), shell); sg.scale.set(0.38, 0.2, 0.34); sg.position.y = 0.3; B.add(sg);
+  const band = mesh(sph(1, 12, 8), dark); band.scale.set(0.3, 0.12, 0.08); band.position.set(0, 0.36, -0.3); B.add(band);
+  for (const s of [-1, 1]) for (const z of [-0.12, 0.14]) { const g = new THREE.Group(); g.position.set(0.3 * s, 0.26, z); g.userData = { yaw: 0, s }; g.add(limb([0, 0, 0], [0.32 * s, -0.24, 0.06], 0.03, 0.018, leg)); root.add(g); u.legs.push(g); }
+  const head = new THREE.Group(); head.position.set(0, 0.3, 0.32); B.add(head); u.head = head;
+  const hm = mesh(sph(0.22, 12, 8), dark); hm.scale.set(1.2, 0.8, 1); head.add(hm);
+  for (const s of [-1, 1]) { head.add(limb([0.08 * s, 0.06, 0.12], [0.35 * s, 0.25, 0.75], 0.02, 0.012, leg)); head.add(limb([0.1 * s, -0.06, 0.15], [0.05 * s, -0.12, 0.32], 0.03, 0.012, dark)); }
+  u.shadow = 1.0; return root;
+}
+function buildStink() {
+  const root = newBugRoot(), u = root.userData, B = u.body;
+  const shell = bm(u, { color: '#6e5a3a', roughness: 0.4 }), dark = bm(u, { color: '#3a3020', roughness: 0.45 }), spot = bm(u, { color: '#c8b07a', roughness: 0.6 });
+  const sh = mesh(sph(1, 18, 12), shell); sh.scale.set(0.58, 0.26, 0.66); sh.position.set(0, 0.42, -0.08); B.add(sh);
+  const shield = mesh(new THREE.ConeGeometry(0.5, 0.9, 3), dark); shield.rotation.set(-Math.PI / 2, 0, 0); shield.scale.set(1, 1, 0.25); shield.position.set(0, 0.62, -0.1); B.add(shield);
+  for (const s of [-1, 1]) { const d = mesh(sph(0.07, 8, 6), spot); d.position.set(0.42 * s, 0.5, -0.3); B.add(d); }
+  const hd = mesh(sph(0.17, 12, 8), dark); hd.position.set(0, 0.42, 0.6); B.add(hd);
+  for (const s of [-1, 1]) B.add(limb([0.06 * s, 0.48, 0.7], [0.3 * s, 0.72, 1.05], 0.02, 0.012, dark));
+  u.legs = [...legRig(root, dark, [[0.3, 0.38, 0.3, -0.5, 0.45, 0], [0.34, 0.38, 0, 0, 0.45, 0], [0.3, 0.38, -0.3, 0.5, 0.45, 0]], 1), ...legRig(root, dark, [[0.3, 0.38, 0.3, -0.5, 0.45, 0], [0.34, 0.38, 0, 0, 0.45, 0], [0.3, 0.38, -0.3, 0.5, 0.45, 0]], -1)];
+  u.shadow = 1.7; return root;
+}
+function buildMoth() {
+  const root = newBugRoot(), u = root.userData, B = u.body;
+  const fur = bm(u, { color: '#8a7a68', roughness: 0.95 }), wingM = bm(u, { color: '#b8a890', roughness: 0.9, side: THREE.DoubleSide }), dark = bm(u, { color: '#4a3e32', roughness: 0.9 });
+  const bd = mesh(sph(1, 14, 10), fur); bd.scale.set(0.2, 0.2, 0.55); bd.position.set(0, 0.3, -0.05); B.add(bd);
+  const hd = mesh(sph(0.16, 10, 8), fur); hd.position.set(0, 0.32, 0.5); B.add(hd);
+  for (const s of [-1, 1]) B.add(limb([0.05 * s, 0.4, 0.58], [0.35 * s, 0.75, 0.95], 0.025, 0.04, dark));
+  u.wings = [];
+  for (const s of [-1, 1]) for (const [z, w, l] of [[0.12, 0.85, 0.5], [-0.3, 0.6, 0.38]]) {
+    const g = new THREE.Group(); g.position.set(0.12 * s, 0.38, z); g.userData = { s }; B.add(g);
+    const wm = mesh(sph(1, 14, 8), wingM, false); wm.scale.set(w, 0.02, l); wm.position.x = w * 0.9 * s; g.add(wm);
+    const dot = mesh(sph(0.1, 8, 6), dark, false); dot.scale.set(1, 0.3, 1); dot.position.set(w * 1.0 * s, 0.02, 0); g.add(dot);
+    u.wings.push(g);
+  }
+  u.shadow = 1.6; return root;
+}
+function buildMantis() {
+  const root = newBugRoot(), u = root.userData, B = u.body;
+  const skin = bm(u, { color: '#7cc43a', roughness: 0.45 }), dark = bm(u, { color: '#4f8a22', roughness: 0.5 }), eye = bm(u, { color: '#e8f2a0', roughness: 0.2 });
+  const abd = mesh(sph(1, 16, 10), skin); abd.scale.set(0.26, 0.24, 0.85); abd.position.set(0, 0.62, -0.55); B.add(abd);
+  const wg = mesh(sph(1, 12, 8), dark); wg.scale.set(0.24, 0.1, 0.8); wg.position.set(0, 0.8, -0.5); B.add(wg);
+  B.add(limb([0, 0.62, 0.1], [0, 1.3, 0.55], 0.11, 0.08, skin));
+  const hd = new THREE.Group(); hd.position.set(0, 1.4, 0.62); B.add(hd);
+  const hm = mesh(new THREE.ConeGeometry(0.22, 0.32, 3), skin); hm.rotation.set(Math.PI / 2 + 0.3, 0, Math.PI); hd.add(hm);
+  for (const s of [-1, 1]) { const e = mesh(sph(0.09, 8, 6), eye); e.position.set(0.17 * s, 0.05, -0.02); hd.add(e); hd.add(limb([0.05 * s, 0.1, 0.05], [0.25 * s, 0.5, 0.45], 0.015, 0.01, dark)); }
+  u.arms = [];
+  for (const s of [-1, 1]) {   // the folded grabbing arms
+    const g = new THREE.Group(); g.position.set(0.12 * s, 1.15, 0.48); root.add(g);
+    g.add(limb([0, 0, 0], [0.05 * s, -0.15, 0.42], 0.06, 0.05, skin)); g.add(limb([0.05 * s, -0.15, 0.42], [0.05 * s, 0.25, 0.3], 0.05, 0.03, dark));
+    u.arms.push(g);
+  }
+  u.legs = [...legRig(root, dark, [[0.14, 0.62, 0.0, -0.3, 0.65, 0], [0.16, 0.62, -0.25, 0.4, 0.7, 0]], 1), ...legRig(root, dark, [[0.14, 0.62, 0.0, -0.3, 0.65, 0], [0.16, 0.62, -0.25, 0.4, 0.7, 0]], -1)];
+  u.shadow = 2.0; return root;
+}
+const MODEL_BUILD = { hopper: buildHopper, centi: buildCenti, stink: buildStink, moth: buildMoth, mantis: buildMantis }, MODEL_POOL = {};
+function getModel(t) {
+  const pool = MODEL_POOL[t] ||= [];
+  let q = pool.find(m => !m.visible); if (!q) { q = MODEL_BUILD[t](); q.traverse(o => { if (o.isMesh) { o.castShadow = true; } }); pool.push(q); scene.add(q); }
+  q.visible = true; q.scale.setScalar({ mantis: 1.6, stink: 1.25, hopper: 1.25, centi: 1.15, moth: 1.1 }[t] || 1); return q;
+}
+function hideBug(b) { if (b.mesh) b.mesh.visible = false; if (b.mdl) { b.mdl.visible = false; b.mdl = null; } }
+function drawMdl(b, t, sh) {
+  const q = b.mdl, u = q.userData, bt = BT[b.t];
+  q.position.set(b.x, bugY(b), b.z); q.rotation.set(b.pitch, b.ang, b.t === 'moth' ? Math.sin(b.walk * 0.6) * 0.15 : 0, 'YXZ');
+  const w = b.walk;
+  u.legs.forEach((g, k) => { g.rotation.y = g.userData.yaw + Math.sin(w + k * 1.7) * 0.35 * g.userData.s; g.rotation.z = Math.max(0, Math.sin(w + k)) * 0.15 * g.userData.s; });
+  if (u.wings) u.wings.forEach((g, k) => { g.rotation.z = (b.free && b.free.phase === 'land' ? Math.sin(t * 22 + k) * 0.35 : 0.2 + Math.sin(t * 30 + b.id + k * 0.4) * 0.75) * g.userData.s; });
+  if (u.back) { const k = b.jump > 0 ? -1.0 : (b.hopT !== undefined && b.hopT < 0.3) ? 0.45 : 0; u.back.forEach(g => { g.rotation.x += (k - g.rotation.x) * 0.4; }); }
+  if (u.arms) { const k = (b.armT > 0 || b.munch > 0) ? -1.2 : 0.1; u.arms.forEach(g => { g.rotation.x += (k - g.rotation.x) * 0.4; }); }
+  if (u.head) u.head.visible = !b.lead || b.lead.dead;
+  u.body.position.y = b.t === 'centi' ? Math.sin(w * 0.8) * 0.04 : 0;
+  const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : b.munch > 0 ? 0.3 : 0;
+  if (u.f !== f) { u.f = f; for (const m of u.mats) m.emissive.setRGB(f * (b.munch > 0 ? 0.3 : 1), f * (b.psnT > 0 || b.munch > 0 ? 2 : 1), f * (b.munch > 0 ? 0.3 : 1)); }
+  if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, u.shadow || 1.4, 0, 0, 0, 0, bt.fly || b.air ? 0.25 : 0.45);
+}
+// spawn one queue entry (a bed bug swarm or a centipede is several bugs)
+function spawnEntry(t, rt = nextRoute(), sent) {
+  if (t === 'bed') { for (let i = 0; i < BT.bed.swarm; i++) { const b = spawnBug('bed', rt); if (sent) b.sent = 1; b.s = -i * 0.35 - Math.random() * 0.3; b.off = (Math.random() - 0.5) * 1.8; } return; }
+  if (t === 'centi') { let lead = null; for (let i = 0; i < BT.centi.segs; i++) { const b = spawnBug('centi', rt); if (sent) b.sent = 1; b.s = -i * 0.62; b.off = 0; b.lead = lead; lead = b; } return; }
+  const b = spawnBug(t, rt); if (sent) b.sent = 1; return b;
+}
+// stink clouds: tools inside work 40% slower for a few seconds
+function stinkCloud(x, z) { (S.clouds ||= []).push({ x, z, r: 3.4, t: 4 }); SND.play('sizzle'); }
+function cloudsAct(dt) {
+  if (!S.clouds || !S.clouds.length) return;
+  for (const c of S.clouds) {
+    c.t -= dt;
+    if (Math.random() < dt * 14) { const a = Math.random() * TAU, d = Math.random() * c.r; FX.smoke.spawn({ x: c.x + Math.cos(a) * d, y: 0.3 + Math.random() * 0.8, z: c.z + Math.sin(a) * d, vy: 0.5, drag: 1, life: 1.2, s0: 1.0, s1: 2.4, c: [0.55, 0.75, 0.25], a0: 0.35 }); }
+    for (const tw of S.towers) if ((tw.x - c.x) ** 2 + (tw.z - c.z) ** 2 <= c.r * c.r) tw.stink = 0.25;
+  }
+  S.clouds = S.clouds.filter(c => c.t > 0);
+}
+// per-bug special moves for the new bugs (runs on whoever simulates the game)
+const MANTIS_EATS = new Set(['ant', 'fly', 'bed', 'baby', 'hopper', 'moth']);
+function specialMove(b, sp, dt) {
+  if (b.t === 'centi') {
+    if (b.lead && b.lead.dead) b.lead = null;   // the bit in front got squashed: this segment is a new head
+    if (b.lead) { const want = b.lead.s - 0.62; sp = b.s < want - 0.05 ? sp * 1.35 : b.s > want ? 0 : sp; }
+  } else if (b.t === 'hopper') {
+    if (b.jump > 0) {
+      b.jump -= dt; sp = 12; b.air = true; b.hy = Math.sin(Math.PI * Math.min(1, 1 - b.jump / 0.5)) * 1.5;
+      if (b.jump <= 0) { b.air = false; b.hy = 0; for (let i = 0; i < 5; i++) FX.smoke.spawn({ x: b.x, y: 0.2, z: b.z, vx: (Math.random() - 0.5) * 3, vz: (Math.random() - 0.5) * 3, drag: 4, life: 0.4, s0: 0.3, s1: 0.8, c: [0.85, 0.8, 0.7], a0: 0.4 }); }
+    } else {
+      b.hy = 0; b.hopT = (b.hopT ?? 1 + Math.random() * 2) - dt;
+      if (b.hopT < 0.3) sp = 0;   // crouch before the jump (you can see it coming)
+      if (b.hopT <= 0) { if (b.stuck > 0 || b.push > 0) b.hopT = 0.6; else { b.jump = 0.5; b.hopT = 2.3 + Math.random() * 1.2; } }
+    }
+  } else if (b.t === 'mantis' && S.net !== 'guest') {
+    if (b.munch > 0) { b.munch -= dt; return 0; }
+    if (b.armT > 0) { b.armT -= dt; return 0; }
+    b.grabCd = (b.grabCd ?? 2) - dt; b.eatCd = (b.eatCd ?? 4 + Math.random() * 3) - dt;
+    if (b.eatCd <= 0) {
+      let prey = null;
+      for (const c of S.bugs) if (!c.dead && c !== b && MANTIS_EATS.has(c.t) && !c.free && Math.abs(c.s - b.s) < 2.2 && c.route === b.route && (c.x - b.x) ** 2 + (c.z - b.z) ** 2 < 6) { prey = c; break; }
+      if (prey) {
+        prey.dead = true; prey.hp = 0; hideBug(prey);
+        for (let i = 0; i < 10; i++) { const a = Math.random() * TAU; FX.goo.spawn({ x: prey.x, y: 1.0, z: prey.z, vx: Math.cos(a) * 2.5, vy: 2 + Math.random() * 2, vz: Math.sin(a) * 2.5, grav: 14, life: 0.5, s0: 0.3, s1: 0.1, c: BT[prey.t].goo, a0: 1, a1: 1 }); }
+        b.hp = Math.min(b.max, b.hp + b.max * 0.15); b.munch = 1.0; b.eatCd = 7 + Math.random() * 3; SND.play('squish');
+        for (let i = 0; i < 8; i++) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: 1 + Math.random() * 1.5, z: b.z + (Math.random() - 0.5), vy: 2, life: 0.6, s0: 0.5, s1: 0.1, c: [0.5, 1, 0.4], a0: 1 });
+        return 0;
+      }
+      b.eatCd = 1;
+    }
+    if (b.grabCd <= 0) {
+      let tw = null, bd = 4.2 * 4.2;
+      for (const o of S.towers) { if (o.pending || o.t === 'candle' || o.stunT > 0) continue; const d = (o.x - b.x) ** 2 + (o.z - b.z) ** 2; if (d < bd) { bd = d; tw = o; } }
+      if (tw) { tw.stunT = 3; b.armT = 0.8; b.grabCd = 6; b.ang = Math.atan2(tw.x - b.x, tw.z - b.z); SND.play('slam'); if (S.mode === 'play') banner('Mantis!', 'It grabbed your ' + (TT[tw.t].short || TT[tw.t].name), false, 900); return 0; }
+      b.grabCd = 0.5;
+    }
+  } else if (b.t === 'moth' && S.net !== 'guest') {
+    if (!b.free && !b.didCandle && b.s > 1) {
+      let best = null, bd = 1e9;
+      for (const c of S.towers) { if (c.t !== 'candle' || c.pending || c.snuff) continue; const n = S.bugs.filter(o => o.free && o.free.tw === c).length; if (n >= 2) continue; const d = (c.x - b.x) ** 2 + (c.z - b.z) ** 2; if (d < bd) { bd = d; best = c; } }
+      if (best) b.free = { tw: best, phase: 'go', land: 0 };
+    }
+    if (b.free) return 0;   // flying off the trail: position handled after the path step
+  }
+  return sp;
+}
+function mothFree(b, dt) {
+  const f = b.free, c = f.tw;
+  let tx, tz;
+  if (f.phase !== 'back' && (!S.towers.includes(c) || c.snuff)) f.phase = 'back';
+  if (f.phase === 'back') { pathAt(b.s, tmpP, b.route); tx = tmpP.x + tmpP.px * b.off; tz = tmpP.z + tmpP.pz * b.off; }
+  else { tx = c.x; tz = c.z; }
+  const dx = tx - b.fx, dz = tz - b.fz, d = Math.hypot(dx, dz);
+  if (f.phase === 'land') {
+    f.land += dt; b.hy = 0.75; b.walk += dt * 6;
+    if (Math.random() < dt * 6) FX.smoke.spawn({ x: c.x, y: 2.4, z: c.z, vy: 1.2, life: 0.6, s0: 0.25, s1: 0.7, c: [0.5, 0.5, 0.5], a0: 0.4 });
+    if (f.land >= 3) { c.snuff = true; b.didCandle = true; f.phase = 'back'; SND.play('sizzle'); for (let i = 0; i < 10; i++) FX.smoke.spawn({ x: c.x, y: 2.2, z: c.z, vy: 1.6, life: 1, s0: 0.4, s1: 1.2, c: [0.35, 0.35, 0.35], a0: 0.5 }); if (S.mode === 'play') banner('Candle snuffed!', 'A moth put it out. Tap the candle to relight it (15 coins)', false, 1600); }
+  } else if (d < 0.35) { if (f.phase === 'go') { f.phase = 'land'; f.land = 0; } else { b.free = null; b.hy = 0; return; } }
+  else { const v = Math.min(d, 4.5 * dt); b.fx += dx / d * v; b.fz += dz / d * v; b.ang = Math.atan2(dx, dz); b.walk += dt * 6; b.hy += ((f.phase === 'go' ? 1.2 : 0) - b.hy) * Math.min(1, dt * 3); }
+  b.x = b.fx; b.z = b.fz; b.y0 = 0;
+}
+function relight(tw = S.pick) {
+  if (!tw || !tw.snuff || tw.relightPending) return;
+  if (S.net === 'guest') { if (S.money < 15) { SND.play('err'); return; } netSend({ k: 'relight', id: tw.id }); SND.play('tap'); return; }
+  if (S.money < 15) { SND.play('err'); return; }
+  S.money -= 15; tw.relightPending = true; addJob('relight', tw); SND.play('tap'); syncTray();
+}
 // ---------------------------------------------------------------- towers: models
 const TM = {
   cork: std({ color: '#b98a55', roughness: 0.9, envMapIntensity: 0.3 }), wood: std({ color: '#8a5a32', roughness: 0.6 }),
@@ -2585,6 +2784,11 @@ const BT = {
   spider: { hp: 120,  spd: 2.0, gold: 11,  lives: 2, armor: 3, goo: [0.45, 0.22, 0.6] },
   bed:    { hp: 7,    spd: 3.8, gold: 1,   lives: 0.25, goo: [0.55, 0.12, 0.08], swarm: 12 },
   dung:   { hp: 90,   spd: 2.2, gold: 9,   lives: 1, ball: 150, goo: [0.3, 0.26, 0.2] },
+  hopper: { hp: 40,   spd: 3.0, gold: 6,   lives: 1, goo: [0.45, 0.72, 0.2] },
+  centi:  { hp: 22,   spd: 4.0, gold: 2,   lives: 0.34, goo: [0.5, 0.24, 0.12], segs: 8 },
+  stink:  { hp: 110,  spd: 2.1, gold: 9,   lives: 1, armor: 2, goo: [0.45, 0.4, 0.22] },
+  moth:   { hp: 28,   spd: 3.6, gold: 6,   lives: 1, fly: true, goo: [0.62, 0.56, 0.46] },
+  mantis: { hp: 260,  spd: 1.9, gold: 16,  lives: 2, armor: 1, goo: [0.42, 0.76, 0.26] },
   baby:   { hp: 16,   spd: 3.4, gold: 2,   lives: 0.5, goo: [0.3, 0.12, 0.35] },
   widow:  { hp: 2500, spd: 1.3, gold: 130, lives: 5, armor: 2, boss: true, name: 'Black Widow', sub: 'She lays spiderlings when she gets hurt', goo: [0.3, 0.12, 0.35] },
   hornet: { hp: 3135, spd: 1.45, gold: 160, lives: 5, fly: true, boss: true, name: 'Hornet Queen', sub: 'She flies, so the Newspaper can\'t touch her', goo: [0.85, 0.7, 0.15] },
@@ -2605,7 +2809,10 @@ const MAXW = 20;
 function makeWave(n, sh = 0) {
   const team = LEVELS[LV] && LEVELS[LV].team, r = rng(n * 131 + 7 + sh * 977), q = [], cnt = Math.round((8 + Math.floor(n * 2.2)) * (team ? 1.6 : 1)), pool = ['ant'], u = n + sh;
   if (u >= 2) pool.push('fly'); if (u >= 4) pool.push('spider'); if (u >= 8) pool.push('fly', 'spider'); if (u >= 6) pool.push('dung'); if (u >= 12) pool.push('dung');
-  while (q.length < cnt) { const t = pool[Math.floor(r() * pool.length)], g = t === 'dung' ? 1 + Math.floor(r() * 2) : 3 + Math.floor(r() * 4); for (let i = 0; i < g && q.length < cnt; i++) q.push(t); }
+  // the later houses bring new bugs: [type, first wave, how many copies go in the pool]
+  for (const [t, w, k] of (LEVELS[LV] && LEVELS[LV].nb) || []) if (n >= w) for (let i = 0; i < k; i++) pool.push(t);
+  const GRP = { dung: [1, 2], stink: [1, 2], centi: [1, 1], mantis: [1, 1], moth: [2, 2], hopper: [2, 3] };
+  while (q.length < cnt) { const t = pool[Math.floor(r() * pool.length)], gr = GRP[t] || [3, 4], g = gr[0] + Math.floor(r() * gr[1]); for (let i = 0; i < g && q.length < cnt; i++) q.push(t); }
   // bed bug swarms from wave 7: each 'bed' entry is a cloud of a dozen
   if (u >= 7) for (let i = 0; i < Math.floor((u - 4) / 3); i++) q.splice(Math.floor(r() * q.length), 0, 'bed');
   q.push(...bossesFor(n)); if (team) q.push(...bossesFor(n));
@@ -2637,6 +2844,7 @@ function spawnBug(t, route = nextRoute()) {
   b.route = route; pathAt(0, tmpP, route); b.x = tmpP.x; b.z = tmpP.z; b.ang = Math.atan2(tmpP.dx, tmpP.dz);
   if (bt.ball) { const h = Math.round(bt.ball * S.hpMul); b.ball = { hp: h, max: h, flash: 0 }; }
   if (bt.boss) { b.mesh = getBoss(t); $('queen').hidden = false; if (t === 'widow') b.clutch = 2; }
+  else if (MODEL_BUILD[t]) b.mdl = getModel(t);
   S.bugs.push(b);
   return b;
 }
@@ -2676,7 +2884,7 @@ function startWave() {
 }
 // ---- next-wave belt and the between-wave countdown
 const NEXT_WAIT = 10;
-const BELT_NAME = { ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarms', queen: 'Roach King', widow: 'Black Widow', hornet: 'Hornet Queen' };
+const BELT_NAME = { hopper: 'Grasshoppers', centi: 'Centipedes', stink: 'Stink Bugs', moth: 'Moths', mantis: 'Praying Mantis', ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarms', queen: 'Roach King', widow: 'Black Widow', hornet: 'Hornet Queen' };
 function showBelt() {
   if (S.mode !== 'play' || (S.wave >= MAXW && !S.endless)) { hideBelt(); return; }
   const n = S.wave + 1, q = makeWave(n, LEVELS[LV].shift), cnt = {};
@@ -2701,7 +2909,7 @@ function syncBeltT() {
   if (S.nextT > 0) { el.className = ''; el.textContent = Math.ceil(S.nextT); }
   else { el.className = 'go'; el.textContent = 'when ready'; }
 }
-function bugY(b) { return b.y0 + (BT[b.t].fly ? 0.9 + Math.sin(b.walk * 1.3) * 0.12 : 0); }
+function bugY(b) { return b.y0 + (BT[b.t].fly ? 0.9 + Math.sin(b.walk * 1.3) * 0.12 : 0) + (b.hy || 0); }
 // end-of-level stats: who did the damage and who got the kills
 let CUR_SRC = null;
 function statFor(src) { const st = S.stats || (S.stats = {}); return st[src] || (st[src] = { dmg: 0, kills: 0 }); }
@@ -2741,6 +2949,8 @@ function breakBall(b) {
 function kill(b) {
   if (S.mode === 'play') { b.dn = Math.ceil(b.dn || 0); b.dr = Math.ceil(b.dr || 0); b.db = Math.ceil(b.db || 0); flushDmg(b); }
   b.dead = true; const bt = BT[b.t], y = bugY(b) + 0.4;
+  if (b.mdl) { b.mdl.visible = false; b.mdl = null; }
+  if (b.t === 'stink') stinkCloud(b.x, b.z);
   const g = Math.max(1, Math.round((bt.gold + Math.floor(S.wave / 3)) * goldMul() * (b.sent ? 0.5 : 1)));
   if (S.mode === 'play' && S.net === 'guest') ACH.kill(b.t);
   else if (S.mode === 'play') { addGold(S.p2 ? b.route : 0, g); S.kills++; bumpStat('stCoins'); ACH.kill(b.t); if (CUR_SRC === 'abil' && S.ext.abil && ++S.ext.abil.kills >= 5) ACH.unlock('spray5'); }
@@ -2767,7 +2977,7 @@ function biteCake(n) {
   SND.play('bite');
 }
 function inRange(tw, b, r) { const dx = b.x - tw.x, dz = b.z - tw.z; return dx * dx + dz * dz <= r * r; }
-function canHit(tw, b) { return !b.dead && (TT[tw.t].air || !BT[b.t].fly); }
+function canHit(tw, b) { return !b.dead && (TT[tw.t].air || !(BT[b.t].fly || b.air)); }
 function firstTarget(tw, r) { let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || b.s > best.s)) best = b; return best; }
 
 const ZAP_JUMP = 6.5, ZAP_HOP = 0.13;
@@ -2792,7 +3002,7 @@ let CUR_AMP = 0;
 function candleRng(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1]) ? TT.candle.rng[c.lv - 1] : 0; }
 function candleAmp(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1]) ? TT.candle.amp[c.lv - 1] : 0; }
 function syncCandles() {
-  const candles = S.towers.filter(c => c.t === 'candle' && !c.pending);
+  const candles = S.towers.filter(c => c.t === 'candle' && !c.pending && !c.snuff);
   // up to two candles stack: add the two strongest boosts, a third candle does nothing
   for (const tw of S.towers) {
     const A = [], Rg = [];
@@ -2803,7 +3013,9 @@ function syncCandles() {
 }
 function towerAct(tw, dt) {
   if (tw.pending) return;
-  const T = TT[tw.t], L = tw.lv - 1, R = T.range[L] * (1 + (tw.rmul || 0));
+  if (tw.stunT > 0) { tw.stunT -= dt; tw.anim += dt; return; }   // a mantis has hold of it
+  const T = TT[tw.t], L = tw.lv - 1, R = T.range[L] * (1 + (tw.rmul || 0)), stinky = tw.stink > 0;
+  if (stinky) { tw.stink -= dt; dt *= 0.6; }   // stink bug cloud: 40% slower
   tw.cd -= dt; tw.anim += dt;
   if (tw.t === 'candle') return;
   if (tw.t === 'glue') {
@@ -2887,9 +3099,8 @@ function update(dt) {
     S.spawnT -= dt;
     if (S.spawnT <= 0) {
       const t = S.queue.shift();
-      if (t === 'bed') { const rt = nextRoute(); for (let i = 0; i < BT.bed.swarm; i++) { const b = spawnBug('bed', rt); b.s = -i * 0.35 - Math.random() * 0.3; b.off = (Math.random() - 0.5) * 1.8; } }
-      else spawnBug(t);
-      S.spawnT = t === 'spider' ? S.gap * 1.6 : BT[t].boss ? 2 : t === 'bed' ? S.gap * 3 : S.gap;
+      spawnEntry(t);
+      S.spawnT = t === 'spider' || t === 'stink' ? S.gap * 1.6 : BT[t].boss ? 2 : t === 'bed' || t === 'centi' ? S.gap * 3.2 : t === 'mantis' ? S.gap * 2.2 : S.gap;
     }
   }
   if (S.vs && S.mode === 'play') { vsInbox(dt); if (S.vs.bot) aiUpdate(dt); }
@@ -2907,19 +3118,22 @@ function update(dt) {
     b.stuck -= dt; if (b.stuck <= 0) b.slowF = 1;
     if (b.sweptT > 0) b.sweptT -= dt;
     if ((b.dnT = (b.dnT || 0) - dt) <= 0 && (b.dn >= 1 || b.dr >= 1 || b.db >= 1)) flushDmg(b);
+    if (b.mdl || b.t === 'centi' || b.t === 'hopper' || b.t === 'mantis' || b.t === 'moth') sp = specialMove(b, sp, dt);
     if (b.push > 0) { const d = Math.min(b.push, dt * 16); b.push -= d; b.s = Math.max(0, b.s - d); sp = 0; b.walk += dt * 20; }
     b.flash -= dt; b.s += sp * dt; b.walk += sp * dt * 2.6;
+    if (b.free) { if (b.fx === undefined) { b.fx = b.x; b.fz = b.z; } mothFree(b, dt); if (b.free) continue; b.fx = undefined; }
     pathAt(b.s, tmpP, b.route);
     b.x = tmpP.x + tmpP.px * b.off; b.z = tmpP.z + tmpP.pz * b.off; b.y0 = tmpP.y;
     if (tmpP.flat) { const want = Math.atan2(tmpP.dx, tmpP.dz); let da = want - b.ang; da = Math.atan2(Math.sin(da), Math.cos(da)); b.ang += da * Math.min(1, dt * 8); }
     const pw = -Math.asin(clamp(tmpP.dy, -1, 1)) * (BT[b.t].fly ? 0.4 : 1); b.pitch += (pw - b.pitch) * Math.min(1, dt * 10);
     if (b.s >= ROUTES[b.route].end) {
       b.dead = true;
-      if (b.mesh) b.mesh.visible = false;
+      hideBug(b);
       if (S.mode === 'play' && S.net !== 'guest') biteCake(bt.lives);
     }
   }
   // citronella glow: every tool standing in a candle's glow gets its boost (two candles stack, no more)
+  cloudsAct(dt);
   syncCandles();
   for (const tw of S.towers) { CUR_AMP = tw.amp || 0; CUR_SRC = tw.t; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
   itemsAct(dt);
@@ -3030,6 +3244,7 @@ function removeTower(tw, usedUp) {
   if (S.pick === tw) unpick();
 }
 function upgrade(tw = S.pick) {
+  if (tw && tw.snuff) { relight(tw); return; }
   if (!tw || tw.lv >= 3) return;
   if (S.p2 && (tw.owner || 0) !== S.cur) return;
   if (S.net === 'guest') { if (S.money < upCost(tw) || tw.upPending || tw.pending) { SND.play('err'); return; } netSend({ k: 'up', id: tw.id }); SND.play('tap'); return; }
@@ -3137,6 +3352,7 @@ function setI(m, i, x, y, z, ry, s = 1, rx = 0, rz = 0) { tmpE.set(rx, ry, rz, '
 function drawBugs(t) {
   const c = { ant: 0, antLeg: 0, fly: 0, wing: 0, spider: 0, spiderLeg: 0, dung: 0, dungLeg: 0, ball: 0, bed: 0, bedLeg: 0 }, sh = B.shadow;
   for (const b of S.bugs) {
+    if (b.mdl) { drawMdl(b, t, sh); continue; }
     const fl = b.flash > 0 ? flashC : b.stuck > 0 ? stuckC : b.psnT > 0 ? psnC : white;
     if (b.t === 'ant') {
       const i = c.ant++, base = baseM.copy(setI(IM.ant, i, b.x, b.y0, b.z, b.ang, 1.15, b.pitch)); IM.ant.setColorAt(i, fl);
@@ -3269,6 +3485,7 @@ function drawTowers(dt, t) {
   if (S.mode === 'play') syncCandles();
   for (const tw of S.towers) {
     const o = tw.o, T = TT[tw.t];
+    o.root.rotation.z = tw.stunT > 0 ? Math.sin(t * 32) * 0.1 : 0;
     if (tw.amp > 0 || o.boost) {
       const f = boostFlame(o); f.visible = tw.amp > 0 && !tw.pending;
       if (f.visible) animFlame(f, t, tw.id * 2.3);
@@ -3295,7 +3512,9 @@ function drawTowers(dt, t) {
     } else if (tw.t === 'broom') {
       poseBroom(tw, a, t);
     } else if (tw.t === 'candle') {
-      o.flames.forEach((f, i) => { const k = t * 11 + tw.id * 3 + i * 2; f.scale.set(1 + Math.sin(k) * 0.12, 1 + Math.sin(k * 1.7) * 0.18, 1 + Math.cos(k) * 0.12); f.rotation.z = Math.sin(k * 0.6) * 0.15; });
+      o.flames.forEach((f, i) => { const k = t * 11 + tw.id * 3 + i * 2; if (tw.snuff) { f.scale.setScalar(0.001); return; } f.scale.set(1 + Math.sin(k) * 0.12, 1 + Math.sin(k * 1.7) * 0.18, 1 + Math.cos(k) * 0.12); f.rotation.z = Math.sin(k * 0.6) * 0.15; });
+      o.aura.visible = !tw.snuff;
+      if (tw.snuff && Math.random() < dt * 2) FX.smoke.spawn({ x: tw.x, y: 2.2, z: tw.z, vy: 0.8, life: 1.2, s0: 0.15, s1: 0.6, c: [0.4, 0.4, 0.4], a0: 0.35 });
       const fl = Math.sin(t * 2.3 + tw.id) * 0.5 + Math.sin(t * 7.1 + tw.id * 2) * 0.3 + Math.sin(t * 15 + tw.id) * 0.2;
       o.aura.material.opacity = 0.85 + fl * 0.15; const rr = (o.auraR || 4.8) * (1 + fl * 0.015); o.aura.scale.set(rr, rr, 1);
     } else if (tw.t === 'paper') {
@@ -3356,7 +3575,7 @@ function drawPlacement(t) {
     const tw = S.pick; showRange(tw.x, tw.z, TT[tw.t].range[tw.lv - 1] * (1 + (tw.rmul || 0)), '#ffc93c', 0.1);
   }
 }
-const BAR_Y = { ant: 1.35, fly: 1.55, spider: 1.6, bed: 0.85, dung: 1.8, baby: 1.05 };
+const BAR_Y = { ant: 1.35, fly: 1.55, spider: 1.6, bed: 0.85, dung: 1.8, baby: 1.05, hopper: 1.5, centi: 0.9, stink: 1.3, moth: 1.2, mantis: 2.3 };
 function drawBars() {
   BARS.begin();
   if (S.mode === 'play' || S.mode === 'over') for (const b of S.bugs) {
@@ -3368,7 +3587,7 @@ function drawBars() {
     }
     const sh = b.ball && b.ball.hp > 0, hurt = b.hp < b.max;
     if (!hurt && !(sh && b.ball.hp < b.ball.max)) continue;
-    const y = bugY(b) + (BAR_Y[b.t] || 1.3), W = b.t === 'bed' ? 1.1 : b.t === 'baby' ? 1.2 : 1.9, k = Math.max(0, b.hp / b.max);
+    const y = bugY(b) + (BAR_Y[b.t] || 1.3), W = b.t === 'bed' ? 1.1 : b.t === 'baby' || b.t === 'centi' ? 1.2 : 1.9, k = Math.max(0, b.hp / b.max);
     const r = k > 0.5 ? (1 - k) * 2 * 0.95 : 0.95, g = k > 0.5 ? 0.85 : k * 2 * 0.85;
     BARS.bar(b.x, y, b.z, W, 0.28, k, r * 0.9 + 0.08, g, 0.16);
     if (sh) BARS.bar(b.x, y + 0.46, b.z, W, 0.28, Math.max(0, b.ball.hp / b.ball.max), 0.93, 0.66, 0.24);
@@ -3666,6 +3885,11 @@ const BUGINFO = [
   ['spider', 'Spider', 'From wave 4', 'Slow and tough. Its hard shell takes 3 off every hit, which hurts the Swatter most. Bug Spray poison and the Magnifying Glass burn straight through.', '2 slices'],
   ['bed', 'Bed Bugs', 'From wave 7', 'Tiny and fast, and they come in swarms of a dozen. One hit kills each one, but single-target tools can\'t keep up. Bring area damage: Bug Spray, the Zapper, the Newspaper and Bug Bombs. It takes 4 bed bugs to eat a slice.', '¼ slice'],
   ['dung', 'Dung Beetle', 'From wave 6', 'Pushes a ball of dung in front of it. The ball soaks up every hit, poison and fog included, until it breaks apart. Then the beetle gets angry and runs 45% faster. Hard-hitting tools like the Newspaper crack the ball quickly.', '1 slice'],
+  ['hopper', 'Grasshopper', 'Level 6 on', 'Every few seconds it crouches and leaps two tiles ahead. In the air it can\'t be hit by the Newspaper or Broom. Spread your tools out so it lands next to one. A sticky trap stops it jumping.', '1 slice'],
+  ['centi', 'Centipede', 'Level 7 on', 'Eight fast segments in a line. Squash a middle segment and it splits into two centipedes that keep going. Area damage (Spray, Newspaper, Zapper) shreds it.', '⅓ slice per segment'],
+  ['stink', 'Stink Bug', 'Level 8 on', 'Tough shell (takes 2 off every hit). When it dies it lets out a green stink cloud: tools inside work 40% slower for 4 seconds. Squash it away from your best tools.', '1 slice'],
+  ['moth', 'Moth', 'Level 9 on', 'Flies. If you have Candles, it leaves the trail and flies to one, beats out the flame and snuffs it. Snuffed candles give no boost until you tap them and Relight (15 coins). Keep a Swatter near your candles.', '1 slice'],
+  ['mantis', 'Praying Mantis', 'Level 9 on', 'Tall and tough. It grabs the nearest tool and holds it still for 3 seconds. Every so often it snatches a small bug off the trail and eats it to heal itself. Burn it down from range.', '2 slices'],
   ['queen', 'Roach King', 'Boss, waves 5 and 20', 'Huge health and a shell that takes 3 off every hit. Park a Magnifying Glass near the end of the trail to cook him.', '5 slices'],
   ['widow', 'Black Widow', 'Boss, waves 10 and 20', 'Big and tough, with a shell that takes 2 off every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 20', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
@@ -3751,6 +3975,8 @@ function syncTray() {
     if (theirs) $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t) + ` <span class="partner">${S.net === 'bot' ? 'AI teammate\'s' : 'Partner\'s'} tool</span>`;
     $('bSell').disabled = !!theirs;
     $('bUp').disabled = theirs || max || busy || S.money < c; $('bUpC').textContent = max ? 'Maxed' : tw.pending ? 'Being built' : tw.upPending ? 'On the way' : c + ' coins';
+    $('bUp').firstChild.nodeValue = tw.snuff ? 'Relight' : 'Upgrade';
+    if (tw.snuff) { $('bUp').disabled = theirs || tw.relightPending || S.money < 15; $('bUpC').textContent = tw.relightPending ? 'On the way' : '15 coins · a moth put it out'; }
     if (tw.pending) $('iLv').textContent = 'Being built';
     $('bSellC').textContent = '+' + sellVal(tw) + (!tw.pending && tw.fresh && tw.fresh >= tw.spent ? ' · full' : '');
   }
@@ -3792,7 +4018,7 @@ function syncHud() {
   const v = { lives: S.lives, money: S.money, wave: S.wave };
   if (shown.licN !== S.lic) { shown.licN = S.lic; $('stLic').hidden = !S.lic; $('lic').textContent = '+' + S.lic * 5 + '%'; renderShop(); }
   for (const k in v) if (shown[k] !== v[k]) { $(k).textContent = v[k]; shown[k] = v[k]; }
-  if (shown.money !== shown._m) { shown._m = shown.money; for (const el of shop.children) el.classList.toggle('poor', S.money < elCost(el)); if (S.pick) { const c = upCost(S.pick); $('bUp').disabled = S.pick.lv >= 3 || S.pick.pending || S.pick.upPending || S.money < c; } }
+  if (shown.money !== shown._m) { shown._m = shown.money; for (const el of shop.children) el.classList.toggle('poor', S.money < elCost(el)); if (S.pick) { const c = upCost(S.pick); $('bUp').disabled = S.pick.snuff ? S.pick.relightPending || S.money < 15 : S.pick.lv >= 3 || S.pick.pending || S.pick.upPending || S.money < c; } }
   if (S.qTotal && !$('queen').hidden) {
     let cur = S.net === 'guest' ? (S.qQueued || 0) : S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHp(t), 0);
     for (const b of S.bugs) if (b.mesh) cur += Math.max(0, b.hp);
@@ -3805,7 +4031,7 @@ function syncHud() {
 // ---------------------------------------------------------------- flow
 function clearBoard() {
   if (SPEC.on) exitSpec();
-  if (S) { for (const o of [...(S.items || []), ...S.towers]) if (o.marker) scene.remove(o.marker); for (const it of S.items || []) scene.remove(it.o.root); for (const tw of S.towers) { scene.remove(tw.o.root); if (tw.o.tip) scene.remove(tw.o.tip); } for (const b of S.bugs) if (b.mesh) b.mesh.visible = false; }
+  if (S) { for (const o of [...(S.items || []), ...S.towers]) if (o.marker) scene.remove(o.marker); for (const it of S.items || []) scene.remove(it.o.root); for (const tw of S.towers) { scene.remove(tw.o.root); if (tw.o.tip) scene.remove(tw.o.tip); } for (const b of S.bugs) hideBug(b); S.clouds = []; }
   for (const k in BOSS_POOL) for (const q of BOSS_POOL[k]) q.visible = false;
   $('queen').hidden = true;
 }
@@ -3973,6 +4199,7 @@ function netHostCmd(m) {
   withPlayer(1, () => {
     if (m.k === 'place') placeTower(m.t, m.c, m.r);
     else if (m.k === 'up' && tw && tw.owner === 1) upgrade(tw);
+    else if (m.k === 'relight' && tw) relight(tw);
     else if (m.k === 'sell' && tw && tw.owner === 1) { S.money += sellVal(tw); removeTower(tw); }
     else if (m.k === 'lic') buyLicense();
     else if (m.k === 'abil') useAbility();
@@ -4001,7 +4228,7 @@ function netSnap() {
     qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHp(t), 0), qn: $('qname').textContent, hp: S.hpMul,
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
       (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0)]),
-    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0)]),
+    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0)]),
     i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd]),
     e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
 }
@@ -4041,7 +4268,7 @@ function netApply(m) {
     if (fl & 1) b.psnT = Math.max(b.psnT, 0.3); if (fl & 2) { b.stuck = Math.max(b.stuck, 0.15); b.slowF = Math.min(b.slowF, 0.5); } if (fl & 4) b.angry = true; b.eatT = fl & 8 ? Math.max(b.eatT || 0, 0.2) : 0;
   }
   for (const b of S.bugs) if (!b.dead && !seen.has(b.id)) {
-    if (b.s >= ROUTES[b.route].end - 1.5) { b.dead = true; if (b.mesh) b.mesh.visible = false; } else kill(b);
+    if (b.s >= ROUTES[b.route].end - 1.5) { b.dead = true; hideBug(b); } else kill(b);
   }
   S.bugs = S.bugs.filter(b => !b.dead);
   if (!S.bugs.some(b => b.mesh) && !(m.qq > 0)) $('queen').hidden = true; else if (m.qq > 0 || S.bugs.some(b => b.mesh)) $('queen').hidden = false;
@@ -4052,7 +4279,7 @@ function netApply(m) {
     if (!tw) tw = remoteTower(id, t, c, r, owner);
     if (tw.pending && !(fl & 1)) finishJob({ kind: 'build', obj: tw });
     while (tw.lv < lv) applyUpgrade(tw);
-    tw.upPending = !!(fl & 2);
+    tw.upPending = !!(fl & 2); tw.stunT = fl & 4 ? 0.2 : 0; tw.snuff = !!(fl & 8);
   }
   for (const tw of [...S.towers]) if (!tseen.has(tw.id)) removeTower(tw);
   // items
@@ -4215,7 +4442,7 @@ function vsIncoming(t, n) {
 function vsInbox(dt) {
   const v = S.vs; if (!v.inbox.length || (v.inT -= dt) > 0) return;
   const t = v.inbox.shift();
-  if (t === 'bed') { const rt = nextRoute(); for (let i = 0; i < BT.bed.swarm; i++) { const b = spawnBug('bed', rt); b.sent = 1; b.s = -i * 0.35 - Math.random() * 0.3; b.off = (Math.random() - 0.5) * 1.8; } }
+  if (t === 'bed' || t === 'centi') spawnEntry(t, nextRoute(), true);
   else {
     const b = spawnBug(t); b.sent = 1;
     if (BT[t].boss) { S.qTotal = S.queue.filter(q => BT[q].boss).reduce((a, q) => a + bossHp(q), 0) + S.bugs.filter(x => x.mesh).reduce((a, x) => a + x.max, 0); $('qname').textContent = BT[t].name.toUpperCase(); }
@@ -4344,6 +4571,7 @@ function aiSpawn(t, sent) {
   };
   A.routeN = (A.routeN + 1) % ROUTES.length;
   if (t === 'bed') for (let i = 0; i < bt.swarm; i++) make(-i * 0.35 - Math.random() * 0.3, (Math.random() - 0.5) * 1.8);
+  else if (t === 'centi') for (let i = 0; i < bt.segs; i++) make(-i * 0.62, 0);
   else make(0, (Math.random() - 0.5) * (bt.boss ? 0.2 : 1.3));
 }
 function aiIncoming(t, n) { const A = S.vs.bot; for (let i = 0; i < Math.min(n, 12); i++) A.inbox.push(t); }
@@ -4440,12 +4668,12 @@ function enterSpec() {
 function exitSpec() {
   SPEC.on = false; $('spec').hidden = true;
   for (const tw of SPEC.towers) { scene.remove(tw.o.root); if (tw.o.tip) scene.remove(tw.o.tip); }
-  for (const b of SPEC.bugs) if (b.mesh) b.mesh.visible = false;
+  for (const b of SPEC.bugs) hideBug(b);
   SPEC.towers = []; SPEC.tm.clear(); SPEC.bugs = []; SPEC.bm.clear(); SPEC.decals = []; SPEC.rings = [];
   if (S) {
     for (const tw of S.towers) { tw.o.root.visible = !tw.pending; if (tw.marker) tw.marker.visible = true; }
     for (const it of S.items || []) { it.o.root.visible = !it.pending; if (it.marker) it.marker.visible = true; }
-    for (const b of S.bugs) if (b.mesh && !b.dead) b.mesh.visible = true;
+    for (const b of S.bugs) { if (b.mesh && !b.dead) b.mesh.visible = true; if (b.mdl && !b.dead) b.mdl.visible = true; }
     setCake(S.lives);
   }
 }
@@ -4471,13 +4699,13 @@ function specTick(dt) {
       if (!d) {
         d = { id: key2, t, route, s, ts: s, off, x: 0, y0: 0, z: 0, ang: 0, pitch: 0, walk: Math.random() * 6, flash: 0, stuck: 0, psnT: 0, hp: 100, max: 100, dead: false };
         pathAt(Math.max(0, s), tmpP, route); d.ang = Math.atan2(tmpP.dx, tmpP.dz);
-        if (BT[t].boss) d.mesh = getBoss(t);
+        if (BT[t].boss) d.mesh = getBoss(t); else if (MODEL_BUILD[t]) d.mdl = getModel(t);
         SPEC.bm.set(key2, d); SPEC.bugs.push(d);
       }
       d.ts = s; d.route = route; d.off = off; d.hp = Math.max(1, (hp ?? 1) * 100);
       d.ball = ball ? (d.ball || { hp: 1, max: 1, flash: 0 }) : null;
     }
-    for (const d of SPEC.bugs) if (!seen.has(d.id)) { d.dead = true; if (d.mesh) d.mesh.visible = false; if (d.s < ROUTES[d.route].end - 1.5) specSplat(d); SPEC.bm.delete(d.id); }
+    for (const d of SPEC.bugs) if (!seen.has(d.id)) { d.dead = true; hideBug(d); if (d.s < ROUTES[d.route].end - 1.5) specSplat(d); SPEC.bm.delete(d.id); }
     SPEC.bugs = SPEC.bugs.filter(d => !d.dead);
     // tools: one per tile
     const tseen = new Set();
@@ -4534,7 +4762,7 @@ function specFrame(dt) {
   // hide your own things for this frame's picture
   for (const tw of S.towers) { tw.o.root.visible = false; if (tw.o.tip) tw.o.tip.visible = false; if (tw.marker) tw.marker.visible = false; }
   for (const it of S.items) { it.o.root.visible = false; if (it.marker) it.marker.visible = false; }
-  for (const b of S.bugs) if (b.mesh) b.mesh.visible = false;
+  for (const b of S.bugs) { if (b.mesh) b.mesh.visible = false; if (b.mdl) b.mdl.visible = false; }
   const real = { bugs: S.bugs, towers: S.towers, decals: S.decals, coins: S.coins, rings: S.rings, items: S.items };
   S.bugs = SPEC.bugs; S.towers = SPEC.towers; S.decals = SPEC.decals; S.coins = []; S.rings = SPEC.rings; S.items = [];
   try { drawTowers(dt, clock); gridMesh.visible = false; drawFx(dt, clock); } finally { Object.assign(S, real); }
