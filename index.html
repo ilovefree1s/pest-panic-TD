@@ -427,7 +427,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v98</div>
+    <div id="ver">v99</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -656,13 +656,13 @@ const LEVELS = [
              [[9, -0.6], [9, 2], [7, 2], [7, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]]] },
   // Team Kitchen (co-op): 21 tiles wide, bugs come in through both side walls, lanes join halfway up the middle
   // Team campaign: three co-op kitchens, 21 tiles wide with the cake in the middle; each one harder than the last
-  { name: 'Side Doors', sub: 'Easy', intro: 'Two lanes, one cake. Hold your side!', hp: 0.95, money: 180, shift: 0, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+  { name: 'Side Doors', nb: [['hopper', 4, 2], ['centi', 7, 1]], sub: 'Easy', intro: 'Two lanes, one cake. Hold your side!', hp: 0.95, money: 180, shift: 0, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[-0.6, 8], [3, 8], [3, 2], [6, 2], [6, 6], [10, 6], [10, -0.05]],
              [[20.6, 8], [17, 8], [17, 2], [14, 2], [14, 6], [10, 6], [10, -0.05]]] },
-  { name: 'The Funnel', sub: 'Medium', intro: 'Both lanes meet at the bottom. Guard the long middle together.', hp: 1.12, money: 175, shift: 1, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+  { name: 'The Funnel', nb: [['hopper', 3, 2], ['centi', 5, 1], ['stink', 7, 1], ['moth', 9, 2]], bosses: [['ghop'], ['gcenti'], ['hornet'], ['ghop', 'gcenti', 'widow']], sub: 'Medium', intro: 'Both lanes meet at the bottom. Guard the long middle together.', hp: 1.12, money: 175, shift: 1, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[1, -0.6], [1, 7], [4, 7], [4, 2], [7, 2], [7, 9], [10, 9], [10, -0.05]],
              [[19, -0.6], [19, 7], [16, 7], [16, 2], [13, 2], [13, 9], [10, 9], [10, -0.05]]] },
-  { name: 'Long Haul', sub: 'Hard', intro: 'Long lanes that only meet at the cake. Don\'t be the weak link!', hp: 1.3, money: 170, shift: 2, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+  { name: 'Long Haul', nb: [['hopper', 2, 2], ['centi', 4, 1], ['stink', 5, 2], ['moth', 6, 2], ['mantis', 8, 1]], bosses: [['gstink'], ['gmoth'], ['gmantis'], ['gmantis', 'gmoth', 'gstink']], sub: 'Hard', intro: 'Long lanes that only meet at the cake. Don\'t be the weak link!', hp: 1.3, money: 170, shift: 2, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[1, 10.6], [1, 6], [8, 6], [8, 4], [2, 4], [2, 1], [10, 1], [10, -0.05]],
              [[19, 10.6], [19, 6], [12, 6], [12, 4], [18, 4], [18, 1], [10, 1], [10, -0.05]]] },
   // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
@@ -2332,7 +2332,7 @@ function specialMove(b, sp, dt) {
     if (b.lead && b.lead.dead) b.lead = null;   // the bit in front got squashed: this segment is a new head
     if (b.lead) { const want = b.lead.s - (bt.gap || 0.62); sp = b.s < want - 0.05 ? sp * 1.35 : b.s > want ? 0 : sp; }
     if (giant) b.armor = b.lead ? 0 : 4;   // the giant's head is armored
-  } else if (base === 'hopper') {
+  } else if (base === 'hopper' && S.net !== 'guest') {
     const JT = giant ? 0.75 : 0.5, JL = giant ? 12 : 6, CR = giant ? 0.45 : 0.3;
     if (b.jump > 0) {
       b.jump -= dt; sp = JL / JT; b.air = true; b.hy = Math.sin(Math.PI * Math.min(1, 1 - b.jump / JT)) * (giant ? 3.2 : 1.5);
@@ -2838,7 +2838,8 @@ function bossesFor(n) {
   const BL = (LEVELS[LV] && LEVELS[LV].bosses) || [['queen'], ['widow'], ['hornet'], ['hornet', 'widow', 'queen']];
   if (n <= MAXW) return n % 5 ? [] : BL[n / 5 - 1] || [];
   if (n % 5) return [];
-  const lap = BL[(n / 5 - 1) % 4], extra = Math.floor((n - MAXW) / 20);
+  const EL = [['ghop'], ['gcenti'], ['gstink'], ['gmoth'], ['gmantis'], ['queen', 'widow', 'hornet']];
+  const lap = (LEVELS[LV] && (LEVELS[LV].bosses || LEVELS[LV].team)) ? BL[(n / 5 - 1) % 4] : EL[(n / 5 - 5) % EL.length], extra = Math.floor((n - MAXW) / 20);
   const out = []; for (let i = 0; i <= extra; i++) out.push(...lap); return out;
 }
 function bossHp(t) { return Math.round(BT[t].hp * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1)); }   // bosses are 5% softer in Bug Battle and Team Kitchen
@@ -2847,7 +2848,8 @@ function makeWave(n, sh = 0) {
   const team = LEVELS[LV] && LEVELS[LV].team, r = rng(n * 131 + 7 + sh * 977), q = [], cnt = Math.round((8 + Math.floor(n * 2.2)) * (team ? 1.6 : 1)), pool = ['ant'], u = n + sh;
   if (u >= 2) pool.push('fly'); if (u >= 4) pool.push('spider'); if (u >= 8) pool.push('fly', 'spider'); if (u >= 6) pool.push('dung'); if (u >= 12) pool.push('dung');
   // the later houses bring new bugs: [type, first wave, how many copies go in the pool]
-  for (const [t, w, k] of (LEVELS[LV] && LEVELS[LV].nb) || []) if (n >= w) for (let i = 0; i < k; i++) pool.push(t);
+  const NBE = [['hopper', 21, 2], ['centi', 23, 1], ['stink', 25, 1], ['moth', 27, 2], ['mantis', 30, 1]];   // endless on the first five houses
+  for (const [t, w, k] of (LEVELS[LV] && LEVELS[LV].nb) || (n > MAXW ? NBE : [])) if (n >= w) for (let i = 0; i < k; i++) pool.push(t);
   const GRP = { dung: [1, 2], stink: [1, 2], centi: [1, 1], mantis: [1, 1], moth: [2, 2], hopper: [2, 3] };
   while (q.length < cnt) { const t = pool[Math.floor(r() * pool.length)], gr = GRP[t] || [3, 4], g = gr[0] + Math.floor(r() * gr[1]); for (let i = 0; i < g && q.length < cnt; i++) q.push(t); }
   // bed bug swarms from wave 7: each 'bed' entry is a cloud of a dozen
@@ -2910,14 +2912,14 @@ function startWave() {
   if (rush) S.qTotal = S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0) + S.bugs.filter(b => b.mesh && !b.dead).reduce((a, b) => a + b.max, 0);
   // one of each boss = the final trio; two of the same one (Team Kitchen doubles them) get a pair name
   const trio = new Set(bq).size > 1, pair = !trio && bq.length > 1, six = trio && bq.length > 3 && !!(LEVELS[LV] && LEVELS[LV].team);
-  const PAIR = { queen: 'Roach Twins', widow: 'Widow Sisters', hornet: 'Hornet Sisters' };
+  const PAIR = { queen: 'Roach Twins', widow: 'Widow Sisters', hornet: 'Hornet Sisters', ghop: 'Grasshopper Twins', gcenti: 'Centipede Twins', gstink: 'Stink Twins', gmoth: 'Moth Sisters', gmantis: 'Mantis Twins' };
   const kinds = [...new Set(bq)], NUM = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
   const bname = bb ? (trio ? (six ? 'All six bosses' : 'All ' + NUM[kinds.length] + ' bosses') : pair ? PAIR[bq[0]] || bb.name : bb.name) : '';
   const finalSub = kinds.map(t => BT[t].name).join(', ').replace(/, ([^,]*)$/, ' and $1') + '. Final wave!';
   if (bb) $('qname').textContent = bname.toUpperCase();
   renderShop();
   const boss = !!bb;
-  banner(boss ? bname + '!' : 'Wave ' + S.wave, boss ? (trio ? (six ? 'Two Hornet Queens, two Black Widows and two Roach Kings. Final wave!' : finalSub) : pair ? 'Two ' + bb.name + 's at once' + (LEVELS[LV].team ? ', one for each lane!' : '!') : bb.sub) : eb ? (rush ? 'Sent on top of wave ' + (S.wave - 1) + ': +' : 'Called early: +') + eb + ' coins' : '', boss, 1900);
+  banner(boss ? bname + '!' : 'Wave ' + S.wave, boss ? (trio ? (six ? 'Two of each: ' + finalSub : finalSub) : pair ? 'Two ' + bb.name + 's at once' + (LEVELS[LV].team ? ', one for each lane!' : '!') : bb.sub) : eb ? (rush ? 'Sent on top of wave ' + (S.wave - 1) + ': +' : 'Called early: +') + eb + ' coins' : '', boss, 1900);
   SND.play(boss ? 'boss' : 'wave');
   syncTray();
 }
@@ -3160,6 +3162,8 @@ function update(dt) {
     if (b.mdl) sp = specialMove(b, sp, dt);
     if (b.push > 0) { const d = Math.min(b.push, dt * 16); b.push -= d; b.s = Math.max(0, b.s - d); sp = 0; b.walk += dt * 20; }
     b.flash -= dt; b.s += sp * dt; b.walk += sp * dt * 2.6;
+    if (S.net === 'guest' && b.gx != null) { const k = Math.min(1, dt * 10); b.x += (b.gx - b.x) * k; b.z += (b.gz - b.z) * k; b.y0 = 0; b.hy = 1; b.walk += dt * 6; continue; }
+    if (S.net === 'guest' && (BT[b.t].base || b.t) === 'hopper') { b.hy += ((b.ghy || 0) - (b.hy || 0)) * Math.min(1, dt * 12); b.air = b.hy > 0.2; }
     if (b.free) { if (b.fx === undefined) { b.fx = b.x; b.fz = b.z; } mothFree(b, dt); if (b.free) continue; b.fx = undefined; }
     pathAt(b.s, tmpP, b.route);
     b.x = tmpP.x + tmpP.px * b.off; b.z = tmpP.z + tmpP.pz * b.off; b.y0 = tmpP.y;
@@ -4135,6 +4139,7 @@ function botThink() {
   const lane = S.bugs.filter(b => !b.dead && b.route === S.cur && b.s > ROUTES[b.route].len * 0.55);
   if ((S.abilCd || 0) <= 0 && S.money >= ABIL.cost + 20 && (lane.length >= 5 || lane.some(b => BT[b.t].boss))) { useAbility(); return; }
   const mine = S.towers.filter(t => t.owner === S.cur);
+  const dark = mine.find(t => t.snuff && !t.relightPending); if (dark && S.money >= 15) { relight(dark); return; }
   const want = Math.min(12, 2 + Math.ceil(S.wave * 0.55));
   const ups = mine.filter(t => t.lv < 3 && !t.pending && !t.upPending && t.t !== 'broom').sort((a, b) => TT[b.t].cost - TT[a.t].cost);
   if (mine.length >= want || (mine.length >= 4 && Math.random() < 0.35)) {
@@ -4272,7 +4277,7 @@ function netSnap() {
     m: [Math.floor(g('money')), Math.floor(h('money'))], cd: [r2(g('abilCd') || 0), r2(h('abilCd') || 0)], lic: [g('lic'), h('lic')], iu: [g('itemUsed') || {}, h('itemUsed') || {}],
     qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0), qn: $('qname').textContent, hp: S.hpMul,
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
-      (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0)]),
+      (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
     t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0)]),
     i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd]),
     e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
@@ -4304,14 +4309,16 @@ function netApply(m) {
   if (!S.active && S.nextT > 0) syncBeltT();
   // bugs
   const seen = new Set(), byId = new Map(S.bugs.map(b => [b.id, b]));
-  for (const [id, t, route, sv, off, hp, max, bh, bm, fl] of m.b) {
+  for (const [id, t, route, sv, off, hp, max, bh, bm, fl, lead, gx, gz, hy] of m.b) {
     seen.add(id); let b = byId.get(id);
     if (!b) { b = spawnBug(t, route); b.id = id; b.s = sv; b.off = off; if (b.ball && bh < 0) b.ball = null; }
     else { const d = sv - b.s; b.s += Math.abs(d) > 2.5 ? d : d * 0.35; }
     b.hp = hp; b.max = max; b.off = off;
     if (b.ball) { if (bh <= 0 && b.ball.hp > 0) { b.ball.hp = 0; breakBall(b); } else if (bh > 0) { b.ball.hp = bh; b.ball.max = bm; } }
+    b.leadId = lead || 0; b.gx = gx ?? null; b.gz = gz ?? null; b.ghy = hy || 0; b.munch = fl & 16 ? 0.2 : 0;
     if (fl & 1) b.psnT = Math.max(b.psnT, 0.3); if (fl & 2) { b.stuck = Math.max(b.stuck, 0.15); b.slowF = Math.min(b.slowF, 0.5); } if (fl & 4) b.angry = true; b.eatT = fl & 8 ? Math.max(b.eatT || 0, 0.2) : 0;
   }
+  for (const b of S.bugs) if (b.leadId !== undefined) { const L = b.leadId ? byId.get(b.leadId) || S.bugs.find(o => o.id === b.leadId) : null; b.lead = L && !L.dead ? L : null; }
   for (const b of S.bugs) if (!b.dead && !seen.has(b.id)) {
     if (b.s >= ROUTES[b.route].end - 1.5) { b.dead = true; hideBug(b); } else kill(b);
   }
