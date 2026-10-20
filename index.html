@@ -191,11 +191,12 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #specBack{font-size:20px;padding:10px 22px}
 #spec{box-shadow:inset 0 0 0 7px rgba(255,90,60,.85),inset 0 0 90px 30px rgba(170,30,15,.38)}
 #spec .sbar{padding:9px 22px} #spec .sbar b{font-size:24px}
-#swipe{position:absolute;inset:0;z-index:60;pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transform:translateX(-105%);transition:transform .38s cubic-bezier(.7,0,.3,1);background:linear-gradient(115deg,#7a1d14,#c5361f);color:#fff;text-align:center}
-#swipe.home{background:linear-gradient(115deg,#1d5a2c,#2f9a4b)}
-#swipe.in{transform:translateX(0)} #swipe.out{transform:translateX(105%)}
-#swipe small{font:900 14px var(--body);letter-spacing:.12em;opacity:.85}
-#swipe b{font:400 clamp(34px,8vw,64px) var(--display);letter-spacing:.03em;text-shadow:0 4px 0 rgba(0,0,0,.25)}
+#swipe{position:absolute;left:0;right:0;top:42%;height:64px;z-index:60;pointer-events:none;display:flex;align-items:stretch;transform:translateX(-105%);transition:transform .3s cubic-bezier(.2,.8,.3,1);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#swipe.in{transform:translateX(0)} #swipe.out{transform:translateX(105%);transition-timing-function:cubic-bezier(.7,0,.8,.2)}
+#swipe .bh{flex:none;display:flex;align-items:center;padding:0 18px;background:#0b0e11;font:800 13px var(--body);letter-spacing:.1em;color:var(--dim);box-shadow:6px 0 10px rgba(0,0,0,.45);z-index:1}
+#swipe .row{flex:1;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(110deg,#a8301c 0 14px,#8f2616 14px 28px);background-size:60px 100%;animation:belt 1.2s linear infinite}
+#swipe.home .row{background:repeating-linear-gradient(110deg,#2c8a45 0 14px,#23743a 14px 28px);background-size:60px 100%}
+#swipe b{font:400 clamp(26px,5vw,40px) var(--display);letter-spacing:.04em;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.3)}
 .soloBtn small,.teamBtn small{display:block;font:900 12px var(--body);opacity:.75;letter-spacing:.02em}
 .tsmall{display:flex;gap:10px;justify-content:center}
 .tsmall button{width:66px;height:62px;border-radius:16px;border:0;cursor:pointer;background:rgba(20,26,32,.9);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:800 11px var(--body)}
@@ -435,7 +436,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v104</div>
+    <div id="ver">v105</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -458,7 +459,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="tip" hidden></div>
     <button type="button" id="undo" hidden><span id="undoT">Sold</span><b>↶ Undo</b><i id="undoBar"></i></button>
     <div id="peek" hidden><div class="ph"><b>Friend's kitchen</b><span id="peekS"></span><button type="button" id="peekX" aria-label="Close">✕</button></div><canvas id="peekC"></canvas><button type="button" class="btn" id="peek3d">Watch in 3D</button></div>
-    <div id="swipe" hidden><small></small><b></b></div><div id="spec" hidden><div class="sbar"><b id="specT">Watching</b><span id="specS"></span></div><div class="smine" id="specMine"></div><button type="button" class="btn" id="specBack">Back to my kitchen</button></div>
+    <div id="swipe" hidden><div class="bh">NOW VIEWING</div><div class="row"><b></b></div></div><div id="spec" hidden><div class="sbar"><b id="specT">Watching</b><span id="specS"></span></div><div class="smine" id="specMine"></div><button type="button" class="btn" id="specBack">Back to my kitchen</button></div>
     <div id="banner"></div>
 
     <div class="screen" id="title">
@@ -4915,24 +4916,20 @@ function exitSpec() {
   }
 }
 // curtain wipe so it's always obvious whose kitchen you're looking at
-let SWIPING = false;
+let SWIPE_T = 0;
 function swipeTo(toFoe) {
-  if (SWIPING || !S || !S.vs) return;
+  if (!S || !S.vs) return;
   if (toFoe && (!S.vs.foe || S.mode !== 'play' || SPEC.on)) return;
   if (!toFoe && !SPEC.on) return;
-  SWIPING = true; const el = $('swipe');
-  el.classList.toggle('home', !toFoe);
-  el.querySelector('small').textContent = toFoe ? 'GOING TO' : 'BACK TO';
-  el.querySelector('b').textContent = toFoe ? (S.vs.bot ? "The AI's kitchen" : "Your friend's kitchen") : 'Your kitchen';
-  el.className = toFoe ? '' : 'home'; el.hidden = false; void el.offsetWidth; el.classList.add('in'); SND.play('tap');
-  setTimeout(() => {
-    try { if (toFoe) enterSpec(); else exitSpec(); } catch (e) { showErr('swipe', e); }
-    setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.hidden = true; el.className = ''; SWIPING = false; }, 400); }, 420);
-  }, 400);
+  try { if (toFoe) enterSpec(); else { exitSpec(); SND.play('tap'); } } catch (e) { showErr('swipe', e); }
+  const el = $('swipe');
+  el.querySelector('b').textContent = toFoe ? 'Enemy kitchen' : 'Your kitchen';
+  el.className = toFoe ? '' : 'home'; el.hidden = false; void el.offsetWidth; el.classList.add('in');
+  clearTimeout(SWIPE_T);
+  SWIPE_T = setTimeout(() => { el.classList.add('out'); SWIPE_T = setTimeout(() => { el.hidden = true; }, 320); }, 1300);
 }
 $('peek3d').addEventListener('click', e => { e.stopPropagation(); swipeTo(true); });
 $('specBack').addEventListener('click', e => { e.stopPropagation(); swipeTo(false); });
-for (const ev of ['pointerdown', 'pointerup', 'click']) $('swipe').addEventListener(ev, e => e.stopPropagation());
 for (const ev of ['pointerdown', 'pointerup', 'pointermove', 'click', 'wheel']) $('spec').addEventListener(ev, e => e.stopPropagation());
 function specSplat(d) {
   const bt = BT[d.t], y = bugY(d) + 0.4;
