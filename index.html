@@ -218,6 +218,14 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .tmap.on{box-shadow:inset 0 0 0 3px var(--gold);background:rgba(60,46,10,.92)}
 .tmap:disabled{opacity:.45;cursor:default}
 .tmap .d0{color:#9be37a} .tmap .d1{color:#ffc93c} .tmap .d2{color:#ff8a7a}
+.lme{margin:0;text-align:center;font-weight:800;color:var(--dim)} .lme b{color:var(--text)} .lme button{border:0;background:rgba(255,255,255,.1);color:var(--text);border-radius:8px;padding:2px 8px;margin-left:6px;cursor:pointer;font:800 12px var(--body)}
+.lhead{margin:2px 0 -4px;font:900 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+#lbList{display:grid;gap:6px;max-height:34vh;overflow-y:auto}
+#lbList .lg{display:flex;align-items:center;gap:10px;text-align:left;border:0;border-radius:12px;padding:9px 12px;cursor:pointer;background:rgba(127,216,255,.12);box-shadow:inset 0 0 0 1px rgba(127,216,255,.35);color:var(--text);font:inherit}
+#lbList .lg b{flex:1;font:400 18px var(--display);letter-spacing:.02em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #lbList .lg small{font-weight:800;font-size:12px;color:var(--dim)} #lbList .lg i{font-style:normal;font:900 13px var(--body);color:#08243a;background:#7fd8ff;border-radius:999px;padding:4px 10px}
+#lbList .none{margin:0;text-align:center;font-weight:800;font-size:13px;color:var(--dim)}
+#nameBox{z-index:40;background:rgba(6,8,10,.82)} #nameBox .lbox{text-align:center} #nameBox h3{margin:0;font:400 26px var(--display)}
+#nameIn{font:400 24px var(--display);text-align:center;border-radius:14px;border:0;padding:10px;background:#f4efe4;color:#2a1600;min-width:0}
 .ljoin{display:grid;grid-template-columns:1fr auto;gap:8px}
 .ljoin input{font:400 24px var(--display);letter-spacing:.2em;text-align:center;border-radius:14px;border:0;padding:8px;background:#f4efe4;color:#2a1600;min-width:0}
 .lstat{margin:0;min-height:1.4em;text-align:center;font-weight:800;color:var(--gold)}
@@ -436,7 +444,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v113</div>
+    <div id="ver">v114</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -489,15 +497,18 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <p class="lsub" id="lbSub">Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.</p>
       <div class="tmaps" id="tmaps"></div>
       <div class="lbox">
-        <button class="btn" id="lbCreate" type="button">Create room</button>
-        <div class="ljoin"><input id="lbCode" inputmode="numeric" maxlength="4" placeholder="Room code" autocomplete="off"><button class="btn" id="lbJoin" type="button">Join</button></div>
+        <p class="lme">Playing as <b id="lbName"></b><button type="button" id="lbRename">Change</button></p>
+        <button class="btn" id="lbCreate" type="button">Host a game</button>
         <p id="lbStatus" class="lstat"></p>
+        <p class="lhead" id="lbOpenH">Open games: tap to join</p>
+        <div id="lbList"></div>
         <button class="btn dark" id="lbBot" type="button">Play with AI teammate</button>
         <div id="aiRow" hidden><div class="dtabs" id="aiDiff"><button type="button" data-d="0">Easy</button><button type="button" data-d="1" class="on">Normal</button><button type="button" data-d="2">Hard</button></div><button class="btn dark" id="lbAi" type="button">Play vs AI</button></div>
         <button class="btn dark" id="lbPractice" type="button">Solo: hold both lanes</button>
         <button class="btn dark" id="lbBack" type="button">Back</button>
       </div>
     </div>
+    <div class="screen" id="nameBox" hidden><div class="lbox"><h3>What's your name?</h3><p class="lme">Other players see it on your games</p><input id="nameIn" maxlength="16" autocomplete="off" placeholder="Your name"><button class="btn" id="nameOk" type="button">Done</button></div></div>
     <div class="screen" id="achs" hidden>
       <div class="gtabs"><button type="button" data-g="guide">Field guide</button><button type="button" data-g="achs">Achievements</button></div>
       <div id="achCount" class="achc"></div>
@@ -4288,24 +4299,31 @@ async function netOpen(code, onMsg) {
   return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), close: () => NET.sb.removeChannel(ch), state: () => ch.state };
 }
 const MYVER = () => ($('ver').textContent || '').trim();
-function netSend(m) { try { if (NET.link) { m._v = MYVER(); NET.link.send(m); } } catch (e) {} }
-function netLeave() { NET.awayAt = 0; NET.gaveUp = false; NET.last = 0; if (S) S.hold = false; NET.code = ''; if (NET.link) { netSend({ k: 'bye' }); try { NET.link.close(); } catch (e) {} } NET.link = null; NET.role = null; $('netWarn').hidden = true; }
+function netSend(m) {
+  try { if (NET.link) { m._v = MYVER(); NET.tx = (NET.tx || 0) + 1; if (m.k === 's' && NET.tx % 40 === 1) NET.txSize = JSON.stringify(m).length;
+    const r = NET.link.send(m); if (r && r.then) r.then(st => { if (st && st !== 'ok') NET.txBad = String(st); }, e => { NET.txBad = String(e && e.message || e); }); } }
+  catch (e) { NET.txBad = String(e && e.message || e); }
+}
+function netLeave() { if (NET.role === 'host') lobbyAd(false); NET.rx = {}; NET.tx = 0; NET.peerSn = 0; NET.txBad = ''; NET.lastSnap = 0; NET.awayAt = 0; NET.gaveUp = false; NET.last = 0; if (S) S.hold = false; NET.code = ''; if (NET.link) { netSend({ k: 'bye' }); try { NET.link.close(); } catch (e) {} } NET.link = null; NET.role = null; $('netWarn').hidden = true; }
 function lobbyStatus(h) { $('lbStatus').innerHTML = h; }
 async function netCreate() {
-  netLeave(); const code = String(1000 + Math.floor(Math.random() * 9000)); NET.code = code; NET.role = 'host';
-  lobbyStatus('Opening a room…');
-  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { lobbyStatus('Could not open a room. Check your internet and try again.'); NET.role = null; return; }
-  lobbyStatus(`Room code<b>${code}</b>Tell your friend to tap Join and type it in. Waiting…`);
+  netLeave(); const code = String(100000 + Math.floor(Math.random() * 900000)); NET.code = code; NET.role = 'host'; NET.partner = null; syncLobbyUi();
+  lobbyStatus('Opening your game…');
+  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { lobbyStatus('Could not open a game. Check your internet and try again.'); NET.role = null; NET.code = ''; syncLobbyUi(); return; }
+  if (NET.code !== code) return;
+  lobbyStatus('Your game is open. Waiting for someone to join…'); lobbyAd(true);
 }
 async function netJoin(code) {
-  code = (code || '').replace(/\D/g, ''); if (code.length !== 4) { lobbyStatus('Type the 4-digit room code'); return; }
-  netLeave(); NET.code = code; NET.role = 'guest'; lobbyStatus('Joining room ' + code + '…');
-  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { lobbyStatus('Could not connect. Check the code and your internet.'); NET.role = null; return; }
-  NET.helloT = 0; lobbyStatus('Connected. Waiting for the host…');
+  code = (code || '').replace(/\D/g, ''); if (!code) return;
+  const g = LOB.games.get(code), who = g ? g.name : 'the host';
+  netLeave(); NET.code = code; NET.role = 'guest'; NET.gid ||= Math.random().toString(36).slice(2, 10); syncLobbyUi(); lobbyStatus('Joining ' + who + '…');
+  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { lobbyStatus('Could not connect. Check your internet and try again.'); NET.role = null; NET.code = ''; syncLobbyUi(); return; }
+  NET.helloT = 0; lobbyStatus('Connected. Waiting for ' + who + '…');
 }
 function netOnMsg(m) {
   if (!m || !m.k) return;
-  NET.last = performance.now();
+  NET.last = performance.now(); (NET.rx ||= {})[m.k] = (NET.rx[m.k] || 0) + 1;
+  if (m.sn != null) NET.peerSn = m.sn;
   // two different versions can't play together properly: tell both players to reopen the game
   if (m._v && m._v !== MYVER() && NET.badV !== m._v) { NET.badV = m._v; const el = $('netWarn'); el.textContent = 'Your friend is on ' + m._v + ' and you are on ' + MYVER() + '. Both of you close the game fully and reopen it.'; el.hidden = false; clearTimeout(netWarn.t); netWarn.t = setTimeout(() => el.hidden = true, 15000); try { lobbyStatus(el.textContent); } catch (e) {} }
   if (m.k === 'away') { NET.awayAt = NET.last; return; }
@@ -4314,13 +4332,18 @@ function netOnMsg(m) {
   if (S && S.net === 'vs' && m.k !== 'start' && m.k !== 'hello') { vsMsg(m); return; }
   if (NET.role === 'host') {
     if (m.k === 'hello' && (!S || !S.net || S.net === 'bot' || S.mode !== 'play')) {
+      if (NET.partner && m.gid && m.gid !== NET.partner.gid && performance.now() - NET.partner.at < 15000) return;   // first come, first served
+      NET.partner = { gid: m.gid, name: m.name || 'Your friend', at: performance.now() };
       const vs = NET.mode === 'vs', lv = vs ? VS_LV : TEAM_LV;
-      netSend({ k: 'start', lv, vs: vs ? 1 : 0 }); $('lobby').hidden = true; startGame(lv, vs ? 'vs' : 'host'); return;
+      lobbyAd(false); netSend({ k: 'start', lv, vs: vs ? 1 : 0, gid: m.gid, name: myName() });
+      banner('Playing with ' + NET.partner.name + '!', '', false, 1800); $('lobby').hidden = true; startGame(lv, vs ? 'vs' : 'host'); return;
     }
     if (m.k === 'bye') { netWarn('Your partner left the game. Their side keeps defending on its own.'); return; }
     if (!S || S.net !== 'host' || S.mode !== 'play') return;
     netHostCmd(m);
   } else if (NET.role === 'guest') {
+    if (m.k === 'start' && m.gid && NET.gid && m.gid !== NET.gid) { if (!S || !S.net || S.mode !== 'play') { netLeave(); lobbyStatus('That game just filled up. Pick another one.'); syncLobbyUi(); } return; }
+    if (m.k === 'start' && m.name && (!S || S.mode !== 'play')) setTimeout(() => banner('Playing with ' + m.name + '!', '', false, 1800), 300);
     if (m.k === 'start') { NET.lastSnap = performance.now(); $('lobby').hidden = true; $('over').hidden = true; if (m.vs) { startGame(m.lv || 0, 'vs'); return; } TEAM_LV = m.lv || TEAM0; startGame(TEAM_LV, 'guest'); return; }
     if (m.k === 'bye') { netWarn('The host left the game.'); return; }
     if (!S || S.net !== 'guest') return;
@@ -4496,6 +4519,13 @@ function netFrame(dt) {
     NET.lastSnap ||= now;
     if (now - NET.lastSnap > 3000 && now - NET.rejoinAt > 6000) { NET.lastSnap = now; netRejoin(); }
   }
+  // problem report on screen so a screenshot tells us what's going wrong
+  if (S.mode === 'play' && (S.net === 'guest' || S.net === 'host') && now - (NET.diagT || 0) > 1000) {
+    NET.diagT = now; const rx = NET.rx || {}, link = NET.link && NET.link.state ? NET.link.state() : 'local';
+    const bad = S.net === 'guest' ? now - (NET.lastSnap || now) > 4000 : (rx.ping || 0) > 5 && !NET.peerSn;
+    if (bad) { const el = $('netWarn'); el.textContent = (S.net === 'guest' ? 'Not getting the game from the host.' : 'Your partner isn\'t getting the game.') + ' [' + MYVER() + ' ' + S.net + ' link:' + link + ' rx:' + Object.entries(rx).map(([k, v]) => k + v).join(',') + ' tx:' + (NET.tx || 0) + ' size:' + (NET.txSize || 0) + ' peer:' + (NET.peerSn || 0) + (NET.txBad ? ' err:' + NET.txBad : '') + ']'; el.hidden = false; clearTimeout(netWarn.t); NET.diagOn = true; }
+    else if (NET.diagOn) { NET.diagOn = false; $('netWarn').hidden = true; }
+  }
   netHoldCheck(now);
 }
 setInterval(() => {
@@ -4504,7 +4534,7 @@ setInterval(() => {
   if ((!NET.link || st === 'closed' || st === 'errored') && performance.now() - NET.rejoinAt > 5000) { netRejoin(); return; }
   if (NET.link && NET.role === 'host' && S && S.net === 'host') netSend({ k: 'back' });
 }, 1000);
-setInterval(() => { if (document.hidden) return; if (NET.link && NET.role === 'guest') netSend({ k: S && (S.net === 'guest' || S.net === 'vs') ? 'ping' : 'hello' }); }, 1000);
+setInterval(() => { if (document.hidden) return; if (NET.link && NET.role === 'guest') { const ping = S && (S.net === 'guest' || S.net === 'vs'); netSend(ping ? { k: 'ping', sn: (NET.rx && NET.rx.s) || 0 } : { k: 'hello', gid: NET.gid, name: myName() }); } }, 1000);
 
 // ---------------------------------------------------------------- Bug Battle: two kitchens, same waves, send bugs at each other
 // Each player runs their own kitchen. The host only decides when the next wave starts (when both of you are clear).
@@ -5068,7 +5098,7 @@ function renderTeamMaps() {
   $('tmaps').innerHTML = [0, 1, 2].map(i => { const lv = TEAM0 + i, L = LEVELS[lv], ok = teamUnlocked(lv), b = loadBest(lv), st = loadNum(starKey(lv));
     return `<button class="tmap${lv === TEAM_LV ? ' on' : ''}" type="button" data-lv="${lv}" ${ok ? '' : 'disabled'}><b>${i + 1}. ${L.name}</b><em class="d${i}">${L.sub}</em><small>${!ok ? '🔒 Beat map ' + i + ' first' : b >= MAXW ? starStr(Math.max(1, st)) : b ? 'Best: wave ' + b : HOUSES[lv].name}</small></button>`; }).join('');
 }
-$('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (NET.mode === 'vs') VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); });
+$('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (NET.mode === 'vs') VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); if (NET.role === 'host') lobbyAd(true); });
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
 $('soloBack').addEventListener('click', () => { $('solo').hidden = true; $('title').hidden = false; });
 function openLobby(mode) {
@@ -5076,16 +5106,55 @@ function openLobby(mode) {
   $('lbH').textContent = vs ? 'Bug Battle' : 'Team Kitchen';
   $('lbSub').textContent = vs ? 'You and a friend each defend your own cake against the same waves. Squash bugs, earn coins, and send extra bugs at each other. Last cake standing wins.' : 'Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.';
   $('lbBot').hidden = vs; $('lbPractice').hidden = vs; $('aiRow').hidden = !vs;
-  $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps();
+  $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps(); syncLobbyUi(); lobbyOpen();
 }
-$('teamT').addEventListener('click', () => openLobby('team'));
-$('vsT').addEventListener('click', () => openLobby('vs'));
-$('lbBack').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; $('title').hidden = false; });
+$('teamT').addEventListener('click', () => { SND.init(); if (!myName()) askName(() => openLobby('team')); else openLobby('team'); });
+$('vsT').addEventListener('click', () => { SND.init(); if (!myName()) askName(() => openLobby('vs')); else openLobby('vs'); });
+$('lbBack').addEventListener('click', () => { if (NET.role === 'host') lobbyAd(false); netLeave(); $('lobby').hidden = true; $('title').hidden = false; lobbyClose(); });
 $('lbPractice').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV); });
 $('lbBot').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV, 'bot'); });
-$('lbCreate').addEventListener('click', () => { SND.init(); netCreate(); });
-$('lbJoin').addEventListener('click', () => { SND.init(); netJoin($('lbCode').value); });
-$('lbCode').addEventListener('keydown', e => { if (e.key === 'Enter') netJoin($('lbCode').value); });
+$('lbCreate').addEventListener('click', () => { SND.init(); if (NET.role === 'host') { netLeave(); lobbyStatus(''); syncLobbyUi(); return; } netCreate(); });
+$('lbList').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return; SND.init(); SND.play('tap'); netJoin(b.dataset.code); });
+$('lbRename').addEventListener('click', () => askName(() => { $('lobby').hidden = false; syncLobbyUi(); }));
+// ---- player names: asked once, the first time you go online
+function myName() { try { return (localStorage.getItem('ppd-name') || '').trim(); } catch (e) { return ''; } }
+function askName(then) {
+  $('nameIn').value = myName(); $('nameBox').hidden = false; askName.then = then; setTimeout(() => { try { $('nameIn').focus(); } catch (e) {} }, 50);
+}
+function nameDone() {
+  const n = $('nameIn').value.replace(/[<>&"]/g, '').trim().slice(0, 16); if (!n) { SND.play('err'); $('nameIn').focus(); return; }
+  try { localStorage.setItem('ppd-name', n); } catch (e) {} $('nameBox').hidden = true; SND.play('tap'); const t = askName.then; askName.then = null; if (t) t();
+}
+$('nameOk').addEventListener('click', nameDone);
+$('nameIn').addEventListener('keydown', e => { if (e.key === 'Enter') nameDone(); });
+// ---- the open-games list: hosts shout an ad every two seconds on a shared lobby channel; ads older than 6s drop off
+const LOB = { link: null, games: new Map(), adT: 0, opening: false };
+async function lobbyOpen() {
+  if (LOB.link || LOB.opening) return; LOB.opening = true;
+  try { LOB.link = await netOpen('lobby', m => { if (!m || !m.code || m.code === NET.code) return; if (m.k === 'unad') LOB.games.delete(m.code); else if (m.k === 'ad') LOB.games.set(m.code, { ...m, seen: performance.now() }); renderLobbyList(); }); }
+  catch (e) { LOB.link = null; } LOB.opening = false;
+  if ($('lobby').hidden) lobbyClose();
+}
+function lobbyClose() { const l = LOB.link; LOB.link = null; LOB.games.clear(); if (l) try { l.close(); } catch (e) {} }
+function lobbyAd(on) { if (!LOB.link || !NET.code) return; try { LOB.link.send(on ? { k: 'ad', code: NET.code, name: myName() || 'Someone', mode: NET.mode, lv: NET.mode === 'vs' ? VS_LV : TEAM_LV, _v: MYVER() } : { k: 'unad', code: NET.code }); } catch (e) {} }
+function renderLobbyList() {
+  const now = performance.now(); for (const [c, g] of LOB.games) if (now - g.seen > 6000 || g._v !== MYVER()) LOB.games.delete(c);
+  const list = [...LOB.games.values()].filter(g => g.mode === NET.mode), el = $('lbList'); if (!el) return;
+  const h = !LOB.link ? '<p class="none">Looking for games…</p>' : !list.length ? '<p class="none">No open games right now. Host one!</p>'
+    : list.map(g => `<button type="button" class="lg" data-code="${String(g.code).replace(/\D/g, '')}"><b>${String(g.name).replace(/[<>&"]/g, '')}</b><small>${LEVELS[g.lv] ? (NET.mode === 'vs' ? HOUSES[g.lv].name : LEVELS[g.lv].name) : ''}</small><i>Join</i></button>`).join('');
+  if (el.innerHTML !== h) el.innerHTML = h;
+}
+function syncLobbyUi() {
+  $('lbName').textContent = myName() || '?';
+  const hosting = NET.role === 'host'; $('lbCreate').textContent = hosting ? 'Stop hosting' : 'Host a game';
+  $('lbOpenH').hidden = hosting; $('lbList').hidden = hosting; renderLobbyList();
+}
+setInterval(() => {
+  if ($('lobby').hidden) { if (LOB.link) lobbyClose(); return; }
+  if (!LOB.link) lobbyOpen();
+  if (NET.role === 'host' && NET.code && !(S && S.net && S.mode === 'play')) lobbyAd(true);
+  renderLobbyList();
+}, 2000);
 // ---------------------------------------------------------------- achievements (saved on this device)
 const ACH_LIST = [
   ['first', 'First Squash', 'Squash your first bug.'],
