@@ -436,7 +436,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v109</div>
+    <div id="ver">v110</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4268,7 +4268,8 @@ async function netOpen(code, onMsg) {
   await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('timed out')), 12000); ch.subscribe(st => { if (st === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error(st)); } }); });
   return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), close: () => NET.sb.removeChannel(ch), state: () => ch.state };
 }
-function netSend(m) { try { if (NET.link) NET.link.send(m); } catch (e) {} }
+const MYVER = () => ($('ver').textContent || '').trim();
+function netSend(m) { try { if (NET.link) { m._v = MYVER(); NET.link.send(m); } } catch (e) {} }
 function netLeave() { NET.awayAt = 0; NET.gaveUp = false; NET.last = 0; if (S) S.hold = false; NET.code = ''; if (NET.link) { netSend({ k: 'bye' }); try { NET.link.close(); } catch (e) {} } NET.link = null; NET.role = null; $('netWarn').hidden = true; }
 function lobbyStatus(h) { $('lbStatus').innerHTML = h; }
 async function netCreate() {
@@ -4286,6 +4287,8 @@ async function netJoin(code) {
 function netOnMsg(m) {
   if (!m || !m.k) return;
   NET.last = performance.now();
+  // two different versions can't play together properly: tell both players to reopen the game
+  if (m._v && m._v !== MYVER() && NET.badV !== m._v) { NET.badV = m._v; const el = $('netWarn'); el.textContent = 'Your friend is on ' + m._v + ' and you are on ' + MYVER() + '. Both of you close the game fully and reopen it.'; el.hidden = false; clearTimeout(netWarn.t); netWarn.t = setTimeout(() => el.hidden = true, 15000); try { lobbyStatus(el.textContent); } catch (e) {} }
   if (m.k === 'away') { NET.awayAt = NET.last; return; }
   NET.awayAt = 0;
   if (m.k === 'back') return;
@@ -4320,17 +4323,16 @@ function netHoldCheck(now) {
       el.textContent = (NET.awayAt ? 'Your friend switched apps.' : 'Your friend\'s connection dropped.') + ' Game paused while they come back… ' + left + 's';
       el.hidden = false; clearTimeout(netWarn.t);
       // phones often keep a dead connection that still claims to be fine: if it's gone quiet, reconnect our side every few seconds
-      if (!NET.awayAt && quiet > 5000 && now - NET.rejoinAt > 6000) netRejoin(true);
+      if (!NET.awayAt && quiet > 6000 && now - NET.rejoinAt > 10000) netRejoin();
     } else { NET.gaveUp = true; S.hold = false; netWarn('Your friend is still gone. Playing on. They can jump back in any time.'); }
   } else if (!gone && (S.hold || NET.gaveUp)) {
     S.hold = false; NET.gaveUp = false; el.hidden = true; banner('Your friend is back!', '', false, 1400); SND.play('tap');
   }
 }
-async function netRejoin(hard) {
+async function netRejoin() {
   if (!NET.code || !NET.role || NET.rejoining) return;
   NET.rejoinAt = performance.now(); NET.rejoining = true;
   try { NET.link && NET.link.close(); } catch (e) {}
-  if (hard) try { NET.sb && NET.sb.realtime && NET.sb.realtime.disconnect(); } catch (e) {}
   try { NET.link = await netOpen(NET.code, netOnMsg); netSend({ k: 'back' }); } catch (e) { NET.link = null; }
   NET.rejoining = false;
 }
