@@ -436,7 +436,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v112</div>
+    <div id="ver">v113</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4280,6 +4280,8 @@ async function netOpen(code, onMsg) {
   }
   const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm');
   NET.sb ||= createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 40 } } });
+  // never keep two subscriptions to the same room: a stale one can make the server drop the new one
+  for (const old of NET.sb.getChannels()) if (old.topic === 'realtime:ppd-' + code) { try { await NET.sb.removeChannel(old); } catch (e) {} }
   const ch = NET.sb.channel('ppd-' + code, { config: { broadcast: { self: false, ack: false } } });
   ch.on('broadcast', { event: 'm' }, ({ payload }) => onMsg(payload));
   await new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('timed out')), 12000); ch.subscribe(st => { if (st === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error(st)); } }); });
@@ -4319,10 +4321,10 @@ function netOnMsg(m) {
     if (!S || S.net !== 'host' || S.mode !== 'play') return;
     netHostCmd(m);
   } else if (NET.role === 'guest') {
-    if (m.k === 'start') { $('lobby').hidden = true; $('over').hidden = true; if (m.vs) { startGame(m.lv || 0, 'vs'); return; } TEAM_LV = m.lv || TEAM0; startGame(TEAM_LV, 'guest'); return; }
+    if (m.k === 'start') { NET.lastSnap = performance.now(); $('lobby').hidden = true; $('over').hidden = true; if (m.vs) { startGame(m.lv || 0, 'vs'); return; } TEAM_LV = m.lv || TEAM0; startGame(TEAM_LV, 'guest'); return; }
     if (m.k === 'bye') { netWarn('The host left the game.'); return; }
     if (!S || S.net !== 'guest') return;
-    if (m.k === 's') netApply(m);
+    if (m.k === 's') { NET.lastSnap = performance.now(); netApply(m); }
     else if (m.k === 'over') { S.lives = m.l; S.wave = m.w; S.kills = m.kills; gameOver(m.won); }
   }
 }
@@ -4488,6 +4490,12 @@ function netFrame(dt) {
   if (!NET.link) return;
   const now = performance.now();
   if (NET.role === 'host' && S.net === 'host' && S.mode === 'play') { NET.snapT -= dt; if (NET.snapT <= 0) { NET.snapT = 0.1; netSend(netSnap()); } }
+  // guest: the host sends the game ten times a second. If that stops while we're still connected,
+  // our side of the room has gone deaf (it can still send), so reconnect it
+  if (NET.role === 'guest' && S.net === 'guest' && S.mode === 'play' && !document.hidden) {
+    NET.lastSnap ||= now;
+    if (now - NET.lastSnap > 3000 && now - NET.rejoinAt > 6000) { NET.lastSnap = now; netRejoin(); }
+  }
   netHoldCheck(now);
 }
 setInterval(() => {
