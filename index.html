@@ -444,7 +444,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v114</div>
+    <div id="ver">v115</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3838,7 +3838,7 @@ function endDrag() {
   const e = S.ext; e.held = false;
   const d = dropCell(e.x, e.z);
   e.home = d; e.rest = d;
-  if (S.net === 'guest' && d) netSend({ k: 'home', c: d.c, r: d.r });
+  if (S.net === 'guest' && d) { netSend({ k: 'home', c: d.c, r: d.r, x: r2(e.x), z: r2(e.z) }); e.dropHold = performance.now() + 900; e.tx = e.x; e.tz = e.z; }   // stay put; ignore older host updates still on their way
   if (e.job) e.state = 'walk';
   SND.play('tap');
   canvas.style.cursor = '';
@@ -4399,7 +4399,7 @@ function netHostCmd(m) {
     else if (m.k === 'sell' && tw && tw.owner === 1) { S.money += sellVal(tw); removeTower(tw); }
     else if (m.k === 'lic') buyLicense();
     else if (m.k === 'abil') useAbility();
-    else if (m.k === 'home') { const e = S.ext, d = { c: m.c, r: m.r }; if (restFree(d.c, d.r)) { e.home = d; e.rest = d; } }
+    else if (m.k === 'home') { const e = S.ext, d = { c: m.c, r: m.r }; if (restFree(d.c, d.r)) { e.home = d; e.rest = d; if (m.x != null) { e.x = m.x; e.z = m.z; } if (e.job) e.state = 'walk'; } }
   });
   if (m.k === 'send') { if (S.wave === 0) teamReady(1); else startWave(); }
   else if (m.k === 'pause') setPaused(!!m.p, true);
@@ -4492,7 +4492,7 @@ function netApply(m) {
   for (const it of [...S.items]) if (!iseen.has(it.id)) removeItem(it);
   // exterminators
   for (const [P, d] of [[S.ext, m.e[me]], [S.p2.ext, m.e[them]]]) {
-    if (P.held) continue;
+    if (P.held || (P.dropHold && performance.now() < P.dropHold)) continue;
     P.tx = d[0]; P.tz = d[1]; P.yaw = d[2]; P.state = EST[d[3]] || 'idle';
     P.abil = d[5] ? (P.abil || { phase: 'spray' }) : null;
     if (P.x === undefined || Math.hypot(P.x - d[0], P.z - d[1]) > 8) { P.x = d[0]; P.z = d[1]; }
