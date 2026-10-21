@@ -436,7 +436,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v110</div>
+    <div id="ver">v111</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3349,7 +3349,9 @@ function placeTower(t, c, r) {
   o.root.position.set(tw.x, 0, tw.z); o.pips.forEach((p, i) => p.visible = i < 1);
   o.root.scale.setScalar(0.01); tw.pop = 0;
   scene.add(o.root); S.towers.push(tw);
-  if (S.mode === 'play') { tw.pending = true; o.root.visible = false; addJob('build', tw); SND.play('tap'); }
+  if (S.mode === 'play') { tw.pending = true; o.root.visible = false; addJob('build', tw); SND.play('tap');
+    // a few seconds to take it back for a full refund, in case it was a mis-tap
+    if (S.cur === (S.me || 0)) { S.undo = { kind: 'buy', id: tw.id, t, got: T.cost, until: performance.now() + UNDO_MS }; syncUndo(); } }
   else { for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; FX.smoke.spawn({ x: tw.x + Math.cos(a), y: 0.2, z: tw.z + Math.sin(a), vx: Math.cos(a) * 3, vz: Math.sin(a) * 3, drag: 4, life: 0.45, s0: 0.5, s1: 1.2, c: [0.95, 0.92, 0.85], a0: 0.4 }); } SND.play('place'); }
   bumpStat('stCoins');
   return true;
@@ -3389,12 +3391,18 @@ function sell(tw = S.pick) {
 const UNDO_MS = 8000;
 function syncUndo() {
   const u = S && S.undo, el = $('undo');
+  if (u && u.kind === 'buy') { const tw = S.towers.find(o => o.id === u.id); if (!tw || tw.lv > 1 || tw.upPending) S.undo = null; if (!S.undo) { el.hidden = true; return; } }
   if (!u || S.mode !== 'play' || performance.now() > u.until) { if (!el.hidden) el.hidden = true; if (u && S.mode === 'play' && performance.now() > u.until) S.undo = null; return; }
-  if (el.hidden) { $('undoT').textContent = 'Sold ' + (TT[u.t].short || TT[u.t].name) + ' +' + u.got; el.hidden = false; }
+  if (el.hidden || syncUndo.last !== u) { syncUndo.last = u; $('undoT').textContent = (u.kind === 'buy' ? 'Bought ' : 'Sold ') + (TT[u.t].short || TT[u.t].name) + (u.kind === 'buy' ? ' −' : ' +') + u.got; el.hidden = false; }
   $('undoBar').style.transform = `scaleX(${Math.max(0, (u.until - performance.now()) / UNDO_MS)})`;
 }
 function undoSell() {
   const u = S && S.undo; if (!u || S.mode !== 'play' || performance.now() > u.until) return;
+  if (u.kind === 'buy') {   // take back a tool you just bought: full refund as long as it hasn't been upgraded
+    const tw = S.towers.find(o => o.id === u.id); S.undo = null;
+    if (!tw || tw.lv > 1 || tw.upPending) { SND.play('err'); syncUndo(); return; }
+    S.money += tw.spent; if (S.built) S.built--; removeTower(tw); SND.play('sell'); syncTray(); syncUndo(); return;
+  }
   if (S.money < u.got) { SND.play('err'); banner('Not enough coins to undo', 'You already spent the money from that sale', false, 1400); return; }
   if (S.towers.some(o => o.c === u.c && o.r === u.r) || S.items.some(o => o.c === u.c && o.r === u.r)) { SND.play('err'); banner('Can\'t undo', 'Something else is on that tile now', false, 1400); return; }
   S.undo = null; S.money -= u.got;
