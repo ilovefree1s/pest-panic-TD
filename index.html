@@ -436,7 +436,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v107</div>
+    <div id="ver">v108</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2956,7 +2956,7 @@ function startWave() {
   if (S.endless && S.wave + 1 >= 50) ACH.unlock('end50');
   S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];   // every wave in this push pays its clear bonus at the end
-  S.hpMul = (1 + 0.17 * (S.wave - 1) + 0.011 * (S.wave - 1) ** 2) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1);   // waves 6-7 eased 10% if (!rush) S.spawnT = 0; S.active = true;
+  S.hpMul = (1 + 0.17 * (S.wave - 1) + 0.011 * (S.wave - 1) ** 2) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1); if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%
   // endless: past wave 20 every wave gets another 6% tougher on top, and they pour out faster
   if (S.wave > MAXW) { S.hpMul *= 1.06 ** (S.wave - MAXW); S.gap = Math.max(0.24, 0.34 - (S.wave - MAXW) * 0.005); }
   S.trio = new Set(S.queue.filter(t => BT[t].boss)).size > 1;
