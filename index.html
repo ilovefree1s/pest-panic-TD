@@ -436,7 +436,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v111</div>
+    <div id="ver">v112</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2138,8 +2138,8 @@ TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
 TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: false, unique: true, buildMul: 2.5, range: [7.5, 8.5, 9.5], dmg: [70, 120, 190], dot: [25, 40, 65], rate: [3.2, 2.9, 2.5],
   d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every crawling bug in the cone takes a big hit and keeps choking for 2 seconds. The fog ignores shells, so it melts bosses. Can\'t reach flies. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
-TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08],
-  d: 'A support tool that does no damage itself. Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
+TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
+  d: 'A support tool. Its flame gently scorches every bug in its glow, flies too (4, then 7, then 11 a second; two candles don\'t double it). Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
 const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger'];
 // items: one-off buys that go on the trail (or, for the license, apply right away)
 Object.assign(TT, {
@@ -3006,7 +3006,7 @@ function syncBeltT() {
 }
 function bugY(b) { return b.y0 + (BT[b.t].fly ? 0.9 + Math.sin(b.walk * 1.3) * 0.12 : 0) + (b.hy || 0); }
 // end-of-level stats: who did the damage and who got the kills
-let CUR_SRC = null;
+let CUR_SRC = null, SCORCH_N = 0;
 function statFor(src) { const st = S.stats || (S.stats = {}); return st[src] || (st[src] = { dmg: 0, kills: 0 }); }
 function hit(b, d, raw) {
   if (b.dead) return;
@@ -3113,7 +3113,15 @@ function towerAct(tw, dt) {
   const T = TT[tw.t], L = tw.lv - 1, R = T.range[L] * (1 + (tw.rmul || 0)), stinky = tw.stink > 0;
   if (stinky) { tw.stink -= dt; dt *= 0.6; }   // stink bug cloud: 40% slower
   tw.cd -= dt; tw.anim += dt;
-  if (tw.t === 'candle') return;
+  if (tw.t === 'candle') {   // a gentle scorch on every bug in the glow, flies included. Overlapping candles don't add up
+    if (tw.snuff || tw.pending) return;
+    for (const b of S.bugs) {
+      if (b.dead || b.scorchN === SCORCH_N || !inRange(tw, b, R)) continue;
+      b.scorchN = SCORCH_N; hit(b, T.burn[L] * dt, true);
+      if (Math.random() < dt * 2) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.6, y: bugY(b) + 0.5, z: b.z + (Math.random() - 0.5) * 0.6, vy: 1.4, life: 0.4, s0: 0.28, s1: 0.05, c: [1, 0.6, 0.2], a0: 1 });
+    }
+    return;
+  }
   if (tw.t === 'glue') {
     for (const b of S.bugs) {
       if (b.dead || BT[b.t].fly || !inRange(tw, b, R)) continue;
@@ -3248,6 +3256,7 @@ function update(dt) {
   // citronella glow: every tool standing in a candle's glow gets its boost (two candles stack, no more)
   cloudsAct(dt);
   syncCandles();
+  SCORCH_N++;
   for (const tw of S.towers) { CUR_AMP = tw.amp || 0; CUR_SRC = tw.t; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
   itemsAct(dt);
   if (S.mode === 'play' && S.net !== 'guest') { extUpdate(dt); if (S.p2) withPlayer(1 - S.cur, () => extUpdate(dt)); }
@@ -3922,7 +3931,7 @@ function showToolCard(t) {
   let stats = '';
   if (!T.item) {
     const fake = { t, lv: 1, amp: 0 };
-    stats = t === 'candle' ? fmtStat('Tools in glow', '+' + Math.round(T.amp[0] * 100), '+' + Math.round(T.amp[2] * 100), '% damage') + fmtStat('Range', T.range[0], T.range[2])
+    stats = t === 'candle' ? fmtStat('Scorch', T.burn[0], T.burn[2], '/s') + fmtStat('Tools in glow', '+' + Math.round(T.amp[0] * 100), '+' + Math.round(T.amp[2] * 100), '% damage') + fmtStat('Range', T.range[0], T.range[2])
       : statsBase(fake).replace(/ → <b class="up">[^<]*<\/b>/g, '');
   }
   el.innerHTML = `<div class="tch">${ICON[t]}<div><b>${T.name}</b><div class="tct">${hitTag(t)}${T.item ? '' : `<span class="tag ${T.air ? 'ok' : 'no'}">${T.air ? 'Hits flies' : 'Ground only'}</span>`}<span class="tag cost">${cost} coins</span></div></div></div>
@@ -4099,7 +4108,7 @@ function fmtStat(label, a, b, unit = '') { return `<li>${label} <b>${a}${unit}</
 function statsHtml(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'glue') return fmtStat('Bugs left', T.cap[L] - tw.uses, N != null ? T.cap[N] - Math.max(0, tw.uses - 6) : null) + fmtStat('Slows to', Math.round(T.slow[L] * 100), N != null ? Math.round(T.slow[N] * 100) : null, '%') + fmtStat('Burn', T.dps[L], N != null ? T.dps[N] : null, '/s');
-  if (tw.t === 'candle') return fmtStat('Tools in glow', '+' + Math.round(T.amp[L] * 100), N != null ? '+' + Math.round(T.amp[N] * 100) : null, '% damage') + fmtStat('and', '+' + Math.round(T.rng[L] * 100), N != null ? '+' + Math.round(T.rng[N] * 100) : null, '% range') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + `<li>Boosting <b>${S.towers.filter(o => o.t !== 'candle' && candleAmp(o, tw)).length}</b> tools</li>`;
+  if (tw.t === 'candle') return fmtStat('Scorch', T.burn[L], N != null ? T.burn[N] : null, '/s') + fmtStat('Tools in glow', '+' + Math.round(T.amp[L] * 100), N != null ? '+' + Math.round(T.amp[N] * 100) : null, '% damage') + fmtStat('and', '+' + Math.round(T.rng[L] * 100), N != null ? '+' + Math.round(T.rng[N] * 100) : null, '% range') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + `<li>Boosting <b>${S.towers.filter(o => o.t !== 'candle' && candleAmp(o, tw)).length}</b> tools</li>`;
   if (tw.amp) return statsBase(tw) + `<li class="boost">${tw.lit >= 2 ? '🔥🔥 2 candles' : '🔥 Candle'} boost <b>+${Math.round(tw.amp * 100)}%</b> damage, <b>+${Math.round((tw.rmul || 0) * 100)}%</b> range</li>`;
   return statsBase(tw);
 }
@@ -4340,7 +4349,8 @@ function netHoldCheck(now) {
 async function netRejoin() {
   if (!NET.code || !NET.role || NET.rejoining) return;
   NET.rejoinAt = performance.now(); NET.rejoining = true;
-  try { NET.link && NET.link.close(); } catch (e) {}
+  // wait for the old subscription to fully leave first, or its late 'leave' can kill the new one on the server
+  try { NET.link && await NET.link.close(); } catch (e) {}
   try { NET.link = await netOpen(NET.code, netOnMsg); netSend({ k: 'back' }); } catch (e) { NET.link = null; }
   NET.rejoining = false;
 }
@@ -4773,6 +4783,8 @@ function aiTowers(dt) {
     amps.sort((a, b) => b - a); rngs.sort((a, b) => b - a);
     tw.amp = (amps[0] || 0) + (amps[1] || 0); tw.rmul = (rngs[0] || 0) + (rngs[1] || 0);
   }
+  const burnt = new Set();   // candle scorch, once per bug however many candles reach it
+  for (const c of candles) { const L = c.lv - 1, x = ccx(c.c), z = ccz(c.r); for (const b of live) if (b.hp > 0 && !burnt.has(b) && Math.hypot(pos.get(b)[0] - x, pos.get(b)[1] - z) <= TT.candle.range[L]) { burnt.add(b); aiHit(b, TT.candle.burn[L] * dt, true); } }
   for (const c of A.clouds) for (const tw of A.towers) if ((ccx(tw.c) - c.x) ** 2 + (ccz(tw.r) - c.z) ** 2 <= c.r * c.r) tw.stink = 0.25;
   for (const tw of A.towers) {
     if (tw.t === 'candle') continue;
