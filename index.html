@@ -444,7 +444,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v116</div>
+    <div id="ver">v117</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3481,7 +3481,20 @@ function fit() {
     if (Math.abs(err) < 0.005) break;
     view.target.x += Math.sin(view.yaw) * err * view.dist * 0.3; view.target.z += Math.cos(view.yaw) * err * view.dist * 0.3;
   }
+  ZM.baseD = view.dist; ZM.baseT.copy(view.target); applyZoom();
 }
+// ---- pinch (or mouse wheel) to zoom in up to 30% and look around; pinch all the way out to see everything again
+const ZMAX = 1.3, ZM = { z: 1, px: 0, pz: 0, baseD: 50, baseT: new V3(), ptrs: new Map(), pinch: null };
+function applyZoom() {
+  const lim = 1 - 1 / ZM.z, ex = (BOARD.ex + 0.4) * lim, ez = 15.4 * lim;
+  ZM.px = clamp(ZM.px, -ex, ex); ZM.pz = clamp(ZM.pz, -ez, ez);
+  view.dist = ZM.baseD / ZM.z; view.target.set(ZM.baseT.x + ZM.px, ZM.baseT.y, ZM.baseT.z + ZM.pz); aim();
+}
+function zoomAbout(z, cx, cy) {   // zoom, keeping the floor spot under (cx, cy) in place
+  const a = floorAt({ clientX: cx, clientY: cy }); ZM.z = clamp(z, 1, ZMAX); applyZoom();
+  const b = a && floorAt({ clientX: cx, clientY: cy }); if (a && b) { ZM.px += a.x - b.x; ZM.pz += a.z - b.z; applyZoom(); }
+}
+function resetZoom() { ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null; ZM.ptrs.clear(); applyZoom(); }
 function resize() {
   const r = stage.getBoundingClientRect(), w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
   view.w = w; view.h = h; renderer.setSize(w, h, false); composer.setSize(w, h);
@@ -3843,6 +3856,27 @@ function endDrag() {
   SND.play('tap');
   canvas.style.cursor = '';
 }
+canvas.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') return;
+  ZM.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ZM.ptrs.size === 2) {
+    const [p, q] = [...ZM.ptrs.values()], mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+    ZM.pinch = { d0: Math.hypot(p.x - q.x, p.y - q.y) || 1, z0: ZM.z, mx, my, w: floorAt({ clientX: mx, clientY: my }) };
+    if (dragId !== null) endDrag(); S.prev = null;
+    e.stopImmediatePropagation();
+  } else if (ZM.ptrs.size > 2) e.stopImmediatePropagation();
+}, true);
+canvas.addEventListener('pointermove', e => {
+  if (!ZM.ptrs.has(e.pointerId)) return;
+  ZM.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const P = ZM.pinch; if (!P || ZM.ptrs.size < 2) return;
+  e.stopImmediatePropagation();
+  const [p, q] = [...ZM.ptrs.values()], mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+  ZM.z = clamp(P.z0 * Math.hypot(p.x - q.x, p.y - q.y) / P.d0, 1, ZMAX); applyZoom();
+  const b = P.w && floorAt({ clientX: mx, clientY: my }); if (b) { ZM.px += P.w.x - b.x; ZM.pz += P.w.z - b.z; applyZoom(); }   // two fingers also drag the view around
+}, true);
+for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, e => { ZM.ptrs.delete(e.pointerId); if (ZM.ptrs.size < 2) ZM.pinch = null; }, true);
+canvas.addEventListener('wheel', e => { if (S.mode !== 'play') return; e.preventDefault(); zoomAbout(ZM.z * (e.deltaY < 0 ? 1.06 : 1 / 1.06), e.clientX, e.clientY); }, { passive: false });
 canvas.addEventListener('pointermove', e => {
   if (e.pointerType === 'mouse') { ptrType = 'mouse'; hoverCell = cellAt(e); }
   if (dragId === e.pointerId) { dragTo(e); return; }
@@ -4208,6 +4242,7 @@ function clearBoard() {
   $('queen').hidden = true;
 }
 function toTitle() {
+  ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
   clearBoard(); loadLevel(0); S = newState('title'); shown = {};
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['swat', 2, 1, 2], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
@@ -4221,6 +4256,7 @@ function toTitle() {
   requestAnimationFrame(resize);
 }
 function startGame(lv = LV, net = null, aiDiff = 1) {
+  ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
   clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools';
   if (LEVELS[lv].team) {
     S.ext.x = ccx(4); S.ext.z = ccz(9);
