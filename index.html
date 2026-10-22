@@ -447,7 +447,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v121</div>
+    <div id="ver">v122</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -683,7 +683,7 @@ const LEVELS = [
   { name: 'Side Doors', nb: [['hopper', 4, 2], ['centi', 7, 1]], sub: 'Easy', intro: 'Two lanes, one cake. Hold your side!', hp: 0.95, money: 180, shift: 0, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[-0.6, 8], [3, 8], [3, 2], [6, 2], [6, 6], [10, 6], [10, -0.05]],
              [[20.6, 8], [17, 8], [17, 2], [14, 2], [14, 6], [10, 6], [10, -0.05]]] },
-  { name: 'The Funnel', nb: [['hopper', 3, 2], ['centi', 5, 1], ['stink', 7, 1], ['moth', 9, 2]], bosses: [['ghop'], ['gcenti'], ['hornet'], ['ghop', 'gcenti', 'widow']], sub: 'Medium', intro: 'Both lanes meet at the bottom. Guard the long middle together.', hp: 1.12, money: 175, shift: 1, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+  { name: 'The Funnel', nb: [['hopper', 3, 2], ['centi', 5, 1], ['stink', 7, 1], ['moth', 9, 2]], bosses: [['queen'], ['gcenti'], ['hornet'], ['ghop', 'gcenti', 'widow']], sub: 'Medium', intro: 'Both lanes meet at the bottom. Guard the long middle together.', hp: 1.12, money: 175, shift: 1, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[1, -0.6], [1, 7], [4, 7], [4, 2], [7, 2], [7, 9], [10, 9], [10, -0.05]],
              [[19, -0.6], [19, 7], [16, 7], [16, 2], [13, 2], [13, 9], [10, 9], [10, -0.05]]] },
   { name: 'Long Haul', nb: [['hopper', 2, 2], ['centi', 4, 1], ['stink', 5, 2], ['moth', 6, 2], ['mantis', 8, 1]], bosses: [['gstink'], ['gmoth'], ['gmantis'], ['gmantis', 'gmoth', 'gstink']], sub: 'Hard', intro: 'Long lanes that only meet at the cake. Don\'t be the weak link!', hp: 1.3, money: 170, shift: 2, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
