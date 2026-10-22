@@ -444,7 +444,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v115</div>
+    <div id="ver">v116</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5332,7 +5332,9 @@ function showErr(where, e) {
   el.textContent = 'Oops, something broke (v' + ($('ver').textContent || '').replace('v', '') + '). Send Claude a screenshot: ' + msg + ' ' + line.trim().slice(-60);
   el.hidden = false;
 }
-addEventListener('error', e => showErr('event', e.error || e.message));
+// "Script error." with no details comes from code that isn't the game's (browser add-ons, the phone's own injected scripts)
+// and can't be traced, so it's not shown as a game crash
+addEventListener('error', e => { if (!e.error && /^Script error\.?$/i.test(String(e.message || '').trim())) { console.warn('outside script error ignored'); return; } showErr('event', e.error || e.message); });
 function frame(now) {
   requestAnimationFrame(frame);
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now; clock += dt;
