@@ -444,7 +444,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v117</div>
+    <div id="ver">v118</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2364,7 +2364,7 @@ function specialMove(b, sp, dt) {
     if (b.lead) { const want = b.lead.s - (bt.gap || 0.62); sp = b.s < want - 0.05 ? sp * 1.35 : b.s > want ? 0 : sp; }
     if (giant) b.armor = b.lead ? 0 : 4;   // the giant's head is armored
   } else if (base === 'hopper' && S.net !== 'guest') {
-    const JT = giant ? 0.75 : 0.5, JL = giant ? 12 : 6, CR = giant ? 0.45 : 0.3;
+    const JT = giant ? 0.6 : 0.5, JL = giant ? 3 : 6, CR = giant ? 0.45 : 0.3;   // the giant only hops one tile, now and then
     if (b.jump > 0) {
       b.jump -= dt; sp = JL / JT; b.air = true; b.hy = Math.sin(Math.PI * Math.min(1, 1 - b.jump / JT)) * (giant ? 3.2 : 1.5);
       if (b.jump <= 0) {
@@ -2375,7 +2375,7 @@ function specialMove(b, sp, dt) {
     } else {
       b.hy = 0; b.hopT = (b.hopT ?? 1 + Math.random() * 2) - dt;
       if (b.hopT < CR) sp = 0;   // crouch before the jump (you can see it coming)
-      if (b.hopT <= 0) { if (b.stuck > 0 || b.push > 0) b.hopT = 0.6; else { b.jump = JT; b.hopT = giant ? 3.6 + Math.random() : 2.3 + Math.random() * 1.2; } }
+      if (b.hopT <= 0) { if (b.stuck > 0 || b.push > 0) b.hopT = 0.6; else { b.jump = JT; b.hopT = giant ? 7 + Math.random() * 2 : 2.3 + Math.random() * 1.2; } }
     }
   } else if (base === 'stink' && giant && S.net !== 'guest') {
     b.cloudT = (b.cloudT ?? 3) - dt;
@@ -2887,7 +2887,7 @@ const BT = {
   widow:  { hp: 2500, spd: 1.3, gold: 130, lives: 5, armor: 2, boss: true, name: 'Black Widow', sub: 'She lays spiderlings when she gets hurt', goo: [0.3, 0.12, 0.35] },
   hornet: { hp: 3135, spd: 1.45, gold: 160, lives: 5, fly: true, boss: true, name: 'Hornet Queen', sub: 'She flies, so the Newspaper can\'t touch her', goo: [0.85, 0.7, 0.15] },
   herc:   { hp: 3300, spd: 0.95, gold: 160, lives: 5, armor: 9, heavy: true, boss: true, name: 'Hercules Beetle', sub: 'Thick shell, and nothing slows it down', goo: [0.5, 0.48, 0.22] },
-  ghop:   { hp: 1100, spd: 1.6, gold: 110, lives: 5, boss: true, base: 'hopper', size: 3.2, name: 'Giant Grasshopper', sub: 'It leaps 4 tiles and stuns tools where it lands', goo: [0.45, 0.72, 0.2] },
+  ghop:   { hp: 770, spd: 1.6, gold: 110, lives: 5, boss: true, base: 'hopper', size: 3.2, name: 'Giant Grasshopper', sub: 'Now and then it hops a tile and stuns tools where it lands', goo: [0.45, 0.72, 0.2] },
   gcenti: { hp: 125, spd: 2.3, gold: 10, lives: 0.4, boss: true, base: 'centi', size: 2.4, segs: 14, gap: 1.35, name: 'Giant Centipede', sub: 'Fourteen segments, and an armored head', goo: [0.5, 0.24, 0.12] },
   gstink: { hp: 1500, spd: 1.2, gold: 140, lives: 5, armor: 3, boss: true, base: 'stink', size: 3.2, name: 'Giant Stink Bug', sub: 'It leaves stink clouds behind as it walks', goo: [0.45, 0.4, 0.22] },
   gmoth:  { hp: 1300, spd: 1.5, gold: 130, lives: 5, fly: true, boss: true, base: 'moth', size: 3.0, name: 'Giant Moth', sub: 'It puts out every candle near where it lands', goo: [0.62, 0.56, 0.46] },
@@ -4089,7 +4089,7 @@ const BUGINFO = [
   ['stink', 'Stink Bug', 'Level 8 on', 'Tough shell (takes 2 off every hit). When it dies it lets out a green stink cloud: tools inside work 40% slower for 4 seconds. Squash it away from your best tools.', '1 slice'],
   ['moth', 'Moth', 'Level 9 on', 'Flies. If you have Candles, it leaves the trail and flies to one, beats out the flame and snuffs it. Snuffed candles give no boost until you tap them and Relight (15 coins). Keep a Swatter near your candles.', '1 slice'],
   ['mantis', 'Praying Mantis', 'Level 9 on', 'Tall and tough. It grabs the nearest tool and holds it still for 3 seconds. Every so often it snatches a small bug off the trail and eats it to heal itself. Burn it down from range.', '2 slices'],
-  ['ghop', 'Giant Grasshopper', 'Boss, Levels 6–8 and 9', 'Leaps 4 tiles at a time. Where it lands, the shockwave stuns nearby tools for a moment.', '5 slices'],
+  ['ghop', 'Giant Grasshopper', 'Boss, Levels 6–8 and 9', 'Every so often it hops one tile ahead. Where it lands, the shockwave stuns nearby tools for a moment.', '5 slices'],
   ['gcenti', 'Giant Centipede', 'Boss, Levels 7–10', 'Fourteen big segments. The head is heavily armored (takes 4 off every hit), so hit the body. Break the middle and it splits in two.', '⅖ slice per segment'],
   ['gstink', 'Giant Stink Bug', 'Boss, Levels 8–10', 'Very tough shell. Every few seconds it lets out a stink cloud as it walks, and when it dies the cloud is huge. Tools in the stink work 40% slower.', '5 slices'],
   ['gmoth', 'Giant Moth', 'Boss, Levels 9–10', 'Flies to your candles and puts out every candle near where it lands. Bug Zappers it flies past flicker out for a few seconds.', '5 slices'],
@@ -4921,14 +4921,14 @@ function aiSpecial(b, sp, dt) {
     if (b.lead) { const want = b.lead.s - (bt.gap || 0.62); sp = b.s < want - 0.05 ? sp * 1.35 : b.s > want ? 0 : sp; }
     if (giant) b.armor = b.lead ? 0 : 4;
   } else if (base === 'hopper') {
-    const JT = giant ? 0.75 : 0.5, JL = giant ? 12 : 6;
+    const JT = giant ? 0.6 : 0.5, JL = giant ? 3 : 6;
     if (b.jump > 0) {
       b.jump -= dt; sp = JL / JT; b.air = true; b.hy = Math.sin(Math.PI * Math.min(1, 1 - b.jump / JT)) * (giant ? 3.2 : 1.5);
       if (b.jump <= 0) { b.air = false; b.hy = 0; if (giant) { const p = aiBugXZ(b); for (const tw of A.towers) if ((ccx(tw.c) - p.x) ** 2 + (ccz(tw.r) - p.z) ** 2 < 4.5 * 4.5) tw.stunT = Math.max(tw.stunT || 0, 1.5); } }
     } else {
       b.hy = 0; b.hopT = (b.hopT ?? 1 + Math.random() * 2) - dt;
       if (b.hopT < (giant ? 0.45 : 0.3)) sp = 0;
-      if (b.hopT <= 0) { if (b.push > 0) b.hopT = 0.6; else { b.jump = JT; b.hopT = giant ? 3.6 + Math.random() : 2.3 + Math.random() * 1.2; } }
+      if (b.hopT <= 0) { if (b.push > 0) b.hopT = 0.6; else { b.jump = JT; b.hopT = giant ? 7 + Math.random() * 2 : 2.3 + Math.random() * 1.2; } }
     }
   } else if (base === 'stink' && giant) {
     b.cloudT = (b.cloudT ?? 3) - dt; if (b.cloudT <= 0) { b.cloudT = 5; const p = aiBugXZ(b); A.clouds.push({ x: p.x, z: p.z, r: 4, t: 4 }); }
