@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v142</div>
+    <div id="ver">v144</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -713,12 +713,14 @@ const LEVELS = [
              [[10, 10.6], [10, 9], [5, 9], [5, 1], [12, 1], [12, -0.05]]] },   // 2nd trail redrawn in the Trail Builder
   { name: 'Switchbacks', bosses: [['gstink'], ['gcenti'], ['ghop'], ['gstink', 'gcenti', 'queen']], nb: [['hopper', 3, 2], ['centi', 4, 1], ['stink', 5, 2]], sub: 'The cake is on the left this time', intro: 'The cake is on the other side. They come in from the right.', hp: 1.44, money: 200, shift: 3, cakeCol: 1, fridgeX: 6, stoveX: 15,
     routes: [[[13.6, 8], [10, 8], [10, 2], [7, 2], [7, 8], [4, 8], [4, 3], [1, 3], [1, -0.05]]] },
-  { name: 'Sugar Rush', bosses: [['gmoth'], ['gstink'], ['gcenti'], ['gmantis', 'gmoth', 'ghop']], nb: [['hopper', 2, 2], ['centi', 4, 1], ['stink', 5, 1], ['moth', 4, 2], ['mantis', 7, 1]], sub: 'Two trails share the last stretch', intro: 'The bakery smells amazing. Two trails meet near the cake.', hp: 1.52, money: 205, shift: 3,
+  { name: 'Sugar Rush', bosses: [['gmoth'], ['gstink'], ['gcenti'], ['gmantis', 'gmoth', 'ghop']], nb: [['hopper', 2, 2], ['centi', 4, 1], ['stink', 5, 1], ['moth', 4, 2], ['mantis', 7, 1]], sub: 'Three trails share the last stretch', intro: 'The bakery smells amazing. Three trails meet near the cake, and one is a short cut!', hp: 1.52, money: 205, shift: 3,
     routes: [[[1, -0.6], [1, 4], [5, 4], [5, 8], [9, 8], [9, 4], [12, 4], [12, -0.05]],
-             [[13.6, 9], [11, 9], [11, 6], [9, 6], [9, 4], [12, 4], [12, -0.05]]] },
-  { name: 'Creepy Crawl', bosses: [['gmantis'], ['gmoth'], ['gcenti'], ['gmoth', 'gstink', 'gcenti', 'ghop']], nb: [['hopper', 2, 2], ['centi', 3, 1], ['stink', 4, 2], ['moth', 4, 2], ['mantis', 6, 1]], sub: 'The final house. Good luck.', intro: 'Something is crawling in the walls. Two doors, the toughest bugs yet.', hp: 1.62, money: 215, shift: 3,
+             [[13.6, 9], [11, 9], [11, 6], [9, 6], [9, 4], [12, 4], [12, -0.05]],
+             [[9, -0.6], [9, 4], [12, 4], [12, -0.05]]] },   // 3rd trail added in the Trail Builder
+  { name: 'Creepy Crawl', bosses: [['gmantis'], ['gmoth'], ['gcenti'], ['gmoth', 'gstink', 'gcenti', 'ghop']], nb: [['hopper', 2, 2], ['centi', 3, 1], ['stink', 4, 2], ['moth', 4, 2], ['mantis', 6, 1]], sub: 'The final house. Good luck.', intro: 'Something is crawling in the walls, and up through the floor. Three ways in, the toughest bugs yet.', hp: 1.62, money: 215, shift: 3,
     routes: [[[1, -0.6], [1, 3], [5, 3], [5, 1], [9, 1], [9, 6], [12, 6], [12, -0.05]],
-             [[-0.6, 8], [4, 8], [4, 6], [9, 6], [12, 6], [12, -0.05]]] },
+             [[-0.6, 8], [4, 8], [4, 6], [1, 6], [1, 3], [5, 3], [5, 1], [9, 1], [9, 6], [12, 6], [12, -0.05]],
+             [[6, 5], [6, 8], [12, 8], [12, -0.05]]] },   // redrawn in the Trail Builder: 2 doors + a floor hole
 ];
 // Mirror Maze: the 4th team map, drawn in the Trail Builder (it sits at the end of the level list)
 LEVELS[13] = { ...LEVELS[6], name: 'Mirror Maze', sub: 'Medium', intro: 'Two mirror-image mazes that join up the middle. Guard the shared stretch together!',
@@ -945,7 +947,7 @@ function buildRoute(wp) {
   }
   return { wp, seg, len, end: len - 1.2, floor: wp.map(([c, r]) => [ccx(c), ccz(r)]) };
 }
-let LV = 0, ROUTES = [];
+let LV = 0, ROUTES = [], LONG_R = 0;   // LONG_R: the longest trail (bosses and each wave's first bugs use it)
 let BLD_ON = false, BLD_PART = null, BLD_EMPTY = false;   // Trail Builder preview state (declared early: the trail texture reads it)
 const PATH = new Set(), KIT = {};
 function setBoard(i) {
@@ -966,6 +968,7 @@ function setBoard(i) {
 function loadLevel(i) {
   setBoard(i);
   LV = i; ROUTES = LEVELS[i].routes.map(buildRoute); PATH.clear();
+  LONG_R = ROUTES.reduce((m, R, k) => R.len > ROUTES[m].len ? k : m, 0);
   for (const wp of LEVELS[i].routes) for (let k = 0; k < wp.length - 1; k++) {
     const cc = v => clamp(Math.round(v), 0, COLS - 1);
     const cr = v => clamp(Math.round(v), 0, ROWS - 1);
@@ -2395,7 +2398,8 @@ function drawMdl(b, t, sh) {
   if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, (u.shadow || 1.4) * q.scale.x, 0, 0, 0, 0, bt.fly || b.air ? 0.25 : 0.45);
 }
 // spawn one queue entry (a bed bug swarm or a centipede is several bugs)
-function spawnEntry(t, rt = nextRoute(), sent) {
+function spawnEntry(t, rt, sent) {
+  if (rt === undefined) rt = BT[t].boss && !LEVELS[LV].team ? LONG_R : nextRoute();   // solo: bosses always take the longest trail
   if (t === 'bed') { for (let i = 0; i < BT.bed.swarm; i++) { const b = spawnBug('bed', rt); if (sent) b.sent = 1; b.s = -i * 0.35 - Math.random() * 0.3; b.off = (Math.random() - 0.5) * 1.8; } return; }
   if (t === 'centi' || t === 'gcenti') { let lead = null; for (let i = 0; i < BT[t].segs; i++) { const b = spawnBug(t, rt); if (sent) b.sent = 1; b.s = -i * (BT[t].gap || 0.62); b.off = 0; b.lead = lead; lead = b; } return; }
   const b = spawnBug(t, rt); if (sent) b.sent = 1; return b;
@@ -3022,7 +3026,8 @@ function startWave() {
   if (S.endless && S.wave + 1 >= 30) ACH.unlock('end30');
   if (S.endless && S.wave + 1 >= 50) ACH.unlock('end50');
   S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
-  S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];   // every wave in this push pays its clear bonus at the end
+  S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
+  if (!rush && !LEVELS[LV].team) S.routeN = (LONG_R - 1 + ROUTES.length) % ROUTES.length;   // the wave opens on the longest trail   // every wave in this push pays its clear bonus at the end
   S.hpMul = (1 + 0.17 * (S.wave - 1) + 0.011 * (S.wave - 1) ** 2) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1); if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%
   // endless: past wave 20 every wave gets another 6% tougher on top, and they pour out faster
   if (S.wave > MAXW) { S.hpMul *= 1.06 ** (S.wave - MAXW); S.gap = Math.max(0.24, 0.34 - (S.wave - MAXW) * 0.005); }
@@ -4876,7 +4881,7 @@ function aiStatus() {
 }
 function aiStartWave(n) {
   const A = S.vs.bot; if (A.fin || A.lives <= 0) return;
-  A.wave = n; A.active = true; A.queue = makeWave(n, LEVELS[LV].shift); A.spawnT = 0;
+  A.wave = n; A.active = true; A.queue = makeWave(n, LEVELS[LV].shift); A.spawnT = 0; A.routeN = LONG_R;
   A.gap = Math.max(0.34, 0.9 - n * 0.026);
   A.hpMul = (1 + 0.17 * (n - 1) + 0.011 * (n - 1) ** 2) * LEVELS[LV].hp * (n === 6 || n === 7 ? 0.9 : 1);
   A.trio = new Set(A.queue.filter(t => BT[t].boss)).size > 1;
@@ -4887,10 +4892,10 @@ function aiSpawn(t, sent) {
   let lead = null;
   const make = (s0, off) => {
     const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1) * 0.95) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1));
-    const b = { id: A.nid++, t, route: A.routeN, s: s0, off, hp, max: hp, ball: bt.ball ? Math.round(bt.ball * A.hpMul * (A.wave === 6 || A.wave === 7 ? 0.7 / 0.9 : 1)) : 0, sent: sent ? 1 : 0, push: 0 };
+    const b = { id: A.nid++, t, route: bt.boss ? LONG_R : A.routeN, s: s0, off, hp, max: hp, ball: bt.ball ? Math.round(bt.ball * A.hpMul * (A.wave === 6 || A.wave === 7 ? 0.7 / 0.9 : 1)) : 0, sent: sent ? 1 : 0, push: 0 };
     A.bugs.push(b); return b;
   };
-  A.routeN = (A.routeN + 1) % ROUTES.length;
+  if (!bt.boss) A.routeN = (A.routeN + 1) % ROUTES.length;
   if (t === 'bed') for (let i = 0; i < bt.swarm; i++) make(-i * 0.35 - Math.random() * 0.3, (Math.random() - 0.5) * 1.8);
   else if (t === 'centi' || t === 'gcenti') for (let i = 0; i < bt.segs; i++) { const b = make(-i * (bt.gap || 0.62), 0); b.lead = lead; lead = b; }
   else make(0, (Math.random() - 0.5) * (bt.boss ? 0.2 : 1.3));
