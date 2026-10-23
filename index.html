@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v125</div>
+    <div id="ver">v126</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5264,7 +5264,7 @@ function bldTap(c, r) {
     if (c === cake && r === 0) return bldMsg('That\'s the cake. Start a trail on an edge tile, where the bugs come in.');
     if (!bldDoor(c, r)) return bldMsg('Start on an edge tile: that\'s where the bug door goes.');
     if (T.some(t => bldOnTrail(t, c, r) >= 0)) return bldMsg('Pick an edge tile that isn\'t already trail.');
-    T.push({ pts: [[c, r]], done: false, join: null }); bldMsg('Now tap tiles to lay the trail. Finish on the cake (top row) or on another trail.'); return bldAfter();
+    T.push({ pts: [[c, r]], done: false, join: null }); bldMsg('Now tap tiles to lay the trail. Finish on the cake (top row) or by tapping another trail to join it. Tap past a trail to cross it.'); return bldAfter();
   }
   const last = cur.pts[cur.pts.length - 1]; if (last[0] === c && last[1] === r) return;
   // straight line, or an L (across first, then up/down)
@@ -5277,11 +5277,18 @@ function bldTap(c, r) {
       if (bldOnTrail(cur, x, y) >= 0) return bldMsg('A trail can\'t cross itself.');
       if (x === cake && y === 0) { cur.pts.push([x, y]); cur.done = true; cur.join = null; bldMsg('Trail reaches the cake! Test play it, or add another door.'); return bldAfter(); }
       const j = T.findIndex(t => t !== cur && t.done && bldOnTrail(t, x, y) >= 0);
+      if (j >= 0 && !(x === c && y === r) && bldCrosses(T[j], x, y, dc, dr)) continue;   // passing straight across another trail: a crossroad
       if (j >= 0) { cur.pts.push([x, y]); cur.done = true; cur.join = j; bldMsg('Joined the other trail. Test play it, or add another door.'); return bldAfter(); }
     }
     cur.pts.push([to[0], to[1]]); from = to;
   }
   bldAfter();
+}
+// does moving (dc, dr) through (x, y) cut across trail o there, instead of running along it?
+function bldCrosses(o, x, y, dc, dr) {
+  const k = bldOnTrail(o, x, y); if (k < 0 || o.pts.length < 2) return false;
+  const [a, b] = o.pts[k], [p, q] = o.pts[k + 1], horiz = b === q && a !== p;
+  return horiz ? dc === 0 : dr === 0;
 }
 function bldAfter() { bldSave(); bldDraw(); }
 function bldMsg(t) { $('bldMsg').textContent = t; bldDraw(); }
@@ -5360,6 +5367,7 @@ function bldFromLevel(lv) {
       while ((x !== q[0] || y !== q[1]) && !stop) {
         x += dc; y += dr;
         const j = trails.findIndex(o => bldOnTrail(o, x, y) >= 0);
+        if (j >= 0 && bldCrosses(trails[j], x, y, dc, dr) && !(x === q[0] && y === q[1])) continue;   // crossroad in the original level
         if (j >= 0) { t.pts.push([x, y]); t.done = true; t.join = j; stop = true; }
         else if (x === cake && y === 0) { t.pts.push([x, y]); t.done = true; stop = true; }
       }
