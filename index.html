@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v131</div>
+    <div id="ver">v132</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -522,7 +522,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     </div>
     <div class="screen" id="bld" hidden>
       <div class="bpan"><h2>Trail Builder <small id="bldLen" style="font:800 12px var(--body);color:var(--dim)"></small></h2>
-        <div class="brow"><button type="button" data-bm="solo">Solo</button><button type="button" data-bm="team">Team Kitchen</button><select id="bldBase"></select><button type="button" id="bldEdit">✎ Edit this level's trail</button><button type="button" id="bldCake">Cake: right</button></div></div>
+        <div class="brow"><button type="button" class="go" id="bldFresh">＋ New level</button><button type="button" data-bm="solo">Solo</button><button type="button" data-bm="team">Team Kitchen</button><select id="bldBase"></select><button type="button" id="bldEdit">✎ Edit this level's trail</button><button type="button" id="bldCake">Cake: right</button></div></div>
       <div class="bpan"><p id="bldMsg"></p>
         <div class="brow"><button type="button" id="bldUndo">↶ Undo</button><button type="button" id="bldNew">+ Door</button><button type="button" id="bldSwitch">⇄ Switch trail</button><button type="button" id="bldErase">🧽 Eraser</button><button type="button" class="warn" id="bldClear">Clear</button><button type="button" class="go" id="bldTest">▶ Test play</button><button type="button" id="bldCopy">Copy code</button><button type="button" id="bldLoad">Load code</button><button type="button" id="bldExit">Exit</button></div>
         <textarea id="bldCode" hidden placeholder="Paste a PPT1 code here, then tap Load code again" spellcheck="false"></textarea></div>
@@ -5426,6 +5426,12 @@ $('bldBase').addEventListener('change', e => { BLD.base = +e.target.value; bldSa
 $('bldEdit').addEventListener('click', () => { if (BLD.trails.length && !confirmClear.armE) { confirmClear.armE = 1; setTimeout(() => confirmClear.armE = 0, 2500); return bldMsg('That replaces what you drew. Tap again to load it.'); } confirmClear.armE = 0; bldFromLevel(BLD.base); bldUi(); bldSave(); bldMsg('Loaded ' + (LEVELS[BLD.base].team ? LEVELS[BLD.base].name : HOUSES[BLD.base].name) + '. Undo steps back from the cake end. Copy the code when you\'re done.'); });
 $('bldCake').addEventListener('click', () => { if (BLD.trails.some(t => t.done && t.join == null)) return bldMsg('Undo the trail into the cake before moving the cake.'); BLD.cake = BLD.cake === 1 ? 12 : 1; bldUi(); bldSave(); });
 $('bldUndo').addEventListener('click', bldUndo);
+// start a brand-new level: empty kitchen, keeps Solo/Team and the house you picked
+$('bldFresh').addEventListener('click', () => {
+  if (BLD.trails.length && !confirmClear.armF) { confirmClear.armF = 1; setTimeout(() => confirmClear.armF = 0, 2500); return bldMsg('Start a new level? Your current trails go away. Tap ＋ New level again.'); }
+  confirmClear.armF = 0; BLD.trails = []; BLD.edit = null; BLD.cur = 0; BLD.newDoor = false; BLD.erasing = false; $('bldErase').classList.remove('on');
+  bldMsg('New level! Pick Solo or Team Kitchen and a house, then tap an edge tile to put the first bug door.'); bldAfter();
+});
 $('bldNew').addEventListener('click', () => { if (BLD.trails.length >= 3) return bldMsg('Three doors is the most.'); BLD.newDoor = true; bldDraw(); bldMsg('Tap an edge tile for the new door.'); });
 $('bldClear').addEventListener('click', () => { if (!confirmClear.armC) { confirmClear.armC = 1; setTimeout(() => confirmClear.armC = 0, 2500); return bldMsg('Tap Clear again to wipe every trail.'); } confirmClear.armC = 0; BLD.trails = []; BLD.edit = null; bldMsg('Tap an edge tile to place a bug door and start a trail.'); bldAfter(); });
 $('bldTest').addEventListener('click', () => { SND.init(); bldTest(); });
