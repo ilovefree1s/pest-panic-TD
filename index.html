@@ -220,7 +220,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #aiRow{display:grid;gap:8px}
 .tmap.on{box-shadow:inset 0 0 0 3px var(--gold);background:rgba(60,46,10,.92)}
 .tmap:disabled{opacity:.45;cursor:default}
-.tmap .d0{color:#9be37a} .tmap .d1{color:#ffc93c} .tmap .d2{color:#ff8a7a}
+.tmap .d0{color:#9be37a} .tmap .d1{color:#ffc93c} .tmap .d2{color:#ff8a7a} .tmap .d3{color:#ffc93c}
 .lme{margin:0;text-align:center;font-weight:800;color:var(--dim)} .lme b{color:var(--text)} .lme button{border:0;background:rgba(255,255,255,.1);color:var(--text);border-radius:8px;padding:2px 8px;margin-left:6px;cursor:pointer;font:800 12px var(--body)}
 .lhead{margin:2px 0 -4px;font:900 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 #lbList{display:grid;gap:6px;max-height:34vh;overflow-y:auto}
@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v133</div>
+    <div id="ver">v134</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -720,12 +720,17 @@ const LEVELS = [
     routes: [[[1, -0.6], [1, 3], [5, 3], [5, 1], [9, 1], [9, 6], [12, 6], [12, -0.05]],
              [[-0.6, 8], [4, 8], [4, 6], [9, 6], [12, 6], [12, -0.05]]] },
 ];
-const CAMPAIGN = 5, TEAM0 = 5, TEAMN = 3;
+// Mirror Maze: the 4th team map, drawn in the Trail Builder (it sits at the end of the level list)
+LEVELS[13] = { ...LEVELS[6], name: 'Mirror Maze', sub: 'Medium', intro: 'Two mirror-image mazes that join up the middle. Guard the shared stretch together!',
+  routes: [[[2, 10.6], [2, 2], [8, 2], [8, 8], [4, 8], [4, 5], [10, 5], [10, 0], [10, -0.05]],
+           [[18, 10.6], [18, 2], [12, 2], [12, 8], [16, 8], [16, 5], [10, 5], [10, 0], [10, -0.05]]] };
+const CAMPAIGN = 5, TEAM0 = 5, TEAM_MAPS = [5, 6, 7, 13], TEAMN = TEAM_MAPS.length;
+const teamNext = lv => { const k = TEAM_MAPS.indexOf(lv); return k >= 0 && k < TEAM_MAPS.length - 1 ? TEAM_MAPS[k + 1] : null; };
 // the solo houses in play order (the last five come after the team maps in the list)
 const SOLO = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12];
 const soloNum = lv => SOLO.indexOf(lv) + 1, soloNext = lv => { const i = SOLO.indexOf(lv); return i >= 0 && i < SOLO.length - 1 ? SOLO[i + 1] : null; };
 let TEAM_LV = TEAM0;
-function teamUnlocked(lv) { return lv === TEAM0 || loadBest(lv - 1) >= MAXW; }
+function teamUnlocked(lv) { const k = TEAM_MAPS.indexOf(lv); return k <= 0 || loadBest(TEAM_MAPS[k - 1]) >= MAXW; }
 // every level is a different house with its own kitchen
 const HOUSES = [
   { name: "Grandma's Kitchen", bg: '#16110d',
@@ -889,6 +894,7 @@ function buildCounterProps() {
   for (const k in P) { P[k].traverse(o => { if (o.isMesh) o.castShadow = true; }); P[k].visible = false; scene.add(P[k]); }
   return P;
 }
+HOUSES[13] = { ...HOUSES[2], name: 'Retro Diner' }; PROP_LAYOUT[13] = PROP_LAYOUT[6];   // Mirror Maze: diner look on the wide team board
 const houseTex = {};
 function applyHouse(i) {
   const H = HOUSES[i], T = houseTex[i] ||= { floor: floorTextures(H.floor), cab: cabinetTexture(H.cab) };
@@ -4104,7 +4110,7 @@ $('quit').addEventListener('click', () => {
 $('restart').addEventListener('click', () => { SND.init(); if (S.vs && S.vs.bot) { startGame(LV, 'vsbot', S.vs.bot.diff); return; } if (S.net && S.net !== 'bot') return; startGame(LV, S.net); });
 $('lvls').innerHTML = SOLO.map((lv, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${lv}"><b>Level ${i + 1}</b><span>${HOUSES[lv].name}</span><em>${LEVELS[lv].name}</em><small id="best${lv}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
-$('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = LV + 1; netSend({ k: 'start', lv: LV + 1 }); startGame(LV + 1, 'host'); } else startGame(LEVELS[LV].team ? LV + 1 : soloNext(LV)); });
+$('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = teamNext(LV); netSend({ k: 'start', lv: TEAM_LV }); startGame(TEAM_LV, 'host'); } else startGame(LEVELS[LV].team ? teamNext(LV) : soloNext(LV)); });
 $('again').addEventListener('click', () => { SND.init(); if (S.vs) { if (S.vs.bot) startGame(LV, 'vsbot', S.vs.bot.diff); else if (NET.role === 'host') { netSend({ k: 'start', lv: LV, vs: 1 }); startGame(LV, 'vs'); } return; } if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
 // endless: pick up right where the win left off, same tools and cake, waves keep coming and keep getting harder
 $('endless').addEventListener('click', () => {
@@ -4314,7 +4320,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   syncTray(); syncHud(); showBelt();
   $('peek').querySelector('b').textContent = S.vs && S.vs.bot ? 'AI\'s kitchen' : 'Friend\'s kitchen';
   if (S.vs) banner(S.vs.bot ? 'Bug Battle vs AI (' + AI_DIFF[S.vs.bot.diff].name + ')' : 'Bug Battle: ' + HOUSES[LV].name, S.vs.bot ? 'You and the AI get the same waves. From wave 6 you can send bugs at each other during waves. Last cake standing wins!' : 'Same waves for both of you. From wave 6 you can spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
-  banner(LEVELS[LV].team ? 'Team Kitchen ' + (LV - TEAM0 + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + soloNum(LV) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
+  banner(LEVELS[LV].team ? 'Team Kitchen ' + (TEAM_MAPS.indexOf(LV) + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + soloNum(LV) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   if (!S.vs) tutStart();
@@ -5169,7 +5175,7 @@ function renderTeamMaps() {
     return;
   }
   if (!teamUnlocked(TEAM_LV)) TEAM_LV = TEAM0;
-  $('tmaps').innerHTML = [0, 1, 2].map(i => { const lv = TEAM0 + i, L = LEVELS[lv], ok = teamUnlocked(lv), b = loadBest(lv), st = loadNum(starKey(lv));
+  $('tmaps').innerHTML = TEAM_MAPS.map((lv, i) => { const L = LEVELS[lv], ok = teamUnlocked(lv), b = loadBest(lv), st = loadNum(starKey(lv));
     return `<button class="tmap${lv === TEAM_LV ? ' on' : ''}" type="button" data-lv="${lv}" ${ok ? '' : 'disabled'}><b>${i + 1}. ${L.name}</b><em class="d${i}">${L.sub}</em><small>${!ok ? '🔒 Beat map ' + i + ' first' : b >= MAXW ? starStr(Math.max(1, st)) : b ? 'Best: wave ' + b : HOUSES[lv].name}</small></button>`; }).join('');
 }
 $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (NET.mode === 'vs') VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); if (NET.role === 'host') lobbyAd(true); });
@@ -5360,7 +5366,7 @@ function bldPreview() {
 function bldDraw() { if ($('bld').hidden || !S || S.mode !== 'build') return; try { bldPreview(); } catch (e) { showErr('builder', e); } }
 function bldUi() {
   document.querySelectorAll('#bld [data-bm]').forEach(b => b.classList.toggle('on', b.dataset.bm === BLD.mode));
-  const opts = BLD.mode === 'team' ? [0, 1, 2].map(i => [TEAM0 + i, 'Team map ' + (i + 1) + ': ' + LEVELS[TEAM0 + i].name]) : SOLO.map((lv, i) => [lv, 'Level ' + (i + 1) + ': ' + HOUSES[lv].name]);
+  const opts = BLD.mode === 'team' ? TEAM_MAPS.map((lv, i) => [lv, 'Team map ' + (i + 1) + ': ' + LEVELS[lv].name]) : SOLO.map((lv, i) => [lv, 'Level ' + (i + 1) + ': ' + HOUSES[lv].name]);
   if (!opts.some(o => o[0] === BLD.base)) BLD.base = opts[0][0];
   $('bldBase').innerHTML = opts.map(([v, n]) => `<option value="${v}"${v === BLD.base ? ' selected' : ''}>${n}</option>`).join('');
   $('bldCake').hidden = BLD.mode === 'team'; $('bldCake').textContent = 'Cake: ' + (BLD.cake === 1 ? 'left' : 'right');
@@ -5577,7 +5583,7 @@ function gameOver(won) {
   if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
   if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills, st: (S.p2 && S.p2.stats) || {} });   // the partner's own damage chart
   S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
-  const reached = won ? MAXW : S.wave, NX = LEVELS[LV].team ? LV + 1 : soloNext(LV), wasLocked = LEVELS[LV].team ? !teamUnlocked(LV + 1) : NX != null && !unlocked(NX);
+  const reached = won ? MAXW : S.wave, NX = LEVELS[LV].team ? teamNext(LV) : soloNext(LV), wasLocked = LEVELS[LV].team ? NX != null && !teamUnlocked(NX) : NX != null && !unlocked(NX);
   if (Math.min(reached, MAXW) > loadBest()) saveBest(Math.min(reached, MAXW));
   const ostars = $('ostars'); ostars.hidden = !won; $('endless').hidden = !won || !!S.net;
   $('again').hidden = S.net === 'guest'; $('again').textContent = S.net === 'host' ? 'Play again together' : 'Play again';
@@ -5598,10 +5604,10 @@ function gameOver(won) {
     return;
   }
   $('overt').textContent = won ? 'Cake saved!' : 'Cake devoured!';
-  const team = !!LEVELS[LV].team, hasNext = won && (team ? LV < TEAM0 + TEAMN - 1 && S.net !== 'guest' : NX != null);
-  $('nextLv').hidden = !hasNext; $('nextLv').textContent = hasNext ? (team ? 'Next map: ' + LEVELS[LV + 1].name : 'Next: ' + HOUSES[NX].name) : '';
-  if (hasNext && wasLocked) banner(team ? 'New team map unlocked!' : 'New house unlocked!', team ? LEVELS[LV + 1].name + ' · ' + LEVELS[LV + 1].sub : HOUSES[NX].name + ' · Level ' + soloNum(NX), false, 2600);
-  if (won && team && S.net === 'guest' && LV < TEAM0 + TEAMN - 1) banner('Next map unlocked!', 'Waiting for the host to start ' + LEVELS[LV + 1].name, false, 3000);
+  const team = !!LEVELS[LV].team, hasNext = won && (team ? NX != null && S.net !== 'guest' : NX != null);
+  $('nextLv').hidden = !hasNext; $('nextLv').textContent = hasNext ? (team ? 'Next map: ' + LEVELS[NX].name : 'Next: ' + HOUSES[NX].name) : '';
+  if (hasNext && wasLocked) banner(team ? 'New team map unlocked!' : 'New house unlocked!', team ? LEVELS[NX].name + ' · ' + LEVELS[NX].sub : HOUSES[NX].name + ' · Level ' + soloNum(NX), false, 2600);
+  if (won && team && S.net === 'guest' && NX != null) banner('Next map unlocked!', 'Waiting for the host to start ' + LEVELS[NX].name, false, 3000);
   showStats();
   $('ores').innerHTML = `<dt>Waves survived</dt><dd>${won ? MAXW : Math.max(0, S.wave - 1)} / ${MAXW}</dd><dt>Bugs squashed</dt><dd>${S.kills}</dd><dt>Slices left</dt><dd>${S.lives} / 20</dd><dt>House</dt><dd>${HOUSES[LV].name}</dd><dt>Best</dt><dd>Wave ${loadBest()}</dd>`;
   $('over').hidden = false; $('tip').hidden = true; $('queen').hidden = true;
