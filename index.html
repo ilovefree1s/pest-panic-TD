@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v126</div>
+    <div id="ver">v127</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -524,7 +524,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <div class="bpan"><h2>Trail Builder</h2>
         <div class="brow"><button type="button" data-bm="solo">Solo</button><button type="button" data-bm="team">Team Kitchen</button><select id="bldBase"></select><button type="button" id="bldEdit">✎ Edit this level's trail</button><button type="button" id="bldCake">Cake: right</button></div></div>
       <div class="bpan"><p id="bldMsg"></p>
-        <div class="brow"><button type="button" id="bldUndo">↶ Undo</button><button type="button" id="bldNew">+ Door</button><button type="button" class="warn" id="bldClear">Clear</button><button type="button" class="go" id="bldTest">▶ Test play</button><button type="button" id="bldCopy">Copy code</button><button type="button" id="bldLoad">Load code</button><button type="button" id="bldExit">Exit</button></div>
+        <div class="brow"><button type="button" id="bldUndo">↶ Undo</button><button type="button" id="bldNew">+ Door</button><button type="button" id="bldErase">🧽 Eraser</button><button type="button" class="warn" id="bldClear">Clear</button><button type="button" class="go" id="bldTest">▶ Test play</button><button type="button" id="bldCopy">Copy code</button><button type="button" id="bldLoad">Load code</button><button type="button" id="bldExit">Exit</button></div>
         <textarea id="bldCode" hidden placeholder="Paste a PPT1 code here, then tap Load code again" spellcheck="false"></textarea></div>
     </div>
     <div class="screen" id="nameBox" hidden><div class="lbox"><h3>What's your name?</h3><p class="lme">Other players see it on your games</p><input id="nameIn" maxlength="16" autocomplete="off" placeholder="Your name"><button class="btn" id="nameOk" type="button">Done</button></div></div>
@@ -5290,6 +5290,24 @@ function bldCrosses(o, x, y, dc, dr) {
   const [a, b] = o.pts[k], [p, q] = o.pts[k + 1], horiz = b === q && a !== p;
   return horiz ? dc === 0 : dr === 0;
 }
+// eraser: cut a trail at the tapped tile (that tile and everything after it go). Trails that joined the cut part come loose too.
+function bldErase(c, r) {
+  const T = BLD.trails; let i = -1;
+  for (let k = T.length - 1; k >= 0; k--) if (bldOnTrail(T[k], c, r) >= 0) { i = k; break; }
+  if (i < 0) return bldMsg('Tap a trail tile to erase it.');
+  const t = T[i], k = bldOnTrail(t, c, r), [a, b] = t.pts[k];
+  const loosen = j => { for (const o of T) if (o.join === j && o.done) { o.done = false; o.join = null; o.pts.pop(); if (o.pts.length < 1) o.gone = true; loosen(T.indexOf(o)); } };
+  if (a === c && b === r) t.pts = t.pts.slice(0, k);
+  else { const dc = Math.sign(c - a), dr = Math.sign(r - b); t.pts = t.pts.slice(0, k + 1); if (c - dc !== a || r - dr !== b) t.pts.push([c - dc, r - dr]); }
+  t.done = false; t.join = null; if (!t.pts.length) t.gone = true;
+  loosen(i);
+  // drop emptied trails and fix the join numbers
+  const keep = T.filter(o => !o.gone), map = T.map(o => keep.indexOf(o));
+  for (const o of keep) if (o.join != null) o.join = map[o.join] >= 0 ? map[o.join] : null;
+  BLD.trails = keep;
+  // only one unfinished trail at a time: put the one just cut first among the unfinished
+  bldMsg(t.gone ? 'Trail erased.' : 'Erased. Tap tiles to draw it again from the white box, or keep erasing.'); bldAfter();
+}
 function bldAfter() { bldSave(); bldDraw(); }
 function bldMsg(t) { $('bldMsg').textContent = t; bldDraw(); }
 function bldUndo() {
@@ -5379,7 +5397,8 @@ function bldFromLevel(lv) {
   }
   BLD.base = lv; BLD.edit = lv;
 }
-canvas.addEventListener('pointerdown', e => { if (!S || S.mode !== 'build' || $('bld').hidden) return; const cell = cellAt(e); if (!cell) return; SND.init(); SND.play('tap'); bldTap(cell.c, cell.r); });
+canvas.addEventListener('pointerdown', e => { if (!S || S.mode !== 'build' || $('bld').hidden) return; const cell = cellAt(e); if (!cell) return; SND.init(); SND.play('tap'); if (BLD.erasing) bldErase(cell.c, cell.r); else bldTap(cell.c, cell.r); });
+$('bldErase').addEventListener('click', () => { BLD.erasing = !BLD.erasing; $('bldErase').classList.toggle('on', BLD.erasing); bldMsg(BLD.erasing ? 'Eraser on: tap a trail tile to erase it and everything after it. Tap Eraser again to draw.' : 'Drawing again.'); });
 document.querySelectorAll('#bld [data-bm]').forEach(b => b.addEventListener('click', () => { if (BLD.mode === b.dataset.bm) return; if (BLD.trails.length && !confirmClear.arm) { confirmClear.arm = 1; setTimeout(() => confirmClear.arm = 0, 2500); return bldMsg('Switching clears your trails. Tap again to switch.'); } BLD.mode = b.dataset.bm; BLD.trails = []; BLD.edit = null; confirmClear.arm = 0; bldMsg('Tap an edge tile to place a bug door and start a trail.'); bldUi(); bldSave(); }));
 function confirmClear() {}
 $('bldBase').addEventListener('change', e => { BLD.base = +e.target.value; bldSave(); bldDraw(); });
