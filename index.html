@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v138</div>
+    <div id="ver">v139</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -693,7 +693,7 @@ const LEVELS = [
     routes: [[[10, -0.6], [10, 2], [2, 2], [2, 6], [8, 6], [8, 8], [12, 8], [12, -0.05]]] },
   { name: 'Two Holes', sub: 'Two trails that meet halfway', intro: 'Two holes now. Cover both trails.', hp: 1.25, money: 190, shift: 2,
     routes: [[[1, -0.6], [1, 8], [5, 8], [5, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]],
-             [[9, -0.6], [9, 2], [7, 2], [7, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]]] },
+             [[9, -0.6], [9, 2], [4, 2], [4, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]]] },   // 2nd trail redrawn in the Trail Builder
   // Team Kitchen (co-op): 21 tiles wide, bugs come in through both side walls, lanes join halfway up the middle
   // Team campaign: three co-op kitchens, 21 tiles wide with the cake in the middle; each one harder than the last
   { name: 'Side Doors', nb: [['hopper', 4, 2], ['centi', 7, 1]], sub: 'Easy', intro: 'Two lanes, one cake. Hold your side!', hp: 0.95, money: 180, shift: 0, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
