@@ -230,6 +230,15 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #nameBox{z-index:40;background:rgba(6,8,10,.82)} #nameBox .lbox{text-align:center} #nameBox h3{margin:0;font:400 26px var(--display)}
 #nameIn{font:400 24px var(--display);text-align:center;border-radius:14px;border:0;padding:10px;background:#f4efe4;color:#2a1600;min-width:0}
 .ljoin{display:grid;grid-template-columns:1fr auto;gap:8px}
+#bld{z-index:50;background:#0d1114;justify-content:flex-start;gap:8px;padding:10px 10px calc(10px + env(safe-area-inset-bottom));overflow-y:auto}
+#bld h2{margin:0;font:400 24px var(--display);color:var(--gold)}
+.brow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+.brow button,.brow select{border:0;border-radius:10px;padding:7px 11px;font:800 13px var(--body);background:rgba(255,255,255,.1);color:var(--text);cursor:pointer}
+.brow button.on{background:var(--gold);color:#2a1600} .brow button.go{background:#3fae5a;color:#fff} .brow button.warn{background:#7a2a20}
+.brow select{appearance:auto;max-width:46vw}
+#bldC{display:block;width:min(96vw,calc((100vh - 230px) * 1.3));max-width:960px;border-radius:10px;touch-action:none;background:#1a1410}
+#bldMsg{margin:0;min-height:1.3em;text-align:center;font-weight:800;color:var(--gold);font-size:14px}
+#bldCode{width:min(96vw,720px);height:54px;border-radius:10px;border:0;padding:6px 8px;font:12px monospace;background:#f4efe4;color:#2a1600}
 .ljoin input{font:400 24px var(--display);letter-spacing:.2em;text-align:center;border-radius:14px;border:0;padding:8px;background:#f4efe4;color:#2a1600;min-width:0}
 .lstat{margin:0;min-height:1.4em;text-align:center;font-weight:800;color:var(--gold)}
 .lstat b{font:400 34px var(--display);letter-spacing:.15em;display:block;color:#fff}
@@ -447,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v123</div>
+    <div id="ver">v124</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -510,6 +519,15 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <button class="btn dark" id="lbPractice" type="button">Solo: hold both lanes</button>
         <button class="btn dark" id="lbBack" type="button">Back</button>
       </div>
+    </div>
+    <div class="screen" id="bld" hidden>
+      <h2>Trail Builder</h2>
+      <div class="brow"><button type="button" data-bm="solo">Solo</button><button type="button" data-bm="team">Team Kitchen</button><select id="bldBase"></select><button type="button" id="bldEdit">✎ Edit this level's trail</button><button type="button" id="bldCake">Cake: right</button></div>
+      <canvas id="bldC"></canvas>
+      <p id="bldMsg"></p>
+      <div class="brow"><button type="button" id="bldUndo">↶ Undo</button><button type="button" id="bldNew">+ Another door</button><button type="button" class="warn" id="bldClear">Clear</button><button type="button" class="go" id="bldTest">▶ Test play</button></div>
+      <div class="brow"><button type="button" id="bldCopy">Copy code</button><button type="button" id="bldLoad">Load code</button><button type="button" id="bldExit">Exit</button></div>
+      <textarea id="bldCode" placeholder="Copy this code and send it to Claude, or paste a code here and tap Load code" spellcheck="false"></textarea>
     </div>
     <div class="screen" id="nameBox" hidden><div class="lbox"><h3>What's your name?</h3><p class="lme">Other players see it on your games</p><input id="nameIn" maxlength="16" autocomplete="off" placeholder="Your name"><button class="btn" id="nameOk" type="button">Done</button></div></div>
     <div class="screen" id="achs" hidden>
@@ -4065,7 +4083,11 @@ document.querySelectorAll('.gtabs').forEach(t => t.addEventListener('click', e =
 }));
 $('achBack').addEventListener('click', () => { $('achs').hidden = true; $('guide').hidden = false; closeGuide(); });
 $('setTut').addEventListener('click', () => { try { localStorage.removeItem('ppd-tut'); } catch (e) {} $('setTut').textContent = 'Tutorial on for Level 1'; });
-$('setT').addEventListener('click', () => { SND.init(); openSettings(); });
+$('setT').addEventListener('click', () => { SND.init(); if (BLD.held) { BLD.held = false; return; } openSettings(); });
+// secret: hold the title-screen settings button for 5 seconds to open the Trail Builder
+$('setT').addEventListener('pointerdown', () => { clearTimeout(BLD.holdT); BLD.holdT = setTimeout(() => { BLD.held = true; SND.init(); SND.play('up'); openBuilder(); }, 5000); });
+for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) $('setT').addEventListener(ev, () => clearTimeout(BLD.holdT));
+$('setT').addEventListener('contextmenu', e => e.preventDefault());
 $('setP').addEventListener('click', () => { $('paused').hidden = true; syncSettings(); $('settings').hidden = false; });
 $('resume').addEventListener('click', () => setPaused(false));
 // quitting an online game asks for a second tap, since it ends the game for your friend too
@@ -4257,6 +4279,7 @@ function clearBoard() {
   $('queen').hidden = true;
 }
 function toTitle() {
+  if (BLD.testing) { BLD.testing = false; setTimeout(openBuilder, 0); }
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
   clearBoard(); loadLevel(0); S = newState('title'); shown = {};
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['swat', 2, 1, 2], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
@@ -5206,6 +5229,170 @@ setInterval(() => {
   if (NET.role === 'host' && NET.code && !(S && S.net && S.mode === 'play')) lobbyAd(true);
   renderLobbyList();
 }, 2000);
+// ---------------------------------------------------------------- Trail Builder (secret dev tool)
+// Draw trails tile by tile: start on an edge tile (that's the bug door), tap tiles to lay the trail (it goes in straight lines,
+// turning a corner for you if needed), and finish on the cake tile or by joining another trail. Test play runs it for real.
+const BLD = { mode: 'solo', base: 0, cake: 12, edit: null, trails: [], holdT: 0, held: false, testing: false, idx: -1 };
+const BLD_COLORS = ['#ffd24a', '#7fd8ff', '#ff8fb8'];
+function bldCols() { return BLD.mode === 'team' ? 21 : 14; }
+function bldCake() { return BLD.mode === 'team' ? 10 : BLD.cake; }
+function bldSave() { try { localStorage.setItem('ppd-bld', JSON.stringify({ mode: BLD.mode, base: BLD.base, edit: BLD.edit, cake: BLD.cake, trails: BLD.trails })); } catch (e) {} }
+function bldLoadSaved() { try { const o = JSON.parse(localStorage.getItem('ppd-bld') || 'null'); if (o && o.trails) Object.assign(BLD, { mode: o.mode === 'team' ? 'team' : 'solo', base: o.base | 0, edit: o.edit ?? null, cake: o.cake === 1 ? 1 : 12, trails: o.trails }); } catch (e) {} }
+const bldOnTrail = (t, c, r) => { const P = t.pts; for (let i = 0; i < P.length - 1; i++) { const [a, b] = P[i], [x, y] = P[i + 1]; if (Math.min(a, x) <= c && c <= Math.max(a, x) && Math.min(b, y) <= r && r <= Math.max(b, y)) return i; } return P.length === 1 && P[0][0] === c && P[0][1] === r ? 0 : -1; };
+function bldDoor(c, r) {   // which wall the door goes in for a trail starting on edge tile (c, r)
+  const C = bldCols();
+  if (BLD.mode === 'team') { if (c === 0) return [-0.6, r]; if (c === C - 1) return [C - 0.4, r]; }
+  if (r === 0) return [c, -0.6]; if (c === 0) return [-0.6, r]; if (c === C - 1) return [C - 0.4, r]; if (r === ROWS - 1) return [c, ROWS + 0.6];
+  return null;
+}
+function bldRoutes() {   // turn the drawn trails into the game's waypoint lists
+  const out = [], cake = bldCake();
+  const wpOf = (ti, depth = 0) => {
+    const t = BLD.trails[ti]; if (!t || !t.done || depth > 4) return null;
+    const wp = [bldDoor(...t.pts[0]), ...t.pts.map(p => [p[0], p[1]])];
+    if (t.join == null) { wp.push([cake, -0.05]); return wp; }
+    const o = BLD.trails[t.join], ow = o && wpOf(t.join, depth + 1); if (!ow) return null;
+    const end = t.pts[t.pts.length - 1], seg = bldOnTrail(o, end[0], end[1]); if (seg < 0) return null;
+    return wp.concat(ow.slice(seg + 2));   // o's waypoints after the segment we landed on (+1 for its door)
+  };
+  for (let i = 0; i < BLD.trails.length; i++) { const w = wpOf(i); if (w) out.push(w.filter((p, k) => !k || p[0] !== w[k - 1][0] || p[1] !== w[k - 1][1])); }   // no zero-length steps
+  return out;
+}
+function bldTap(c, r) {
+  const C = bldCols(), cake = bldCake(), T = BLD.trails, cur = T.find(t => !t.done);
+  if (!cur) {
+    if (T.length >= 3) return bldMsg('Three doors is the most. Undo or Clear to change one.');
+    if (c === cake && r === 0) return bldMsg('That\'s the cake. Start a trail on an edge tile, where the bugs come in.');
+    if (!bldDoor(c, r)) return bldMsg('Start on an edge tile: that\'s where the bug door goes.');
+    if (T.some(t => bldOnTrail(t, c, r) >= 0)) return bldMsg('Pick an edge tile that isn\'t already trail.');
+    T.push({ pts: [[c, r]], done: false, join: null }); bldMsg('Now tap tiles to lay the trail. Finish on the cake (top row) or on another trail.'); return bldAfter();
+  }
+  const last = cur.pts[cur.pts.length - 1]; if (last[0] === c && last[1] === r) return;
+  // straight line, or an L (across first, then up/down)
+  const legs = last[0] === c || last[1] === r ? [[c, r]] : [[c, last[1]], [c, r]];
+  let from = last;
+  for (const to of legs) {
+    const dc = Math.sign(to[0] - from[0]), dr = Math.sign(to[1] - from[1]); let x = from[0], y = from[1];
+    while (x !== to[0] || y !== to[1]) {
+      x += dc; y += dr;
+      if (bldOnTrail(cur, x, y) >= 0) return bldMsg('A trail can\'t cross itself.');
+      if (x === cake && y === 0) { cur.pts.push([x, y]); cur.done = true; cur.join = null; bldMsg('Trail reaches the cake! Test play it, or add another door.'); return bldAfter(); }
+      const j = T.findIndex(t => t !== cur && t.done && bldOnTrail(t, x, y) >= 0);
+      if (j >= 0) { cur.pts.push([x, y]); cur.done = true; cur.join = j; bldMsg('Joined the other trail. Test play it, or add another door.'); return bldAfter(); }
+    }
+    cur.pts.push([to[0], to[1]]); from = to;
+  }
+  bldAfter();
+}
+function bldAfter() { bldSave(); bldDraw(); }
+function bldMsg(t) { $('bldMsg').textContent = t; bldDraw(); }
+function bldUndo() {
+  const T = BLD.trails; if (!T.length) return;
+  let i = T.findIndex(t => !t.done); if (i < 0) i = T.length - 1;
+  const t = T[i];
+  if (T.some(o => o !== t && o.join === i)) return bldMsg('Another trail joins this one. Undo that one first.');
+  if (t.done) { t.done = false; t.join = null; t.pts.pop(); } else t.pts.pop();
+  if (!t.pts.length) T.splice(i, 1);
+  bldMsg(''); bldAfter();
+}
+function bldGeom() { const cv = $('bldC'), C = bldCols(), W = cv.width, cs = W / (C + 2); return { cv, C, cs, ox: cs, oy: cs * 1.6 }; }
+function bldDraw() {
+  const cv = $('bldC'); if (!cv || $('bld').hidden) return;
+  const C = bldCols(), w = Math.round(Math.min(cv.clientWidth || 600, 960) * (devicePixelRatio || 1));
+  if (cv.width !== w) cv.width = w; const g = bldGeom(), cs = g.cs; cv.height = Math.round(cs * (ROWS + 2.4));
+  const x = cv.getContext('2d'), cake = bldCake();
+  x.fillStyle = '#1a1410'; x.fillRect(0, 0, cv.width, cv.height);
+  x.fillStyle = '#3a2c20'; x.fillRect(g.ox - cs * 0.6, 0, C * cs + cs * 1.2, g.oy - cs * 0.15);   // back counter
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < C; c++) { x.fillStyle = (c + r) % 2 ? '#6b5544' : '#5d493a'; x.fillRect(g.ox + c * cs + 1, g.oy + r * cs + 1, cs - 2, cs - 2); }
+  if (BLD.mode === 'team') { x.fillStyle = 'rgba(255,255,255,.06)'; x.fillRect(g.ox + cake * cs, g.oy, cs, ROWS * cs); }
+  const cur = BLD.trails.find(t => !t.done);
+  if (!cur && BLD.trails.length < 3) {   // where a new trail may start
+    x.strokeStyle = 'rgba(255,210,74,.35)'; x.lineWidth = 2;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < C; c++) if (bldDoor(c, r) && !(c === cake && r === 0)) x.strokeRect(g.ox + c * cs + 4, g.oy + r * cs + 4, cs - 8, cs - 8);
+  }
+  const cx = c => g.ox + (c + 0.5) * cs, cy = r => g.oy + (r + 0.5) * cs;
+  BLD.trails.forEach((t, i) => {
+    const col = BLD_COLORS[i % 3], wp = [bldDoor(...t.pts[0]), ...t.pts];
+    x.strokeStyle = col; x.lineWidth = cs * 0.42; x.lineJoin = 'round'; x.lineCap = 'round'; x.globalAlpha = 0.85;
+    x.beginPath(); wp.forEach(([c, r], k) => k ? x.lineTo(cx(c), cy(r)) : x.moveTo(cx(c), cy(r)));
+    if (t.done && t.join == null) x.lineTo(cx(cake), cy(-0.6));
+    x.stroke(); x.globalAlpha = 1;
+    const [dc, dr] = wp[0]; x.fillStyle = '#111'; x.beginPath(); x.arc(cx(dc), cy(dr), cs * 0.32, 0, TAU); x.fill(); x.strokeStyle = col; x.lineWidth = 3; x.stroke();   // the door
+    if (!t.done) { const [lc, lr] = t.pts[t.pts.length - 1]; x.strokeStyle = '#fff'; x.lineWidth = 3; x.strokeRect(g.ox + lc * cs + 3, g.oy + lr * cs + 3, cs - 6, cs - 6); }
+  });
+  x.font = `${Math.round(cs * 0.8)}px sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('🎂', cx(cake), cy(-0.95));
+  x.strokeStyle = '#ff8fb8'; x.lineWidth = 3; x.setLineDash([5, 4]); x.strokeRect(g.ox + cake * cs + 2, g.oy + 2, cs - 4, cs - 4); x.setLineDash([]);
+}
+function bldUi() {
+  document.querySelectorAll('#bld [data-bm]').forEach(b => b.classList.toggle('on', b.dataset.bm === BLD.mode));
+  const opts = BLD.mode === 'team' ? [0, 1, 2].map(i => [TEAM0 + i, 'Team map ' + (i + 1) + ': ' + LEVELS[TEAM0 + i].name]) : SOLO.map((lv, i) => [lv, 'Level ' + (i + 1) + ': ' + HOUSES[lv].name]);
+  if (!opts.some(o => o[0] === BLD.base)) BLD.base = opts[0][0];
+  $('bldBase').innerHTML = opts.map(([v, n]) => `<option value="${v}"${v === BLD.base ? ' selected' : ''}>${n}</option>`).join('');
+  $('bldCake').hidden = BLD.mode === 'team'; $('bldCake').textContent = 'Cake: ' + (BLD.cake === 1 ? 'left' : 'right');
+  bldDraw();
+}
+function openBuilder() {
+  if (BLD.idx < 0) { BLD.idx = LEVELS.length; LEVELS.push({ ...LEVELS[0], name: 'My Trail' }); HOUSES[BLD.idx] = HOUSES[0]; PROP_LAYOUT[BLD.idx] = PROP_LAYOUT[0]; bldLoadSaved(); }
+  for (const id of ['title', 'settings', 'solo', 'lobby', 'over', 'paused']) { const e = $(id); if (e) e.hidden = true; }
+  $('bld').hidden = false; bldMsg(BLD.trails.length ? '' : 'Tap an edge tile to place a bug door and start a trail.'); bldUi(); requestAnimationFrame(bldDraw);
+}
+function bldTest() {
+  const T = BLD.trails; if (!T.length) return bldMsg('Draw a trail first.');
+  if (T.some(t => !t.done)) return bldMsg('Finish the trail first: it has to reach the cake or join another trail.');
+  const routes = bldRoutes(); if (routes.length !== T.length) return bldMsg('Something\'s off with a trail. Undo a step and try again.');
+  const B = LEVELS[BLD.base], team = BLD.mode === 'team', i = BLD.idx;
+  LEVELS[i] = { ...B, name: 'My Trail', intro: 'Your own trail. Good luck!', routes, cols: bldCols(), cakeCol: bldCake(),
+    fridgeX: team ? B.fridgeX : BLD.cake === 1 ? 6 : -9, stoveX: team ? B.stoveX : BLD.cake === 1 ? 15 : 2 };
+  HOUSES[i] = HOUSES[BLD.base]; PROP_LAYOUT[i] = PROP_LAYOUT[BLD.base]; delete houseTex[i];
+  BLD.testing = true; $('bld').hidden = true; startGame(i);
+}
+function bldCode() { return 'PPT1.' + btoa(JSON.stringify({ mode: BLD.mode, base: BLD.base, edit: BLD.edit ?? null, cake: BLD.cake, trails: BLD.trails, routes: bldRoutes() })); }
+// load an existing level's trails into the builder so they can be changed
+function bldFromLevel(lv) {
+  const L = LEVELS[lv], team = !!L.team, C = L.cols || 14, cake = L.cakeCol ?? 12, trails = [];
+  const doorCell = ([c, r]) => [clamp(Math.round(c), 0, C - 1), clamp(Math.round(r), 0, ROWS - 1)];
+  BLD.mode = team ? 'team' : 'solo'; BLD.cake = cake === 1 ? 1 : 12; BLD.trails = trails;
+  for (const wp of L.routes) {
+    const t = { pts: [doorCell(wp[0])], done: false, join: null };
+    const inner = wp.slice(1, -1).map(p => [Math.round(p[0]), Math.round(p[1])]); inner.push([cake, 0]);
+    let stop = false;
+    for (const q of inner) {   // walk cell by cell so a trail that runs into an earlier one joins it there
+      let [x, y] = t.pts[t.pts.length - 1]; const dc = Math.sign(q[0] - x), dr = Math.sign(q[1] - y);
+      while ((x !== q[0] || y !== q[1]) && !stop) {
+        x += dc; y += dr;
+        const j = trails.findIndex(o => bldOnTrail(o, x, y) >= 0);
+        if (j >= 0) { t.pts.push([x, y]); t.done = true; t.join = j; stop = true; }
+        else if (x === cake && y === 0) { t.pts.push([x, y]); t.done = true; stop = true; }
+      }
+      if (stop) break;
+      const l = t.pts[t.pts.length - 1]; if (l[0] !== q[0] || l[1] !== q[1]) t.pts.push(q);
+    }
+    if (!t.done) { t.done = true; }
+    trails.push(t);
+  }
+  BLD.base = lv; BLD.edit = lv;
+}
+$('bldC').addEventListener('pointerdown', e => {
+  const g = bldGeom(), r0 = g.cv.getBoundingClientRect(), k = g.cv.width / r0.width;
+  const c = Math.floor(((e.clientX - r0.left) * k - g.ox) / g.cs), r = Math.floor(((e.clientY - r0.top) * k - g.oy) / g.cs);
+  if (c < 0 || r < 0 || c >= g.C || r >= ROWS) return; SND.play('tap'); bldTap(c, r);
+});
+document.querySelectorAll('#bld [data-bm]').forEach(b => b.addEventListener('click', () => { if (BLD.mode === b.dataset.bm) return; if (BLD.trails.length && !confirmClear.arm) { confirmClear.arm = 1; setTimeout(() => confirmClear.arm = 0, 2500); return bldMsg('Switching clears your trails. Tap again to switch.'); } BLD.mode = b.dataset.bm; BLD.trails = []; BLD.edit = null; confirmClear.arm = 0; bldMsg('Tap an edge tile to place a bug door and start a trail.'); bldUi(); bldSave(); }));
+function confirmClear() {}
+$('bldBase').addEventListener('change', e => { BLD.base = +e.target.value; bldSave(); });
+$('bldEdit').addEventListener('click', () => { if (BLD.trails.length && !confirmClear.armE) { confirmClear.armE = 1; setTimeout(() => confirmClear.armE = 0, 2500); return bldMsg('That replaces what you drew. Tap again to load it.'); } confirmClear.armE = 0; bldFromLevel(BLD.base); bldUi(); bldSave(); bldMsg('Loaded ' + (LEVELS[BLD.base].team ? LEVELS[BLD.base].name : HOUSES[BLD.base].name) + '. Undo steps back from the cake end. Copy the code when you\'re done.'); });
+$('bldCake').addEventListener('click', () => { if (BLD.trails.some(t => t.done && t.join == null)) return bldMsg('Undo the trail into the cake before moving the cake.'); BLD.cake = BLD.cake === 1 ? 12 : 1; bldUi(); bldSave(); });
+$('bldUndo').addEventListener('click', bldUndo);
+$('bldNew').addEventListener('click', () => { if (BLD.trails.some(t => !t.done)) return bldMsg('Finish this trail first.'); if (BLD.trails.length >= 3) return bldMsg('Three doors is the most.'); bldMsg('Tap an edge tile for the new door.'); });
+$('bldClear').addEventListener('click', () => { if (!confirmClear.armC) { confirmClear.armC = 1; setTimeout(() => confirmClear.armC = 0, 2500); return bldMsg('Tap Clear again to wipe every trail.'); } confirmClear.armC = 0; BLD.trails = []; BLD.edit = null; bldMsg('Tap an edge tile to place a bug door and start a trail.'); bldAfter(); });
+$('bldTest').addEventListener('click', () => { SND.init(); bldTest(); });
+$('bldCopy').addEventListener('click', () => { const c = bldCode(); $('bldCode').value = c; $('bldCode').select(); try { navigator.clipboard.writeText(c).then(() => bldMsg('Code copied. Paste it to Claude.'), () => bldMsg('Code is in the box below: copy it from there.')); } catch (e) { bldMsg('Code is in the box below: copy it from there.'); } });
+$('bldLoad').addEventListener('click', () => {
+  try { const o = JSON.parse(atob($('bldCode').value.trim().replace(/^PPT1\./, ''))); Object.assign(BLD, { mode: o.mode === 'team' ? 'team' : 'solo', base: o.base | 0, edit: o.edit ?? null, cake: o.cake === 1 ? 1 : 12, trails: o.trails || [] }); bldUi(); bldSave(); bldMsg('Loaded!'); }
+  catch (e) { bldMsg('That code didn\'t work. Paste the whole thing, starting with PPT1.'); }
+});
+$('bldExit').addEventListener('click', () => { $('bld').hidden = true; toTitle(); });
+addEventListener('resize', () => { if (!$('bld').hidden) bldDraw(); });
 // ---------------------------------------------------------------- achievements (saved on this device)
 const ACH_LIST = [
   ['first', 'First Squash', 'Squash your first bug.'],
