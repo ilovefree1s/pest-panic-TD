@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v140</div>
+    <div id="ver">v141</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -706,8 +706,8 @@ const LEVELS = [
     routes: [[[1, 10.6], [1, 6], [4, 6], [4, 8], [8, 8], [8, 3], [20, 3], [20, 0], [10, 0], [10, -0.05]],
              [[19, 10.6], [19, 6], [16, 6], [16, 8], [12, 8], [12, 4], [0, 4], [0, 0], [10, 0], [10, -0.05]]] },   // redrawn in the Trail Builder: the lanes swap sides and cross
   // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
-  { name: 'Lunch Line', bosses: [['ghop'], ['queen'], ['widow'], ['ghop', 'queen', 'hornet']], nb: [['hopper', 3, 2]], sub: 'One long line, back and forth', intro: 'The bugs snake through the lunch line. Cover two rows at once!', hp: 1.34, money: 190, shift: 2,
-    routes: [[[-0.6, 1], [10, 1], [10, 3], [2, 3], [2, 5], [10, 5], [10, 7], [2, 7], [2, 9], [12, 9], [12, -0.05]]] },
+  { name: 'Lunch Line', bosses: [['ghop'], ['queen'], ['widow'], ['ghop', 'queen', 'hornet']], nb: [['hopper', 3, 2]], sub: 'A spiral out of a hole in the floor', intro: 'The bugs crawl up out of the floor in the middle and spiral out to the cake!', hp: 1.34, money: 190, shift: 2,
+    routes: [[[6, 4], [5, 4], [5, 5], [7, 5], [7, 3], [3, 3], [3, 7], [9, 7], [9, 1], [1, 1], [1, 9], [12, 9], [12, -0.05]]] },   // redrawn in the Trail Builder
   { name: 'Hot Delivery', bosses: [['gcenti'], ['ghop'], ['hornet'], ['gcenti', 'ghop', 'widow']], nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a back door', intro: 'A second trail comes in the back door, close to the cake. Watch it!', hp: 1.36, money: 200, shift: 2,
     routes: [[[-0.6, 2], [3, 2], [3, 8], [7, 8], [7, 4], [12, 4], [12, -0.05]],
              [[10, 10.6], [10, 9], [13, 9], [13, 6], [12, 6], [12, -0.05]]] },
