@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v146</div>
+    <div id="ver">v147</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -702,7 +702,7 @@ const LEVELS = [
   { name: 'The Funnel', nb: [['hopper', 3, 2], ['centi', 5, 1], ['stink', 7, 1], ['moth', 9, 2]], bosses: [['queen'], ['gcenti'], ['hornet'], ['ghop', 'gcenti', 'widow']], sub: 'Medium', intro: 'Two long snakes that only meet at the cake. Hold your side!', hp: 1.12, money: 175, bossMul: { queen: 0.8, gcenti: 1.15, hornet: 1.15 }, shift: 1, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[1, -0.6], [1, 9], [7, 9], [7, 4], [3, 4], [3, 1], [9, 1], [9, 0], [10, 0], [10, -0.05]],
              [[19, -0.6], [19, 9], [13, 9], [13, 4], [17, 4], [17, 1], [11, 1], [11, 0], [10, 0], [10, -0.05]]] },   // redrawn in the Trail Builder
-  { name: 'Long Haul', nb: [['hopper', 2, 2], ['centi', 4, 1], ['stink', 5, 2], ['moth', 6, 2], ['mantis', 8, 1]], bosses: [['gstink'], ['gmoth'], ['gmantis'], ['gmantis', 'gmoth', 'gstink']], sub: 'Hard', intro: 'Long lanes that only meet at the cake. Don\'t be the weak link!', hp: 1.3, money: 170, shift: 2, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
+  { name: 'Long Haul', nb: [['hopper', 2, 2], ['centi', 4, 1], ['stink', 5, 2], ['moth', 6, 2], ['mantis', 8, 1]], bosses: [['gstink'], ['gmoth'], ['gmantis'], ['gmantis', 'gmoth', 'gstink']], sub: 'Hard', intro: 'Long lanes that only meet at the cake. Don\'t be the weak link!', hp: 1.3, money: 170, bossMulW: { 5: { gstink: 0.65 } }, shift: 2, team: true, cols: 21, cakeCol: 10, fridgeX: -20, stoveX: 15,
     routes: [[[1, 10.6], [1, 6], [4, 6], [4, 8], [8, 8], [8, 3], [20, 3], [20, 0], [10, 0], [10, -0.05]],
              [[19, 10.6], [19, 6], [16, 6], [16, 8], [12, 8], [12, 4], [0, 4], [0, 0], [10, 0], [10, -0.05]]] },   // redrawn in the Trail Builder: the lanes swap sides and cross
   // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
@@ -2966,7 +2966,7 @@ function bossesFor(n) {
   const lap = (LEVELS[LV] && (LEVELS[LV].bosses || LEVELS[LV].team)) ? BL[(n / 5 - 1) % 4] : EL[(n / 5 - 5) % EL.length], extra = Math.floor((n - MAXW) / 20);
   const out = []; for (let i = 0; i <= extra; i++) out.push(...lap); return out;
 }
-function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1)); }   // bosses are 5% softer in Bug Battle and Team Kitchen
+function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && LEVELS[LV].bossMulW[S.wave][t]) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1)); }   // bosses are 5% softer in Bug Battle and Team Kitchen
 const MAXW = 20;
 function makeWave(n, sh = 0) {
   const team = LEVELS[LV] && LEVELS[LV].team, r = rng(n * 131 + 7 + sh * 977), q = [], cnt = Math.round((8 + Math.floor(n * 2.2)) * (team ? 1.6 : 1)), pool = ['ant'], u = n + sh;
