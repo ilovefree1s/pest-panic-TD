@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v127</div>
+    <div id="ver">v128</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1193,15 +1193,16 @@ function trailTexture() {
   const lines = ROUTES.map(R => { const pts = R.floor.map(([px, pz]) => [(px - X0) * PX, (pz - Z0) * PX]);
     const c0 = R.wp[0][0], r0 = R.wp[0][1]; if (c0 < 0) pts[0][0] = -20; else if (c0 > COLS - 1) pts[0][0] = W * PX + 20; else if (r0 > ROWS - 1) pts[0][1] = 30 * PX + 20; else pts[0][1] = -20;
     if (!(BLD_ON && BLD_PART && BLD_PART.has(ROUTES.indexOf(R)))) pts[pts.length - 1][1] = -10; return pts; }).filter(() => !(BLD_ON && BLD_EMPTY));
-  const stroke = (w, col) => { x.lineWidth = w; x.strokeStyle = col; x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); for (const pts of lines) pts.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.stroke(); };
-  stroke(2.75 * PX, 'rgba(40,26,12,.28)');
-  stroke(2.35 * PX, 'rgba(226,212,178,.55)');
-  stroke(1.5 * PX, 'rgba(244,236,214,.42)');
+  const stroke = (w, col, only) => { x.lineWidth = w; x.strokeStyle = col; x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); for (const pts of only || lines) pts.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.stroke(); };
+  // in the Trail Builder each trail gets its own shade (2nd darker, 3rd warmer) so they're easy to tell apart
+  const SHADES = [['rgba(40,26,12,.28)', 'rgba(226,212,178,.55)', 'rgba(244,236,214,.42)'], ['rgba(20,12,4,.5)', 'rgba(150,128,96,.75)', 'rgba(120,98,70,.55)'], ['rgba(60,20,10,.35)', 'rgba(230,170,120,.6)', 'rgba(240,190,150,.45)']];
+  if (BLD_ON && lines.length > 1) lines.forEach((pts, k) => { const sh = SHADES[k % 3]; stroke(2.75 * PX, sh[0], [pts]); stroke(2.35 * PX, sh[1], [pts]); stroke(1.5 * PX, sh[2], [pts]); });
+  else { stroke(2.75 * PX, 'rgba(40,26,12,.28)'); stroke(2.35 * PX, 'rgba(226,212,178,.55)'); stroke(1.5 * PX, 'rgba(244,236,214,.42)'); }
   for (const pts of lines) for (let i = 0; i < pts.length - 1; i++) {
     const [ax, ay] = pts[i], [bx, by] = pts[i + 1], len = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / len, ny = (bx - ax) / len;
     for (let k = 0; k < len * 1.6; k++) {
       const t = r(), o = (r() - 0.5) * 2.3 * PX * (0.4 + 0.6 * r()), s = 1 + r() * 2.5;
-      x.fillStyle = r() < 0.12 ? 'rgba(150,100,50,.7)' : r() < 0.5 ? 'rgba(255,255,255,.85)' : 'rgba(250,236,200,.8)';
+      x.fillStyle = r() < 0.12 ? 'rgba(150,100,50,.7)' : BLD_ON && lines.length > 1 && lines.indexOf(pts) === 1 ? (r() < 0.5 ? 'rgba(120,96,64,.85)' : 'rgba(170,146,110,.8)') : r() < 0.5 ? 'rgba(255,255,255,.85)' : 'rgba(250,236,200,.8)';
       x.fillRect(ax + (bx - ax) * t + nx * o, ay + (by - ay) * t + ny * o, s, s);
     }
   }
@@ -5326,10 +5327,10 @@ function bldPreview() {
   const i = BLD.idx, B = LEVELS[BLD.base], team = BLD.mode === 'team';
   const disp = [];   // finished trails exactly as they'll play, unfinished ones as drawn so far
   const full = bldRoutes(); let fi = 0;
-  for (const t of BLD.trails) { if (t.done) { const w = full[fi++]; if (w) disp.push(w); } else disp.push([bldDoor(...t.pts[0]), ...t.pts]); }
+  for (const t of BLD.trails) { if (t.done) { const w = full[fi++]; if (w) disp.push(t.join != null ? [bldDoor(...t.pts[0]), ...t.pts] : w); } else disp.push([bldDoor(...t.pts[0]), ...t.pts]); }   // a joined trail shows only its own part, so the shared stretch keeps the first trail's shade
   LEVELS[i] = { ...B, name: 'My Trail', routes: disp.length ? disp : [[[bldCake(), 0], [bldCake(), -0.05]]], cols: bldCols(), cakeCol: bldCake(),
     fridgeX: team ? B.fridgeX : BLD.cake === 1 ? 6 : -9, stoveX: team ? B.stoveX : BLD.cake === 1 ? 15 : 2 };
-  BLD_ON = true; BLD_EMPTY = !disp.length; BLD_PART = new Set(BLD.trails.map((t, k) => t.done ? -1 : k).filter(k => k >= 0));
+  BLD_ON = true; BLD_EMPTY = !disp.length; BLD_PART = new Set(BLD.trails.map((t, k) => t.done && t.join == null ? -1 : k).filter(k => k >= 0));
   if (HOUSES[i] !== HOUSES[BLD.base]) { HOUSES[i] = HOUSES[BLD.base]; PROP_LAYOUT[i] = PROP_LAYOUT[BLD.base]; delete houseTex[i]; }
   loadLevel(i);
   if (!disp.length) KIT.holes.clear();
