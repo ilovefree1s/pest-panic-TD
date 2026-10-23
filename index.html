@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v139</div>
+    <div id="ver">v140</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1209,7 +1209,7 @@ function glueTexture() {
 function trailTexture() {
   const PX = 24, W = COLS * CS, [c, x] = cnv(W * PX, 30 * PX), r = rng(5);
   const lines = ROUTES.map(R => { const pts = R.floor.map(([px, pz]) => [(px - X0) * PX, (pz - Z0) * PX]);
-    const c0 = R.wp[0][0], r0 = R.wp[0][1]; if (c0 < 0) pts[0][0] = -20; else if (c0 > COLS - 1) pts[0][0] = W * PX + 20; else if (r0 > ROWS - 1) pts[0][1] = 30 * PX + 20; else pts[0][1] = -20;
+    const c0 = R.wp[0][0], r0 = R.wp[0][1]; if (c0 >= 0 && c0 <= COLS - 1 && r0 >= 0 && r0 <= ROWS - 1) {} else if (c0 < 0) pts[0][0] = -20; else if (c0 > COLS - 1) pts[0][0] = W * PX + 20; else if (r0 > ROWS - 1) pts[0][1] = 30 * PX + 20; else pts[0][1] = -20;
     if (!(BLD_ON && BLD_PART && BLD_PART.has(ROUTES.indexOf(R)))) pts[pts.length - 1][1] = -10; return pts; }).filter(() => !(BLD_ON && BLD_EMPTY));
   const stroke = (w, col, only) => { x.lineWidth = w; x.strokeStyle = col; x.lineJoin = 'round'; x.lineCap = 'round'; x.beginPath(); for (const pts of only || lines) pts.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.stroke(); };
   // in the Trail Builder each trail gets its own shade (2nd darker, 3rd warmer) so they're easy to tell apart
@@ -1464,9 +1464,17 @@ function buildRooms() {
 ROOM.group = buildRooms(); scene.add(ROOM.group); BOARD.built = true;
 KIT.props = buildCounterProps();
 applyHouse(LV);
+const floorDoor = ([c, r]) => c >= 0 && c <= COLS - 1 && r >= 0 && r <= ROWS - 1;   // a route starting inside the board comes out of a hole in the floor
 function setHoles() {
   KIT.holes.clear();
   for (const R of ROUTES) {
+    if (floorDoor(R.wp[0])) {   // a door in the middle of the floor: a dark hole with a cracked rim, lying flat
+      const [c0, r0] = R.wp[0], g = new THREE.Group();
+      KIT.floorHoleGeo ||= new THREE.CircleGeometry(1.05, 18); KIT.floorRimGeo ||= new THREE.TorusGeometry(1.12, 0.12, 6, 24);
+      const h = new THREE.Mesh(KIT.floorHoleGeo, KIT.holeMat); h.rotation.x = -Math.PI / 2; h.position.y = 0.075; h.renderOrder = 7; g.add(h);
+      const rim = new THREE.Mesh(KIT.floorRimGeo, KIT.rimMat); rim.rotation.x = -Math.PI / 2; rim.position.y = 0.08; g.add(rim);
+      g.position.set(ccx(c0), 0, ccz(r0)); KIT.holes.add(g); continue;
+    }
     const c0 = R.wp[0][0], side = c0 < 0 ? -1 : c0 > COLS - 1 ? 1 : 0, g = new THREE.Group();
     g.add(new THREE.Mesh(KIT.holeGeo, KIT.holeMat)); const rim = new THREE.Mesh(KIT.rimGeo, KIT.rimMat); rim.scale.x = 1.1; rim.position.z = 0.01; g.add(rim);
     if (side) { g.position.set(side * (BOARD.ex - 0.21), 0.01, ccz(R.wp[0][1])); g.rotation.y = -side * Math.PI / 2; }
@@ -5261,7 +5269,7 @@ function bldDoor(c, r) {   // which wall the door goes in for a trail starting o
   const C = bldCols();
   if (BLD.mode === 'team') { if (c === 0) return [-0.6, r]; if (c === C - 1) return [C - 0.4, r]; }
   if (r === 0) return [c, -0.6]; if (c === 0) return [-0.6, r]; if (c === C - 1) return [C - 0.4, r]; if (r === ROWS - 1) return [c, ROWS + 0.6];
-  return null;
+  return [c, r];   // anywhere else: a hole in the floor
 }
 function bldRoutes(all) {   // turn the drawn trails into the game's waypoint lists
   const out = [], cake = bldCake();
@@ -5285,7 +5293,6 @@ function bldTap(c, r) {
   if (!cur) {
     if (T.length >= 3) return bldMsg('Three doors is the most. Undo or Clear to change one.');
     if (c === cake && r === 0) return bldMsg('That\'s the cake. Start a trail on an edge tile, where the bugs come in.');
-    if (!bldDoor(c, r)) return bldMsg('Start on an edge tile: that\'s where the bug door goes.');
     if (T.some(t => bldOnTrail(t, c, r) >= 0)) return bldMsg('Pick an edge tile that isn\'t already trail.');
     T.push({ pts: [[c, r]], done: false, join: null }); BLD.cur = T.length - 1; BLD.newDoor = false; bldMsg('Now tap tiles to lay the trail. Finish on the cake (top row) or by tapping another trail to join it. Tap past a trail to cross it.'); return bldAfter();
   }
@@ -5336,6 +5343,7 @@ function bldErase(c, r) {
   // only one unfinished trail at a time: put the one just cut first among the unfinished
   bldMsg(t.gone ? 'Trail erased.' : 'Erased. Tap tiles to draw it again from the white box, or keep erasing.'); bldAfter();
 }
+function bldDedupe(w) { return w.filter((p, k) => !k || p[0] !== w[k - 1][0] || p[1] !== w[k - 1][1]); }
 function bldCur() { const T = BLD.trails, t = T[BLD.cur]; return t && !t.done ? t : T.find(o => !o.done) || null; }
 function bldAfter() { bldSave(); bldDraw(); }
 function bldMsg(t) { $('bldMsg').textContent = t; bldDraw(); }
@@ -5355,9 +5363,9 @@ function bldPreview() {
   const i = BLD.idx, B = LEVELS[BLD.base], team = BLD.mode === 'team';
   const disp = [];   // finished trails exactly as they'll play, unfinished ones as drawn so far
   const full = bldRoutes(true);
-  { const tiles = w => { let n = 1; for (let k = 2; k < w.length; k++) { const a = w[k - 1], b = w[k]; if (b[1] < 0) break; n += Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]); } return n; };    // tiles from the door to the cake
+  { const tiles = w => { let n = 1; for (let k = floorDoor(w[0]) ? 1 : 2; k < w.length; k++) { const a = w[k - 1], b = w[k]; if (b[1] < 0) break; n += Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]); } return n; };    // tiles from the door to the cake
     $('bldLen').textContent = BLD.trails.map((t, k) => { const w = t.done ? full[k] : null; return 'Trail ' + (k + 1) + ': ' + (w ? tiles(w) + ' tiles' : tiles([bldDoor(...t.pts[0]), ...t.pts]) + ' so far'); }).join(' · '); }
-  BLD.trails.forEach((t, k) => { const w = t.done && t.join == null ? full[k] : null; disp.push(w || [bldDoor(...t.pts[0]), ...t.pts]); });   // a joined trail shows only its own part, so the shared stretch keeps the first trail's shade
+  BLD.trails.forEach((t, k) => { const w = t.done && t.join == null ? full[k] : null; disp.push(bldDedupe(w || [bldDoor(...t.pts[0]), ...t.pts])); });   // a joined trail shows only its own part, so the shared stretch keeps the first trail's shade
   LEVELS[i] = { ...B, name: 'My Trail', routes: disp.length ? disp : [[[bldCake(), 0], [bldCake(), -0.05]]], cols: bldCols(), cakeCol: bldCake(),
     fridgeX: team ? B.fridgeX : BLD.cake === 1 ? 6 : -9, stoveX: team ? B.stoveX : BLD.cake === 1 ? 15 : 2 };
   BLD_ON = true; BLD_EMPTY = !disp.length; BLD_PART = new Set(BLD.trails.map((t, k) => t.done && t.join == null ? -1 : k).filter(k => k >= 0));
@@ -5371,7 +5379,7 @@ function bldPreview() {
   const geo = new THREE.PlaneGeometry(CS * 0.92, CS * 0.92), put = (m, c, r) => { const q = new THREE.Mesh(geo, m); q.rotation.x = -Math.PI / 2; q.position.set(ccx(c), 0.09, ccz(r)); q.renderOrder = 6; g.add(q); };
   const cur = bldCur(), cake = bldCake(), C = bldCols();
   for (const t of BLD.trails) if (!t.done && t !== cur) { const l = t.pts[t.pts.length - 1]; put(BLDVIS.mats.hint, l[0], l[1]); }   // other loose ends: tap one to switch to it
-  if ((!cur || BLD.newDoor) && BLD.trails.length < 3) for (let r = 0; r < ROWS; r++) for (let c = 0; c < C; c++) if (bldDoor(c, r) && !(c === cake && r === 0) && !BLD.trails.some(t => bldOnTrail(t, c, r) >= 0)) put(BLDVIS.mats.hint, c, r);
+  if ((!cur || BLD.newDoor) && BLD.trails.length < 3) for (let r = 0; r < ROWS; r++) for (let c = 0; c < C; c++) if (!floorDoor(bldDoor(c, r)) && !(c === cake && r === 0) && !BLD.trails.some(t => bldOnTrail(t, c, r) >= 0)) put(BLDVIS.mats.hint, c, r);
   if (cur) { const l = cur.pts[cur.pts.length - 1]; put(BLDVIS.mats.end, l[0], l[1]); }
   put(BLDVIS.mats.cake, cake, 0);
 }
@@ -5388,7 +5396,7 @@ function openBuilder() {
   if (BLD.idx < 0) { BLD.idx = LEVELS.length; LEVELS.push({ ...LEVELS[0], name: 'My Trail' }); HOUSES[BLD.idx] = HOUSES[0]; PROP_LAYOUT[BLD.idx] = PROP_LAYOUT[0]; bldLoadSaved(); }
   for (const id of ['title', 'settings', 'solo', 'lobby', 'over', 'paused', 'hud', 'tray', 'tip']) { const e = $(id); if (e) e.hidden = true; }
   hideBelt(); clearBoard(); S = newState('build'); EXT.visible = false; EXT2.visible = false;
-  $('bld').hidden = false; bldUi(); bldMsg(BLD.trails.length ? '' : 'Tap an edge tile to put a bug door there and start a trail.');
+  $('bld').hidden = false; bldUi(); bldMsg(BLD.trails.length ? '' : 'Tap a tile to put a bug door there: edge tiles make a wall door, other tiles a hole in the floor.');
   requestAnimationFrame(resize);
 }
 function bldLeave() { if (BLDVIS.g) { scene.remove(BLDVIS.g); BLDVIS.g = null; } BLD_ON = false; BLD_PART = null; BLD_EMPTY = false; $('bld').hidden = true; }
@@ -5450,7 +5458,7 @@ $('bldFresh').addEventListener('click', () => {
   confirmClear.armF = 0; BLD.trails = []; BLD.edit = null; BLD.cur = 0; BLD.newDoor = false; BLD.erasing = false; $('bldErase').classList.remove('on');
   bldMsg('New level! Pick Solo or Team Kitchen and a house, then tap an edge tile to put the first bug door.'); bldAfter();
 });
-$('bldNew').addEventListener('click', () => { if (BLD.trails.length >= 3) return bldMsg('Three doors is the most.'); BLD.newDoor = true; bldDraw(); bldMsg('Tap an edge tile for the new door.'); });
+$('bldNew').addEventListener('click', () => { if (BLD.trails.length >= 3) return bldMsg('Three doors is the most.'); BLD.newDoor = true; bldDraw(); bldMsg('Tap a tile for the new door: an edge tile makes a wall door, any other tile makes a hole in the floor.'); });
 $('bldClear').addEventListener('click', () => { if (!confirmClear.armC) { confirmClear.armC = 1; setTimeout(() => confirmClear.armC = 0, 2500); return bldMsg('Tap Clear again to wipe every trail.'); } confirmClear.armC = 0; BLD.trails = []; BLD.edit = null; bldMsg('Tap an edge tile to place a bug door and start a trail.'); bldAfter(); });
 $('bldTest').addEventListener('click', () => { SND.init(); bldTest(); });
 $('bldCopy').addEventListener('click', () => { const c = bldCode(); $('bldCode').hidden = false; $('bldCode').value = c; $('bldCode').select(); try { navigator.clipboard.writeText(c).then(() => bldMsg('Code copied. Paste it to Claude.'), () => bldMsg('Code is in the box below: copy it from there.')); } catch (e) { bldMsg('Code is in the box below: copy it from there.'); } });
