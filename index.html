@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v141</div>
+    <div id="ver">v142</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -708,9 +708,9 @@ const LEVELS = [
   // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
   { name: 'Lunch Line', bosses: [['ghop'], ['queen'], ['widow'], ['ghop', 'queen', 'hornet']], nb: [['hopper', 3, 2]], sub: 'A spiral out of a hole in the floor', intro: 'The bugs crawl up out of the floor in the middle and spiral out to the cake!', hp: 1.34, money: 190, shift: 2,
     routes: [[[6, 4], [5, 4], [5, 5], [7, 5], [7, 3], [3, 3], [3, 7], [9, 7], [9, 1], [1, 1], [1, 9], [12, 9], [12, -0.05]]] },   // redrawn in the Trail Builder
-  { name: 'Hot Delivery', bosses: [['gcenti'], ['ghop'], ['hornet'], ['gcenti', 'ghop', 'widow']], nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a back door', intro: 'A second trail comes in the back door, close to the cake. Watch it!', hp: 1.36, money: 200, shift: 2,
+  { name: 'Hot Delivery', bosses: [['gcenti'], ['ghop'], ['hornet'], ['gcenti', 'ghop', 'widow']], nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a front door', intro: 'A second trail comes in the front door and cuts across the first. Watch it!', hp: 1.36, money: 200, shift: 2,
     routes: [[[-0.6, 2], [3, 2], [3, 8], [7, 8], [7, 4], [12, 4], [12, -0.05]],
-             [[10, 10.6], [10, 9], [13, 9], [13, 6], [12, 6], [12, -0.05]]] },
+             [[10, 10.6], [10, 9], [5, 9], [5, 1], [12, 1], [12, -0.05]]] },   // 2nd trail redrawn in the Trail Builder
   { name: 'Switchbacks', bosses: [['gstink'], ['gcenti'], ['ghop'], ['gstink', 'gcenti', 'queen']], nb: [['hopper', 3, 2], ['centi', 4, 1], ['stink', 5, 2]], sub: 'The cake is on the left this time', intro: 'The cake is on the other side. They come in from the right.', hp: 1.44, money: 200, shift: 3, cakeCol: 1, fridgeX: 6, stoveX: 15,
     routes: [[[13.6, 8], [10, 8], [10, 2], [7, 2], [7, 8], [4, 8], [4, 3], [1, 3], [1, -0.05]]] },
   { name: 'Sugar Rush', bosses: [['gmoth'], ['gstink'], ['gcenti'], ['gmantis', 'gmoth', 'ghop']], nb: [['hopper', 2, 2], ['centi', 4, 1], ['stink', 5, 1], ['moth', 4, 2], ['mantis', 7, 1]], sub: 'Two trails share the last stretch', intro: 'The bakery smells amazing. Two trails meet near the cake.', hp: 1.52, money: 205, shift: 3,
