@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v145</div>
+    <div id="ver">v146</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5659,8 +5659,15 @@ function showErr(where, e) {
 // "Script error." with no details comes from code that isn't the game's (browser add-ons, the phone's own injected scripts)
 // and can't be traced, so it's not shown as a game crash
 addEventListener('error', e => { if (!e.error && /^Script error\.?$/i.test(String(e.message || '').trim())) { console.warn('outside script error ignored'); return; } showErr('event', e.error || e.message); });
+let lastRaf = 0;
 function frame(now) {
-  requestAnimationFrame(frame);
+  requestAnimationFrame(frame); lastRaf = performance.now();
+  step(now, true);
+}
+// online games keep running even when the browser stops drawing frames (a covered window, some phone overlays):
+// a backup timer steps the game and keeps the updates flowing to the other player, it just doesn't draw
+setInterval(() => { if (S && S.net && S.net !== 'bot' && S.mode === 'play' && performance.now() - lastRaf > 250) { try { step(performance.now(), false); } catch (e) {} } }, 50);
+function step(now, draw) {
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now; clock += dt;
   try {
     if (raw > 0 && raw < 1 && !document.hidden) perfCheck(raw);
@@ -5671,17 +5678,17 @@ function frame(now) {
       else if (Math.ceil(S.nextT) !== was) { syncBeltT(); syncGo(); if (S.nextT <= 3) SND.play('tap'); }
     }
   } catch (e) { showErr('update', e); }
-  try {
+  if (draw) try {
     S.shake = Math.max(0, S.shake - dt);
     const sk = S.shake > 0 ? S.shake * 0.8 : 0;
     aim((Math.random() - 0.5) * sk, (Math.random() - 0.5) * sk);
     if (SPEC.on) specFrame(dt); else { drawTowers(dt, clock); drawPlacement(clock); drawFx(S.paused ? 0 : dt, clock); }
   } catch (e) { showErr('draw', e); }
-  try { if (S.mode === 'play') syncHud(); syncAbil(); syncUndo(); } catch (e) { showErr('hud', e); }
+  if (draw) try { if (S.mode === 'play') syncHud(); syncAbil(); syncUndo(); } catch (e) { showErr('hud', e); }
   try { tutTick(dt); } catch (e) { showErr('tutorial', e); }
   try { netFrame(raw > 0 && raw < 1 ? raw : dt); } catch (e) { showErr('net', e); }
   try { MUSIC.set(S.mode === 'play' && !$('queen').hidden ? 'boss' : 'calm'); } catch (e) {}
-  try { composer.render(); } catch (e) { showErr('render', e); }
+  if (draw) try { composer.render(); } catch (e) { showErr('render', e); }
 }
 syncSnd();
 toTitle();
