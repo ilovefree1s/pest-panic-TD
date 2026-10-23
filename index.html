@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v148</div>
+    <div id="ver">v149</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3238,9 +3238,18 @@ function towerAct(tw, dt) {
       hit(b, T.dmg[L]); b.psnT = 3; b.psnD = Math.max(b.psnD, T.dot[L] * (1 + CUR_AMP)); b.psnSrc = 'spray'; b.psnOwn = S.cur || 0;
     }
     const nx = tw.x + ux * 0.45, nz = tw.z + uz * 0.45;
-    for (let i = 0; i < 14; i++) {
-      const sp = R * (1.6 + Math.random() * 0.8), j = (Math.random() - 0.5) * 0.55, c = Math.cos(j), s = Math.sin(j);
-      FX.smoke.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: -1.6 - Math.random(), vz: (uz * c + ux * s) * sp, drag: 2.6, life: 0.55 + Math.random() * 0.2, s0: 0.4, s1: 2.2, c: [0.8, 1, 0.78], a0: 0.55 });
+    // a jet of fine droplets (not a cloud like the Fogger): fast, narrow, a little arc, light blue
+    for (let i = 0; i < 40; i++) {
+      const sp = R * (1.5 + Math.random() * 1.1), j = (Math.random() - 0.5) * 0.32, c = Math.cos(j), s = Math.sin(j);
+      FX.goo.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: 0.6 + Math.random() * 1.6, vz: (uz * c + ux * s) * sp, grav: 9, drag: 1.4, life: 0.4 + Math.random() * 0.2, s0: 0.22 + Math.random() * 0.12, s1: 0.1, c: [0.55, 0.85, 1], a0: 1, a1: 0.6 });
+    }
+    for (let i = 0; i < 12; i++) {   // bright glints in the jet
+      const sp = R * (1.4 + Math.random() * 1.0), j = (Math.random() - 0.5) * 0.25, c = Math.cos(j), s = Math.sin(j);
+      FX.glow.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: 0.4 + Math.random(), vz: (uz * c + ux * s) * sp, grav: 7, drag: 1.4, life: 0.35, s0: 0.4, s1: 0.12, c: [0.6, 0.9, 1], a0: 1 });
+    }
+    for (let i = 0; i < 5; i++) {   // a thin, quick haze along the jet
+      const sp = R * (1.4 + Math.random() * 0.6), j = (Math.random() - 0.5) * 0.25, c = Math.cos(j), s = Math.sin(j);
+      FX.smoke.spawn({ x: nx, y: 2.1, z: nz, vx: (ux * c - uz * s) * sp, vy: -0.6, vz: (uz * c + ux * s) * sp, drag: 3, life: 0.35, s0: 0.25, s1: 0.9, c: [0.78, 0.92, 1], a0: 0.3 });
     }
     SND.play('spray');
   } else if (tw.t === 'fogger') {
