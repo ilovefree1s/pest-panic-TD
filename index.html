@@ -458,7 +458,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v167</div>
+    <div id="ver">v168</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2206,6 +2206,7 @@ TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique:
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
   d: 'A support tool. Its flame gently scorches every bug in its glow, flies too (4, then 7, then 11 a second; two candles don\'t double it). Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
 const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger'];
+SHOP.sort((a, b) => TT[a].cost - TT[b].cost);   // the tray lists tools cheapest first
 // items: one-off buys that go on the trail (or, for the license, apply right away)
 Object.assign(TT, {
   crumbs:  { name: 'Poison Crumbs', cost: 40, item: true, path: true, air: true, range: [1.5, 1.5, 1.5], bites: 15, psn: 10,
