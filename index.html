@@ -468,7 +468,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v183</div>
+    <div id="ver">v184</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1233,11 +1233,11 @@ function trailTexture() {
   // in the Trail Builder each trail gets its own shade (2nd darker, 3rd warmer) so they're easy to tell apart
   const SHADES = [['rgba(40,26,12,.28)', 'rgba(226,212,178,.55)', 'rgba(244,236,214,.42)'], ['rgba(20,12,4,.5)', 'rgba(150,128,96,.75)', 'rgba(120,98,70,.55)'], ['rgba(60,20,10,.35)', 'rgba(230,170,120,.6)', 'rgba(240,190,150,.45)']];
   if (BLD_ON && lines.length > 1) lines.forEach((pts, k) => { const sh = SHADES[k % 3]; stroke(2.75 * PX, sh[0], [pts]); stroke(2.35 * PX, sh[1], [pts]); stroke(1.5 * PX, sh[2], [pts]); });
-  else { stroke(2.2 * PX, 'rgba(40,26,12,.3)'); stroke(1.88 * PX, 'rgba(192,180,151,.58)'); stroke(1.2 * PX, 'rgba(207,201,182,.44)'); }   // 20% narrower, 15% darker
+  else { stroke(1.76 * PX, 'rgba(40,26,12,.3)'); stroke(1.5 * PX, 'rgba(192,180,151,.58)'); stroke(0.96 * PX, 'rgba(207,201,182,.44)'); }   // narrower and darker than the original
   for (const pts of lines) for (let i = 0; i < pts.length - 1; i++) {
     const [ax, ay] = pts[i], [bx, by] = pts[i + 1], len = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / len, ny = (bx - ax) / len;
     for (let k = 0; k < len * 1.6; k++) {
-      const t = r(), o = (r() - 0.5) * 1.84 * PX * (0.4 + 0.6 * r()), s = 1 + r() * 2.5;
+      const t = r(), o = (r() - 0.5) * 1.47 * PX * (0.4 + 0.6 * r()), s = 1 + r() * 2.5;
       x.fillStyle = r() < 0.12 ? 'rgba(128,85,43,.7)' : BLD_ON && lines.length > 1 && lines.indexOf(pts) === 1 ? (r() < 0.5 ? 'rgba(120,96,64,.85)' : 'rgba(170,146,110,.8)') : r() < 0.5 ? 'rgba(217,217,217,.85)' : 'rgba(213,201,170,.8)';
       x.fillRect(ax + (bx - ax) * t + nx * o, ay + (by - ay) * t + ny * o, s, s);
     }
