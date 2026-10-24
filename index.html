@@ -458,7 +458,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v166</div>
+    <div id="ver">v167</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2192,7 +2192,7 @@ function dropCell(x, z) {
 const TT = {
   glue:  { name: 'Glue Trap',   cost: 35,  path: true, air: false, range: [1.7, 1.7, 1.7], cap: [14, 24, 36], slow: [0.35, 0.28, 0.2], dps: [0, 5, 10],
            d: 'Goes right on the trail. Bugs that cross it get stuck and crawl slowly.' },
-  swat:  { name: 'Fly Swatter', cost: 45,  air: true,  range: [4.6, 5.0, 5.4], dmg: [12, 20, 30], rate: [0.75, 0.62, 0.5], d: 'Smacks the bug closest to the cake. Cheap and quick, but short reach. Hits flies. Against bosses, every 4th smack is a double-damage critical.' },
+  swat:  { name: 'Fly Swatter', cost: 55,  air: true,  range: [4.6, 5.0, 5.4], dmg: [16, 26, 38], rate: [0.75, 0.62, 0.5], d: 'Smacks the bug closest to the cake. Cheap and quick, but short reach. Hits flies. Against bosses, every 4th smack is a double-damage critical.' },
   spray: { name: 'Bug Spray',   cost: 75,  air: true,  range: [6.0, 6.6, 7.2], dmg: [5, 8, 12], dot: [6, 11, 18], rate: [1.1, 1.0, 0.9], d: 'Mists a cone of poison at the bugs. Everything in the cone takes a hit, then the poison keeps burning for 3 seconds and slows them down. Poison ignores shells. Hits flies. On a boss, poison from up to 3 different sprays adds up.' },
   paper: { name: 'Newspaper',   cost: 110, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Does 25% extra to bosses and makes them stagger. Can\'t reach flies.' },
   lens:  { name: 'Magnifying Glass', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 12, 18], mult: 4, ramp: 3,
