@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v153</div>
+    <div id="ver">v154</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2851,15 +2851,16 @@ const SND = (() => {
     init, get muted() { return muted; }, get ctx() { return ac; }, get vol() { return vol; },
     setVol(v) { vol = v; if (out) out.gain.value = 0.55 * v; try { localStorage.setItem('ppd-sfx', String(v)); } catch (e) {} },
     toggle() { muted = !muted; try { localStorage.setItem('ppd-muted', muted ? '1' : '0'); } catch (e) {} },
-    heat(k) {   // tractor beam: a warbling sci-fi hum (two detuned tones wobbling together) that rises as the lens heats
+    heat(k) {   // deep bass beam hum with a faint whistle on top; both rise a little as the lens heats
       if (!ac || muted) return; const now = ac.currentTime; if (last.heat && now - last.heat < 0.11) return; last.heat = now;
       try {
         const t = now, dur = 0.2, g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
-        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + 0.05); g.gain.linearRampToValueAtTime(0.0001, t + dur); g.connect(out);
-        lfo.frequency.value = 7 + 5 * k; lg.gain.value = 14 + 18 * k; lfo.connect(lg);
-        for (const [type, f] of [['sine', 140 + 120 * k], ['triangle', 281 + 242 * k], ['sine', 563 + 480 * k]]) {
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.09, t + 0.05); g.gain.linearRampToValueAtTime(0.0001, t + dur); g.connect(out);
+        lfo.frequency.value = 3 + 2 * k; lg.gain.value = 3 + 4 * k; lfo.connect(lg);
+        // [type, frequency, level]: the bass, its octave so small phone speakers still carry it, and a quiet whistle
+        for (const [type, f, lv] of [['sine', 55 + 25 * k, 1], ['triangle', 110 + 50 * k, 0.45], ['sine', 1900 + 500 * k, 0.05]]) {
           const o = ac.createOscillator(), og = ac.createGain(); o.type = type; o.frequency.value = f; lg.connect(o.frequency);
-          og.gain.value = type === 'triangle' ? 0.5 : f > 500 ? 0.25 : 1; o.connect(og).connect(g); o.start(t); o.stop(t + dur + 0.02);
+          og.gain.value = lv; o.connect(og).connect(g); o.start(t); o.stop(t + dur + 0.02);
         }
         lfo.start(t); lfo.stop(t + dur + 0.02);
       } catch (e) {}
