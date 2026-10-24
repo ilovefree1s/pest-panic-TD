@@ -458,7 +458,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v160</div>
+    <div id="ver">v161</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1995,7 +1995,7 @@ function makeMarker(x, z) {
   g.position.set(x, 0, z); scene.add(g); return g;
 }
 // team games: S holds the player we're acting for; S.p2 holds the other player's stuff. withPlayer swaps them.
-const PF = ['money', 'ext', 'jobs', 'abilCd', 'lic', 'dmgMul', 'itemUsed', 'stats'];   // each player keeps their own damage chart
+const PF = ['money', 'ext', 'jobs', 'abilCd', 'lic', 'dmgMul', 'itemUsed', 'stats', 'undo'];   // each player keeps their own damage chart
 function swapP() { const o = S.p2; for (const k of PF) { const v = S[k]; S[k] = o[k]; o[k] = v; } S.cur = 1 - S.cur; }
 function withPlayer(pid, fn) { if (!S.p2 || pid === S.cur) return fn(); swapP(); try { return fn(); } finally { swapP(); } }
 function addGold(pid, g) { if (!S.p2 || pid === S.cur) S.money += g; else S.p2.money += g; }
@@ -3452,7 +3452,7 @@ function placeTower(t, c, r) {
   const T = TT[t];
   if (toolLocked(t)) { SND.play('err'); return false; }
   if (ownsUnique(t)) { SND.play('err'); banner('Only one ' + T.name, 'Tap yours and use Move to put it somewhere else', false, 1500); return false; }
-  if (S.net === 'guest') { if (!cellOk(t, c, r) || S.money < costOf(t) || itemUsed(t)) { SND.play('err'); return false; } netSend({ k: 'place', t, c, r }); SND.play('tap'); return true; }
+  if (S.net === 'guest') { if (!cellOk(t, c, r) || S.money < costOf(t) || itemUsed(t)) { SND.play('err'); return false; } netSend({ k: 'place', t, c, r }); SND.play('tap'); if (!TT[t].item) { S.undo = { kind: 'buy', net: 1, t, got: costOf(t), until: performance.now() + UNDO_MS }; syncUndo(); } return true; }
   if (T.item) return placeItem(t, c, r);
   if (!cellOk(t, c, r)) { SND.play('err'); return false; }
   if (S.money < T.cost) { SND.play('err'); return false; }
@@ -3464,7 +3464,7 @@ function placeTower(t, c, r) {
   scene.add(o.root); S.towers.push(tw);
   if (S.mode === 'play') { tw.pending = true; o.root.visible = false; addJob('build', tw); SND.play('tap');
     // a few seconds to take it back for a full refund, in case it was a mis-tap
-    if (S.cur === (S.me || 0)) { S.undo = { kind: 'buy', id: tw.id, t, got: T.cost, until: performance.now() + UNDO_MS }; syncUndo(); } }
+    S.undo = { kind: 'buy', id: tw.id, t, got: T.cost, until: performance.now() + UNDO_MS }; if (S.cur === (S.me || 0)) syncUndo(); }
   else { for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; FX.smoke.spawn({ x: tw.x + Math.cos(a), y: 0.2, z: tw.z + Math.sin(a), vx: Math.cos(a) * 3, vz: Math.sin(a) * 3, drag: 4, life: 0.45, s0: 0.5, s1: 1.2, c: [0.95, 0.92, 0.85], a0: 0.4 }); } SND.play('place'); }
   bumpStat('stCoins');
   return true;
@@ -3495,22 +3495,24 @@ function applyUpgrade(tw) {
 function sell(tw = S.pick) {
   if (!tw) return;
   if (S.p2 && (tw.owner || 0) !== S.cur) return;
-  if (S.net === 'guest') { netSend({ k: 'sell', id: tw.id }); unpick(); SND.play('sell'); return; }
+  if (S.net === 'guest') { S.undo = { kind: 'sell', net: 1, t: tw.t, got: sellVal(tw), until: performance.now() + UNDO_MS }; netSend({ k: 'sell', id: tw.id }); unpick(); SND.play('sell'); syncUndo(); return; }
   const got = sellVal(tw);
   // remember it for a few seconds so an accidental sell can be undone
-  if ((tw.owner || 0) === (S.me || 0) && S.cur === (S.me || 0)) S.undo = { t: tw.t, c: tw.c, r: tw.r, lv: tw.lv, spent: tw.spent, fresh: tw.fresh, uses: tw.uses || 0, owner: tw.owner || 0, pending: !!tw.pending, got, until: performance.now() + UNDO_MS };
+  if ((tw.owner || 0) === (S.cur || 0)) S.undo = { t: tw.t, c: tw.c, r: tw.r, lv: tw.lv, spent: tw.spent, fresh: tw.fresh, uses: tw.uses || 0, owner: tw.owner || 0, pending: !!tw.pending, got, until: performance.now() + UNDO_MS };
   S.money += got; SND.play('sell'); bumpStat('stCoins'); removeTower(tw); syncTray(); syncUndo();
 }
 const UNDO_MS = 8000;
 function syncUndo() {
+  if (S && S.p2 && (S.cur || 0) !== (S.me || 0)) return;   // acting for the partner: their undo isn't ours to show
   const u = S && S.undo, el = $('undo');
-  if (u && u.kind === 'buy') { const tw = S.towers.find(o => o.id === u.id); if (!tw || tw.lv > 1 || tw.upPending) S.undo = null; if (!S.undo) { el.hidden = true; return; } }
+  if (u && u.kind === 'buy' && !u.net) { const tw = S.towers.find(o => o.id === u.id); if (!tw || tw.lv > 1 || tw.upPending) S.undo = null; if (!S.undo) { el.hidden = true; return; } }
   if (!u || S.mode !== 'play' || performance.now() > u.until) { if (!el.hidden) el.hidden = true; if (u && S.mode === 'play' && performance.now() > u.until) S.undo = null; return; }
   if (el.hidden || syncUndo.last !== u) { syncUndo.last = u; $('undoT').textContent = (u.kind === 'buy' ? 'Bought ' : 'Sold ') + (TT[u.t].short || TT[u.t].name) + (u.kind === 'buy' ? ' −' : ' +') + u.got; el.hidden = false; }
   $('undoBar').style.transform = `scaleX(${Math.max(0, (u.until - performance.now()) / UNDO_MS)})`;
 }
 function undoSell() {
   const u = S && S.undo; if (!u || S.mode !== 'play' || performance.now() > u.until) return;
+  if (u.net) { S.undo = null; netSend({ k: 'undo' }); SND.play('sell'); syncUndo(); return; }   // the host undoes it for us
   if (u.kind === 'buy') {   // take back a tool you just bought: full refund as long as it hasn't been upgraded
     const tw = S.towers.find(o => o.id === u.id); S.undo = null;
     if (!tw || tw.lv > 1 || tw.upPending) { SND.play('err'); syncUndo(); return; }
@@ -3980,6 +3982,7 @@ canvas.addEventListener('pointercancel', e => { if (dragId === e.pointerId) endD
 canvas.addEventListener('pointerleave', () => { hoverCell = null; });
 canvas.addEventListener('contextmenu', e => { e.preventDefault(); S.placing = null; S.prev = null; syncTray(); });
 canvas.addEventListener('pointerdown', e => {
+  if (e.button === 2) { S.placing = null; S.prev = null; S.moving = null; unpick(); syncTray(); return; }   // right click: cancel, never build
   SND.init(); ptrType = e.pointerType || 'mouse';
   if (S.mode !== 'play' || S.paused) return;
   if (dragId === null && !S.placing && onExt(e)) {   // with a tool picked, a tap on him builds there and he steps aside
@@ -4560,7 +4563,8 @@ function netHostCmd(m) {
     else if (m.k === 'up' && tw && tw.owner === 1) upgrade(tw);
     else if (m.k === 'relight' && tw) relight(tw);
     else if (m.k === 'move' && tw && tw.owner === 1) moveFogger(tw, m.c, m.r);
-    else if (m.k === 'sell' && tw && tw.owner === 1) { S.money += sellVal(tw); removeTower(tw); }
+    else if (m.k === 'undo') undoSell();
+    else if (m.k === 'sell' && tw && tw.owner === 1) sell(tw);   // (sell() also remembers it so the partner can undo)
     else if (m.k === 'lic') buyLicense();
     else if (m.k === 'abil') useAbility();
     else if (m.k === 'home') { const e = S.ext, d = { c: m.c, r: m.r }; if (restFree(d.c, d.r)) { e.home = d; e.rest = d; if (m.x != null) { e.x = m.x; e.z = m.z; } if (e.job) e.state = 'walk'; } }
