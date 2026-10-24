@@ -178,10 +178,11 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .gtabs button{border:0;border-radius:999px;padding:8px 16px;font:400 17px var(--display);letter-spacing:.03em;color:var(--dim);background:none;cursor:pointer}
 .gtabs button.on{background:var(--gold);color:#2a1600}
 .tmain{display:grid;gap:12px;width:min(340px,86vw)}
+#online{z-index:30} .lhead2{margin:6px 0 -4px;font:400 20px var(--display);color:var(--gold)} .aimodes{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(560px,92vw)} .aimodes .btn{font-size:18px;padding:10px 8px} #v22T small{display:block;font:900 11px var(--body);opacity:.75} #v22T:disabled{opacity:.55}
 .tmain .btn{font-size:26px;padding:12px 18px;line-height:1.1}
 .btn.vsBtn{background:linear-gradient(#ffa27e,#e0503c);box-shadow:0 6px 0 #8e261c,0 12px 24px rgba(0,0,0,.4);color:#3a0904}
 .vsBtn small{display:block;font:900 11px var(--body);opacity:.75}
-@media (max-height:500px) and (min-width:560px){.tmain{grid-template-columns:repeat(3,1fr);width:min(780px,94vw);gap:10px}.tmain .btn{font-size:20px;padding:10px 8px}#title .sub{margin-bottom:4px}}
+@media (max-height:500px) and (min-width:560px){.tmain{grid-template-columns:repeat(2,1fr);width:min(780px,94vw);gap:10px}.tmain .btn{font-size:20px;padding:10px 8px}#title .sub{margin-bottom:4px}}
 #foe{pointer-events:auto;cursor:pointer;border:0;color:var(--text);gap:5px;padding-right:10px}
 #foe small{font:900 10px var(--body);letter-spacing:.06em;color:#ffb3a4;background:#7a1d14;border-radius:6px;padding:3px 5px}
 #foe i{font-style:normal;font-size:15px;color:var(--sky)} #foe i.ok{color:#9be37a}
@@ -468,7 +469,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v185</div>
+    <div id="ver">v186</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -499,8 +500,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <p class="sub">The bugs found the birthday cake. It's on the counter. Set out swatters, sprays and zappers along the sugar trail and save every slice you can.</p>
       <div class="tmain">
         <button class="btn soloBtn" id="soloT" type="button">Solo <small>10 houses · 25 waves each</small></button>
-        <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
-        <button class="btn vsBtn" id="vsT" type="button">Bug Battle <small>2 players · send bugs at each other</small></button>
+        <button class="btn teamBtn" id="onlineT" type="button">Online <small>play with real people</small></button>
       </div>
       <div class="tsmall">
         <button id="guideT" type="button" aria-label="Field guide and achievements" title="Field guide and achievements"><svg viewBox="0 0 24 24"><path d="M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Guide</span></button>
@@ -514,7 +514,19 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <p class="lsub">Pick a house. Beat one to unlock the next.</p>
       <div class="lvls" id="lvls"></div>
       <p class="hint">Pick a tool below to see its range, then place it on the floor beside the trail. 25 waves, with a boss every 5th.</p>
+      <h3 class="lhead2">Play with the AI</h3>
+      <div class="aimodes"><button class="btn teamBtn" id="aiTeamT" type="button">Team Kitchen <small>you + an AI teammate</small></button><button class="btn vsBtn" id="aiVsT" type="button">Bug Battle <small>you vs the AI</small></button></div>
       <button class="btn dark" id="soloBack" type="button">Back</button>
+    </div>
+    <div class="screen" id="online" hidden>
+      <h2 class="t">Online</h2>
+      <p class="lsub">Host a game or join an open one. Your friends see it in the list.</p>
+      <div class="tmain">
+        <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
+        <button class="btn vsBtn" id="vsT" type="button">Bug Battle <small>2 players · send bugs at each other</small></button>
+        <button class="btn dark" id="v22T" type="button" disabled>2v2 <small>team vs team · coming soon</small></button>
+      </div>
+      <button class="btn dark" id="onlineBack" type="button">Back</button>
     </div>
     <div class="screen" id="lobby" hidden>
       <h2 class="t" id="lbH">Team Kitchen</h2>
@@ -5638,16 +5650,24 @@ function renderTeamMaps() {
 $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (NET.mode === 'vs') VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); if (NET.role === 'host') lobbyAd(true); });
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
 $('soloBack').addEventListener('click', () => { $('solo').hidden = true; $('title').hidden = false; });
-function openLobby(mode) {
-  SND.init(); NET.mode = mode; const vs = mode === 'vs';
+let LOBBY_AI = false;
+function openLobby(mode, ai = false) {
+  SND.init(); NET.mode = mode; const vs = mode === 'vs'; LOBBY_AI = ai;
   $('lbH').textContent = vs ? 'Bug Battle' : 'Team Kitchen';
   $('lbSub').textContent = vs ? 'You and a friend each defend your own cake against the same waves. Squash bugs, earn coins, and send extra bugs at each other. Last cake standing wins.' : 'Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.';
-  $('lbBot').hidden = vs; $('lbPractice').hidden = vs; $('aiRow').hidden = !vs;
-  $('title').hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps(); syncLobbyUi(); lobbyOpen();
+  $('lbBot').hidden = vs || !ai; $('lbPractice').hidden = vs || !ai; $('aiRow').hidden = !vs || !ai;
+  for (const el of [$('lbName').parentElement, $('lbCreate'), $('lbStatus'), $('lbOpenH'), $('lbList')]) el.hidden = ai;   // AI games: no hosting or open-games list
+  if (ai) $('lbSub').textContent = vs ? 'Defend your own cake while the AI defends its. Pick a house and how tough the AI is.' : 'Two lanes, one cake. You hold the left side, the AI teammate holds the right.';
+  for (const id of ['title', 'solo', 'online']) $(id).hidden = true; $('lobby').hidden = false; lobbyStatus(''); renderTeamMaps();
+  if (!ai) { syncLobbyUi(); lobbyOpen(); }
 }
 $('teamT').addEventListener('click', () => { SND.init(); if (!myName()) askName(() => openLobby('team')); else openLobby('team'); });
+$('onlineT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('online').hidden = false; });
+$('onlineBack').addEventListener('click', () => { $('online').hidden = true; $('title').hidden = false; });
+$('aiTeamT').addEventListener('click', () => openLobby('team', true));
+$('aiVsT').addEventListener('click', () => openLobby('vs', true));
 $('vsT').addEventListener('click', () => { SND.init(); if (!myName()) askName(() => openLobby('vs')); else openLobby('vs'); });
-$('lbBack').addEventListener('click', () => { if (NET.role === 'host') lobbyAd(false); netLeave(); $('lobby').hidden = true; $('title').hidden = false; lobbyClose(); });
+$('lbBack').addEventListener('click', () => { if (NET.role === 'host') lobbyAd(false); netLeave(); $('lobby').hidden = true; $(LOBBY_AI ? 'solo' : 'online').hidden = false; lobbyClose(); });
 $('lbPractice').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV); });
 $('lbBot').addEventListener('click', () => { netLeave(); $('lobby').hidden = true; startGame(TEAM_LV, 'bot'); });
 $('lbCreate').addEventListener('click', () => { SND.init(); if (NET.role === 'host') { netLeave(); lobbyStatus(''); syncLobbyUi(); return; } netCreate(); });
@@ -5687,7 +5707,7 @@ function syncLobbyUi() {
   $('lbOpenH').hidden = hosting; $('lbList').hidden = hosting; renderLobbyList();
 }
 setInterval(() => {
-  if ($('lobby').hidden) { if (LOB.link) lobbyClose(); return; }
+  if ($('lobby').hidden || LOBBY_AI) { if (LOB.link) lobbyClose(); return; }
   if (!LOB.link) lobbyOpen();
   if (NET.role === 'host' && NET.code && !(S && S.net && S.mode === 'play')) lobbyAd(true);
   renderLobbyList();
