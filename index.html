@@ -80,9 +80,9 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
   background:rgba(14,18,22,.94);color:var(--text);border-radius:999px;padding:8px 8px 8px 16px;font:800 14px var(--body);box-shadow:0 8px 22px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.1);overflow:hidden}
 #undo b{background:var(--gold);color:#2a1600;border-radius:999px;padding:6px 14px;font:900 14px var(--body)}
 #undo i{position:absolute;left:0;bottom:0;height:3px;background:var(--gold);width:100%;transform-origin:left}
-#undo{padding:5px 5px 5px 13px;font-size:13px;white-space:nowrap} #undo b{padding:5px 12px;font-size:13px}
+#undo{padding:3px 3px 3px 10px;font-size:11px;gap:7px;white-space:nowrap;top:12px;box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.1)} #undo b{padding:3px 9px;font-size:11px} #undo i{height:2px}
 @media (max-width:700px){#undo{top:144px}}
-@media (orientation:landscape) and (max-height:560px){#undo{top:80px}}
+@media (orientation:landscape) and (max-height:560px){#undo{top:9px}}
 @media (max-width:700px){#abil{width:58px;height:58px;left:8px;bottom:8px} #abil svg{width:32px;height:32px}}
 @media (orientation:landscape) and (max-height:560px){#abil{width:54px;height:54px;left:8px;bottom:8px} #abil svg{width:30px;height:30px}}
 #glLost{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(8,10,12,.92);text-align:center;padding:20px}
@@ -468,7 +468,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v184</div>
+    <div id="ver">v185</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
