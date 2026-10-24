@@ -458,7 +458,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v161</div>
+    <div id="ver">v162</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3032,7 +3032,8 @@ function spawnBug(t, route = nextRoute()) {
 }
 const RUSH_BONUS = 20;
 function canRush() { return S.mode === 'play' && S.active && !S.vs && (S.endless || S.wave < MAXW); }
-function startWave() {
+function startWave(...a) { BN_FWD++; try { return startWave0(...a); } finally { BN_FWD--; } }
+function startWave0() {
   if (S.mode !== 'play' || S.over) return;
   if (S.active && !canRush()) return;
   if (S.net === 'guest') { if (S.wave === 0) { (S.rdy ||= [0, 0])[S.me] = 1; syncGo(); } netSend({ k: 'send' }); return; }
@@ -4269,7 +4270,12 @@ function toggleSound() { SND.init(); SND.toggle(); syncSnd(); }
 function syncSnd() { if ($('setSfx')) syncSettings(); }
 function bumpStat(id) { const el = $(id); el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 let bannerTimer = 0;
+let BN_FWD = 0;   // >0 while the host is running the game itself: its messages go to the partner too
 function banner(txt, sub, red, ms) {
+  if (txt && S && S.net === 'host' && S.mode === 'play') {
+    if (S.p2 && S.cur !== (S.me || 0)) { netSend({ k: 'bn', a: txt, b: sub || '', r: red ? 1 : 0, ms }); return; }   // a message meant for the partner
+    if (BN_FWD) netSend({ k: 'bn', a: txt, b: sub || '', r: red ? 1 : 0, ms });
+  }
   if (S && S.p2 && S.cur !== (S.me || 0)) return;   // don't show the partner's messages on this screen
   const el = $('banner'); clearTimeout(bannerTimer);
   if (!txt) { return; }
@@ -4514,6 +4520,7 @@ function netOnMsg(m) {
     if (m.k === 'bye') { netWarn('The host left the game.'); return; }
     if (!S || S.net !== 'guest') return;
     if (rsAnswer(m)) return;
+    if (m.k === 'bn') { banner(m.a, m.b, !!m.r, m.ms); return; }
     if (m.k === 's') { NET.lastSnap = performance.now(); netApply(m); }
     else if (m.k === 'over') { S.lives = m.l; S.wave = m.w; S.kills = m.kills; if (m.st) S.stats = m.st; gameOver(m.won); }
   }
@@ -4619,9 +4626,9 @@ function netApply(m) {
   // waves starting and ending
   if (S.wave > oldWave && S.active) {
     hideBelt(); const boss = m.b.some(b => BT[b[1]].boss) || m.qq > 0;
-    banner(boss ? (m.qn || 'Boss') : 'Wave ' + S.wave, '', boss, 1700); SND.play(boss ? 'boss' : 'wave'); for (const t of S.towers) t.fresh = 0;
+    SND.play(boss ? 'boss' : 'wave');   // (the host sends the wave message itself) for (const t of S.towers) t.fresh = 0;
   }
-  if (wasActive && !S.active) { banner('Wave ' + S.wave + ' cleared', '', false, 1500); SND.play('clear'); showBelt(); }
+  if (wasActive && !S.active) { SND.play('clear'); showBelt(); }
   if (!S.active && S.nextT > 0) syncBeltT();
   // bugs
   const seen = new Set(), byId = new Map(S.bugs.map(b => [b.id, b]));
@@ -5734,7 +5741,7 @@ function step(now, draw) {
   const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now; clock += dt;
   try {
     if (raw > 0 && raw < 1 && !document.hidden) perfCheck(raw);
-    if (!S.paused && !S.hold && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; for (let i = 0; i < n; i++) update(dt); }
+    if (!S.paused && !S.hold && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; BN_FWD++; try { for (let i = 0; i < n; i++) update(dt); } finally { BN_FWD--; } }
     if (S.mode === 'play' && !S.paused && !S.hold && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0 && S.net !== 'guest') {
       const was = Math.ceil(S.nextT); S.nextT -= dt;
       if (S.nextT <= 0) { S.nextT = 0; if (S.net === 'vs') vsTimeUp(); else startWave(); }
