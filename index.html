@@ -468,7 +468,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v180</div>
+    <div id="ver">v181</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -569,6 +569,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <div class="gtabs"><button type="button" data-g="guide">Field guide</button><button type="button" data-g="achs">Achievements</button></div>
       <div class="gbody">
         <h3>Your tools</h3><ul class="glist" id="gTools"></ul>
+        <h3>Perks</h3><p class="hint">Once a tool or pet is level 3, tap it: the Upgrade button turns into its perk. One special power per tool.</p><ul class="glist" id="gPerks"></ul>
         <h3>Items</h3><ul class="glist" id="gItems"></ul>
         <h3>The bugs</h3><ul class="glist" id="gBugs"></ul>
         <h3>Good to know</h3>
@@ -3780,6 +3781,12 @@ function applyUpgrade(tw) {
   tw.pop = 0;
   for (let i = 0; i < 12; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 2, y: 0.5 + Math.random() * 2, z: tw.z + (Math.random() - 0.5) * 2, vy: 2, life: 0.6, s0: 0.6, s1: 0.1, c: [1, 0.85, 0.4], a0: 1 });
   SND.play('up'); if (S.pick === tw) syncTray();
+  // first time any tool reaches level 3: introduce perks (once ever)
+  if (tw.lv >= 3 && PERK[tw.t] && S.mode === 'play' && (tw.owner || 0) === (S.me || 0)) {
+    let seen = 1; try { seen = +localStorage.getItem('ppd-perk-tip') || 0; } catch (e) {}
+    if (!seen) { try { localStorage.setItem('ppd-perk-tip', '1'); } catch (e) {}
+      setTimeout(() => { if (S.mode !== 'play') return; banner('⭐ New: Perks!', 'Your ' + TT[tw.t].name + ' is maxed out. Tap it and buy its perk: ' + PERK[tw.t].icon + ' ' + PERK[tw.t].name + ', a special power just for that tool.', false, 5200); SND.play('clear'); if (!S.placing) pick(tw); const b = $('bUp'); b.classList.add('tut-hi'); setTimeout(() => b.classList.remove('tut-hi'), 5000); }, 500); }
+  }
 }
 function sell(tw = S.pick) {
   if (!tw) return;
@@ -4566,6 +4573,7 @@ const BUGINFO = [
   ['herc', 'Hercules Beetle', 'Boss, wave 20 on some houses', 'A huge horned beetle with the thickest shell in the house (it blocks 40% of every hit), and nothing slows it down: no sticky traps, no stuns. Poison, fog and the Magnifying Glass burn right through the shell.', '5 slices'],
 ];
 $('gTools').innerHTML = [...SHOP, ...PETS].map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.cost} coins</small>${hitTag(t)}<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies only' : T.air ? 'Hits flies' : 'Ground only'}</span></div><p>${T.d}</p></li>`; }).join('');
+$('gPerks').innerHTML = [...SHOP, ...PETS].filter(t => PERK[t]).map(t => { const P = PERK[t]; return `<li>${ICON[t]}<div class="gh"><b>${P.icon} ${P.name}</b><small>${TT[t].short || TT[t].name} · ${Math.round(TT[t].cost * 1.6)} coins</small></div><p>${P.d}</p></li>`; }).join('');
 $('gItems').innerHTML = ITEMS.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.costs ? T.costs.join(' / ') : T.cost} coins</small><span class="tag">${T.instant ? 'Instant' : T.t === 'crumbs' || t === 'crumbs' ? 'Until eaten' : 'One wave'}</span></div><p>${T.d}</p></li>`; }).join('');
 $('gBugs').innerHTML = BUGINFO.map(([k, n, when, d, eats]) => `<li>${BUGICON[k]}<div class="gh"><b>${n}</b><span class="tag">${when}</span><span class="tag no">Eats ${eats}</span></div><p>${d}</p></li>`).join('');
 let guideFrom = null;
