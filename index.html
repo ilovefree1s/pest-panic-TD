@@ -340,7 +340,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 .stabs button.on{background:var(--gold);color:#2a1600}
 .tc.spent svg{opacity:.35} .tc.spent b{opacity:.55} .tc em.used{color:#ff8a7a}
 .ht{font-style:normal;font-family:var(--body);font-weight:900;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;border-radius:999px;line-height:1.5;white-space:nowrap}
-.ht-single{background:rgba(127,216,255,.16);color:var(--sky)} .ht-area{background:rgba(134,227,75,.16);color:var(--goo)} .ht-chain{background:rgba(180,140,255,.2);color:#c9adff} .ht-push{background:rgba(255,190,90,.18);color:#ffc874} .ht-support{background:rgba(255,120,190,.18);color:#ff9fd0}
+.ht-flies{background:rgba(255,210,58,.18);color:#ffd23a} .ht-single{background:rgba(127,216,255,.16);color:var(--sky)} .ht-area{background:rgba(134,227,75,.16);color:var(--goo)} .ht-chain{background:rgba(180,140,255,.2);color:#c9adff} .ht-push{background:rgba(255,190,90,.18);color:#ffc874} .ht-support{background:rgba(255,120,190,.18);color:#ff9fd0}
 .tc .ht{margin-block:1px}
 .tc em{font-style:normal;font-family:var(--body);font-weight:900;font-size:11px;color:var(--goo)}
 .st-lic b{color:var(--goo)}
@@ -467,7 +467,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v171</div>
+    <div id="ver">v172</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2258,7 +2258,9 @@ TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique:
   d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every bug in the cone, flies too, takes a big hit and keeps choking for 2 seconds. The fog ignores shells, so it melts bosses. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
   d: 'A support tool. Its flame gently scorches every bug in its glow, flies too (4, then 7, then 11 a second; two candles don\'t double it). Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
-const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger'];
+TT.tape = { name: 'Fly Tape', short: 'Fly Tape', cost: 50, air: true, fliesOnly: true, range: [4.2, 4.7, 5.2], hold: [1.8, 2.3, 2.8], dps: [6, 10, 16], cap: [2, 3, 4],
+  d: 'A sheet of sticky flypaper. Flies and moths that come close get stuck to it for a couple of seconds, taking a little damage while your other tools hit them. It holds 2 at a time (3, then 4 when upgraded). Bosses only stick for a moment. Only catches flying bugs.' };
+const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger', 'tape'];
 SHOP.sort((a, b) => TT[a].cost - TT[b].cost);   // the tray lists tools cheapest first
 // items: one-off buys that go on the trail (or, for the license, apply right away)
 Object.assign(TT, {
@@ -2273,8 +2275,8 @@ Object.assign(TT, {
 });
 const ITEMS = ['crumbs', 'sticky', 'bomb', 'license'];
 // how many bugs each tool hits
-const HITS = { fogger: 'area', swat: 'single', lens: 'single', spray: 'area', paper: 'area', zap: 'chain', broom: 'push', candle: 'support' };
-const HIT_LABEL = { single: 'Single target', area: 'Area', chain: 'Chain', push: 'Pushback', support: 'Support' };
+const HITS = { tape: 'flies', fogger: 'area', swat: 'single', lens: 'single', spray: 'area', paper: 'area', zap: 'chain', broom: 'push', candle: 'support' };
+const HIT_LABEL = { single: 'Single target', area: 'Area', chain: 'Chain', push: 'Pushback', support: 'Support', flies: 'Holds flies' };
 const hitTag = (t, short) => HITS[t] ? `<i class="ht ht-${HITS[t]}">${short && HITS[t] === 'single' ? 'Single' : HIT_LABEL[HITS[t]]}</i>` : '';
 // balance: every tool's base damage trimmed by 5%
 for (const t of SHOP) for (const k of ['dmg', 'dot', 'dps']) if (TT[t][k]) TT[t][k] = TT[t][k].map(v => v * 0.95);
@@ -2293,6 +2295,7 @@ const ICON = {
   swat: '<svg viewBox="0 0 48 48"><rect x="7" y="5" width="20" height="22" rx="4" fill="#d23a2c"/><path d="M11 9h12M11 14h12M11 19h12M15 7v18M20 7v18" stroke="#7a1710" stroke-width="2"/><rect x="21" y="25" width="4" height="20" rx="2" transform="rotate(-30 23 35)" fill="#f0ece2"/></svg>',
   frog: '<svg viewBox="0 0 48 48"><ellipse cx="24" cy="31" rx="17" ry="12" fill="#4fb84a"/><ellipse cx="24" cy="35" rx="10" ry="6" fill="#e6efb0"/><circle cx="15" cy="17" r="7" fill="#4fb84a"/><circle cx="33" cy="17" r="7" fill="#4fb84a"/><circle cx="15" cy="16" r="4.5" fill="#fffbe8"/><circle cx="33" cy="16" r="4.5" fill="#fffbe8"/><circle cx="16" cy="17" r="2.2" fill="#111"/><circle cx="32" cy="17" r="2.2" fill="#111"/><path d="M16 28q8 5 16 0" stroke="#1f5a28" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
   spray: '<svg viewBox="0 0 48 48"><rect x="15" y="16" width="16" height="26" rx="4" fill="#7fd36a"/><rect x="15" y="22" width="16" height="9" fill="#f4efe4"/><rect x="18" y="9" width="10" height="8" rx="2" fill="#c9ced6"/><rect x="26" y="10" width="8" height="4" fill="#c9ced6"/><circle cx="39" cy="10" r="3" fill="#bfefff" opacity=".8"/><circle cx="43" cy="16" r="2.4" fill="#bfefff" opacity=".6"/><circle cx="41" cy="5" r="2" fill="#bfefff" opacity=".6"/></svg>',
+  tape: '<svg viewBox="0 0 48 48"><path d="M10 44l5-14M38 44l-5-14" stroke="#8a5a32" stroke-width="3" stroke-linecap="round"/><rect x="6" y="8" width="36" height="24" rx="2" fill="#ffd23a" transform="rotate(-6 24 20)"/><path d="M12 10v22M19 9v22M26 8v22M33 8v22M7 15h34M7 22h34" stroke="#b8860b" stroke-width="1" opacity=".55" transform="rotate(-6 24 20)"/><circle cx="16" cy="16" r="2.6" fill="#151515"/><circle cx="29" cy="22" r="2.6" fill="#151515"/><circle cx="35" cy="13" r="2.6" fill="#151515"/><ellipse cx="14" cy="14" rx="2.4" ry="1.2" fill="#cfe6ff"/><ellipse cx="27" cy="20" rx="2.4" ry="1.2" fill="#cfe6ff"/></svg>',
   candle: '<svg viewBox="0 0 48 48"><circle cx="24" cy="14" r="11" fill="#ffcf4a" opacity=".22"/><path d="M24 4c3 4 4 7 0 11-4-4-3-7 0-11z" fill="#ffb02a"/><path d="M24 8c1.5 2 2 4 0 6-2-2-1.5-4 0-6z" fill="#fff3b0"/><rect x="11" y="18" width="26" height="26" rx="5" fill="#e8f2d8" opacity=".55"/><rect x="13" y="24" width="22" height="18" rx="3" fill="#e9d36a"/><rect x="11" y="27" width="26" height="6" fill="#3f8a3a"/><path d="M24 15v6" stroke="#2a2a2a" stroke-width="1.6"/></svg>',
   broom: '<svg viewBox="0 0 48 48"><rect x="27" y="2" width="4.5" height="28" rx="2" transform="rotate(28 29 16)" fill="#b07a44"/><path d="M14 27l14 6-6 13-15-6z" fill="#e2c26a"/><path d="M12 39l-2 5M16 41l-2 5M20 42.5l-1.5 4.5M10 37l-3 4" stroke="#c9a24a" stroke-width="2" stroke-linecap="round"/><path d="M15.5 26l13 5.7-1.6 3.6-13-5.7z" fill="#c0392b"/></svg>',
   paper: '<svg viewBox="0 0 48 48"><rect x="8" y="17" width="34" height="14" rx="7" transform="rotate(-25 24 24)" fill="#e8e3d3"/><path d="M14 27l22-10M15 31l22-10" stroke="#555" stroke-width="2"/><rect x="21" y="14" width="4" height="20" transform="rotate(-25 24 24)" fill="#c0392b"/></svg>',
@@ -2741,6 +2744,35 @@ const BUILD = {
       handM.color.set(['#b07a44', '#6b4425', '#f3c24a'][lv - 1]); handM.metalness = lv >= 3 ? 0.9 : 0; handM.roughness = lv >= 3 ? 0.25 : 0.55;
       ferr.visible = lv >= 2;
     };
+    return o;
+  },
+  tape() {   // a sheet of yellow flypaper on a little tilted stand; caught flies pile up on it
+    const g = new THREE.Group(), rim = coaster(g);
+    const wood = std({ color: '#8a5a32', roughness: 0.7 }), gold = TM.gold;
+    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#ffc400'; x.fillRect(0, 0, 128, 128);
+    x.strokeStyle = 'rgba(150,90,0,.55)'; x.lineWidth = 2; for (let i = 16; i < 128; i += 16) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 128); x.moveTo(0, i); x.lineTo(128, i); x.stroke(); }
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
+    const glueM = new THREE.MeshStandardMaterial({ map: tx, roughness: 0.1, metalness: 0, emissive: '#8a5a00', emissiveIntensity: 0.55 });
+    const flyM = std({ color: '#141414', roughness: 0.4 }), wingM = new THREE.MeshStandardMaterial({ color: '#d8ecff', transparent: true, opacity: 0.6, roughness: 0.2 });
+    const boards = [], flies = [], frames = [];
+    const makeBoard = (ang, tilt) => {
+      const b = new THREE.Group(); b.rotation.y = ang; g.add(b);
+      for (const xx of [-1, 1]) { const leg = mesh(cyl(0.07, 0.08, 1.5, 8), wood); leg.position.set(xx, 0.75, -0.55); b.add(leg); }
+      const board = new THREE.Group(); board.position.set(0, 1.05, 0); board.rotation.x = tilt; b.add(board);
+      board.add(mesh(new THREE.BoxGeometry(2.6, 0.06, 1.9), [wood, wood, glueM, wood, wood, wood]));
+      const fr = mesh(new THREE.BoxGeometry(2.74, 0.08, 2.04), gold, false); fr.position.y = -0.02; board.add(fr); frames.push(fr);
+      for (let i = 0; i < 4; i++) {   // flies stuck to the glue, shown as it catches them
+        const f = new THREE.Group(); f.position.set(-0.85 + Math.random() * 1.7, 0.07, -0.6 + Math.random() * 1.2); f.rotation.y = Math.random() * 6; f.scale.setScalar(1.6); board.add(f);
+        const body = mesh(sph(0.1, 8, 6), flyM, false); body.scale.set(1.3, 0.6, 1); f.add(body);
+        for (const sd of [-1, 1]) { const w = mesh(sph(0.1, 6, 4), wingM, false); w.scale.set(1.2, 0.2, 0.7); w.position.set(-0.05, 0.03, 0.12 * sd); w.rotation.y = 0.5 * sd; f.add(w); }
+        f.visible = false; flies.push(f);
+      }
+      boards.push(b);
+    };
+    makeBoard(0, -0.28); makeBoard(Math.PI, -0.28);
+    boards[1].position.z = -0.2;
+    const o = { root: g, rim, pips: pips(g), boards, flies };
+    o.setLevel = lv => { rimLevel(o, lv); boards[1].visible = lv >= 2; boards[0].position.z = lv >= 2 ? 0.2 : 0; for (const fr of frames) fr.visible = lv >= 3; g.scale.setScalar([1, 1.08, 1.16][lv - 1]); };
     return o;
   },
   candle() {
@@ -3292,6 +3324,24 @@ function towerAct(tw, dt) {
       if (T.dps[L]) hit(b, T.dps[L] * dt, true);
     }
     if (tw.uses >= T.cap[L]) removeTower(tw, true);
+    return;
+  }
+  if (tw.t === 'tape') {   // sticky flypaper: grabs flying bugs that come close and holds them a moment
+    const now = S.gt || 0; let held = 0;
+    for (const b of S.bugs) {
+      if (b.dead || b.taped !== tw.id) continue;
+      if (now >= b.tapeEnd) { b.taped = null; b.tapeFree = now + 2.5; continue; }
+      held++; b.stuck = Math.max(b.stuck, 0.1); b.slowF = Math.min(b.slowF, BT[b.t].boss ? 0.5 : 0); hit(b, T.dps[L] * dt, true);
+    }
+    for (const b of S.bugs) {
+      if (held >= T.cap[L]) break;
+      if (b.dead || !(BT[b.t].fly || b.free) || b.taped || now < (b.tapeFree || 0) || !inRange(tw, b, R)) continue;
+      b.taped = tw.id; b.tapeEnd = now + T.hold[L] * (BT[b.t].boss ? 0.35 : 1); held++;
+      tw.caught = (tw.caught || 0) + 1;
+      const nxt = tw.o.flies.find(f => !f.visible && f.parent.parent.visible); if (nxt) nxt.visible = true;   // one more fly stuck on the paper
+      for (let i = 0; i < 6; i++) FX.glow.spawn({ x: b.x, y: bugY(b) + 0.3, z: b.z, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2, vz: (Math.random() - 0.5) * 2, life: 0.4, s0: 0.35, s1: 0.05, c: [1, 0.85, 0.2], a0: 1 });
+      SND.play('tongue');
+    }
     return;
   }
   if (tw.t === 'lens') {
@@ -4158,7 +4208,7 @@ function showToolCard(t) {
     stats = t === 'candle' ? fmtStat('Scorch', T.burn[0], T.burn[2], '/s') + fmtStat('Tools in glow', '+' + Math.round(T.amp[0] * 100), '+' + Math.round(T.amp[2] * 100), '% damage') + fmtStat('Range', T.range[0], T.range[2])
       : statsBase(fake).replace(/ → <b class="up">[^<]*<\/b>/g, '');
   }
-  el.innerHTML = `<div class="tch">${ICON[t]}<div><b>${T.name}</b><div class="tct">${hitTag(t)}${T.item ? '' : `<span class="tag ${T.air ? 'ok' : 'no'}">${T.air ? 'Hits flies' : 'Ground only'}</span>`}<span class="tag cost">${cost} coins</span></div></div></div>
+  el.innerHTML = `<div class="tch">${ICON[t]}<div><b>${T.name}</b><div class="tct">${hitTag(t)}${T.item ? '' : `<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies only' : T.air ? 'Hits flies' : 'Ground only'}</span>`}<span class="tag cost">${cost} coins</span></div></div></div>
     <p>${T.d}</p>${stats ? `<ul>${stats}</ul>` : ''}<small>Tap anywhere to close</small>`;
   el.hidden = false; SND.play('tap');
 }
@@ -4308,7 +4358,7 @@ const BUGINFO = [
   ['widow', 'Black Widow', 'Boss, waves 10 and 20', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 20', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
 ];
-$('gTools').innerHTML = SHOP.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.cost} coins</small>${hitTag(t)}<span class="tag ${T.air ? 'ok' : 'no'}">${T.air ? 'Hits flies' : 'Ground only'}</span></div><p>${T.d}</p></li>`; }).join('');
+$('gTools').innerHTML = SHOP.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.cost} coins</small>${hitTag(t)}<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies only' : T.air ? 'Hits flies' : 'Ground only'}</span></div><p>${T.d}</p></li>`; }).join('');
 $('gItems').innerHTML = ITEMS.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.costs ? T.costs.join(' / ') : T.cost} coins</small><span class="tag">${T.instant ? 'Instant' : T.t === 'crumbs' || t === 'crumbs' ? 'Until eaten' : 'One wave'}</span></div><p>${T.d}</p></li>`; }).join('');
 $('gBugs').innerHTML = BUGINFO.map(([k, n, when, d, eats]) => `<li>${BUGICON[k]}<div class="gh"><b>${n}</b><span class="tag">${when}</span><span class="tag no">Eats ${eats}</span></div><p>${d}</p></li>`).join('');
 let guideFrom = null;
@@ -4375,6 +4425,7 @@ function statsHtml(tw) {
 function statsBase(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'broom') return fmtStat('Sweeps back', f(T.push[L]), N != null ? f(T.push[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + '<li>Can\'t reach flies</li>';
+  if (tw.t === 'tape') return fmtStat('Holds', T.cap[L], N != null ? T.cap[N] : null, ' flies') + fmtStat('For', f(T.hold[L]), N != null ? f(T.hold[N]) : null, 's') + fmtStat('Damage', f(T.dps[L]), N != null ? f(T.dps[N]) : null, '/s') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + '<li>Only catches flying bugs</li>';
   if (tw.t === 'lens') return fmtStat('Burn', f(T.dps[L]), N != null ? f(T.dps[N]) : null, '/s') + `<li>grows to <b>${f(T.dps[L] * T.mult)}/s</b>${N != null ? ` → <b class="up">${f(T.dps[N] * T.mult)}/s</b>` : ''}</li>` + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null);
   let s = fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's');
   if (T.dot) s += fmtStat('Poison', f(T.dot[L]), N != null ? f(T.dot[N]) : null, '/s');
@@ -5094,11 +5145,12 @@ function aiTowers(dt) {
     const inR = live.filter(b => b.hp > 0 && (T.air || !(BT[b.t].fly || b.air)) && Math.hypot(pos.get(b)[0] - x, pos.get(b)[1] - z) <= R);
     if (tw.t === 'lens') { const tg = inR.reduce((m, b) => !m || b.s > m.s ? b : m, null); if (tg) aiHit(tg, T.dps[L] * 2.5 * tdt * M, true); continue; }
     if ((tw.cd -= tdt) > 0 || !inR.length) continue;
-    tw.cd = T.rate[L];
+    tw.cd = T.rate ? T.rate[L] : 2.5;
     inR.sort((a, b) => b.s - a.s);
     if (tw.t === 'swat') aiHit(inR[0], T.dmg[L] * M * (BT[inR[0].t].boss ? 1.25 : 1));   // (average of the every-4th double hit)
     else if (tw.t === 'spray') for (const b of inR.slice(0, 4)) { aiHit(b, T.dmg[L] * M); aiHit(b, T.dot[L] * 2.2 * M * (BT[b.t].boss ? 1.6 : 1), true); }
     else if (tw.t === 'paper') for (const b of inR) aiHit(b, T.dmg[L] * M * (BT[b.t].boss ? 1.25 : 1));
+    else if (tw.t === 'tape') for (const b of inR.filter(b => BT[b.t].fly).slice(0, T.cap[L])) { aiHit(b, T.dps[L] * T.hold[L] * M, true); b.push = Math.max(b.push || 0, BT[b.t].boss ? 0.5 : 2); }
     else if (tw.t === 'fogger') for (const b of inR.slice(0, 10)) { aiHit(b, T.dmg[L] * M, true); aiHit(b, T.dot[L] * 2 * M, true); }
     else if (tw.t === 'zap') { const o = pos.get(inR[0]); const ch = live.filter(b => b.hp > 0).sort((a, b) => Math.hypot(pos.get(a)[0] - o[0], pos.get(a)[1] - o[1]) - Math.hypot(pos.get(b)[0] - o[0], pos.get(b)[1] - o[1])).slice(0, T.chain[L]); for (const b of ch) aiHit(b, T.dmg[L] * M * (BT[b.t].fly ? 1.6 : 1)); }
     else if (tw.t === 'broom') for (const b of inR) { if (BT[b.t].fly) continue; aiHit(b, T.dmg[L] * M); if ((b.swept || 0) <= 0) { b.push = BT[b.t].noPush ? 0 : T.push[L] * (BT[b.t].boss ? 0.17 : 1); b.swept = 3; } }
