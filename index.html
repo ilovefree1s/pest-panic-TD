@@ -458,7 +458,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v169</div>
+    <div id="ver">v170</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3169,6 +3169,16 @@ function biteCake(n) {
 }
 function inRange(tw, b, r) { const dx = b.x - tw.x, dz = b.z - tw.z; return dx * dx + dz * dz <= r * r; }
 function canHit(tw, b) { return !b.dead && (TT[tw.t].air || !(BT[b.t].fly || b.air)); }
+// Bug Spray aims at the lead bug that isn't poisoned yet (on a boss: one this spray hasn't dosed), so nothing slips by unsprayed
+function sprayTarget(tw, r) {
+  let best = null; const now = S.gt || 0;
+  for (const b of S.bugs) {
+    if (!canHit(tw, b) || !inRange(tw, b, r)) continue;
+    const dosed = BT[b.t].boss ? !!(b.psnBy && b.psnBy[tw.id] && b.psnBy[tw.id].until - now > 0.5) : b.psnT > 0.5;
+    if (!dosed && (!best || b.s > best.s)) best = b;
+  }
+  return best || firstTarget(tw, r);
+}
 function firstTarget(tw, r) { let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || b.s > best.s)) best = b; return best; }
 
 const ZAP_JUMP = 6.5, ZAP_HOP = 0.13;
@@ -3240,7 +3250,7 @@ function towerAct(tw, dt) {
     return;
   }
   if (tw.cd > 0) return;
-  const tg = firstTarget(tw, R);
+  const tg = tw.t === 'spray' ? sprayTarget(tw, R) : firstTarget(tw, R);
   if (!tg) return;
   tw.cd = T.rate[L]; tw.anim = 0; tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
   const ty = bugY(tg) + 0.4;
