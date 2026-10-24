@@ -458,7 +458,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v158</div>
+    <div id="ver">v160</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2201,8 +2201,8 @@ const TT = {
 };
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.2, 3.0, 3.8], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
-TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: false, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [180, 300, 480], dot: [55, 90, 140], rate: [2.2, 2.0, 1.7],
-  d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every crawling bug in the cone takes a big hit and keeps choking for 2 seconds. The fog ignores shells, so it melts bosses. Can\'t reach flies. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
+TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [180, 300, 480], dot: [55, 90, 140], rate: [2.2, 2.0, 1.7],
+  d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every bug in the cone, flies too, takes a big hit and keeps choking for 2 seconds. The fog ignores shells, so it melts bosses. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
   d: 'A support tool. Its flame gently scorches every bug in its glow, flies too (4, then 7, then 11 a second; two candles don\'t double it). Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
 const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger'];
@@ -3139,7 +3139,7 @@ function kill(b) {
   if (b.t === 'stink') stinkCloud(b.x, b.z); else if (b.t === 'gstink') stinkCloud(b.x, b.z, 7, 6);
   const g = Math.max(1, Math.round((bt.gold + Math.floor(S.wave / 3)) * goldMul() * (b.sent ? 0.5 : 1)));
   if (S.mode === 'play' && S.net === 'guest') ACH.kill(b.t);
-  else if (S.mode === 'play') { addGold(S.p2 ? b.route : 0, g); S.kills++; bumpStat('stCoins'); ACH.kill(b.t); if (CUR_SRC === 'abil' && S.ext.abil && ++S.ext.abil.kills >= 5) ACH.unlock('spray5'); }
+  else if (S.mode === 'play') { if (S.p2 && bt.boss) { addGold(0, Math.ceil(g / 2)); addGold(1, Math.floor(g / 2)); } else addGold(S.p2 ? b.route : 0, g); /* Team Kitchen: boss gold is split 50/50 */ S.kills++; bumpStat('stCoins'); ACH.kill(b.t); if (CUR_SRC === 'abil' && S.ext.abil && ++S.ext.abil.kills >= 5) ACH.unlock('spray5'); }
   for (let i = 0; i < (bt.boss ? 40 : b.t === 'bed' || b.t === 'baby' ? 4 : 12); i++) {
     const a = Math.random() * TAU, v = 2 + Math.random() * (bt.boss ? 7 : 4);
     FX.goo.spawn({ x: b.x, y, z: b.z, vx: Math.cos(a) * v, vy: 3 + Math.random() * 4, vz: Math.sin(a) * v, grav: 16, life: 0.55 + Math.random() * 0.3, s0: bt.boss ? 0.6 : 0.34, s1: 0.12, c: bt.goo, a0: 1, a1: 0.9 });
@@ -3658,7 +3658,7 @@ function drawBugs(t) {
       if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, 2.2, 0, 0, 0, 0, 0.5);
       if (push) {
         ballPos(b, tmpB); const j = c.ball++, k = b.ball.hp / b.ball.max;
-        setI(IM.ball, j, tmpB.x, tmpB.y, tmpB.z, b.ang, 0.62 * (0.75 + 0.25 * k), -b.s / 0.62);
+        setI(IM.ball, j, tmpB.x, tmpB.y, tmpB.z, b.ang, 0.62 * (0.75 + 0.25 * k), b.s / 0.62);   // rolls forward, the way it's pushed
         IM.ball.setColorAt(j, b.ball.flash > 0 ? flashC : ballC.setRGB(0.75 + 0.25 * k, 0.75 + 0.25 * k, 0.75 + 0.25 * k));
         if (Math.abs(b.pitch) < 0.3) sh.add(tmpB.x, b.y0 + 0.02, tmpB.z, 1.6, 0, 0, 0, 0, 0.45);
       }
