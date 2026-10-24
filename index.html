@@ -458,7 +458,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v163</div>
+    <div id="ver">v164</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2192,12 +2192,12 @@ function dropCell(x, z) {
 const TT = {
   glue:  { name: 'Glue Trap',   cost: 35,  path: true, air: false, range: [1.7, 1.7, 1.7], cap: [14, 24, 36], slow: [0.35, 0.28, 0.2], dps: [0, 5, 10],
            d: 'Goes right on the trail. Bugs that cross it get stuck and crawl slowly.' },
-  swat:  { name: 'Fly Swatter', cost: 45,  air: true,  range: [4.6, 5.0, 5.4], dmg: [12, 20, 30], rate: [0.75, 0.62, 0.5], d: 'Smacks the bug closest to the cake. Cheap and quick, but short reach. Hits flies.' },
-  spray: { name: 'Bug Spray',   cost: 75,  air: true,  range: [6.0, 6.6, 7.2], dmg: [5, 8, 12], dot: [6, 11, 18], rate: [1.1, 1.0, 0.9], d: 'Mists a cone of poison at the bugs. Everything in the cone takes a hit, then the poison keeps burning for 3 seconds and slows them down. Poison ignores shells. Hits flies.' },
-  paper: { name: 'Newspaper',   cost: 110, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Can\'t reach flies.' },
-  lens:  { name: 'Magnifying Glass', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 12, 18], mult: 5, ramp: 3,
-           d: 'Focuses a sunbeam on one bug. The burn grows the longer it stays on that bug, up to 5× after 3 seconds, then holds there. Switching to a new bug starts the burn over. Burns through shells and hits flies.' },
-  zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [16, 26, 40], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). Flies take 60% extra.' },
+  swat:  { name: 'Fly Swatter', cost: 45,  air: true,  range: [4.6, 5.0, 5.4], dmg: [12, 20, 30], rate: [0.75, 0.62, 0.5], d: 'Smacks the bug closest to the cake. Cheap and quick, but short reach. Hits flies. Against bosses, every 4th smack is a double-damage critical.' },
+  spray: { name: 'Bug Spray',   cost: 75,  air: true,  range: [6.0, 6.6, 7.2], dmg: [5, 8, 12], dot: [6, 11, 18], rate: [1.1, 1.0, 0.9], d: 'Mists a cone of poison at the bugs. Everything in the cone takes a hit, then the poison keeps burning for 3 seconds and slows them down. Poison ignores shells. Hits flies. On a boss, poison from up to 3 different sprays adds up.' },
+  paper: { name: 'Newspaper',   cost: 110, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Does 25% extra to bosses and makes them stagger. Can\'t reach flies.' },
+  lens:  { name: 'Magnifying Glass', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 12, 18], mult: 4, ramp: 3,
+           d: 'Focuses a sunbeam on one bug. The burn grows the longer it stays on that bug, up to 4× after 3 seconds, then holds there. Switching to a new bug starts the burn over. Burns through shells and hits flies.' },
+  zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [16, 26, 40], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). Flies take 60% extra, bosses 25% extra.' },
 };
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.2, 3.0, 3.8], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
@@ -3100,13 +3100,15 @@ function bugY(b) { return b.y0 + (BT[b.t].fly ? 0.9 + Math.sin(b.walk * 1.3) * 0
 let CUR_SRC = null, SCORCH_N = 0;
 let CUR_OWN = null;   // which player's tool did it (for damage that lands later: poison, zap hops, bombs)
 function statFor(src) { const mine = !S.p2 || CUR_OWN == null || CUR_OWN === S.cur, st = mine ? (S.stats ||= {}) : (S.p2.stats ||= {}); return st[src] || (st[src] = { dmg: 0, kills: 0 }); }
+// armor blocks a share of every hit: 8% per point, at most half (so small, fast hits still count)
+const armorKeep = b => 1 - Math.min(0.5, 0.08 * (b.armor ?? BT[b.t].armor ?? 0));
 function hit(b, d, raw) {
   if (b.dead) return;
   if (S.net === 'guest') { if (!raw) { b.flash = 0.08; if (b.ball && b.ball.hp > 0) b.ball.flash = 0.08; } return; }
   d *= S.dmgMul * (1 + CUR_AMP);
   const show = S.mode === 'play';
   if (b.ball && b.ball.hp > 0) { const bd = Math.min(d, b.ball.hp); b.ball.hp -= d; b.ball.flash = 0.08; if (show) { b.db = (b.db || 0) + bd; if (CUR_SRC) statFor(CUR_SRC).dmg += bd; } if (b.ball.hp <= 0) breakBall(b); return; }
-  const dd = raw ? d : Math.max(1, d - (b.armor ?? BT[b.t].armor ?? 0));
+  const dd = raw ? d : d * armorKeep(b);
   if (show) { const real = Math.min(dd, Math.max(0, b.hp)); if (raw) b.dr = (b.dr || 0) + real; else b.dn = (b.dn || 0) + real; if (CUR_SRC) { const st = statFor(CUR_SRC); st.dmg += real; if (b.hp - dd <= 0) st.kills++; } }
   b.hp -= dd; if (!raw) b.flash = 0.08;
   if (b.hp <= 0) kill(b);
@@ -3182,7 +3184,7 @@ function zapHop(z) {
   FX.glow.spawn({ x: to.x, y: to.y, z: to.z, life: 0.3, s0: 2.2, s1: 0.5, c: [0.7, 0.8, 1], a0: 1 });
   for (let i = 0; i < 6; i++) { const a = Math.random() * TAU, v = 3 + Math.random() * 4; FX.glow.spawn({ x: to.x, y: to.y, z: to.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 3, vz: Math.sin(a) * v, grav: 10, life: 0.35, s0: 0.35, s1: 0.05, c: [0.8, 0.9, 1], a0: 1 }); }
   z.hit.add(b.id); z.last = b; z.left--; z.t = 0;
-  { const a = CUR_AMP, sr = CUR_SRC, so = CUR_OWN; CUR_AMP = 0; CUR_SRC = 'zap'; CUR_OWN = z.own ?? null; hit(b, z.dmg * (BT[b.t].fly ? 1.6 : 1)); CUR_AMP = a; CUR_SRC = sr; CUR_OWN = so; }
+  { const a = CUR_AMP, sr = CUR_SRC, so = CUR_OWN; CUR_AMP = 0; CUR_SRC = 'zap'; CUR_OWN = z.own ?? null; hit(b, z.dmg * (BT[b.t].fly ? 1.6 : 1) * (BT[b.t].boss ? 1.25 : 1)); CUR_AMP = a; CUR_SRC = sr; CUR_OWN = so; }
   SND.play(z.hit.size > 1 ? 'zip' : 'zap');
 }
 let CUR_AMP = 0;
@@ -3241,7 +3243,8 @@ function towerAct(tw, dt) {
   tw.cd = T.rate[L]; tw.anim = 0; tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
   const ty = bugY(tg) + 0.4;
   if (tw.t === 'swat') {
-    hit(tg, T.dmg[L]);
+    const crit = BT[tg.t].boss && (tw.bossHits = (tw.bossHits || 0) + 1) % 4 === 0;   // every 4th smack on a boss is a big one
+    hit(tg, T.dmg[L] * (crit ? 2 : 1)); if (crit) { S.shake = Math.max(S.shake, 0.12); FX.glow.spawn({ x: tg.x, y: ty + 0.4, z: tg.z, life: 0.3, s0: 3.2, s1: 1, c: [1, 0.8, 0.3], a0: 1 }); }
     FX.glow.spawn({ x: tg.x, y: ty, z: tg.z, life: 0.18, s0: 1.6, s1: 2.6, c: [1, 0.9, 0.8], a0: 0.9 });
     for (let i = 0; i < 4; i++) FX.smoke.spawn({ x: tg.x, y: 0.3, z: tg.z, vx: (Math.random() - 0.5) * 5, vz: (Math.random() - 0.5) * 5, life: 0.4, s0: 0.5, s1: 1.2, c: [0.9, 0.85, 0.8], a0: 0.45, drag: 4 });
     SND.play('swat');
@@ -3254,7 +3257,14 @@ function towerAct(tw, dt) {
       if (!canHit(tw, b) || !inRange(tw, b, R)) continue;
       const bx = b.x - tw.x, bz = b.z - tw.z, bd = Math.hypot(bx, bz) || 1;
       if ((bx * ux + bz * uz) / bd < 0.84 && bd > 1.2) continue;
-      hit(b, T.dmg[L]); b.psnT = 3; b.psnD = Math.max(b.psnD, T.dot[L] * (1 + CUR_AMP)); b.psnSrc = 'spray'; b.psnOwn = S.cur || 0;
+      const fogP = b.psnT > 0 && b.psnSrc === 'fogger' ? b.psnD : 0;
+      hit(b, T.dmg[L]); b.psnT = 3; b.psnSrc = 'spray'; b.psnOwn = S.cur || 0;
+      const pd = T.dot[L] * (1 + CUR_AMP);
+      if (BT[b.t].boss) {   // on a boss, poison from up to 3 different sprays adds up
+        const by = b.psnBy ||= {}, now = S.gt || 0; by[tw.id] = { d: pd, until: now + 3 };
+        const act = Object.values(by).filter(x => x.until > now).map(x => x.d).sort((a, c) => c - a).slice(0, 3);
+        b.psnD = Math.max(fogP, act.reduce((a, c) => a + c, 0));
+      } else b.psnD = Math.max(b.psnD, pd);
     }
     const nx = tw.x + ux * 0.45, nz = tw.z + uz * 0.45;
     // a jet of fine droplets (not a cloud like the Fogger): fast, narrow, a little arc, light blue
@@ -3289,7 +3299,7 @@ function towerAct(tw, dt) {
     for (let i = 0; i < 10; i++) FX.glow.spawn({ x: nx, y: 1.6, z: nz, vx: ux * (6 + Math.random() * 6) + (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: uz * (6 + Math.random() * 6) + (Math.random() - 0.5) * 3, drag: 2, life: 0.5, s0: 1.2, s1: 0.3, c: [0.7, 1, 0.5], a0: 1 });   // nozzle flash
     S.shake = Math.max(S.shake, 0.1); SND.play('spray');
   } else if (tw.t === 'paper') {
-    for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, R)) hit(b, T.dmg[L]);
+    for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, R)) { if (BT[b.t].boss) { hit(b, T.dmg[L] * 1.25); if (!BT[b.t].heavy) { b.stuck = Math.max(b.stuck, 0.35); b.slowF = Math.min(b.slowF, 0.15); } } else hit(b, T.dmg[L]); }   // bosses: +25% and a stagger
     S.rings.push({ x: tw.x, z: tw.z, r: R, t: 0, life: 0.35 });
     for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; FX.smoke.spawn({ x: tw.x + Math.cos(a) * 1.5, y: 0.3, z: tw.z + Math.sin(a) * 1.5, vx: Math.cos(a) * R * 2, vz: Math.sin(a) * R * 2, drag: 4, life: 0.5, s0: 0.6, s1: 1.6, c: [0.92, 0.88, 0.8], a0: 0.45 }); }
     S.shake = Math.max(S.shake, 0.12);
@@ -3315,6 +3325,7 @@ function towerAct(tw, dt) {
   }
 }
 function update(dt) {
+  S.gt = (S.gt || 0) + dt;
   if (S.mode === 'title') {
     S.demoT -= dt; if (S.demoT <= 0) { S.demoT = 0.9 + Math.random() * 0.6; spawnBug(Math.random() < 0.25 ? 'fly' : Math.random() < 0.15 ? 'spider' : 'ant'); }
   } else if (S.active && S.queue.length) {
@@ -4209,21 +4220,21 @@ for (const t of ['ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis']) BUGICON[t] = B
 const BUGINFO = [
   ['ant', 'Ant', 'Every wave', 'Marches steadily along the trail. Weak on its own, but they come in lines.', '1 slice'],
   ['fly', 'Fly', 'From wave 2', 'Fast, and flies over the floor, so the Newspaper can\'t reach it. The Bug Zapper does 60% extra to flies.', '1 slice'],
-  ['spider', 'Spider', 'From wave 4', 'Slow and tough. Its hard shell takes 3 off every hit, which hurts the Swatter most. Bug Spray poison and the Magnifying Glass burn straight through.', '2 slices'],
+  ['spider', 'Spider', 'From wave 4', 'Slow and tough. Its hard shell blocks about a quarter of every hit. Bug Spray poison and the Magnifying Glass burn straight through.', '2 slices'],
   ['bed', 'Bed Bugs', 'From wave 7', 'Tiny and fast, and they come in swarms of a dozen. One hit kills each one, but single-target tools can\'t keep up. Bring area damage: Bug Spray, the Zapper, the Newspaper and Bug Bombs. It takes 4 bed bugs to eat a slice.', '¼ slice'],
   ['dung', 'Dung Beetle', 'From wave 6', 'Pushes a ball of dung in front of it. The ball soaks up every hit, poison and fog included, until it breaks apart. Then the beetle gets angry and runs 45% faster. Hard-hitting tools like the Newspaper crack the ball quickly.', '1 slice'],
   ['hopper', 'Grasshopper', 'Level 6 on', 'Every few seconds it crouches and leaps two tiles ahead. In the air it can\'t be hit by the Newspaper or Broom. Spread your tools out so it lands next to one. A sticky trap stops it jumping.', '1 slice'],
   ['centi', 'Centipede', 'Level 7 on', 'Eight fast segments in a line. Squash a middle segment and it splits into two centipedes that keep going. Area damage (Spray, Newspaper, Zapper) shreds it.', '⅓ slice per segment'],
-  ['stink', 'Stink Bug', 'Level 8 on', 'Tough shell (takes 2 off every hit). When it dies it lets out a green stink cloud: tools inside work 40% slower for 4 seconds. Squash it away from your best tools.', '1 slice'],
+  ['stink', 'Stink Bug', 'Level 8 on', 'Tough shell (blocks about a sixth of every hit). When it dies it lets out a green stink cloud: tools inside work 40% slower for 4 seconds. Squash it away from your best tools.', '1 slice'],
   ['moth', 'Moth', 'Level 9 on', 'Flies. If you have Candles, it leaves the trail and flies to one, beats out the flame and snuffs it. Snuffed candles give no boost until you tap them and Relight (15 coins). Keep a Swatter near your candles.', '1 slice'],
   ['mantis', 'Praying Mantis', 'Level 9 on', 'Tall and tough. It grabs the nearest tool and holds it still for 3 seconds. Every so often it snatches a small bug off the trail and eats it to heal itself. Burn it down from range.', '2 slices'],
   ['ghop', 'Giant Grasshopper', 'Boss, Levels 6–8 and 9', 'Every so often it hops one tile ahead. Where it lands, the shockwave stuns nearby tools for a moment.', '5 slices'],
-  ['gcenti', 'Giant Centipede', 'Boss, Levels 7–10', 'Fourteen big segments. The head is heavily armored (takes 4 off every hit), so hit the body. Break the middle and it splits in two.', '⅖ slice per segment'],
+  ['gcenti', 'Giant Centipede', 'Boss, Levels 7–10', 'Fourteen big segments. The head is heavily armored (blocks a third of every hit), so hit the body. Break the middle and it splits in two.', '⅖ slice per segment'],
   ['gstink', 'Giant Stink Bug', 'Boss, Levels 8–10', 'Very tough shell. Every few seconds it lets out a stink cloud as it walks, and when it dies the cloud is huge. Tools in the stink work 40% slower.', '5 slices'],
   ['gmoth', 'Giant Moth', 'Boss, Levels 9–10', 'Flies to your candles and puts out every candle near where it lands. Bug Zappers it flies past flicker out for a few seconds.', '5 slices'],
   ['gmantis', 'Giant Mantis', 'Boss, Levels 9–10', 'Grabs two tools at once and holds them for 4 seconds. Eats bugs often to heal, and the Broom can\'t push it.', '6 slices'],
-  ['queen', 'Roach King', 'Boss, waves 5 and 20', 'Huge health and a shell that takes 3 off every hit. Park a Magnifying Glass near the end of the trail to cook him.', '5 slices'],
-  ['widow', 'Black Widow', 'Boss, waves 10 and 20', 'Big and tough, with a shell that takes 2 off every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
+  ['queen', 'Roach King', 'Boss, waves 5 and 20', 'Huge health and a shell that blocks about a quarter of every hit. Every tool can take him down: stack sprays, slam him with Newspapers, zap him, smack him, or cook him with a Magnifying Glass.', '5 slices'],
+  ['widow', 'Black Widow', 'Boss, waves 10 and 20', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 20', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
 ];
 $('gTools').innerHTML = SHOP.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.cost} coins</small>${hitTag(t)}<span class="tag ${T.air ? 'ok' : 'no'}">${T.air ? 'Hits flies' : 'Ground only'}</span></div><p>${T.d}</p></li>`; }).join('');
@@ -4979,7 +4990,7 @@ function aiHit(b, d, raw) {
   const A = S.vs.bot; if (b.hp <= 0) return;
   d *= A.D.dmg;
   if (b.ball > 0) { b.ball -= d; return; }
-  b.hp -= raw ? d : Math.max(1, d - (b.armor ?? BT[b.t].armor ?? 0));
+  b.hp -= raw ? d : d * armorKeep(b);
   if (b.hp <= 0) {
     A.ks++; A.money += Math.max(1, Math.round((BT[b.t].gold + Math.floor(A.wave / 3)) * goldMul() * (b.sent ? 0.5 : 1)));
     if (b.t === 'widow') for (let i = 0; i < 6; i++) A.bugs.push({ id: A.nid++, t: 'baby', route: b.route, s: Math.max(0, b.s - 0.6 - i * 0.45), off: (Math.random() - 0.5) * 1.8, hp: Math.round(BT.baby.hp * A.hpMul), max: Math.round(BT.baby.hp * A.hpMul), ball: 0, sent: 0, push: 0 });
@@ -5011,9 +5022,9 @@ function aiTowers(dt) {
     if ((tw.cd -= tdt) > 0 || !inR.length) continue;
     tw.cd = T.rate[L];
     inR.sort((a, b) => b.s - a.s);
-    if (tw.t === 'swat') aiHit(inR[0], T.dmg[L] * M);
-    else if (tw.t === 'spray') for (const b of inR.slice(0, 4)) { aiHit(b, T.dmg[L] * M); aiHit(b, T.dot[L] * 2.2 * M, true); }
-    else if (tw.t === 'paper') for (const b of inR) aiHit(b, T.dmg[L] * M);
+    if (tw.t === 'swat') aiHit(inR[0], T.dmg[L] * M * (BT[inR[0].t].boss ? 1.25 : 1));   // (average of the every-4th double hit)
+    else if (tw.t === 'spray') for (const b of inR.slice(0, 4)) { aiHit(b, T.dmg[L] * M); aiHit(b, T.dot[L] * 2.2 * M * (BT[b.t].boss ? 1.6 : 1), true); }
+    else if (tw.t === 'paper') for (const b of inR) aiHit(b, T.dmg[L] * M * (BT[b.t].boss ? 1.25 : 1));
     else if (tw.t === 'fogger') for (const b of inR.slice(0, 10)) { aiHit(b, T.dmg[L] * M, true); aiHit(b, T.dot[L] * 2 * M, true); }
     else if (tw.t === 'zap') { const o = pos.get(inR[0]); const ch = live.filter(b => b.hp > 0).sort((a, b) => Math.hypot(pos.get(a)[0] - o[0], pos.get(a)[1] - o[1]) - Math.hypot(pos.get(b)[0] - o[0], pos.get(b)[1] - o[1])).slice(0, T.chain[L]); for (const b of ch) aiHit(b, T.dmg[L] * M * (BT[b.t].fly ? 1.6 : 1)); }
     else if (tw.t === 'broom') for (const b of inR) { if (BT[b.t].fly) continue; aiHit(b, T.dmg[L] * M); if ((b.swept || 0) <= 0) { b.push = BT[b.t].noPush ? 0 : T.push[L] * (BT[b.t].boss ? 0.17 : 1); b.swept = 3; } }
