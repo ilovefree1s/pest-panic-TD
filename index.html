@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v155</div>
+    <div id="ver">v156</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -741,7 +741,8 @@ const teamNext = lv => { const k = TEAM_MAPS.indexOf(lv); return k >= 0 && k < T
 const SOLO = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12];
 const soloNum = lv => SOLO.indexOf(lv) + 1, soloNext = lv => { const i = SOLO.indexOf(lv); return i >= 0 && i < SOLO.length - 1 ? SOLO[i + 1] : null; };
 let TEAM_LV = TEAM0;
-function teamUnlocked(lv) { const k = TEAM_MAPS.indexOf(lv); return k <= 0 || loadBest(TEAM_MAPS[k - 1]) >= MAXW; }
+const TEAM_ALL_OPEN = true;   // testing: every Team Kitchen map is open (set to false to bring back the unlock order)
+function teamUnlocked(lv) { const k = TEAM_MAPS.indexOf(lv); return TEAM_ALL_OPEN || k <= 0 || loadBest(TEAM_MAPS[k - 1]) >= MAXW; }
 // every level is a different house with its own kitchen
 const HOUSES = [
   { name: "Grandma's Kitchen", bg: '#16110d',
