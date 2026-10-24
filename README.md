@@ -9,4 +9,4 @@ A 3D kitchen tower defense game. Bugs march along a sugar trail toward the birth
 - Works on phones (portrait or landscape) and can be installed: in Chrome, open the menu and choose **Install app** / **Add to Home screen**
 - Plays offline once it has loaded
 
-Current version: v156. Built with [three.js](https://threejs.org).
+Current version: v157. Built with [three.js](https://threejs.org).

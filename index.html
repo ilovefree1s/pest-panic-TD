@@ -456,7 +456,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v156</div>
+    <div id="ver">v157</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4151,14 +4151,32 @@ $('resume').addEventListener('click', () => setPaused(false));
 let quitArm = 0;
 function syncPauseMenu() {
   quitArm = 0; const on = S && S.net && S.net !== 'bot' && !(S.vs && S.vs.bot);
-  $('restart').hidden = !!on; $('quit').textContent = 'Quit to main menu';
+  const teamNet = on && !S.vs && LEVELS[LV].team; restartArm = 0;
+  $('restart').hidden = !!on && !teamNet; $('restart').textContent = 'Restart'; $('quit').textContent = 'Quit to main menu';
   $('quitNote').textContent = S && S.vs && !S.vs.bot ? 'Quitting a Bug Battle counts as a loss.' : on ? 'Your partner keeps playing without you.' : '';
 }
 $('quit').addEventListener('click', () => {
   if (S && S.net && S.net !== 'bot' && !(S.vs && S.vs.bot) && S.mode === 'play' && performance.now() - quitArm > 5000) { quitArm = performance.now(); $('quit').textContent = 'Tap again to quit'; SND.play('err'); return; }
   netLeave(); toTitle();
 });
-$('restart').addEventListener('click', () => { SND.init(); if (S.vs && S.vs.bot) { startGame(LV, 'vsbot', S.vs.bot.diff); return; } if (S.net && S.net !== 'bot') return; startGame(LV, S.net); });
+let restartArm = 0;
+// Team Kitchen online: either player can restart the map (tap twice); the host restarts it for both
+function teamRestart(byPartner) {
+  if (S.net !== 'host') return;
+  netSend({ k: 'start', lv: LV, restart: 1 }); startGame(LV, 'host');
+  setTimeout(() => banner(byPartner ? 'Your partner restarted the map' : 'Map restarted', '', false, 1600), 300);
+}
+$('restart').addEventListener('click', () => {
+  SND.init(); if (S.vs && S.vs.bot) { startGame(LV, 'vsbot', S.vs.bot.diff); return; }
+  if (S.net === 'host' || S.net === 'guest') {
+    if (S.vs || !LEVELS[LV].team) return;
+    if (performance.now() - restartArm > 5000) { restartArm = performance.now(); $('restart').textContent = 'Tap again to restart for both of you'; SND.play('err'); return; }
+    restartArm = 0; $('restart').textContent = 'Restart';
+    if (S.net === 'host') teamRestart(false); else { netSend({ k: 'restart' }); setPaused(false); banner('Restarting…', 'Asking the host to restart the map', false, 1400); }
+    return;
+  }
+  startGame(LV, S.net);
+});
 $('lvls').innerHTML = SOLO.map((lv, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${lv}"><b>Level ${i + 1}</b><span>${HOUSES[lv].name}</span><em>${LEVELS[lv].name}</em><small id="best${lv}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
 $('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = teamNext(LV); netSend({ k: 'start', lv: TEAM_LV }); startGame(TEAM_LV, 'host'); } else startGame(LEVELS[LV].team ? teamNext(LV) : soloNext(LV)); });
@@ -4474,6 +4492,7 @@ function netOnMsg(m) {
     netHostCmd(m);
   } else if (NET.role === 'guest') {
     if (m.k === 'start' && m.gid && NET.gid && m.gid !== NET.gid) { if (!S || !S.net || S.mode !== 'play') { netLeave(); lobbyStatus('That game just filled up. Pick another one.'); syncLobbyUi(); } return; }
+    if (m.k === 'start' && m.restart) setTimeout(() => banner('Map restarted', '', false, 1600), 300);
     if (m.k === 'start' && m.name && (!S || S.mode !== 'play')) setTimeout(() => banner('Playing with ' + m.name + '!', '', false, 1800), 300);
     if (m.k === 'start') { NET.lastSnap = performance.now(); $('lobby').hidden = true; $('over').hidden = true; if (m.vs) { startGame(m.lv || 0, 'vs'); return; } TEAM_LV = m.lv || TEAM0; startGame(TEAM_LV, 'guest'); return; }
     if (m.k === 'bye') { netWarn('The host left the game.'); return; }
@@ -4532,6 +4551,7 @@ function netHostCmd(m) {
     else if (m.k === 'abil') useAbility();
     else if (m.k === 'home') { const e = S.ext, d = { c: m.c, r: m.r }; if (restFree(d.c, d.r)) { e.home = d; e.rest = d; if (m.x != null) { e.x = m.x; e.z = m.z; } if (e.job) e.state = 'walk'; } }
   });
+  if (m.k === 'restart') { teamRestart(true); return; }
   if (m.k === 'send') { if (S.wave === 0) teamReady(1); else startWave(); }
   else if (m.k === 'pause') setPaused(!!m.p, true);
   else if (m.k === 'speed') { S.speed = m.v; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
