@@ -458,7 +458,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v164</div>
+    <div id="ver">v165</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3008,7 +3008,8 @@ function saveNum(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {
 // stars for saving the cake: 3 = lost 3 slices or fewer, 2 = lost 10 or fewer, 1 = any win
 function starsFor(lives) { return lives >= 17 ? 3 : lives >= 10 ? 2 : 1; }
 const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
-function unlocked(lv) { const i = SOLO.indexOf(lv); return i <= 0 || loadBest(SOLO[i - 1]) >= MAXW; }
+const SOLO_ALL_OPEN = true;   // testing: every solo level is open (set to false to bring back the unlock order)
+function unlocked(lv) { const i = SOLO.indexOf(lv); return SOLO_ALL_OPEN || i <= 0 || loadBest(SOLO[i - 1]) >= MAXW; }
 
 let S = null;
 function newState(mode) {
