@@ -467,7 +467,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v174</div>
+    <div id="ver">v175</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2261,8 +2261,8 @@ TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, s
 // pets: living helpers, in their own tab
 TT.frog = { name: 'Pet Frog', short: 'Frog', cost: 85, air: true, pet: true, range: [5.2, 5.8, 6.4], dmg: [14, 24, 36], rate: [0.85, 0.75, 0.65],
   d: 'A frog on a lily pad. It snaps its tongue at the bug closest to the cake. Flies and moths take double, and little bugs (ants, bed bugs, baby spiders, flies) with low health get gulped whole.' };
-TT.cat = { name: 'House Cat', short: 'Cat', cost: 140, air: true, pet: true, unique: true, range: [7, 8, 9], dmg: [22, 36, 55], pin: [1.0, 1.3, 1.7], rate: [2.4, 2.1, 1.8], spd: [3.2, 3.6, 4],
-  d: 'Sleeps in a cat bed and wanders the kitchen around it. When a bug comes close it pounces: a big swipe, and the bug is pinned in place for a second (bosses for half as long). One per kitchen. Tap the cat bed to upgrade or sell.' };
+TT.cat = { name: 'House Cat', short: 'Cat', cost: 140, air: true, pet: true, unique: true, roam: true, range: [4.5, 5.2, 6], dmg: [22, 36, 55], pin: [1.0, 1.3, 1.7], rate: [2.4, 2.1, 1.8], spd: [3.2, 3.6, 4],
+  d: 'Not a tool you place: buy it and the cat wanders in and roams the whole kitchen on its own. It stalks any bug it notices and pounces: a big swipe, and the bug is pinned in place for a second (bosses for half as long). One per kitchen. Tap the cat to upgrade or sell it.' };
 const PETS = ['frog', 'cat'];
 const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger'];
 SHOP.sort((a, b) => TT[a].cost - TT[b].cost);   // the tray lists tools cheapest first
@@ -2774,11 +2774,7 @@ const BUILD = {
     o.setLevel = lv => { rimLevel(o, lv); skin.color.set(['#5cc04a', '#3fa3d8', '#e8b030'][lv - 1]); crown.visible = lv >= 3; body.scale.setScalar([1, 1.12, 1.25][lv - 1]); };
     return o;
   },
-  cat() {   // a cat bed on its tile; the cat itself (o.tip) roams the kitchen
-    const g = new THREE.Group(), rim = coaster(g);
-    const bedM = std({ color: '#7a4ab8', roughness: 0.8 }), cushM = std({ color: '#f4e6c8', roughness: 0.9 });
-    const bed = mesh(new THREE.TorusGeometry(0.85, 0.3, 10, 24), bedM); bed.rotation.x = Math.PI / 2; bed.position.y = 0.3; g.add(bed);
-    const cush = mesh(cyl(0.8, 0.8, 0.2, 24), cushM); cush.position.y = 0.18; g.add(cush);
+  cat() {   // the cat is the whole thing: no tile, it roams the kitchen
     const cat = new THREE.Group(), fur = std({ color: '#e8913a', roughness: 0.7 }), cream = std({ color: '#ffe0b8', roughness: 0.7 }), dark = std({ color: '#2a3a1a', roughness: 0.2 }), pink = std({ color: '#ff8fa8', roughness: 0.5 });
     const torso = mesh(sph(0.55, 14, 10), fur); torso.scale.set(0.75, 0.7, 1.3); torso.position.y = 0.75; cat.add(torso);
     const chest = mesh(sph(0.35, 12, 8), cream); chest.scale.set(0.9, 0.9, 0.7); chest.position.set(0, 0.72, 0.5); cat.add(chest);
@@ -2796,9 +2792,9 @@ const BUILD = {
     const tl = mesh(cyl(0.08, 0.06, 1.0, 8), fur); tl.position.set(0, 0.45, -0.12); tl.rotation.x = -0.25; tail.add(tl);
     const collar = mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 16), std({ color: '#d63a2c', roughness: 0.4 })); collar.position.set(0, 1.0, 0.62); collar.rotation.x = Math.PI / 2 - 0.4; cat.add(collar);
     const bell = mesh(sph(0.07, 8, 6), TM.gold); bell.position.set(0, 0.86, 0.85); cat.add(bell);
-    cat.traverse(m => { if (m.isMesh) m.castShadow = true; });
-    const o = { root: g, rim, pips: pips(g), tip: cat, cat, legs, tail, head, torso };
-    o.setLevel = lv => { rimLevel(o, lv); fur.color.set(['#e8913a', '#8a8f9a', '#2a2a30'][lv - 1]); bedM.color.set(['#7a4ab8', '#2f7ad0', '#c9a227'][lv - 1]); cat.scale.setScalar([1, 1.1, 1.22][lv - 1]); };
+    const pp = pips(cat); pp.forEach((q, i) => { q.position.set((i - 1) * 0.22, 1.72, 0.55); q.scale.setScalar(0.7); });
+    const o = { root: cat, pips: pp, cat, legs, tail, head, torso };
+    o.setLevel = lv => { fur.color.set(['#e8913a', '#8a8f9a', '#2a2a30'][lv - 1]); collar.material.color.set(['#d63a2c', '#2f7ad0', '#c9a227'][lv - 1]); cat.scale.setScalar([1, 1.1, 1.22][lv - 1]); };
     return o;
   },
   candle() {
@@ -3329,6 +3325,7 @@ function syncCandles() {
 // the house cat: wanders around its bed, and pounces on any bug that comes near
 function catAct(tw, T, L, R, dt) {
   if (tw.cx === undefined) { tw.cx = tw.x; tw.cz = tw.z; tw.cyaw = 0; }
+  tw.x = tw.cx; tw.z = tw.cz;   // its range ring follows it around
   const P = tw.pounce;
   if (P) {
     const b = S.bugs.find(o => o.id === P.id);
@@ -3345,9 +3342,9 @@ function catAct(tw, T, L, R, dt) {
   }
   if (tw.cd <= 0) {   // anything close enough to pounce on?
     let best = null, bd = 1e9;
-    for (const b of S.bugs) { if (b.dead || b.y0 > 0.5 && !BT[b.t].fly) continue; const d = (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2; if (d < bd && (b.x - tw.x) ** 2 + (b.z - tw.z) ** 2 < (R + 1) ** 2) { bd = d; best = b; } }
-    if (best && bd < 5 * 5) { tw.pounce = { id: best.id, t: 0 }; return; }
-    if (best) { tw.goal = { x: best.x, z: best.z }; tw.rest = 0; tw.stalk = true; }   // a bug in its patch: stalk toward it
+    for (const b of S.bugs) { if (b.dead || b.y0 > 0.5 && !BT[b.t].fly) continue; const d = (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2; if (d < bd) { bd = d; best = b; } }
+    if (best && bd < R * R) { tw.pounce = { id: best.id, t: 0 }; return; }
+    if (best && bd < 14 * 14 && Math.random() < dt * 1.5) { tw.goal = { x: best.x, z: best.z }; tw.rest = 0; }   // notices a bug across the room: stalks toward it
   }
   if (tw.rest > 0) { tw.rest -= dt; tw.cmove = 0; return; }
   // wander: pick a spot near the trail within its range of the bed, stroll there, sit a moment, repeat
@@ -3357,13 +3354,13 @@ function catAct(tw, T, L, R, dt) {
       const ri = Math.floor(Math.random() * ROUTES.length), Rr = ROUTES[ri]; pathAt(Math.random() * Rr.end, tmpP, ri);
       if (!tmpP.flat || tmpP.y > 0.3) continue;
       const off = (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random() * 1.2), x = tmpP.x + tmpP.px * off, z = tmpP.z + tmpP.pz * off;
-      if (Math.hypot(x - tw.x, z - tw.z) <= R) { gx = x; gz = z; break; }
+      gx = x; gz = z; break;
     }
     tw.goal = { x: clamp(gx, X0 + 0.6, X0 + COLS * CS - 0.6), z: clamp(gz, Z0 + 0.6, Z0 + ROWS * CS - 0.6) };
   }
   const mx = tw.goal.x - tw.cx, mz = tw.goal.z - tw.cz, d = Math.hypot(mx, mz);
   if (d < 0.2) { tw.goal = null; tw.rest = 1 + Math.random() * 2.5; tw.cmove = 0; return; }
-  const st = Math.min(d, T.spd[L] * dt); tw.cx += mx / d * st; tw.cz += mz / d * st; tw.cyaw = Math.atan2(mx, mz); tw.cmove = 1;
+  const st = Math.min(d, T.spd[L] * dt * (tw.cd <= 0 ? 1.3 : 1)); tw.cx += mx / d * st; tw.cz += mz / d * st; tw.cyaw = Math.atan2(mx, mz); tw.cmove = 1;
 }
 function towerAct(tw, dt) {
   if (tw.pending) return;
@@ -3661,7 +3658,9 @@ function upgrade(tw = S.pick) {
   if (S.net === 'guest') { if (S.money < upCost(tw) || tw.upPending || tw.pending) { SND.play('err'); return; } netSend({ k: 'up', id: tw.id }); SND.play('tap'); return; }
   const c = upCost(tw); if (S.money < c) { SND.play('err'); return; }
   if (tw.upPending || tw.pending) return;
-  S.money -= c; tw.spent += c; if (!S.active) tw.fresh = (tw.fresh || 0) + c; tw.upPending = true; addJob('up', tw);
+  S.money -= c; tw.spent += c; if (!S.active) tw.fresh = (tw.fresh || 0) + c;
+  if (TT[tw.t].roam) { applyUpgrade(tw); bumpStat('stCoins'); syncTray(); return; }   // pets level up on the spot
+  tw.upPending = true; addJob('up', tw);
   SND.play('tap'); bumpStat('stCoins'); syncTray();
 }
 function applyUpgrade(tw) {
@@ -3709,12 +3708,27 @@ function undoSell() {
 $('undo').addEventListener('click', e => { e.stopPropagation(); SND.init(); undoSell(); });
 function pick(tw) { S.pick = tw; S.placing = null; S.prev = null; syncTray(); }
 function unpick() { S.pick = null; syncTray(); }
+// roaming pets: bought straight from the tray, they walk in through a bug door and need no tile
+function buyPet(t) {
+  const T = TT[t];
+  if (ownsUnique(t)) { SND.play('err'); banner('Only one ' + T.name, 'Tap your cat to upgrade or sell it', false, 1500); return false; }
+  if (S.money < T.cost) { SND.play('err'); return false; }
+  if (S.net === 'guest') { netSend({ k: 'pet', t }); SND.play('tap'); return true; }
+  S.money -= T.cost; bumpStat('stCoins');
+  pathAt(0.5, tmpP, S.p2 ? (S.cur || 0) % ROUTES.length : LONG_R);
+  const o = makeTower(t), tw = { id: S.nid++, t, c: -9, r: -9, x: tmpP.x, z: tmpP.z, cx: tmpP.x, cz: tmpP.z, cyaw: 0, lv: 1, cd: 0.5, anim: 9, yaw: 0, yawT: 0, spent: T.cost, fresh: S.active ? 0 : T.cost, uses: 0, owner: S.cur || 0, o };
+  o.pips.forEach((p, i) => p.visible = i < 1); o.root.position.set(tw.x, 0, tw.z); o.root.scale.setScalar(0.01); tw.pop = 0; scene.add(o.root); S.towers.push(tw);
+  S.undo = { kind: 'buy', id: tw.id, t, got: T.cost, until: performance.now() + UNDO_MS }; if (S.cur === (S.me || 0)) syncUndo();
+  banner('Here, kitty!', 'Your ' + T.name + ' wandered in. Tap it to upgrade or sell.', false, 1800); SND.play('place');
+  return true;
+}
 function choose(t) {
   if (t === 'fogger') { try { localStorage.setItem('ppd-fogger-used', '1'); } catch (e) {} }
   if (S.mode !== 'play') return;
   S.pick = null; S.prev = null;
   if (itemUsed(t)) { S.placing = null; SND.play('err'); banner(TT[t].name, 'Already used this wave', true, 1200); syncTray(); return; }
   if (t === 'license') { S.placing = null; buyLicense(); return; }
+  if (TT[t].roam) { S.placing = null; buyPet(t); syncTray(); return; }
   S.placing = S.placing === t ? null : t;
   if (S.placing && S.money < costOf(t)) SND.play('err');
   syncTray();
@@ -3930,10 +3944,9 @@ function drawTowers(dt, t) {
     if (o.turn) { let da = tw.yawT - tw.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); tw.yaw += da * Math.min(1, dt * 14); o.turn.rotation.y = tw.yaw; }
     const a = tw.anim;
     if (tw.t === 'cat') {
-      const c = o.cat; if (!c.parent) scene.add(c);
-      c.visible = !tw.pending && o.root.visible !== false;
+      const c = o.cat;
       if (tw.cx === undefined) { tw.cx = tw.x; tw.cz = tw.z; tw.cyaw = 0; }
-      if (S.net === 'guest' && tw.gcx !== undefined) { const k = Math.min(1, dt * 10); tw.cx += (tw.gcx - tw.cx) * k; tw.cz += (tw.gcz - tw.cz) * k; tw.cyaw = tw.gcyaw; }
+      if (S.net === 'guest' && tw.gcx !== undefined) { const k = Math.min(1, dt * 10); tw.cx += (tw.gcx - tw.cx) * k; tw.cz += (tw.gcz - tw.cz) * k; tw.cyaw = tw.gcyaw; tw.x = tw.cx; tw.z = tw.cz; }
       let dy = tw.cyaw - (c.rotation.y || 0); dy = Math.atan2(Math.sin(dy), Math.cos(dy)); c.rotation.y += dy * Math.min(1, dt * 12);
       const mv = tw.cmove || 0, ph = (tw.cph = (tw.cph || 0) + dt * (mv === 2 ? 22 : mv ? 10 : 0));
       const hop = mv === 2 ? Math.abs(Math.sin(ph * 0.5)) * 0.5 : 0, swipe = a < 0.25 ? Math.sin(a / 0.25 * Math.PI) : 0;
@@ -4187,6 +4200,10 @@ canvas.addEventListener('pointerdown', e => {
     S.ext.held = true; S.ext.state = 'idle'; S.prev = null;
     canvas.style.cursor = 'grabbing'; SND.play('tap');
     return;
+  }
+  if (!S.placing && !S.moving) {   // a roaming pet under the finger?
+    const f = floorAt(e), pet = f && S.towers.find(o => TT[o.t].roam && Math.hypot(o.x - f.x, o.z - f.z) < (ptrType === 'mouse' ? 1.4 : 2.2));
+    if (pet) { pick(pet); return; }
   }
   const cell = cellAt(e);
   if (!cell) { S.prev = null; if (!S.placing) unpick(); return; }
@@ -4490,7 +4507,7 @@ function statsBase0(tw) { const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L +
 function statsBase(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'broom') return fmtStat('Sweeps back', f(T.push[L]), N != null ? f(T.push[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + '<li>Can\'t reach flies</li>';
-  if (tw.t === 'cat') return fmtStat('Swipe', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Pins for', f(T.pin[L]), N != null ? f(T.pin[N]) : null, 's') + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Roams', f(T.range[L]), N != null ? f(T.range[N]) : null) + '<li>Wanders on its own</li>';
+  if (tw.t === 'cat') return fmtStat('Swipe', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Pins for', f(T.pin[L]), N != null ? f(T.pin[N]) : null, 's') + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Pounce reach', f(T.range[L]), N != null ? f(T.range[N]) : null) + '<li>Roams the whole kitchen</li>';
   if (tw.t === 'frog') return statsBase0(tw) + '<li>Flies take double · gulps little bugs</li>';
   if (tw.t === 'lens') return fmtStat('Burn', f(T.dps[L]), N != null ? f(T.dps[N]) : null, '/s') + `<li>grows to <b>${f(T.dps[L] * T.mult)}/s</b>${N != null ? ` → <b class="up">${f(T.dps[N] * T.mult)}/s</b>` : ''}</li>` + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null);
   let s = fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's');
@@ -4767,6 +4784,7 @@ function netHostCmd(m) {
   const tw = m.id != null ? S.towers.find(t => t.id === m.id) : null;
   withPlayer(1, () => {
     if (m.k === 'place') placeTower(m.t, m.c, m.r);
+    else if (m.k === 'pet') buyPet(m.t);
     else if (m.k === 'up' && tw && tw.owner === 1) upgrade(tw);
     else if (m.k === 'relight' && tw) relight(tw);
     else if (m.k === 'move' && tw && tw.owner === 1) moveFogger(tw, m.c, m.r);
@@ -4810,7 +4828,7 @@ function netSnap() {
 function remoteTower(id, t, c, r, owner) {
   const o = makeTower(t), tw = { id, t, c, r, x: ccx(c), z: ccz(r), lv: 1, cd: 0.2, anim: 9, yaw: 0, yawT: 0, spent: TT[t].cost, fresh: 0, uses: 0, owner, o, pending: true };
   o.root.position.set(tw.x, 0, tw.z); o.pips.forEach((p, i) => p.visible = i < 1); o.root.visible = false; o.root.scale.setScalar(0.01); tw.pop = 0;
-  scene.add(o.root); tw.marker = makeMarker(tw.x, tw.z); S.towers.push(tw); return tw;
+  scene.add(o.root); if (!TT[t].roam) tw.marker = makeMarker(tw.x, tw.z); S.towers.push(tw); return tw;
 }
 // guest: bring the local picture in line with the host's
 function netApply(m) {
