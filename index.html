@@ -468,7 +468,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v178</div>
+    <div id="ver">v179</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -476,7 +476,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <div class="stat st-lives" id="stLives" title="Cake slices left"><svg viewBox="0 0 48 48"><path d="M6 30 24 12l18 18v10H6z" fill="#f3d9a8"/><path d="M6 30 24 12l18 18v4c-3 3-5-1-8 2s-5-1-8 2-5-1-8 2-5-1-8 2z" fill="#ff8fb8"/><rect x="6" y="36" width="36" height="3" fill="#fff4e6"/><circle cx="24" cy="10" r="4" fill="#d6183c"/><path d="M24 7c1-3 3-4 5-4" stroke="#2f7d12" stroke-width="2" fill="none"/></svg><b id="lives">20</b></div>
         <div class="stat st-coins" id="stCoins" title="Coins"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="17" fill="#b07a10"/><circle cx="24" cy="22" r="17" fill="#ffd447"/><circle cx="24" cy="22" r="12" fill="none" stroke="#e0a820" stroke-width="3"/><path d="M18 15a10 10 0 0 1 9-3" stroke="#fff6b0" stroke-width="3" fill="none" stroke-linecap="round"/></svg><b id="money">0</b></div>
         <div class="stat st-lic" id="stLic" hidden title="Exterminator License bonus"><svg viewBox="0 0 48 48"><rect x="4" y="10" width="40" height="28" rx="4" fill="#f4efe4"/><rect x="4" y="10" width="40" height="8" rx="4" fill="#3a86bd"/><circle cx="37" cy="31" r="6" fill="#ffcf4a"/></svg><b id="lic">+5%</b></div>
-        <div class="stat st-wave">WAVE&nbsp;<b id="wave">0</b><span id="waveMax">/20</span></div>
+        <div class="stat st-wave">WAVE&nbsp;<b id="wave">0</b><span id="waveMax">/25</span></div>
         <button class="stat st-foe" id="foe" type="button" hidden aria-label="Watch your friend's kitchen"></button>
       </div>
       <div class="ctl">
@@ -498,7 +498,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <h1 class="logo">Pest<span>Panic Defense</span></h1>
       <p class="sub">The bugs found the birthday cake. It's on the counter. Set out swatters, sprays and zappers along the sugar trail and save every slice you can.</p>
       <div class="tmain">
-        <button class="btn soloBtn" id="soloT" type="button">Solo <small>10 houses · 20 waves each</small></button>
+        <button class="btn soloBtn" id="soloT" type="button">Solo <small>10 houses · 25 waves each</small></button>
         <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
         <button class="btn vsBtn" id="vsT" type="button">Bug Battle <small>2 players · send bugs at each other</small></button>
       </div>
@@ -513,7 +513,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <h2 class="t">Solo</h2>
       <p class="lsub">Pick a house. Beat one to unlock the next.</p>
       <div class="lvls" id="lvls"></div>
-      <p class="hint">Pick a tool below to see its range, then place it on the floor beside the trail. 20 waves, with a boss every 5th.</p>
+      <p class="hint">Pick a tool below to see its range, then place it on the floor beside the trail. 25 waves, with a boss every 5th.</p>
       <button class="btn dark" id="soloBack" type="button">Back</button>
     </div>
     <div class="screen" id="lobby" hidden>
@@ -742,7 +742,7 @@ LEVELS[13] = { ...LEVELS[6], bossMul: null, name: 'Mirror Maze', sub: 'Medium', 
 LEVELS[14] = { ...LEVELS[6], bossMul: null, name: 'Back to Back', sub: 'Medium', intro: 'Your doors are side by side. The trails split apart, then come home to the cake.',
   routes: [[[9, 10.6], [9, 5], [1, 5], [1, 2], [9, 2], [9, 0], [10, 0], [10, -0.05]],
            [[11, 10.6], [11, 5], [19, 5], [19, 2], [11, 2], [11, 0], [10, 0], [10, -0.05]]] };
-LEVELS[15] = { ...LEVELS[6], bossMul: null, bugMulAfter: [5, 1.2], bossMulW: { 20: { '*': 1.25 } }, name: 'The Pretzel', sub: 'Medium', intro: 'The left trail loops over itself like a pretzel. Side doors, both lanes end along the back counter.',
+LEVELS[15] = { ...LEVELS[6], bossMul: null, bugMulAfter: [5, 1.2], bossMulW: { 25: { '*': 1.25 } }, name: 'The Pretzel', sub: 'Medium', intro: 'The left trail loops over itself like a pretzel. Side doors, both lanes end along the back counter.',
   routes: [[[-0.6, 4], [9, 4], [9, 9], [7, 9], [7, 0], [10, 0], [10, -0.05]],
            [[20.6, 4], [20, 4], [20, 7], [13, 7], [13, 4], [17, 4], [17, 0], [10, 0], [10, -0.05]]] };
 LEVELS[16] = { ...LEVELS[6], bossMul: null, name: 'Snake Pit', sub: 'Medium', intro: 'Both trails twist through their halves, then the right one climbs the middle to join the left. Guard the middle!',
@@ -3135,7 +3135,7 @@ const BT = {
   baby:   { hp: 16,   spd: 3.4, gold: 2,   lives: 0.5, goo: [0.3, 0.12, 0.35] },
   widow:  { hp: 2500, spd: 1.3, gold: 130, lives: 5, armor: 2, boss: true, name: 'Black Widow', sub: 'She lays spiderlings when she gets hurt', goo: [0.3, 0.12, 0.35] },
   hornet: { hp: 3135, spd: 1.45, gold: 160, lives: 5, fly: true, boss: true, name: 'Hornet Queen', sub: 'She flies, so the Newspaper can\'t touch her', goo: [0.85, 0.7, 0.15] },
-  herc:   { hp: 3300, spd: 0.95, gold: 160, lives: 5, armor: 9, heavy: true, boss: true, name: 'Hercules Beetle', sub: 'Thick shell, and nothing slows it down', goo: [0.5, 0.48, 0.22] },
+  herc:   { hp: 1500, spd: 0.95, gold: 160, lives: 5, armor: 5, heavy: true, boss: true, name: 'Hercules Beetle', sub: 'Thick shell, and nothing slows it down', goo: [0.5, 0.48, 0.22] },
   ghop:   { hp: 770, spd: 1.6, gold: 110, lives: 5, boss: true, base: 'hopper', size: 3.2, name: 'Giant Grasshopper', sub: 'Now and then it hops a tile and stuns tools where it lands', goo: [0.45, 0.72, 0.2] },
   gcenti: { hp: 125, spd: 2.3, gold: 10, lives: 0.4, boss: true, base: 'centi', size: 2.4, segs: 14, gap: 1.35, name: 'Giant Centipede', sub: 'Fourteen segments, and an armored head', goo: [0.5, 0.24, 0.12] },
   gstink: { hp: 1500, spd: 1.2, gold: 140, lives: 5, armor: 3, boss: true, base: 'stink', size: 3.2, name: 'Giant Stink Bug', sub: 'It leaves stink clouds behind as it walks', goo: [0.45, 0.4, 0.22] },
@@ -3144,19 +3144,29 @@ const BT = {
   queen:  { hp: 1260, spd: 1.15, gold: 100, lives: 5, armor: 3, boss: true, name: 'Roach King', sub: 'He is heading for the cake', goo: [0.42, 0.24, 0.1] },
 };
 const BOSS_AT = { 5: ['queen'], 10: ['widow'], 15: ['hornet'], 20: ['hornet', 'widow', 'queen'] };
-// wave 20 brings all three, each a bit lighter so the total stays fair
+// the finale (wave 25) brings them all, each a bit lighter so the total stays fair
 const BOSS_HP20 = { queen: 1.556, widow: 0.7, hornet: 0.632, ghop: 0.7, gcenti: 0.7, gstink: 0.7, gmoth: 0.7, gmantis: 0.7 };
 const bossHpAll = t => bossHp(t) * (BT[t].segs || 1);
 function bossesFor(n) {
   const BL = (LEVELS[LV] && LEVELS[LV].bosses) || [['queen'], ['widow'], ['hornet'], ['hornet', 'widow', 'queen']];
-  if (n <= MAXW) return n % 5 ? [] : BL[n / 5 - 1] || [];
+  if (n <= MAXW) {
+    if (n % 5) return [];
+    if (n === MAXW) return BL[BL.length - 1];   // the finale: everyone
+    if (n === 20 && BL.length < 5) {   // wave 20: one boss from the finale you haven't faced alone yet
+      const fin = BL[BL.length - 1], seen = BL.slice(0, -1).flat();
+      return [fin.find(t => !seen.includes(t)) || 'herc'];   // already met them all: the Hercules Beetle shows up
+    }
+    return BL[n / 5 - 1] || [];
+  }
   if (n % 5) return [];
   const EL = [['ghop'], ['gcenti'], ['gstink'], ['gmoth'], ['gmantis'], ['queen', 'widow', 'hornet']];
   const lap = (LEVELS[LV] && (LEVELS[LV].bosses || LEVELS[LV].team)) ? BL[(n / 5 - 1) % 4] : EL[(n / 5 - 5) % EL.length], extra = Math.floor((n - MAXW) / 20);
   const out = []; for (let i = 0; i <= extra; i++) out.push(...lap); return out;
 }
 function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && (LEVELS[LV].bossMulW[S.wave][t] || LEVELS[LV].bossMulW[S.wave]['*'])) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1)); }   // bosses are 5% softer in Bug Battle and Team Kitchen
-const MAXW = 20;
+const MAXW = 25;
+// bug toughness by wave: climbs fast to wave 20, then gently (+4.5% a wave) through the last five
+function hpCurve(w) { const a = Math.min(w, 20) - 1; return (1 + 0.17 * a + 0.011 * a * a) * (w > 20 ? 1 + 0.045 * (Math.min(w, MAXW) - 20) : 1); }
 function makeWave(n, sh = 0) {
   const team = LEVELS[LV] && LEVELS[LV].team, r = rng(n * 131 + 7 + sh * 977), q = [], cnt = Math.round((8 + Math.floor(n * 2.2)) * (team ? 1.6 : 1)), pool = ['ant'], u = n + sh;
   if (u >= 2) pool.push('fly'); if (u >= 4) pool.push('spider'); if (u >= 8) pool.push('fly', 'spider'); if (u >= 6) pool.push('dung'); if (u >= 12) pool.push('dung');
@@ -3171,6 +3181,7 @@ function makeWave(n, sh = 0) {
   return q;
 }
 const bestKey = lv => lv ? 'ppd-best-' + (lv + 1) : 'ppd-best';
+try { if (!localStorage.getItem('ppd-w25')) { for (let lv = 0; lv < 40; lv++) { const k = lv ? 'ppd-best-' + (lv + 1) : 'ppd-best'; if (+localStorage.getItem(k) === 20 && +localStorage.getItem('ppd-stars-' + (lv + 1)) > 0) localStorage.setItem(k, '25'); } localStorage.setItem('ppd-w25', '1'); } } catch (e) {}   // levels already beaten at 20 waves stay beaten
 function loadBest(lv = LV) { try { return +localStorage.getItem(bestKey(lv)) || 0; } catch (e) { return 0; } }
 function saveBest(v, lv = LV) { try { localStorage.setItem(bestKey(lv), String(v)); } catch (e) {} }
 const starKey = lv => 'ppd-stars-' + (lv + 1), endKey = lv => 'ppd-endless-' + (lv + 1);
@@ -3220,8 +3231,8 @@ function startWave0() {
   S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
   if (!rush && !LEVELS[LV].team) S.routeN = (LONG_R - 1 + ROUTES.length) % ROUTES.length;   // the wave opens on the longest trail   // every wave in this push pays its clear bonus at the end
-  S.hpMul = (1 + 0.17 * (S.wave - 1) + 0.011 * (S.wave - 1) ** 2) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1); if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%
-  // endless: past wave 20 every wave gets another 6% tougher on top, and they pour out faster
+  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1); if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%
+  // endless: past the last wave every wave gets another 6% tougher on top, and they pour out faster
   if (S.wave > MAXW) { S.hpMul *= 1.06 ** (S.wave - MAXW); S.gap = Math.max(0.24, 0.34 - (S.wave - MAXW) * 0.005); }
   S.trio = new Set(S.queue.filter(t => BT[t].boss)).size > 1;
   // all of this wave's queens share one health bar
@@ -3230,7 +3241,7 @@ function startWave0() {
   if (rush) S.qTotal = S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0) + S.bugs.filter(b => b.mesh && !b.dead).reduce((a, b) => a + b.max, 0);
   // one of each boss = the final trio; two of the same one (Team Kitchen doubles them) get a pair name
   const trio = new Set(bq).size > 1, pair = !trio && bq.length > 1, six = trio && bq.length > 3 && !!(LEVELS[LV] && LEVELS[LV].team);
-  const PAIR = { queen: 'Roach Twins', widow: 'Widow Sisters', hornet: 'Hornet Sisters', ghop: 'Grasshopper Twins', gcenti: 'Centipede Twins', gstink: 'Stink Twins', gmoth: 'Moth Sisters', gmantis: 'Mantis Twins' };
+  const PAIR = { herc: 'Beetle Brothers', queen: 'Roach Twins', widow: 'Widow Sisters', hornet: 'Hornet Sisters', ghop: 'Grasshopper Twins', gcenti: 'Centipede Twins', gstink: 'Stink Twins', gmoth: 'Moth Sisters', gmantis: 'Mantis Twins' };
   const kinds = [...new Set(bq)], NUM = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
   const bname = bb ? (trio ? (six ? 'All six bosses' : 'All ' + NUM[kinds.length] + ' bosses') : pair ? PAIR[bq[0]] || bb.name : bb.name) : '';
   const finalSub = kinds.map(t => BT[t].name).join(', ').replace(/, ([^,]*)$/, ' and $1') + '. Final wave!';
@@ -4549,9 +4560,10 @@ const BUGINFO = [
   ['gstink', 'Giant Stink Bug', 'Boss, Levels 8–10', 'Very tough shell. Every few seconds it lets out a stink cloud as it walks, and when it dies the cloud is huge. Tools in the stink work 40% slower.', '5 slices'],
   ['gmoth', 'Giant Moth', 'Boss, Levels 9–10', 'Flies to your candles and puts out every candle near where it lands. Bug Zappers it flies past flicker out for a few seconds.', '5 slices'],
   ['gmantis', 'Giant Mantis', 'Boss, Levels 9–10', 'Grabs two tools at once and holds them for 4 seconds. Eats bugs often to heal, and the Broom can\'t push it.', '6 slices'],
-  ['queen', 'Roach King', 'Boss, waves 5 and 20', 'Huge health and a shell that blocks about a quarter of every hit. Every tool can take him down: stack sprays, slam him with Newspapers, zap him, smack him, or cook him with a Magnifying Glass.', '5 slices'],
-  ['widow', 'Black Widow', 'Boss, waves 10 and 20', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
-  ['hornet', 'Hornet Queen', 'Boss, waves 15 and 20', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
+  ['queen', 'Roach King', 'Boss, waves 5 and 25', 'Huge health and a shell that blocks about a quarter of every hit. Every tool can take him down: stack sprays, slam him with Newspapers, zap him, smack him, or cook him with a Magnifying Glass.', '5 slices'],
+  ['widow', 'Black Widow', 'Boss, waves 10 and 25', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
+  ['hornet', 'Hornet Queen', 'Boss, waves 15 and 25', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
+  ['herc', 'Hercules Beetle', 'Boss, wave 20 on some houses', 'A huge horned beetle with the thickest shell in the house (it blocks 40% of every hit), and nothing slows it down: no sticky traps, no stuns. Poison, fog and the Magnifying Glass burn right through the shell.', '5 slices'],
 ];
 $('gTools').innerHTML = [...SHOP, ...PETS].map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.cost} coins</small>${hitTag(t)}<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies only' : T.air ? 'Hits flies' : 'Ground only'}</span></div><p>${T.d}</p></li>`; }).join('');
 $('gItems').innerHTML = ITEMS.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.costs ? T.costs.join(' / ') : T.cost} coins</small><span class="tag">${T.instant ? 'Instant' : T.t === 'crumbs' || t === 'crumbs' ? 'Until eaten' : 'One wave'}</span></div><p>${T.d}</p></li>`; }).join('');
@@ -4741,7 +4753,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   setCake(20);
   $('title').hidden = true; $('solo').hidden = true; $('over').hidden = true; $('paused').hidden = true; $('hud').hidden = false; $('tray').hidden = false;
   $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on');
-  $('waveMax').textContent = '/20';
+  $('waveMax').textContent = '/' + MAXW;
   syncTray(); syncHud(); showBelt();
   $('peek').querySelector('b').textContent = S.vs && S.vs.bot ? 'AI\'s kitchen' : 'Friend\'s kitchen';
   if (S.vs) banner(S.vs.bot ? 'Bug Battle vs AI (' + AI_DIFF[S.vs.bot.diff].name + ')' : 'Bug Battle: ' + HOUSES[LV].name, S.vs.bot ? 'You and the AI get the same waves. From wave 6 you can send bugs at each other during waves. Last cake standing wins!' : 'Same waves for both of you. From wave 6 you can spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
@@ -5130,14 +5142,14 @@ function vsGoText(go) {
 }
 function vsFinish() {
   S.vs.fin = true; S.nextT = 0; hideBelt();
-  banner('All 20 waves done!', FW('Your cake made it. Now your friend has to survive too…'), false, 2600); SND.play('clear');
+  banner('All ' + MAXW + ' waves done!', FW('Your cake made it. Now your friend has to survive too…'), false, 2600); SND.play('clear');
   netSend(vsStatus()); syncGo(); vsCheckEnd();
 }
 function vsCheckEnd() {
   const v = S.vs, f = v && v.foe;
   if (!f || S.mode !== 'play') return;
   if (f.l <= 0) { vsEnd('win', FW('The bugs ate your friend\'s whole cake')); return; }
-  if (v.fin && f.f) { const d = S.lives - f.l; vsEnd(d > 0 ? 'win' : d < 0 ? 'lose' : 'tie', d ? 'You both survived all 20 waves. More cake left wins.' : 'You both survived with the same cake left!'); }
+  if (v.fin && f.f) { const d = S.lives - f.l; vsEnd(d > 0 ? 'win' : d < 0 ? 'lose' : 'tie', d ? 'You both survived all ' + MAXW + ' waves. More cake left wins.' : 'You both survived with the same cake left!'); }
 }
 // ---- sending bugs
 function renderSend() {
@@ -5241,7 +5253,7 @@ function drawPeek() {
     if (im.complete && im.naturalWidth) g.drawImage(im, x - sz / 2, z - sz / 2, sz, sz);
     else { g.fillStyle = '#300'; g.beginPath(); g.arc(x, z, sz / 3, 0, TAU); g.fill(); }
   }
-  if (f.o || f.f) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, H / 2 - 20, W, 40); g.fillStyle = '#fff'; g.font = `900 ${Math.round(16 * dpr)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(f.l <= 0 ? 'Cake devoured!' : 'All 20 waves done', W / 2, H / 2); }
+  if (f.o || f.f) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, H / 2 - 20, W, 40); g.fillStyle = '#fff'; g.font = `900 ${Math.round(16 * dpr)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(f.l <= 0 ? 'Cake devoured!' : 'All ' + MAXW + ' waves done', W / 2, H / 2); }
 }
 function vsFrame(dt) {
   const v = S.vs;
@@ -5295,7 +5307,7 @@ function aiStartWave(n) {
   const A = S.vs.bot; if (A.fin || A.lives <= 0) return;
   A.wave = n; A.active = true; A.queue = makeWave(n, LEVELS[LV].shift); A.spawnT = 0; A.routeN = LONG_R;
   A.gap = Math.max(0.34, 0.9 - n * 0.026);
-  A.hpMul = (1 + 0.17 * (n - 1) + 0.011 * (n - 1) ** 2) * LEVELS[LV].hp * (n === 6 || n === 7 ? 0.9 : 1);
+  A.hpMul = hpCurve(n) * LEVELS[LV].hp * (n === 6 || n === 7 ? 0.9 : 1);
   A.trio = new Set(A.queue.filter(t => BT[t].boss)).size > 1;
   aiStatus();
 }
