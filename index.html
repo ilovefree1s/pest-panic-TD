@@ -340,6 +340,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 .stabs button.on{background:var(--gold);color:#2a1600}
 .tc.spent svg{opacity:.35} .tc.spent b{opacity:.55} .tc em.used{color:#ff8a7a}
 .ht{font-style:normal;font-family:var(--body);font-weight:900;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;border-radius:999px;line-height:1.5;white-space:nowrap}
+.perkBtn{background:linear-gradient(135deg,#ffb02a,#ff5a3c)!important;color:#2a0d00!important} .perkTag{margin-left:6px;font:900 10px var(--body);text-transform:uppercase;letter-spacing:.05em;color:#2a0d00;background:linear-gradient(135deg,#ffd04a,#ff8a3c);padding:2px 7px;border-radius:999px}
 .ht-flies{background:rgba(120,220,90,.18);color:#9be37a} .ht-pin{background:rgba(255,160,90,.18);color:#ffb078} .ht-single{background:rgba(127,216,255,.16);color:var(--sky)} .ht-area{background:rgba(134,227,75,.16);color:var(--goo)} .ht-chain{background:rgba(180,140,255,.2);color:#c9adff} .ht-push{background:rgba(255,190,90,.18);color:#ffc874} .ht-support{background:rgba(255,120,190,.18);color:#ff9fd0}
 .tc .ht{margin-block:1px}
 .tc em{font-style:normal;font-family:var(--body);font-weight:900;font-size:11px;color:var(--goo)}
@@ -467,7 +468,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v177</div>
+    <div id="ver">v178</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1993,7 +1994,7 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
   return root;
 }
 const EXT = buildPlayer(), EXT2 = buildPlayer('#c8342a', '#2f6fd0');
-const EXT_SPEED = 15, WORK_TIME = { build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6 };
+const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
 function makeMarker(x, z) {
@@ -2027,6 +2028,7 @@ function finishJob(j) {
   const o = j.obj;
   if (o.marker) { scene.remove(o.marker); o.marker = null; }
   if (j.kind === 'up') { applyUpgrade(o); return; }
+  if (j.kind === 'perk') { applyPerk(o); return; }
   if (j.kind === 'move') {
     const d = o.moveTo; o.moving = false; o.moveTo = null;
     if (!d || S.towers.some(t => t !== o && t.c === d.c && t.r === d.r) || S.items.some(t => t.c === d.c && t.r === d.r)) { o.movedWave = -1; return; }   // spot got taken: no move used
@@ -2292,7 +2294,23 @@ function itemUsed(t) { return !!(TT[t] && TT[t].item && S && S.itemUsed && S.ite
 function markUsed(t) { (S.itemUsed ||= {})[t] = itemWave(); renderShop(); }
 function elCost(el) { return el.dataset.send != null ? SENDS[+el.dataset.send].cost : costOf(el.dataset.t); }
 function costOf(t) { return t === 'license' ? (S.lic >= 3 ? Infinity : TT.license.costs[S.lic]) : TT[t].cost; }
-const upCost = tw => Math.round(TT[tw.t].cost * [0.8, 1.3][tw.lv - 1]);
+// perks: once a tool is level 3 it can buy one special power (a big upgrade with its own look)
+const PERK = {
+  swat:   { name: 'Electrified Swatter', icon: '⚡', amp: 0.8, d: '+80% damage, and every smack zaps the bug, stunning it for a moment.' },
+  venus:  { name: 'Miracle Grow', icon: '🌱', range: 1.5, d: 'The plant grows huge: 50% more reach, chews much faster, and it can swallow small crawling bugs too.' },
+  spray:  { name: 'Extra Strength', icon: '☠️', d: 'Poison burns twice as hard and lasts 5 seconds instead of 3.' },
+  paper:  { name: 'Sunday Edition', icon: '📰', range: 1.5, amp: 0.25, d: 'A giant rolled-up paper: 50% bigger slam and 25% more damage.' },
+  lens:   { name: 'Wildfire', icon: '🔥', d: 'The bug it burns sets fire to bugs right next to it.' },
+  zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'The bolt hops to twice as many bugs.' },
+  broom:  { name: 'Push Broom', icon: '🧹', range: 1.3, d: 'A wide push broom: 30% more reach and sweeps bugs 60% further back.' },
+  candle: { name: 'Bonfire Candle', icon: '🕯️', range: 1.5, d: 'A big bonfire jar: 50% bigger glow, +10% more damage boost, and it scorches harder.' },
+  fogger: { name: 'Industrial Fogger', icon: '🌫️', d: 'The fog settles on the floor for 3 seconds and keeps choking every bug that walks through it.' },
+  frog:   { name: 'Bullfrog', icon: '👑', amp: 0.5, d: 'Grows into a huge bullfrog: 50% more damage, and it gulps much bigger bugs whole.' },
+  cat:    { name: 'Tiger', icon: '🐯', amp: 1, d: 'Grows into a tiger cub: double swipe damage, and bosses stay pinned as long as everything else.' },
+};
+const perkCost = tw => Math.round(TT[tw.t].cost * 1.6);
+const PR = tw => (tw.perk && PERK[tw.t].range) || 1;   // perk range bonus
+const upCost = tw => tw.lv >= 3 ? (tw.perk || !PERK[tw.t] ? Infinity : perkCost(tw)) : Math.round(TT[tw.t].cost * [0.8, 1.3][tw.lv - 1]);
 // money spent since the last wave started comes back in full; older money at 60%
 const sellVal = tw => tw.pending ? tw.spent : (tw.fresh || 0) + Math.floor((tw.spent - (tw.fresh || 0)) * 0.6);
 const ICON = {
@@ -2634,6 +2652,7 @@ const BUILD = {
     // level 3: a gold frame around the head
     const frame = mesh(new THREE.BoxGeometry(1.14, 0.1, 1.29), TM.gold); frame.position.z = 2.45; frame.scale.set(1, 0.6, 1); pivot.add(frame);
     const o = { root: g, turn, pivot, rim, pips: pips(g) };
+    o.setPerk = () => { side.color.set('#1fb8ff'); side.emissive = new THREE.Color('#1f8fff'); side.emissiveIntensity = 0.8; hm.emissive = new THREE.Color('#3aa0ff'); hm.emissiveIntensity = 0.4; o.baseScale = 1.1; o.sparky = true; };
     o.setLevel = lv => {
       rimLevel(o, lv);
       face.map = TEX.swat[lv - 1]; face.needsUpdate = true;
@@ -2774,6 +2793,7 @@ const BUILD = {
     const tongue = new THREE.Mesh(tg, tongueM); tongue.position.set(0, 0.85, 0.8); tongue.visible = false; turn.add(tongue);
     const tip = new THREE.Mesh(sph(0.14, 10, 8), tongueM); tip.visible = false;
     const o = { root: g, turn, body, tongue, tip, rim, pips: pips(g) };
+    o.setPerk = () => { o.baseScale = 1.45; skin.color.set('#3f7a2a'); crown.scale.setScalar(1.5); };
     o.setLevel = lv => { rimLevel(o, lv); skin.color.set(['#5cc04a', '#3fa3d8', '#e8b030'][lv - 1]); crown.visible = lv >= 3; body.scale.setScalar([1, 1.12, 1.25][lv - 1]); };
     return o;
   },
@@ -2807,6 +2827,7 @@ const BUILD = {
       head.scale.setScalar(1.15); heads.push({ base, head, U, L: Lw });
     }
     const o = { root: g, rim, pips: pips(g), heads };
+    o.setPerk = () => { heads.forEach(h => h.base.scale.setScalar(1.45)); o.baseScale = 1.15; green.color.set('#2fd04a'); green.emissive = new THREE.Color('#0a5a10'); green.emissiveIntensity = 0.4; };
     o.setLevel = lv => { rimLevel(o, lv); heads.forEach((h, k) => h.base.visible = k < lv); green.color.set(['#5cbf3a', '#3caa6a', '#9a4ad0'][lv - 1]); potM.color.set(['#c8642e', '#c8642e', '#c9a227'][lv - 1]); };
     return o;
   },
@@ -2829,8 +2850,12 @@ const BUILD = {
     const collar = mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 16), std({ color: '#d63a2c', roughness: 0.4 })); collar.position.set(0, 1.0, 0.62); collar.rotation.x = Math.PI / 2 - 0.4; cat.add(collar);
     const bell = mesh(sph(0.07, 8, 6), TM.gold); bell.position.set(0, 0.86, 0.85); cat.add(bell);
     const pp = pips(cat); pp.forEach((q, i) => { q.position.set((i - 1) * 0.22, 1.72, 0.55); q.scale.setScalar(0.7); });
+    const stripes = new THREE.Group(); stripes.visible = false; cat.add(stripes);
+    const stripeM = std({ color: '#1a1410', roughness: 0.7 });
+    for (let i = 0; i < 5; i++) { const st = mesh(new THREE.TorusGeometry(0.42, 0.045, 6, 16, Math.PI), stripeM, false); st.position.set(0, 0.75, -0.55 + i * 0.26); st.scale.set(1, 0.95, 1); stripes.add(st); }
     const o = { root: cat, pips: pp, cat, legs, tail, head, torso };
-    o.setLevel = lv => { fur.color.set(['#e8913a', '#8a8f9a', '#2a2a30'][lv - 1]); collar.material.color.set(['#d63a2c', '#2f7ad0', '#c9a227'][lv - 1]); cat.scale.setScalar([1, 1.1, 1.22][lv - 1]); };
+    o.setPerk = () => { o.perk = true; fur.color.set('#ff7a1a'); stripes.visible = true; o.baseScale = 1.45; cat.scale.setScalar(1.45); };
+    o.setLevel = lv => { fur.color.set(['#e8913a', '#8a8f9a', '#2a2a30'][lv - 1]); collar.material.color.set(['#d63a2c', '#2f7ad0', '#c9a227'][lv - 1]); if (!o.perk) { o.baseScale = [1, 1.1, 1.22][lv - 1]; cat.scale.setScalar(o.baseScale); } };
     return o;
   },
   candle() {
@@ -2863,8 +2888,9 @@ const BUILD = {
       for (const [w, f] of extra) w.visible = f.visible = lv >= 2;
       lid.visible = lv >= 3; waxM.color.set(lv >= 3 ? '#f0b84a' : '#e9d36a');
       jar.scale.setScalar([1, 1.12, 1.25][lv - 1]);
-      const r = TT.candle.range[lv - 1] * 1.08; aura.scale.set(r, r, 1); o.auraR = r;
+      const r = TT.candle.range[lv - 1] * 1.08 * (o.perk ? 1.5 : 1); aura.scale.set(r, r, 1); o.auraR = r;
     };
+    o.setPerk = () => { o.perk = true; o.baseScale = 1.25; waxM.color.set('#ff7a2a'); o.setLevel(3); flames.forEach(f => f.scale.multiplyScalar(1.6)); };
     return o;
   },
   crumbs() {
@@ -3346,8 +3372,8 @@ function zapHop(z) {
   SND.play(z.hit.size > 1 ? 'zip' : 'zap');
 }
 let CUR_AMP = 0;
-function candleRng(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1]) ? TT.candle.rng[c.lv - 1] : 0; }
-function candleAmp(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1]) ? TT.candle.amp[c.lv - 1] : 0; }
+function candleRng(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1] * PR(c)) ? TT.candle.rng[c.lv - 1] : 0; }
+function candleAmp(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1] * PR(c)) ? TT.candle.amp[c.lv - 1] + (c.perk ? 0.1 : 0) : 0; }
 function syncCandles() {
   const candles = S.towers.filter(c => c.t === 'candle' && !c.pending && !c.snuff);
   // up to two candles stack: add the two strongest boosts, a third candle does nothing
@@ -3370,7 +3396,7 @@ function catAct(tw, T, L, R, dt) {
     tw.cyaw = Math.atan2(mx, mz); tw.cmove = 2;
     if (d > 0.9) { const st = Math.min(d, 13 * dt); tw.cx += mx / d * st; tw.cz += mz / d * st; return; }
     const boss = BT[b.t].boss;
-    hit(b, T.dmg[L]); if (!BT[b.t].heavy) { b.stuck = Math.max(b.stuck, T.pin[L] * (boss ? 0.5 : 1)); b.slowF = 0; }
+    hit(b, T.dmg[L]); if (!BT[b.t].heavy) { b.stuck = Math.max(b.stuck, T.pin[L] * (boss && !tw.perk ? 0.5 : 1)); b.slowF = 0; }
     tw.pounce = null; tw.cd = T.rate[L]; tw.anim = 0; tw.goal = null; tw.rest = 0.6;
     FX.glow.spawn({ x: b.x, y: 0.8, z: b.z, life: 0.25, s0: 2, s1: 2.8, c: [1, 0.85, 0.6], a0: 0.9 });
     for (let i = 0; i < 4; i++) FX.smoke.spawn({ x: b.x, y: 0.3, z: b.z, vx: (Math.random() - 0.5) * 5, vz: (Math.random() - 0.5) * 5, life: 0.4, s0: 0.5, s1: 1.2, c: [0.95, 0.9, 0.8], a0: 0.45, drag: 4 });
@@ -3402,7 +3428,7 @@ function towerAct(tw, dt) {
   if (tw.pending) return;
   if (tw.stunT > 0) { tw.stunT -= dt; tw.anim += dt; return; }   // a mantis has hold of it
   if (tw.moving) { tw.anim += dt; return; }   // being wheeled to a new spot
-  const T = TT[tw.t], L = tw.lv - 1, R = T.range[L] * (1 + (tw.rmul || 0)), stinky = tw.stink > 0;
+  const T = TT[tw.t], L = tw.lv - 1, R = T.range[L] * (1 + (tw.rmul || 0)) * PR(tw), stinky = tw.stink > 0;
   if (stinky) { tw.stink -= dt; dt *= 0.6; }   // stink bug cloud: 40% slower
   tw.cd -= dt; tw.anim += dt;
   if (tw.t === 'cat') { catAct(tw, T, L, R, dt); return; }
@@ -3410,10 +3436,10 @@ function towerAct(tw, dt) {
     const hs = tw.vh ||= [{ cd: 0, t: 9 }, { cd: 0.5, t: 9 }, { cd: 1, t: 9 }], taken = new Set();
     for (let k = 0; k < tw.lv; k++) {
       const h = hs[k]; h.cd -= dt; h.t += dt; if (h.cd > 0) continue;
-      let tg = null; for (const b of S.bugs) if (canHit(tw, b) && (BT[b.t].fly || b.free) && !taken.has(b.id) && inRange(tw, b, R) && (!tg || b.s > tg.s)) tg = b;   // flying bugs only
+      let tg = null; for (const b of S.bugs) if (canHit(tw, b) && (BT[b.t].fly || b.free || tw.perk && !BT[b.t].boss && ['ant', 'bed', 'baby', 'hopper', 'centi'].includes(b.t)) && !taken.has(b.id) && inRange(tw, b, R) && (!tg || b.s > tg.s)) tg = b;   // flying bugs only
       if (!tg) continue; taken.add(tg.id);
       const whole = !BT[tg.t].boss;   // gulped whole
-      hit(tg, whole ? tg.hp + 1 : T.dmg[L], true); h.cd = T.chew[L]; h.t = 0; h.yaw = Math.atan2(tg.x - tw.x, tg.z - tw.z);
+      hit(tg, whole ? tg.hp + 1 + (tg.ball ? tg.ball.hp : 0) : T.dmg[L], true); h.cd = T.chew[L] * (tw.perk ? 0.55 : 1); h.t = 0; h.yaw = Math.atan2(tg.x - tw.x, tg.z - tw.z);
       for (let i = 0; i < 6; i++) FX.goo.spawn({ x: tg.x, y: 0.8, z: tg.z, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 3, grav: 14, life: 0.4, s0: 0.2, s1: 0.1, c: BT[tg.t].goo || [0.5, 0.3, 0.2], a0: 1, a1: 1 });
       SND.play('slam');
     }
@@ -3423,7 +3449,7 @@ function towerAct(tw, dt) {
     if (tw.snuff || tw.pending) return;
     for (const b of S.bugs) {
       if (b.dead || b.scorchN === SCORCH_N || !inRange(tw, b, R)) continue;
-      b.scorchN = SCORCH_N; hit(b, T.burn[L] * dt, true);
+      b.scorchN = SCORCH_N; hit(b, T.burn[L] * (tw.perk ? 2 : 1) * dt, true);
       if (Math.random() < dt * 2) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.6, y: bugY(b) + 0.5, z: b.z + (Math.random() - 0.5) * 0.6, vy: 1.4, life: 0.4, s0: 0.28, s1: 0.05, c: [1, 0.6, 0.2], a0: 1 });
     }
     return;
@@ -3445,9 +3471,21 @@ function towerAct(tw, dt) {
     tw.heat = Math.min(T.ramp, (tw.heat || 0) + dt);
     tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
     hit(tg, T.dps[L] * (1 + (T.mult - 1) * tw.heat / T.ramp) * dt, true);
+    if (tw.perk) for (const b of S.bugs) if (b !== tg && !b.dead && (b.x - tg.x) ** 2 + (b.z - tg.z) ** 2 < 2.4 * 2.4) {   // wildfire spreads to bugs right next to it
+      hit(b, T.dps[L] * (1 + (T.mult - 1) * tw.heat / T.ramp) * 0.5 * dt, true);
+      if (Math.random() < dt * 4) FX.glow.spawn({ x: b.x, y: bugY(b) + 0.4, z: b.z, vy: 2, life: 0.4, s0: 0.6, s1: 0.1, c: [1, 0.5, 0.1], a0: 1 });
+    }
     if (Math.random() < dt * 10) FX.smoke.spawn({ x: tg.x, y: bugY(tg) + 0.5, z: tg.z, vy: 1.6, life: 0.6, s0: 0.25, s1: 0.8, c: [0.45, 0.42, 0.4], a0: 0.5 });
     SND.heat(tw.heat / T.ramp);   // a tractor-beam hum that climbs as it heats up
     return;
+  }
+  if (tw.pools && tw.pools.length) {   // Industrial Fogger: fog lying on the floor keeps choking bugs
+    for (const pl of tw.pools) {
+      pl.t -= dt;
+      for (const b of S.bugs) if (!b.dead && (b.x - pl.x) ** 2 + (b.z - pl.z) ** 2 < pl.r * pl.r) hit(b, pl.dps * dt, true);
+      if (Math.random() < dt * 10) { const a = Math.random() * TAU, d = Math.random() * pl.r; FX.smoke.spawn({ x: pl.x + Math.cos(a) * d, y: 0.3, z: pl.z + Math.sin(a) * d, vy: 0.2, drag: 1, life: 1.2, s0: 1.2, s1: 2.6, c: [0.7, 0.95, 0.6], a0: 0.35 }); }
+    }
+    tw.pools = tw.pools.filter(pl => pl.t > 0);
   }
   if (tw.cd > 0) return;
   const tg = tw.t === 'spray' ? sprayTarget(tw, R) : firstTarget(tw, R);
@@ -3456,12 +3494,14 @@ function towerAct(tw, dt) {
   const ty = bugY(tg) + 0.4;
   if (tw.t === 'swat') {
     const crit = BT[tg.t].boss && (tw.bossHits = (tw.bossHits || 0) + 1) % 4 === 0;   // every 4th smack on a boss is a big one
-    hit(tg, T.dmg[L] * (crit ? 2 : 1)); if (crit) { S.shake = Math.max(S.shake, 0.12); FX.glow.spawn({ x: tg.x, y: ty + 0.4, z: tg.z, life: 0.3, s0: 3.2, s1: 1, c: [1, 0.8, 0.3], a0: 1 }); }
+    hit(tg, T.dmg[L] * (crit ? 2 : 1));
+    if (tw.perk) { if (!BT[tg.t].heavy) { tg.stuck = Math.max(tg.stuck, BT[tg.t].boss ? 0.2 : 0.45); tg.slowF = 0; } for (let i = 0; i < 8; i++) FX.glow.spawn({ x: tg.x, y: ty, z: tg.z, vx: (Math.random() - 0.5) * 6, vy: Math.random() * 4, vz: (Math.random() - 0.5) * 6, life: 0.25, s0: 0.5, s1: 0.05, c: [0.6, 0.85, 1], a0: 1 }); SND.play('zip'); }   // electrified: zap and stun
+    if (crit) { S.shake = Math.max(S.shake, 0.12); FX.glow.spawn({ x: tg.x, y: ty + 0.4, z: tg.z, life: 0.3, s0: 3.2, s1: 1, c: [1, 0.8, 0.3], a0: 1 }); }
     FX.glow.spawn({ x: tg.x, y: ty, z: tg.z, life: 0.18, s0: 1.6, s1: 2.6, c: [1, 0.9, 0.8], a0: 0.9 });
     for (let i = 0; i < 4; i++) FX.smoke.spawn({ x: tg.x, y: 0.3, z: tg.z, vx: (Math.random() - 0.5) * 5, vz: (Math.random() - 0.5) * 5, life: 0.4, s0: 0.5, s1: 1.2, c: [0.9, 0.85, 0.8], a0: 0.45, drag: 4 });
     SND.play('swat');
   } else if (tw.t === 'frog') {
-    const small = !BT[tg.t].boss && ['ant', 'fly', 'bed', 'baby', 'moth'].includes(tg.t) && tg.hp <= T.dmg[L] * 3 && !(tg.ball && tg.ball.hp > 0);
+    const small = !BT[tg.t].boss && (tw.perk || ['ant', 'fly', 'bed', 'baby', 'moth'].includes(tg.t)) && tg.hp <= T.dmg[L] * (tw.perk ? 6 : 3) && !(tg.ball && tg.ball.hp > 0);
     hit(tg, small ? tg.hp + 1 : T.dmg[L] * (BT[tg.t].fly ? 2 : 1)); tw.lick = { x: tg.x, y: ty, z: tg.z, t: 0.16 };   // gulp the little ones whole
     SND.play('tongue');
   } else if (tw.t === 'spray') {
@@ -3471,10 +3511,10 @@ function towerAct(tw, dt) {
       const bx = b.x - tw.x, bz = b.z - tw.z, bd = Math.hypot(bx, bz) || 1;
       if ((bx * ux + bz * uz) / bd < 0.84 && bd > 1.2) continue;
       const fogP = b.psnT > 0 && b.psnSrc === 'fogger' ? b.psnD : 0;
-      hit(b, T.dmg[L]); b.psnT = 3; b.psnSrc = 'spray'; b.psnOwn = S.cur || 0;
-      const pd = T.dot[L] * (1 + CUR_AMP);
+      hit(b, T.dmg[L]); b.psnT = tw.perk ? 5 : 3; b.psnSrc = 'spray'; b.psnOwn = S.cur || 0;
+      const pd = T.dot[L] * (1 + CUR_AMP) * (tw.perk ? 2 : 1);
       if (BT[b.t].boss) {   // on a boss, poison from up to 3 different sprays adds up
-        const by = b.psnBy ||= {}, now = S.gt || 0; by[tw.id] = { d: pd, until: now + 3 };
+        const by = b.psnBy ||= {}, now = S.gt || 0; by[tw.id] = { d: pd, until: now + (tw.perk ? 5 : 3) };
         const act = Object.values(by).filter(x => x.until > now).map(x => x.d).sort((a, c) => c - a).slice(0, 3);
         b.psnD = Math.max(fogP, act.reduce((a, c) => a + c, 0));
       } else b.psnD = Math.max(b.psnD, pd);
@@ -3510,6 +3550,7 @@ function towerAct(tw, dt) {
       FX.smoke.spawn({ x: nx, y: low ? 0.5 : 1.6, z: nz, vx: (ux * c - uz * s2) * sp, vy: low ? 0.1 : -0.4 + Math.random() * 0.8, vz: (uz * c + ux * s2) * sp, drag: 1.6, life: 1.9 + Math.random() * 0.8, s0: 1.1, s1: 4.4, c: low ? [0.62, 0.95, 0.5] : [0.9, 1, 0.9], a0: 0.72 });
     }
     for (let i = 0; i < 10; i++) FX.glow.spawn({ x: nx, y: 1.6, z: nz, vx: ux * (6 + Math.random() * 6) + (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: uz * (6 + Math.random() * 6) + (Math.random() - 0.5) * 3, drag: 2, life: 0.5, s0: 1.2, s1: 0.3, c: [0.7, 1, 0.5], a0: 1 });   // nozzle flash
+    if (tw.perk) (tw.pools ||= []).push({ x: tw.x + ux * R * 0.55, z: tw.z + uz * R * 0.55, r: R * 0.45, t: 3, dps: T.dot[L] * 0.7 });   // the fog settles on the floor
     S.shake = Math.max(S.shake, 0.1); SND.play('spray');
   } else if (tw.t === 'paper') {
     for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, R)) { if (BT[b.t].boss) { hit(b, T.dmg[L] * 1.25); if (!BT[b.t].heavy) { b.stuck = Math.max(b.stuck, 0.35); b.slowF = Math.min(b.slowF, 0.15); } } else hit(b, T.dmg[L]); }   // bosses: +25% and a stagger
@@ -3522,18 +3563,18 @@ function towerAct(tw, dt) {
     for (const b of S.bugs) {
       if (!canHit(tw, b) || !inRange(tw, b, R) || b.sweptT > 0 || b.y0 > 0.5) continue;
       hit(b, T.dmg[L]); if (b.dead) continue;
-      b.push = BT[b.t].noPush ? 0 : T.push[L] * (BT[b.t].boss ? 0.1 * 4 / 2.4 : 1); b.sweptT = 3; n++;
+      b.push = BT[b.t].noPush ? 0 : T.push[L] * (tw.perk ? 1.6 : 1) * (BT[b.t].boss ? 0.1 * 4 / 2.4 : 1); b.sweptT = 3; n++;
       for (let i = 0; i < 3; i++) FX.smoke.spawn({ x: b.x, y: 0.25, z: b.z, vx: (Math.random() - 0.5) * 3, vy: 0.6, vz: (Math.random() - 0.5) * 3, drag: 3, life: 0.45, s0: 0.4, s1: 1.1, c: [0.85, 0.8, 0.7], a0: 0.4 });
     }
     if (!n) { tw.cd = 0.15; return; }
     pathAt(tg.s, tmpP, tg.route);
-    const fl = Math.hypot(tmpP.dx, tmpP.dz) || 1, fx = tmpP.dx / fl, fz = tmpP.dz / fl, back = Math.min(T.push[L], 4.5);
+    const fl = Math.hypot(tmpP.dx, tmpP.dz) || 1, fx = tmpP.dx / fl, fz = tmpP.dz / fl, back = Math.min(T.push[L] * (tw.perk ? 1.6 : 1), 6.5);
     tw.sw = { x0: tg.x + fx * 1.4 - tw.x, z0: tg.z + fz * 1.4 - tw.z, x1: tg.x - fx * back - tw.x, z1: tg.z - fz * back - tw.z, fx, fz };
     for (let i = 0; i < 10; i++) { const a = tw.yawT + (Math.random() - 0.5) * 1.6; FX.smoke.spawn({ x: tw.x + Math.sin(a) * 1.8, y: 0.2, z: tw.z + Math.cos(a) * 1.8, vx: Math.sin(a) * 4, vz: Math.cos(a) * 4, drag: 4, life: 0.5, s0: 0.5, s1: 1.4, c: [0.9, 0.86, 0.76], a0: 0.4 }); }
     SND.play('sweep');
   } else if (tw.t === 'zap') {
     // the bolt hits the first bug, then hops from bug to bug one at a time so you can watch it travel
-    const z = { from: new V3(tw.x, tw.o.top.position.y + (tw.lv >= 3 ? 1.45 : 0), tw.z), last: null, next: tg, hit: new Set(), left: T.chain[L], dmg: T.dmg[L] * (1 + CUR_AMP), t: 0, own: S.cur || 0 };
+    const z = { from: new V3(tw.x, tw.o.top.position.y + (tw.lv >= 3 ? 1.45 : 0), tw.z), last: null, next: tg, hit: new Set(), left: T.chain[L] * (tw.perk ? 2 : 1), dmg: T.dmg[L] * (1 + CUR_AMP), t: 0, own: S.cur || 0 };
     S.zaps.push(z); zapHop(z);
   }
 }
@@ -3584,7 +3625,7 @@ function update(dt) {
   cloudsAct(dt);
   syncCandles();
   SCORCH_N++;
-  for (const tw of S.towers) { CUR_AMP = tw.amp || 0; CUR_SRC = tw.t; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
+  for (const tw of S.towers) { CUR_AMP = (tw.amp || 0) + ((tw.perk && PERK[tw.t].amp) || 0); CUR_SRC = tw.t; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
   itemsAct(dt);
   if (S.mode === 'play' && S.net !== 'guest') { extUpdate(dt); if (S.p2) withPlayer(1 - S.cur, () => extUpdate(dt)); }
   if (S.mode === 'play' && S.net === 'bot' && (S.botT -= dt) <= 0) { S.botT = 1.1; withPlayer(1, botThink); }
@@ -3702,15 +3743,25 @@ function removeTower(tw, usedUp) {
 }
 function upgrade(tw = S.pick) {
   if (tw && tw.snuff) { relight(tw); return; }
-  if (!tw || tw.lv >= 3) return;
+  if (!tw || (tw.lv >= 3 && (tw.perk || !PERK[tw.t]))) return;
   if (S.p2 && (tw.owner || 0) !== S.cur) return;
   if (S.net === 'guest') { if (S.money < upCost(tw) || tw.upPending || tw.pending) { SND.play('err'); return; } netSend({ k: 'up', id: tw.id }); SND.play('tap'); return; }
   const c = upCost(tw); if (S.money < c) { SND.play('err'); return; }
   if (tw.upPending || tw.pending) return;
   S.money -= c; tw.spent += c; if (!S.active) tw.fresh = (tw.fresh || 0) + c;
-  if (TT[tw.t].roam) { applyUpgrade(tw); bumpStat('stCoins'); syncTray(); return; }   // pets level up on the spot
-  tw.upPending = true; addJob('up', tw);
+  const perk = tw.lv >= 3;
+  if (TT[tw.t].roam) { if (perk) applyPerk(tw); else applyUpgrade(tw); bumpStat('stCoins'); syncTray(); return; }   // pets level up on the spot
+  tw.upPending = true; addJob(perk ? 'perk' : 'up', tw);
   SND.play('tap'); bumpStat('stCoins'); syncTray();
+}
+function applyPerk(tw) {
+  tw.upPending = false; tw.perk = true; tw.pop = 0;
+  if (!TT[tw.t].roam) { const ring = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.07, 8, 40), new THREE.MeshBasicMaterial({ color: '#ff8a2a' })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.12; tw.o.root.add(ring); tw.o.perkRing = ring; }
+  if (tw.o.setPerk) tw.o.setPerk(); else tw.o.baseScale = 1.12;
+  for (let i = 0; i < 24; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 2.4, y: 0.5 + Math.random() * 2.5, z: tw.z + (Math.random() - 0.5) * 2.4, vy: 2.5, life: 0.8, s0: 0.8, s1: 0.1, c: [1, 0.6 + Math.random() * 0.3, 0.2], a0: 1 });
+  SND.play('up'); setTimeout(() => SND.play('clear'), 200);
+  if ((tw.owner || 0) === (S.me || 0)) banner(PERK[tw.t].icon + ' ' + PERK[tw.t].name + '!', PERK[tw.t].d, false, 2200);
+  if (S.pick === tw) syncTray();
 }
 function applyUpgrade(tw) {
   if (tw.lv + 1 >= 3) ACH.unlock('lv3');
@@ -3989,9 +4040,10 @@ function drawTowers(dt, t) {
       if (f.visible) animFlame(f, t, tw.id * 2.3);
       if ((tw.lit || 0) >= 2 || o.boost2) { const f2 = boostFlame(o, 2); f2.visible = f.visible && tw.lit >= 2; if (f2.visible) animFlame(f2, t, tw.id * 2.3 + 1.9); }
     }
-    if (tw.pop < 1) { tw.pop = Math.min(1, tw.pop + dt * 5); const k = tw.pop, e = 1 + Math.sin(k * Math.PI) * 0.25; o.root.scale.setScalar(Math.max(0.01, k * e)); }
+    if (tw.pop < 1) { tw.pop = Math.min(1, tw.pop + dt * 5); const k = tw.pop, e = 1 + Math.sin(k * Math.PI) * 0.25; o.root.scale.setScalar(Math.max(0.01, k * e) * (o.baseScale || 1)); }
     if (o.turn) { let da = tw.yawT - tw.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); tw.yaw += da * Math.min(1, dt * 14); o.turn.rotation.y = tw.yaw; }
     const a = tw.anim;
+    if (o.sparky && !tw.pending && Math.random() < dt * 6) { const hx = tw.x + Math.sin(tw.yaw) * 2.6, hz = tw.z + Math.cos(tw.yaw) * 2.6; FX.glow.spawn({ x: hx + (Math.random() - 0.5), y: 1.2 + Math.random(), z: hz + (Math.random() - 0.5), vx: (Math.random() - 0.5) * 2, vy: 1, vz: (Math.random() - 0.5) * 2, life: 0.2, s0: 0.45, s1: 0.05, c: [0.5, 0.85, 1], a0: 1 }); }
     if (tw.t === 'venus') {
       const hs = tw.vh || [];
       o.heads.forEach((h, k) => {
@@ -4099,7 +4151,7 @@ function drawPlacement(t) {
       if (cellOk(sel, cell.c, cell.r)) { const g = ghostFor(sel); g.root.visible = true; g.root.position.set(x, 0, z); }
     }
   } else if (S.pick) {
-    const tw = S.pick; showRange(tw.x, tw.z, TT[tw.t].range[tw.lv - 1] * (1 + (tw.rmul || 0)), '#ffc93c', 0.1);
+    const tw = S.pick; showRange(tw.x, tw.z, TT[tw.t].range[tw.lv - 1] * (1 + (tw.rmul || 0)) * PR(tw), tw.perk ? '#ff9a3c' : '#ffc93c', 0.1);
   }
 }
 const BAR_Y = { ant: 1.35, fly: 1.55, spider: 1.6, bed: 0.85, dung: 1.8, baby: 1.05, hopper: 1.5, centi: 0.9, stink: 1.3, moth: 1.2, mantis: 2.3 };
@@ -4558,7 +4610,8 @@ function banner(txt, sub, red, ms) {
   bannerTimer = setTimeout(() => el.classList.remove('on'), ms);
 }
 function fmtStat(label, a, b, unit = '') { return `<li>${label} <b>${a}${unit}</b>${b != null ? ` → <b class="up">${b}${unit}</b>` : ''}</li>`; }
-function statsHtml(tw) {
+function statsHtml(tw) { const base = statsHtml0(tw); return PERK[tw.t] && tw.lv >= 3 ? base + `<li class="perkLi">${tw.perk ? 'Perk' : 'Perk available'}: <b>${PERK[tw.t].icon} ${PERK[tw.t].name}</b> · ${PERK[tw.t].d}</li>` : base; }
+function statsHtml0(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'glue') return fmtStat('Bugs left', T.cap[L] - tw.uses, N != null ? T.cap[N] - Math.max(0, tw.uses - 6) : null) + fmtStat('Slows to', Math.round(T.slow[L] * 100), N != null ? Math.round(T.slow[N] * 100) : null, '%') + fmtStat('Burn', T.dps[L], N != null ? T.dps[N] : null, '/s');
   if (tw.t === 'candle') return fmtStat('Scorch', T.burn[L], N != null ? T.burn[N] : null, '/s') + fmtStat('Tools in glow', '+' + Math.round(T.amp[L] * 100), N != null ? '+' + Math.round(T.amp[N] * 100) : null, '% damage') + fmtStat('and', '+' + Math.round(T.rng[L] * 100), N != null ? '+' + Math.round(T.rng[N] * 100) : null, '% range') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + `<li>Boosting <b>${S.towers.filter(o => o.t !== 'candle' && candleAmp(o, tw)).length}</b> tools</li>`;
@@ -4584,7 +4637,7 @@ function syncTray() {
   const tw = S.pick;
   $('info').hidden = !tw; $('shopWrap').hidden = !!tw;
   if (tw) {
-    const T = TT[tw.t], max = tw.lv >= 3, c = max ? 0 : upCost(tw);
+    const T = TT[tw.t], max = tw.lv >= 3 && (tw.perk || !PERK[tw.t]), perkUp = tw.lv >= 3 && !max, c = max ? 0 : upCost(tw);
     $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
     $('iStats').innerHTML = statsHtml(tw); $('iDesc').textContent = T.d;
     const busy = tw.pending || tw.upPending, theirs = S.p2 && (tw.owner || 0) !== S.cur;
@@ -4593,7 +4646,9 @@ function syncTray() {
     $('bMove').hidden = tw.t !== 'fogger';
     if (tw.t === 'fogger') { const used = tw.movedWave === moveWave(); $('bMove').disabled = !!theirs || used || tw.pending || tw.moving; $('bMoveC').textContent = tw.moving ? 'On the way' : used ? 'Moved this wave' : 'once per wave'; }
     $('bUp').disabled = theirs || max || busy || S.money < c; $('bUpC').textContent = max ? 'Maxed' : tw.pending ? 'Being built' : tw.upPending ? 'On the way' : c + ' coins';
-    $('bUp').firstChild.nodeValue = tw.snuff ? 'Relight' : 'Upgrade';
+    $('bUp').firstChild.nodeValue = tw.snuff ? 'Relight' : perkUp ? PERK[tw.t].icon + ' ' + PERK[tw.t].name : 'Upgrade';
+    $('bUp').classList.toggle('perkBtn', perkUp && !tw.snuff);
+    if (tw.perk) $('iLv').innerHTML += ` <span class="perkTag">${PERK[tw.t].icon} ${PERK[tw.t].name}</span>`;
     if (tw.snuff) { $('bUp').disabled = theirs || tw.relightPending || S.money < 15; $('bUpC').textContent = tw.relightPending ? 'On the way' : '15 coins · a moth put it out'; }
     if (tw.pending) $('iLv').textContent = 'Being built';
     $('bSellC').textContent = '+' + sellVal(tw) + (!tw.pending && tw.fresh && tw.fresh >= tw.spent ? ' · full' : '');
@@ -4636,7 +4691,7 @@ function syncHud() {
   const v = { lives: S.lives, money: S.money, wave: S.wave };
   if (shown.licN !== S.lic) { shown.licN = S.lic; $('stLic').hidden = !S.lic; $('lic').textContent = '+' + S.lic * 5 + '%'; renderShop(); }
   for (const k in v) if (shown[k] !== v[k]) { $(k).textContent = v[k]; shown[k] = v[k]; }
-  if (shown.money !== shown._m) { shown._m = shown.money; for (const el of shop.children) el.classList.toggle('poor', S.money < elCost(el)); if (S.pick) { const c = upCost(S.pick); $('bUp').disabled = S.pick.snuff ? S.pick.relightPending || S.money < 15 : S.pick.lv >= 3 || S.pick.pending || S.pick.upPending || S.money < c; } }
+  if (shown.money !== shown._m) { shown._m = shown.money; for (const el of shop.children) el.classList.toggle('poor', S.money < elCost(el)); if (S.pick) { const c = upCost(S.pick); $('bUp').disabled = S.pick.snuff ? S.pick.relightPending || S.money < 15 : (S.pick.lv >= 3 && (S.pick.perk || !PERK[S.pick.t])) || S.pick.pending || S.pick.upPending || S.money < c; } }
   if (S.qTotal && !$('queen').hidden) {
     let cur = S.net === 'guest' ? (S.qQueued || 0) : S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0);
     for (const b of S.bugs) if (b.mesh) cur += Math.max(0, b.hp);
@@ -4884,7 +4939,7 @@ function netSnap() {
     qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0), qn: $('qname').textContent, hp: S.hpMul,
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
       (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0) | (b.shiny ? 32 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
-    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0] : [])]),
+    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0) | (t.perk ? 16 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0] : [])]),
     i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd]),
     e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
 }
@@ -4937,6 +4992,7 @@ function netApply(m) {
     if (!tw) tw = remoteTower(id, t, c, r, owner);
     if (tw.pending && !(fl & 1)) finishJob({ kind: 'build', obj: tw });
     while (tw.lv < lv) applyUpgrade(tw);
+    if (fl & 16 && !tw.perk) applyPerk(tw);
     tw.upPending = !!(fl & 2); tw.stunT = fl & 4 ? 0.2 : 0; tw.snuff = !!(fl & 8);
     if (gcx != null) { tw.gcx = gcx; tw.gcz = gcz; tw.gcyaw = gcyaw; tw.cmove = cmove; }
     if (tw.c !== c || tw.r !== r) { tw.c = c; tw.r = r; tw.x = ccx(c); tw.z = ccz(r); tw.o.root.position.set(tw.x, 0, tw.z); }
