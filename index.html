@@ -468,7 +468,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v179</div>
+    <div id="ver">v180</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3165,8 +3165,8 @@ function bossesFor(n) {
 }
 function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && (LEVELS[LV].bossMulW[S.wave][t] || LEVELS[LV].bossMulW[S.wave]['*'])) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1)); }   // bosses are 5% softer in Bug Battle and Team Kitchen
 const MAXW = 25;
-// bug toughness by wave: climbs fast to wave 20, then gently (+4.5% a wave) through the last five
-function hpCurve(w) { const a = Math.min(w, 20) - 1; return (1 + 0.17 * a + 0.011 * a * a) * (w > 20 ? 1 + 0.045 * (Math.min(w, MAXW) - 20) : 1); }
+// bug toughness by wave: climbs fast to wave 20, then +7% a wave through the last five
+function hpCurve(w) { const a = Math.min(w, 20) - 1; return (1 + 0.17 * a + 0.011 * a * a) * (w > 20 ? 1 + 0.07 * (Math.min(w, MAXW) - 20) : 1); }
 function makeWave(n, sh = 0) {
   const team = LEVELS[LV] && LEVELS[LV].team, r = rng(n * 131 + 7 + sh * 977), q = [], cnt = Math.round((8 + Math.floor(n * 2.2)) * (team ? 1.6 : 1)), pool = ['ant'], u = n + sh;
   if (u >= 2) pool.push('fly'); if (u >= 4) pool.push('spider'); if (u >= 8) pool.push('fly', 'spider'); if (u >= 6) pool.push('dung'); if (u >= 12) pool.push('dung');
