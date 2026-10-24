@@ -60,6 +60,13 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #abil{position:absolute;left:12px;bottom:12px;z-index:4;width:68px;height:68px;border-radius:50%;border:0;padding:0;cursor:pointer;
   background:radial-gradient(circle at 50% 40%,#2f3a44,#151a1f);box-shadow:0 0 0 3px var(--gold),0 6px 16px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text)}
 #abil svg{width:38px;height:38px;margin-top:-4px}
+#catch{position:absolute;left:12px;bottom:90px;z-index:4;width:68px;height:68px;border-radius:50%;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  background:conic-gradient(from var(--rot,0deg),#ff5ad1,#ffd84a,#5aff9e,#5ac8ff,#b45aff,#ff5ad1);box-shadow:0 0 0 3px #fff,0 0 18px 6px rgba(255,220,120,.7);color:#1a1020;font:400 13px var(--display);animation:catchPulse .7s ease-in-out infinite alternate}
+#catch span{font-size:24px;line-height:1}
+#catch.busy{filter:saturate(.4);animation:none}
+@keyframes catchPulse{to{transform:scale(1.08);box-shadow:0 0 0 3px #fff,0 0 26px 10px rgba(255,220,120,.9)}}
+#jar{position:absolute;left:88px;bottom:16px;z-index:4;border:0;border-radius:14px;padding:5px 10px;cursor:pointer;background:rgba(14,18,22,.92);color:var(--text);font:800 12px var(--body);box-shadow:inset 0 0 0 2px #ffd84a,0 4px 12px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px}
+#jar b{color:#ffd84a;font:400 15px var(--display)}
 #abil b{font:400 12px var(--display);letter-spacing:.05em;margin-top:-3px}
 #abil small{position:absolute;right:-6px;top:-6px;background:var(--gold);color:#3a2400;font:900 11px/1 var(--body);padding:3px 6px;border-radius:999px;box-shadow:0 2px 4px rgba(0,0,0,.4)}
 #abil.poor small{background:#6a3a36;color:#ffb3a8}
@@ -456,9 +463,11 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <svg viewBox="0 0 48 48"><rect x="10" y="8" width="16" height="24" rx="5" fill="#8fd0f0"/><rect x="13" y="5" width="10" height="5" rx="2.5" fill="#5aa8d0"/><rect x="13" y="18" width="10" height="5" fill="#1c1d22"/>
       <path d="M18 32c0 6 4 8 9 8l12-8" stroke="#1c1d22" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M39 32l7-5M39 32l7 1M39 32l6 6" stroke="#bff0c8" stroke-width="2.5" stroke-linecap="round"/></svg>
       <b>Spray</b><small>40</small><i id="abilT"></i></button>
+    <button id="catch" type="button" hidden aria-label="Catch the shiny bug"><span>✨</span>Catch</button>
+    <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v170</div>
+    <div id="ver">v171</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2041,6 +2050,49 @@ function leadBug() {
   for (const b of S.bugs) if (!b.dead && b.y0 < 0.5 && (!best || b.s > best.s)) best = b;
   return best;
 }
+// ---- shiny bugs: a very rare rainbow bug. Tap Catch and the exterminator runs over and grabs it before it's squashed
+const SHINY_CHANCE = 0.003;
+const BUG_NAME = { ant: 'Ant', fly: 'Fly', spider: 'Spider', bed: 'Bed Bug', dung: 'Dung Beetle', baby: 'Baby Spider', hopper: 'Grasshopper', centi: 'Centipede', stink: 'Stink Bug', moth: 'Moth', mantis: 'Praying Mantis' };
+const shinyName = b => 'shiny ' + (BUG_NAME[b.t] || 'bug');
+function makeShiny(b) { b.shiny = true; banner('✨ A ' + shinyName(b) + '!', 'Tap Catch before it gets squashed!', false, 2400); SND.play('up'); }
+function jarCount() { try { return +localStorage.getItem('ppd-shiny') || 0; } catch (e) { return 0; } }
+function jarSet(n) { try { localStorage.setItem('ppd-shiny', String(Math.max(0, n))); } catch (e) {} syncCatch(); }
+function startCatch() {
+  if (S.mode !== 'play' || S.paused) return;
+  if (S.net === 'guest') { netSend({ k: 'catch' }); SND.play('tap'); $('catch').classList.add('busy'); return; }
+  const e = S.ext, sh = S.bugs.filter(b => b.shiny && !b.dead);
+  if (!sh.length) return;
+  const b = sh.reduce((m, o) => !m || Math.hypot(o.x - e.x, o.z - e.z) < Math.hypot(m.x - e.x, m.z - e.z) ? o : m, null);
+  e.held = false; e.abil = null; e.catch = { id: b.id }; SND.play('wave');
+}
+function catchUpdate(e, dt) {
+  const b = S.bugs.find(o => o.id === e.catch.id);
+  if (!b || b.dead || !b.shiny) { e.catch = null; e.state = e.job ? 'walk' : 'idle'; e.rest = null; return; }
+  const mx = b.x - e.x, mz = b.z - e.z, md = Math.hypot(mx, mz), step = ABIL.speed * 1.15 * dt;
+  if (md > 1.3) { e.x += mx / md * Math.min(step, md); e.z += mz / md * Math.min(step, md); e.yaw = Math.atan2(mx, mz); e.phase += dt * 20; e.state = 'walk'; return; }
+  // got it!
+  b.dead = true; hideBug(b); e.catch = null; e.state = e.job ? 'walk' : 'idle'; e.rest = null;
+  for (let i = 0; i < 24; i++) { const a = Math.random() * TAU, v = 2 + Math.random() * 4; FX.glow.spawn({ x: b.x, y: 1, z: b.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 4, vz: Math.sin(a) * v, grav: 8, life: 0.8, s0: 0.6, s1: 0.1, c: [Math.random(), Math.random(), 1], a0: 1 }); }
+  SND.play('clear');
+  banner('Caught a ' + shinyName(b) + '!', 'It\'s in your Shiny Jar. Sell it any time for 100 coins.', false, 2600);
+  if (S.p2 && (S.cur || 0) !== (S.me || 0)) netSend({ k: 'caught', t: b.t }); else jarSet(jarCount() + 1);
+}
+function sellShiny() {
+  if (S.mode !== 'play' || jarCount() <= 0) return;
+  jarSet(jarCount() - 1); SND.play('sell');
+  if (S.net === 'guest') netSend({ k: 'sellShiny' }); else S.money += 100;
+  banner('Sold a shiny bug', '+100 coins', false, 1200);
+}
+function syncCatch() {
+  if (!S) return;
+  const play = S.mode === 'play', alive = play && S.bugs.some(b => b.shiny && !b.dead), el = $('catch');
+  if (el.hidden === alive) el.hidden = !alive;
+  if (!alive) el.classList.remove('busy'); else el.classList.toggle('busy', !!(S.ext && S.ext.catch));
+  const n = jarCount(), j = $('jar'); j.hidden = !play || n <= 0; if ($('jarN').textContent !== String(n)) $('jarN').textContent = n;
+}
+$('catch').addEventListener('click', e => { e.stopPropagation(); SND.init(); startCatch(); });
+$('jar').addEventListener('click', e => { e.stopPropagation(); SND.init(); sellShiny(); });
+for (const id of ['catch', 'jar']) for (const ev of ['pointerdown', 'pointerup']) $(id).addEventListener(ev, e => e.stopPropagation());
 function useAbility() {
   if (S.mode !== 'play' || S.paused) return;
   if (S.net === 'guest') { if ((S.abilCd || 0) > 0 || S.money < ABIL.cost) { SND.play('err'); return; } netSend({ k: 'abil' }); return; }
@@ -2102,7 +2154,8 @@ function syncAbil() {
 function extUpdate(dt) {
   const e = S.ext;
   if (S.abilCd > 0) S.abilCd -= dt;
-  if (e.held) { e.phase += dt * 9; e.abil = null; return; }
+  if (e.held) { e.phase += dt * 9; e.abil = null; e.catch = null; return; }
+  if (e.catch) { catchUpdate(e, dt); return; }
   if (e.abil) { abilUpdate(e, dt); return; }
   if (!e.job && !S.jobs.length) {
     // nothing to build: head to an open tile out of the way and wait there
@@ -2399,7 +2452,8 @@ function drawMdl(b, t, sh) {
   if (u.head) u.head.visible = !b.lead || b.lead.dead;
   u.body.position.y = base === 'centi' ? Math.sin(w * 0.8) * 0.04 : hop ? (u.crY || 0) + (b.jump > 0 ? 0 : Math.abs(Math.sin(w)) * 0.025) : 0;
   const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : b.munch > 0 ? 0.3 : 0;
-  if (u.f !== f) { u.f = f; for (const m of u.mats) m.emissive.setRGB(f * (b.munch > 0 ? 0.3 : 1), f * (b.psnT > 0 || b.munch > 0 ? 2 : 1), f * (b.munch > 0 ? 0.3 : 1)); }
+  if (b.shiny) { u.f = -1; shinyC.setHSL((t * 0.5 + b.id * 0.13) % 1, 1, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.8, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
+  else if (u.f !== f) { u.f = f; for (const m of u.mats) m.emissive.setRGB(f * (b.munch > 0 ? 0.3 : 1), f * (b.psnT > 0 || b.munch > 0 ? 2 : 1), f * (b.munch > 0 ? 0.3 : 1)); }
   if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, (u.shadow || 1.4) * q.scale.x, 0, 0, 0, 0, bt.fly || b.air ? 0.25 : 0.45);
 }
 // spawn one queue entry (a bed bug swarm or a centipede is several bugs)
@@ -3025,6 +3079,7 @@ function spawnBug(t, route = nextRoute()) {
   const bt = BT[t], LL = LEVELS[LV], wm = ((S.mode === 'play' && LL.bugMulW && LL.bugMulW[S.wave] && (LL.bugMulW[S.wave][t] || LL.bugMulW[S.wave]['*'])) || 1) * (S.mode === 'play' && LL.bugMulAfter && S.wave > LL.bugMulAfter[0] ? LL.bugMulAfter[1] : 1), hp = bt.boss ? bossHp(t) : Math.round(bt.hp * S.hpMul * wm * (S.mode === 'play' && S.wave >= 10 ? 1.2 : 1) * (S.mode === 'play' && S.wave > 5 && t !== 'dung' ? 1.05 : 1)), b = { id: S.nid++, t, s: 0, off: (Math.random() - 0.5) * (bt.boss ? 0.2 : 1.3), hp, max: hp,
     x: 0, y0: 0, z: 0, ang: 0, pitch: 0, flash: 0, psnT: 0, psnD: 0, pacc: 0, stuck: 0, slowF: 1, walk: Math.random() * 6, glued: 0 };
   b.route = route; pathAt(0, tmpP, route); b.x = tmpP.x; b.z = tmpP.z; b.ang = Math.atan2(tmpP.dx, tmpP.dz);
+  if (S.mode === 'play' && S.net !== 'guest' && !bt.boss && Math.random() < SHINY_CHANCE) makeShiny(b);
   if (bt.ball) { const h = Math.round(bt.ball * S.hpMul * wm * (S.wave === 6 || S.wave === 7 ? 0.7 / 0.9 : 1));   // beetle balls 30% weaker on waves 6-7
     b.ball = { hp: h, max: h, flash: 0 }; }
   if (bt.boss) { b.mesh = getBoss(t); $('queen').hidden = false; if (t === 'widow') b.clutch = 2; if (bt.base) b.mdl = b.mesh; }
@@ -3141,6 +3196,7 @@ function kill(b) {
   if (S.mode === 'play') { b.dn = Math.ceil(b.dn || 0); b.dr = Math.ceil(b.dr || 0); b.db = Math.ceil(b.db || 0); flushDmg(b); }
   b.dead = true; const bt = BT[b.t], y = bugY(b) + 0.4;
   if (b.mdl) { b.mdl.visible = false; b.mdl = null; }
+  if (b.shiny && S.mode === 'play') banner('The ' + shinyName(b) + ' got squashed!', 'Catch the next one before your tools get it', true, 1800);
   if (b.t === 'stink') stinkCloud(b.x, b.z); else if (b.t === 'gstink') stinkCloud(b.x, b.z, 7, 6);
   const g = Math.max(1, Math.round((bt.gold + Math.floor(S.wave / 3)) * goldMul() * (b.sent ? 0.5 : 1)));
   if (S.mode === 'play' && S.net === 'guest') ACH.kill(b.t);
@@ -3627,11 +3683,13 @@ const posV = new V3(), sclV = new V3(), baseM = new THREE.Matrix4(), legLocal = 
 const angryC = new THREE.Color(2.2, 0.7, 0.6), ballC = new THREE.Color(1, 1, 1);
 const DOWN = new V3(0, -1, 0), white = new THREE.Color(1, 1, 1), flashC = new THREE.Color(5, 5, 5), stuckC = new THREE.Color(1.6, 1.4, 0.5), psnC = new THREE.Color(0.75, 1.5, 0.7), babyC = new THREE.Color(0.55, 0.45, 0.6);
 function setI(m, i, x, y, z, ry, s = 1, rx = 0, rz = 0) { tmpE.set(rx, ry, rz, 'YXZ'); tmpQ.setFromEuler(tmpE); sclV.set(s, s, s); tmpM.compose(posV.set(x, y, z), tmpQ, sclV); m.setMatrixAt(i, tmpM); return tmpM; }
+const shinyC = new THREE.Color();
 function drawBugs(t) {
   const c = { ant: 0, antLeg: 0, fly: 0, wing: 0, spider: 0, spiderLeg: 0, dung: 0, dungLeg: 0, ball: 0, bed: 0, bedLeg: 0 }, sh = B.shadow;
   for (const b of S.bugs) {
     if (b.mdl) { drawMdl(b, t, sh); continue; }
-    const fl = b.flash > 0 ? flashC : b.stuck > 0 ? stuckC : b.psnT > 0 ? psnC : white;
+    const fl = b.shiny ? shinyC.setHSL((t * 0.5 + b.id * 0.13) % 1, 1, 0.6).multiplyScalar(3.2) : b.flash > 0 ? flashC : b.stuck > 0 ? stuckC : b.psnT > 0 ? psnC : white;
+    if (b.shiny && Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 });
     if (b.t === 'ant') {
       const i = c.ant++, base = baseM.copy(setI(IM.ant, i, b.x, b.y0, b.z, b.ang, 1.15, b.pitch)); IM.ant.setColorAt(i, fl);
       for (let l = 0; l < 6; l++) {
@@ -3917,6 +3975,7 @@ function drawFx(dt, t) {
   for (const r of S.rings) { const k = r.t / r.life; B.ring.add(r.x, 0.08, r.z, r.r * 2 * (0.3 + 0.7 * k), 0, 1, 0.95, 0.85, 1 - k); }
   for (const tw of S.towers) if (tw.t !== 'glue') B.shadow.add(tw.x, 0.03, tw.z, 3, 0, 0, 0, 0, 0.35);
   for (const tw of S.towers) if (tw.amp > 0 && !tw.pending) B.glow.add(tw.x + 0.95, 0.75, tw.z + 0.95, 1.6, 0, 1, 0.6, 0.2, 0.42 + Math.sin(clock * 2.5 + tw.id) * 0.06);
+  for (const b of S.bugs) if (b.shiny && !b.dead) { const c = shinyC.setHSL((clock * 0.5 + b.id * 0.13) % 1, 1, 0.6); B.glow.add(b.x, bugY(b) + 0.5, b.z, 2.4 + Math.sin(clock * 6) * 0.3, clock * 2, c.r, c.g, c.b, 0.6); }   // rainbow halo on shiny bugs
   for (const tw of S.towers) if (tw.t === 'lens' && tw.o.tip.visible && tw.lock) { const k = tw.heat / TT.lens.ramp, l = tw.lock; B.glow.add(l.x, bugY(l) + 0.35, l.z, 0.8 + 1.6 * k, clock * 3, 1, 0.8 - 0.3 * k, 0.4 - 0.3 * k, 0.6 + 0.4 * k); }
   let ci = 0;
   S.coins = S.coins.filter(c => (c.t += dt) < 0.7);
@@ -4544,6 +4603,7 @@ function netOnMsg(m) {
     if (!S || S.net !== 'guest') return;
     if (rsAnswer(m)) return;
     if (m.k === 'bn') { banner(m.a, m.b, !!m.r, m.ms); return; }
+    if (m.k === 'caught') { jarSet(jarCount() + 1); return; }
     if (m.k === 's') { NET.lastSnap = performance.now(); netApply(m); }
     else if (m.k === 'over') { S.lives = m.l; S.wave = m.w; S.kills = m.kills; if (m.st) S.stats = m.st; gameOver(m.won); }
   }
@@ -4594,6 +4654,8 @@ function netHostCmd(m) {
     else if (m.k === 'relight' && tw) relight(tw);
     else if (m.k === 'move' && tw && tw.owner === 1) moveFogger(tw, m.c, m.r);
     else if (m.k === 'undo') undoSell();
+    else if (m.k === 'catch') startCatch();
+    else if (m.k === 'sellShiny') S.money += 100;
     else if (m.k === 'sell' && tw && tw.owner === 1) sell(tw);   // (sell() also remembers it so the partner can undo)
     else if (m.k === 'lic') buyLicense();
     else if (m.k === 'abil') useAbility();
@@ -4623,7 +4685,7 @@ function netSnap() {
     m: [Math.floor(g('money')), Math.floor(h('money'))], cd: [r2(g('abilCd') || 0), r2(h('abilCd') || 0)], lic: [g('lic'), h('lic')], iu: [g('itemUsed') || {}, h('itemUsed') || {}],
     qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0), qn: $('qname').textContent, hp: S.hpMul,
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
-      (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
+      (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0) | (b.shiny ? 32 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
     t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0)]),
     i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd]),
     e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
@@ -4661,7 +4723,7 @@ function netApply(m) {
     else { const d = sv - b.s; b.s += Math.abs(d) > 2.5 ? d : d * 0.35; }
     b.hp = hp; b.max = max; b.off = off;
     if (b.ball) { if (bh <= 0 && b.ball.hp > 0) { b.ball.hp = 0; breakBall(b); } else if (bh > 0) { b.ball.hp = bh; b.ball.max = bm; } }
-    b.leadId = lead || 0; b.gx = gx ?? null; b.gz = gz ?? null; b.ghy = hy || 0; b.munch = fl & 16 ? 0.2 : 0;
+    b.leadId = lead || 0; b.gx = gx ?? null; b.gz = gz ?? null; b.ghy = hy || 0; b.munch = fl & 16 ? 0.2 : 0; b.shiny = !!(fl & 32);
     if (fl & 1) b.psnT = Math.max(b.psnT, 0.3); if (fl & 2) { b.stuck = Math.max(b.stuck, 0.15); b.slowF = Math.min(b.slowF, 0.5); } if (fl & 4) b.angry = true; b.eatT = fl & 8 ? Math.max(b.eatT || 0, 0.2) : 0;
   }
   for (const b of S.bugs) if (b.leadId !== undefined) { const L = b.leadId ? byId.get(b.leadId) || S.bugs.find(o => o.id === b.leadId) : null; b.lead = L && !L.dead ? L : null; }
@@ -5777,7 +5839,7 @@ function step(now, draw) {
     aim((Math.random() - 0.5) * sk, (Math.random() - 0.5) * sk);
     if (SPEC.on) specFrame(dt); else { drawTowers(dt, clock); drawPlacement(clock); drawFx(S.paused ? 0 : dt, clock); }
   } catch (e) { showErr('draw', e); }
-  if (draw) try { if (S.mode === 'play') syncHud(); syncAbil(); syncUndo(); } catch (e) { showErr('hud', e); }
+  if (draw) try { if (S.mode === 'play') syncHud(); syncAbil(); syncUndo(); syncCatch(); } catch (e) { showErr('hud', e); }
   try { tutTick(dt); } catch (e) { showErr('tutorial', e); }
   try { netFrame(raw > 0 && raw < 1 ? raw : dt); } catch (e) { showErr('net', e); }
   try { MUSIC.set(S.mode === 'play' && !$('queen').hidden ? 'boss' : 'calm'); } catch (e) {}
