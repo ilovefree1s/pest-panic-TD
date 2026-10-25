@@ -494,7 +494,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v219</div>
+    <div id="ver">v220</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2086,7 +2086,7 @@ function finishJob(j) {
   if (S.pick === o) syncTray();
 }
 // full gold for the opening 5 waves, then the 15% cut kicks in
-function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : S.wave <= 15 ? 0.58 : 0.48; }   // late waves pay less so gold doesn't pile up unspent
+function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : S.wave <= 15 ? 0.42 : 0.33; }   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
 const ABIL = { cd: 60, cost: 40, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
 function leadBug() {
