@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v236</div>
+    <div id="ver">v238</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1012,7 +1012,7 @@ function applyHouse(i) {
   for (const k in KIT.props) {
     const g = KIT.props[k], at = L[k];
     g.visible = !!at; if (!at) continue;
-    g.position.set(at[0], TOP_Y, at[1]); g.rotation.y = at[2]; g.scale.setScalar(1.35);
+    g.position.set(at[0], TOP_Y, at[1]); g.rotation.set(0, at[2], 0); g.scale.setScalar(1.35); g.userData.fall = null; g.userData.knocked = false;
   }
 }
 function buildRoute(wp) {
@@ -2066,7 +2066,7 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
   return root;
 }
 const EXT = buildPlayer(), EXT2 = buildPlayer('#c8342a', '#2f6fd0');
-const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6 };
+const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6, wake: 1.6 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
 function makeMarker(x, z) {
@@ -2086,7 +2086,7 @@ function sideOf(c) { return !LEVELS[LV].team ? -1 : c < BOARD.cakeCol ? 0 : c > 
 function mySide(c) { const sd = sideOf(c); return !S.p2 || sd < 0 || sd === S.cur; }
 function addJob(kind, obj) {
   const j = { kind, obj };
-  if (kind !== 'up' && kind !== 'relight' && kind !== 'move') obj.marker = makeMarker(obj.x, obj.z);
+  if (kind !== 'up' && kind !== 'relight' && kind !== 'move' && kind !== 'wake') obj.marker = makeMarker(obj.x, obj.z);
   S.jobs.push(j);
 }
 function cancelJobs(obj) {
@@ -2107,6 +2107,10 @@ function finishJob(j) {
     o.c = d.c; o.r = d.r; o.x = ccx(d.c); o.z = ccz(d.r); o.o.root.position.set(o.x, 0, o.z); o.pop = 0.4;
     for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; FX.smoke.spawn({ x: o.x + Math.cos(a), y: 0.2, z: o.z + Math.sin(a), vx: Math.cos(a) * 3, vz: Math.sin(a) * 3, drag: 4, life: 0.45, s0: 0.5, s1: 1.2, c: [0.95, 0.92, 0.85], a0: 0.4 }); }
     SND.play('place'); if (S.pick === o) syncTray(); return;
+  }
+  if (j.kind === 'wake') {   // purr: little hearts, then the cat hops down and gets to work
+    for (let i = 0; i < 10; i++) FX.glow.spawn({ x: o.x + (Math.random() - 0.5) * 1.5, y: 1.5 + Math.random(), z: o.z + (Math.random() - 0.5) * 1.5, vy: 2, life: 0.9, s0: 0.5, s1: 0.1, c: [1, 0.45, 0.65], a0: 1 });
+    banner('Meow!', 'The cat is awake and on the prowl', false, 1400);
   }
   if (j.kind === 'relight') { o.snuff = false; o.relightPending = false; for (let i = 0; i < 12; i++) FX.glow.spawn({ x: o.x + (Math.random() - 0.5), y: 2 + Math.random(), z: o.z + (Math.random() - 0.5), vy: 2, life: 0.6, s0: 0.6, s1: 0.1, c: [1, 0.8, 0.3], a0: 1 }); SND.play('up'); if (S.pick === o) syncTray(); return; }
   o.pending = false; o.o.root.visible = true; o.pop = 0;
@@ -3560,9 +3564,50 @@ function syncCandles() {
   }
 }
 // the house cat: wanders around its bed, and pounces on any bug that comes near
+const CAT_KNOCKS = 4;   // at most this many things knocked off per level
+function catMischief(tw, T, L, dt) {   // now and then: hop up on the counter, swat one thing off, hop back down
+  const M = tw.mis;
+  if (!M) return false;
+  const g = KIT.props[M.key];
+  if (M.ph === 'go') {
+    const mx = M.f.x - tw.cx, mz = M.f.z - tw.cz, d = Math.hypot(mx, mz);
+    if (d < 0.25) { M.ph = 'up'; M.t = 0; return true; }
+    const st = Math.min(d, T.spd[L] * 1.2 * dt); tw.cx += mx / d * st; tw.cz += mz / d * st; tw.cyaw = Math.atan2(mx, mz); tw.cmove = 1; return true;
+  }
+  M.t += dt; const top = M.top;
+  if (M.ph === 'up') {   // one big leap onto the counter, next to the thing
+    const k = Math.min(1, M.t / 0.45); tw.cx = M.f.x + (top.x - M.f.x) * k; tw.cz = M.f.z + (top.z - M.f.z) * k; tw.cy = TOP_Y * k + Math.sin(k * Math.PI) * 1.2;
+    tw.cyaw = Math.atan2(g.position.x - top.x, g.position.z - top.z); tw.cmove = 2;
+    if (k >= 1) { M.ph = 'swat'; M.t = 0; tw.anim = 0; tw.cmove = 0; }
+    return true;
+  }
+  if (M.ph === 'swat') {   // a look, a paw, and over the edge it goes
+    tw.cmove = 0; tw.cyaw = Math.atan2(g.position.x - tw.cx, g.position.z - tw.cz);
+    if (M.t > 0.5 && !M.done) { M.done = true; tw.anim = 0; knockProp(M.key); tw.knocks = (tw.knocks || 0) + 1; }
+    if (M.t > 1.3) { M.ph = 'down'; M.t = 0; }
+    return true;
+  }
+  const k = Math.min(1, M.t / 0.45);   // and back down to the floor
+  tw.cx = top.x + (M.f.x - top.x) * k; tw.cz = top.z + (M.f.z - top.z) * k; tw.cy = TOP_Y * (1 - k) + Math.sin(k * Math.PI) * 0.8; tw.cmove = 2;
+  if (k >= 1) { tw.cy = 0; tw.mis = null; tw.misAt = (S.gt || 0) + 45 + Math.random() * 35; tw.goal = null; tw.rest = 0.8; }
+  return true;
+}
+function catPlanMischief(tw) {
+  if ((tw.knocks || 0) >= CAT_KNOCKS || !KIT.props) return;
+  const keys = Object.keys(KIT.props).filter(k => KIT.props[k].visible && !KIT.props[k].userData.knocked && k !== 'sink');
+  if (!keys.length) return;
+  let best = null, bd = 1e9;
+  for (const k of keys) { const g = KIT.props[k], d = (g.position.x - tw.cx) ** 2 + (g.position.z - tw.cz) ** 2 + Math.random() * 60; if (d < bd) { bd = d; best = k; } }
+  const g = KIT.props[best], f = floorBelow(g.position.x, g.position.z), dx = g.position.x - f.x, dz = g.position.z - f.z, d = Math.hypot(dx, dz) || 1;
+  tw.mis = { key: best, ph: 'go', t: 0, f, top: { x: g.position.x - dx / d * 1.4, z: g.position.z - dz / d * 1.4 } };
+}
 function catAct(tw, T, L, R, dt) {
   if (tw.cx === undefined) { tw.cx = tw.x; tw.cz = tw.z; tw.cyaw = 0; }
   tw.x = tw.cx; tw.z = tw.cz;   // its range ring follows it around
+  if (tw.misAt === undefined) tw.misAt = (S.gt || 0) + 25 + Math.random() * 25;
+  if (tw.mis && (tw.mis.ph !== 'go' || !S.bugs.some(b => !b.dead && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < R * R))) { if (catMischief(tw, T, L, dt)) return; }
+  else if (tw.mis) tw.mis = null;   // a bug showed up on the way: hunting comes first
+  if (!tw.mis && !tw.pounce && (S.gt || 0) > tw.misAt && !S.bugs.some(b => !b.dead && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < R * R * 2)) { catPlanMischief(tw); tw.misAt = (S.gt || 0) + 20; if (tw.mis) return; }
   const P = tw.pounce;
   if (P) {
     const b = S.bugs.find(o => o.id === P.id);
@@ -4004,6 +4049,11 @@ function buyPet(t) {
   const o = makeTower(t), tw = { id: S.nid++, t, c: -9, r: -9, x: tmpP.x, z: tmpP.z, cx: tmpP.x, cz: tmpP.z, cyaw: 0, lv: 1, cd: 0.5, anim: 9, yaw: 0, yawT: 0, spent: T.cost, fresh: S.active ? 0 : T.cost, uses: 0, owner: S.cur || 0, o };
   o.pips.forEach((p, i) => p.visible = i < 1); o.root.position.set(tw.x, 0, tw.z); o.root.scale.setScalar(0.01); tw.pop = 0; scene.add(o.root); S.towers.push(tw);
   S.undo = { kind: 'buy', id: tw.id, t, got: T.cost, until: performance.now() + UNDO_MS }; if (S.cur === (S.me || 0)) syncUndo();
+  if (t === 'cat') {
+    const w = catWakeSpot(); tw.x = tw.cx = w.x; tw.z = tw.cz = w.z; o.root.position.set(w.x, 0, w.z); o.root.visible = false; tw.pending = true;
+    addJob('wake', tw); banner('Wake up, kitty!', 'Your exterminator is going over to pet the cat awake', false, 2000); SND.play('tap');
+    return true;
+  }
   banner('Here, kitty!', 'Your ' + T.name + ' wandered in. Tap it to upgrade or sell.', false, 1800); SND.play('place');
   return true;
 }
@@ -4227,8 +4277,35 @@ function catBedSpot() {
   }
   return best;
 }
-function syncCatBed() {
-  const want = !!S && S.mode !== 'title' && S.towers.some(o => o.t === 'cat' && !o.pending);
+function floorBelow(x, z) { const W = CS * COLS, H = CS * ROWS; return { x: Math.max(X0 + 1.2, Math.min(X0 + W - 1.2, x)), z: Math.max(Z0 + 1.2, Math.min(Z0 + H - 1.2, z)) }; }
+function knockProp(key) {   // a counter thing gets swatted off the edge and tumbles onto the kitchen floor
+  const g = KIT.props && KIT.props[key]; if (!g || !g.visible || g.userData.knocked) return;
+  const f = floorBelow(g.position.x, g.position.z), dx = f.x - g.position.x, dz = f.z - g.position.z, d = Math.hypot(dx, dz) || 1;
+  g.userData.knocked = true; g.userData.fall = { t: 0, vx: dx / d * 5, vz: dz / d * 5, vy: 3, spin: (Math.random() < 0.5 ? -1 : 1) * (5 + Math.random() * 3), ax: Math.abs(dz) > Math.abs(dx) ? 'x' : 'z' };
+  SND.play('slam');
+  if (S && S.net === 'host') netSend({ k: 'knock', p: key });
+}
+function propFalls(dt) {
+  if (!KIT.props) return;
+  for (const k in KIT.props) {
+    const g = KIT.props[k], f = g.userData.fall; if (!f) continue;
+    f.t += dt;
+    if (!f.land) {
+      f.vy -= 22 * dt; g.position.x += f.vx * dt; g.position.z += f.vz * dt; g.position.y += f.vy * dt; g.rotation[f.ax] += f.spin * dt;
+      if (g.position.y <= 0.05) { g.position.y = 0.05; f.land = f.t; g.rotation[f.ax] = Math.sign(f.spin) * Math.PI / 2; SND.play('bite'); for (let i = 0; i < 8; i++) FX.smoke.spawn({ x: g.position.x, y: 0.3, z: g.position.z, vx: (Math.random() - 0.5) * 4, vz: (Math.random() - 0.5) * 4, drag: 4, life: 0.5, s0: 0.5, s1: 1.3, c: [0.95, 0.92, 0.85], a0: 0.45 }); }
+    } else if (f.t - f.land > 8) {   // lies there a while, then gets tidied away
+      for (let i = 0; i < 10; i++) FX.smoke.spawn({ x: g.position.x, y: 0.4, z: g.position.z, vx: (Math.random() - 0.5) * 3, vy: 1, vz: (Math.random() - 0.5) * 3, drag: 3, life: 0.6, s0: 0.6, s1: 1.4, c: [0.95, 0.92, 0.85], a0: 0.5 });
+      g.visible = false; g.userData.fall = null;
+    }
+  }
+}
+function catWakeSpot() {
+  const at = catBedSpot(); if (!at) return { x: 0, z: 0 };
+  const W = CS * COLS, H = CS * ROWS;
+  return { x: Math.max(X0 + 1.2, Math.min(X0 + W - 1.2, at[0])), z: Math.max(Z0 + 1.2, Math.min(Z0 + H - 1.2, at[1])) };
+}
+function syncCatBed(dt = 0) {
+  const want = !!S && (S.mode === 'play' || S.mode === 'over') && !SPEC.on;
   if (!want) { if (CATBED.g) CATBED.g.visible = false; return; }
   if (!CATBED.g) {
     const g = new THREE.Group(), fabric = std({ color: '#7a4fa8', roughness: 0.9 }), cream = std({ color: '#f3e6cf', roughness: 1 }), dark = std({ color: '#5a3880', roughness: 0.9 });
@@ -4237,13 +4314,30 @@ function syncCatBed() {
     const cushion = mesh(cyl(1.15, 1.2, 0.26, 28), cream); cushion.position.y = 0.38; g.add(cushion);
     for (let i = 0; i < 4; i++) { const t = mesh(cyl(0.12, 0.12, 0.03, 10), dark); const a = i * 1.1 - 1.6; t.position.set(Math.cos(a) * 0.55, 0.53, Math.sin(a) * 0.45); g.add(t); }   // a little paw print
     g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    // the house cat, curled up asleep on the cushion, with little Z's floating up
+    const sl = makeTower('cat'); sl.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    sl.root.position.set(0, 0.42, 0); sl.root.scale.set(0.95, 0.62, 0.95); sl.root.rotation.y = 0.6; if (sl.head) { sl.head.rotation.x = 0.55; sl.head.position.y -= 0.25; }
+    if (sl.rim) sl.rim.visible = false; if (sl.pips) sl.pips.forEach(p => p.visible = false);
+    g.add(sl.root); CATBED.sleeper = sl;
+    const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.strokeStyle = '#3a2a5a'; x.lineWidth = 6; x.font = '900 52px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.strokeText('z', 32, 34); x.fillText('z', 32, 34);
+    const zm = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false });
+    CATBED.zs = [0, 1, 2].map(i => { const sp = new THREE.Sprite(zm.clone()); sp.renderOrder = 15; g.add(sp); return { sp, t: i / 3 }; });
     CATBED.g = g; scene.add(g);
   }
+  // asleep until a cat of yours is awake in the kitchen
+  const awake = S.towers.some(o => o.t === 'cat' && !o.pending);
+  CATBED.sleeper.root.visible = !awake;
+  for (const z of CATBED.zs) {
+    z.sp.visible = !awake; if (awake) continue;
+    z.t = (z.t + dt * 0.35) % 1; const k = z.t;
+    z.sp.position.set(0.3 + k * 0.6, 1.0 + k * 1.6, -0.2 + Math.sin(k * 6) * 0.15); z.sp.scale.setScalar(0.35 + k * 0.4); z.sp.material.opacity = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8;
+  }
+  if (!awake && CATBED.sleeper) CATBED.sleeper.root.scale.y = 0.62 + Math.sin(performance.now() / 700) * 0.025;   // breathing
   if (CATBED.lv !== LV) { const at = catBedSpot(); CATBED.lv = LV; if (at) { CATBED.g.position.set(at[0], TOP_Y, at[1]); CATBED.g.rotation.y = at[2]; CATBED.g.scale.setScalar(1.35); } }
   CATBED.g.visible = true;
 }
 function drawTowers(dt, t) {
-  syncCatBed();
+  syncCatBed(dt); propFalls(dt);
   if (S.mode === 'play') syncCandles();
   for (const tw of S.towers) {
     const o = tw.o, T = TT[tw.t];
@@ -4278,11 +4372,11 @@ function drawTowers(dt, t) {
     if (tw.t === 'cat') {
       const c = o.cat;
       if (tw.cx === undefined) { tw.cx = tw.x; tw.cz = tw.z; tw.cyaw = 0; }
-      if (S.net === 'guest' && tw.gcx !== undefined) { const k = Math.min(1, dt * 10); tw.cx += (tw.gcx - tw.cx) * k; tw.cz += (tw.gcz - tw.cz) * k; tw.cyaw = tw.gcyaw; tw.x = tw.cx; tw.z = tw.cz; }
+      if (S.net === 'guest' && tw.gcx !== undefined) { const k = Math.min(1, dt * 10); tw.cx += (tw.gcx - tw.cx) * k; tw.cz += (tw.gcz - tw.cz) * k; tw.cyaw = tw.gcyaw; tw.cy = (tw.cy || 0) + ((tw.gcy || 0) - (tw.cy || 0)) * k; tw.x = tw.cx; tw.z = tw.cz; }
       let dy = tw.cyaw - (c.rotation.y || 0); dy = Math.atan2(Math.sin(dy), Math.cos(dy)); c.rotation.y += dy * Math.min(1, dt * 12);
       const mv = tw.cmove || 0, ph = (tw.cph = (tw.cph || 0) + dt * (mv === 2 ? 22 : mv ? 10 : 0));
       const hop = mv === 2 ? Math.abs(Math.sin(ph * 0.5)) * 0.5 : 0, swipe = a < 0.25 ? Math.sin(a / 0.25 * Math.PI) : 0;
-      c.position.set(tw.cx, hop, tw.cz);
+      c.position.set(tw.cx, hop + (tw.cy || 0), tw.cz);
       o.legs.forEach((l, i) => l.rotation.x = mv ? Math.sin(ph + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI / 2 : 0)) * 0.6 : 0);
       if (swipe) o.legs[0].rotation.x = -1.6 * swipe;
       o.tail.rotation.z = Math.sin(t * (mv ? 6 : 2) + tw.id) * 0.5; o.tail.rotation.x = mv === 2 ? -0.9 : -0.2;
@@ -5116,6 +5210,7 @@ function netOnMsg(m) {
     if (!S || S.net !== 'guest') return;
     if (rsAnswer(m)) return;
     if (m.k === 'bn') { banner(m.a, m.b, !!m.r, m.ms); return; }
+    if (m.k === 'knock') { knockProp(m.p); return; }
     if (m.k === 'caught') { jarSet(jarCount() + 1); if (m.t) dexAdd(m.t); return; }
     if (m.k === 's') { NET.lastSnap = performance.now(); netApply(m); }
     else if (m.k === 'vsOver') { if (S.vs) vsEnd(m.res, m.why); }
@@ -5206,7 +5301,7 @@ function netSnap() {
     qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0), qn: $('qname').textContent, hp: S.hpMul,
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
       (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0) | (b.shiny ? 32 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
-    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0) | (t.perk ? 16 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0] : [])]),
+    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0) | (t.perk ? 16 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0, r2(t.cy || 0)] : [])]),
     i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd, it.trig ? 1 : 0]),
     e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
 }
@@ -5255,14 +5350,14 @@ function netApply(m) {
   if (!S.bugs.some(b => b.mesh) && !(m.qq > 0)) $('queen').hidden = true; else if (m.qq > 0 || S.bugs.some(b => b.mesh)) $('queen').hidden = false;
   // towers
   const tseen = new Set();
-  for (const [id, t, c, r, lv, owner, fl, gcx, gcz, gcyaw, cmove] of m.t) {
+  for (const [id, t, c, r, lv, owner, fl, gcx, gcz, gcyaw, cmove, gcy] of m.t) {
     tseen.add(id); let tw = S.towers.find(x => x.id === id);
     if (!tw) tw = remoteTower(id, t, c, r, owner);
     if (tw.pending && !(fl & 1)) finishJob({ kind: 'build', obj: tw });
     while (tw.lv < lv) applyUpgrade(tw);
     if (fl & 16 && !tw.perk) applyPerk(tw);
     tw.upPending = !!(fl & 2); tw.stunT = fl & 4 ? 0.2 : 0; tw.snuff = !!(fl & 8);
-    if (gcx != null) { tw.gcx = gcx; tw.gcz = gcz; tw.gcyaw = gcyaw; tw.cmove = cmove; }
+    if (gcx != null) { tw.gcx = gcx; tw.gcz = gcz; tw.gcyaw = gcyaw; tw.cmove = cmove; tw.gcy = gcy || 0; }
     if (tw.c !== c || tw.r !== r) { tw.c = c; tw.r = r; tw.x = ccx(c); tw.z = ccz(r); tw.o.root.position.set(tw.x, 0, tw.z); }
   }
   for (const tw of [...S.towers]) if (!tseen.has(tw.id)) removeTower(tw);
