@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v238</div>
+    <div id="ver">v239</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3581,10 +3581,18 @@ function catMischief(tw, T, L, dt) {   // now and then: hop up on the counter, s
     if (k >= 1) { M.ph = 'swat'; M.t = 0; tw.anim = 0; tw.cmove = 0; }
     return true;
   }
-  if (M.ph === 'swat') {   // a look, a paw, and over the edge it goes
+  if (M.ph === 'swat') {   // slowly, on purpose: a few small pats that nudge it toward the edge, then the last one sends it over
     tw.cmove = 0; tw.cyaw = Math.atan2(g.position.x - tw.cx, g.position.z - tw.cz);
-    if (M.t > 0.5 && !M.done) { M.done = true; tw.anim = 0; knockProp(M.key); tw.knocks = (tw.knocks || 0) + 1; }
-    if (M.t > 1.3) { M.ph = 'down'; M.t = 0; }
+    const SW = [0.9, 1.9, 2.8, 3.8], n = M.n || 0;
+    if (n < SW.length && M.t >= SW[n]) {
+      M.n = n + 1; tw.anim = 0;
+      if (M.n < SW.length) {   // a little nudge and a wobble
+        const f = floorBelow(g.position.x, g.position.z), dx = f.x - g.position.x, dz = f.z - g.position.z, d = Math.hypot(dx, dz) || 1;
+        g.position.x += dx / d * 0.18; g.position.z += dz / d * 0.18; M.wob = 0.25; SND.play('tap');
+      } else { knockProp(M.key); tw.knocks = (tw.knocks || 0) + 1; }
+    }
+    if (M.wob > 0 && g.visible && !g.userData.fall) { M.wob -= dt; g.rotation.z = Math.sin(M.wob * 40) * 0.08 * (M.wob / 0.25); }
+    if (M.t > 4.6) { M.ph = 'down'; M.t = 0; }
     return true;
   }
   const k = Math.min(1, M.t / 0.45);   // and back down to the floor
