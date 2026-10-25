@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v234</div>
+    <div id="ver">v235</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2368,7 +2368,7 @@ const TT = {
            d: 'Goes right on the trail. Bugs that cross it get stuck and crawl slowly.' },
   swat:  { name: 'Fly Swatter', cost: 55,  air: true,  range: [4.6, 5.0, 5.4], dmg: [16, 26, 38], rate: [0.75, 0.62, 0.5], d: 'Smacks the bug closest to the cake. Cheap and quick, but short reach. Hits flies. Against bosses, every 4th smack is a double-damage critical.' },
   spray: { name: 'Bug Spray',   cost: 75,  air: true,  range: [6.0, 6.6, 7.2], dmg: [5, 8, 12], dot: [5.4, 9.9, 16.2], rate: [1.1, 1.0, 0.9], d: 'Mists a wide cone of poison at the bugs. Everything in the cone (and anything bunched up around its target) takes a hit, then the poison keeps burning for 3 seconds and slows them down. Poison ignores shells. Hits flies. On a boss, poison from up to 3 different sprays adds up.' },
-  paper: { name: 'Newspaper',   cost: 110, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Does 25% extra to bosses and makes them stagger. Can\'t reach flies.' },
+  paper: { name: 'Newspaper',   cost: 100, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Does 25% extra to bosses and makes them stagger. Can\'t reach flies.' },
   lens:  { name: 'Magnifying Glass', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 12, 18], mult: 4, ramp: 3,
            d: 'Focuses a sunbeam on one bug. The burn grows the longer it stays on that bug, up to 4× after 3 seconds, then holds there. Switching to a new bug starts the burn over. Burns through shells and hits flies.' },
   zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [16, 26, 40], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). Flies take 60% extra, bosses 25% extra.' },
