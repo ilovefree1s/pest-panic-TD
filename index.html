@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v232</div>
+    <div id="ver">v233</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -763,7 +763,7 @@ const LEVELS = [
   { name: 'The Long Way', sub: 'A winding trail with three U-bends', intro: 'Pick a tool below and place it by the trail', hp: 1, money: 160, shift: 0,
     bosses: [['queen'], ['widow'], ['herc'], ['hornet', 'widow', 'queen']], bossMulW: { 20: { hornet: 0.6 }, 25: { hornet: 0.7 } },   // Hercules Beetle at 15, Hornet Queen 40% lighter at 20 and 30% lighter in the finale
     routes: [[[1, -0.6], [1, 8], [4, 8], [4, 2], [7, 2], [7, 8], [10, 8], [10, 4], [12, 4], [12, -0.05]]] },
-  { name: 'Kitchen Trail', sub: 'A long snake, tougher bugs', intro: 'The trail snakes back and forth, and the bugs are tougher', hp: 1.1, money: 165, bossMul: { widow: 0.95 }, shift: 0,
+  { name: 'Kitchen Trail', sub: 'A long snake, tougher bugs', intro: 'The trail snakes back and forth, and the bugs are tougher', hp: 1.1, money: 165, bossMul: { widow: 0.95 }, bossMulW: { 10: { widow: 0.45 } }, shift: 0,
     routes: [[[1, -0.6], [1, 1], [9, 1], [9, 5], [1, 5], [1, 8], [12, 8], [12, -0.05]]] },   // redrawn in the Trail Builder
   { name: 'Short Cut', sub: 'A short trail with few pockets', intro: 'Short trail. Every second counts.', hp: 1.064, money: 235, bossHp: 0.9, bossMulW: { 5: { '*': 0.9025 }, 10: { widow: 0.9 } }, bugMulW: { 5: { dung: 0.75 } }, shift: 1,
     routes: [[[1, -0.6], [1, 5], [6, 5], [6, 8], [12, 8], [12, -0.05]]] },
