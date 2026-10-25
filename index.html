@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v231</div>
+    <div id="ver">v232</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3541,6 +3541,12 @@ function zapHop(z) {
   SND.play(z.hit.size > 1 ? 'zip' : 'zap');
 }
 let CUR_AMP = 0;
+// stuns and staggers on a boss: after one wears off, the boss shrugs off new ones for a moment, so a wall of tools can't hold it in place forever
+const BOSS_STUN_IMMUNE = 1.2;
+function bossStun(b, dur, slow) {
+  if (BT[b.t].heavy || b.stunImm > 0) return;
+  b.stuck = Math.max(b.stuck, dur); b.slowF = Math.min(b.slowF, slow); b.stunImm = dur + BOSS_STUN_IMMUNE;
+}
 function candleRng(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1] * PR(c) * (1 + (c.rmul || 0))) ? TT.candle.rng[c.lv - 1] : 0; }
 function candleAmp(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1] * PR(c) * (1 + (c.rmul || 0))) ? TT.candle.amp[c.lv - 1] + (c.perk ? 0.1 : 0) : 0; }
 function syncCandles() {
@@ -3565,7 +3571,7 @@ function catAct(tw, T, L, R, dt) {
     tw.cyaw = Math.atan2(mx, mz); tw.cmove = 2;
     if (d > 0.9) { const st = Math.min(d, 13 * dt); tw.cx += mx / d * st; tw.cz += mz / d * st; return; }
     const boss = BT[b.t].boss;
-    hit(b, T.dmg[L]); if (!BT[b.t].heavy) { b.stuck = Math.max(b.stuck, T.pin[L] * (boss && !tw.perk ? 0.5 : 1)); b.slowF = 0; }
+    hit(b, T.dmg[L]); if (boss) bossStun(b, T.pin[L] * (tw.perk ? 1 : 0.5), 0); else if (!BT[b.t].heavy) { b.stuck = Math.max(b.stuck, T.pin[L]); b.slowF = 0; }
     tw.pounce = null; tw.cd = T.rate[L]; tw.anim = 0; tw.goal = null; tw.rest = 0.6;
     FX.glow.spawn({ x: b.x, y: 0.8, z: b.z, life: 0.25, s0: 2, s1: 2.8, c: [1, 0.85, 0.6], a0: 0.9 });
     for (let i = 0; i < 4; i++) FX.smoke.spawn({ x: b.x, y: 0.3, z: b.z, vx: (Math.random() - 0.5) * 5, vz: (Math.random() - 0.5) * 5, life: 0.4, s0: 0.5, s1: 1.2, c: [0.95, 0.9, 0.8], a0: 0.45, drag: 4 });
@@ -3664,7 +3670,7 @@ function towerAct(tw, dt) {
   if (tw.t === 'swat') {
     const crit = BT[tg.t].boss && (tw.bossHits = (tw.bossHits || 0) + 1) % 4 === 0;   // every 4th smack on a boss is a big one
     hit(tg, T.dmg[L] * (crit ? 2 : 1));
-    if (tw.perk) { if (!BT[tg.t].heavy) { tg.stuck = Math.max(tg.stuck, BT[tg.t].boss ? 0.2 : 0.45); tg.slowF = 0; } for (let i = 0; i < 8; i++) FX.glow.spawn({ x: tg.x, y: ty, z: tg.z, vx: (Math.random() - 0.5) * 6, vy: Math.random() * 4, vz: (Math.random() - 0.5) * 6, life: 0.25, s0: 0.5, s1: 0.05, c: [0.6, 0.85, 1], a0: 1 }); SND.play('zip'); }   // electrified: zap and stun
+    if (tw.perk) { if (BT[tg.t].boss) bossStun(tg, 0.2, 0); else if (!BT[tg.t].heavy) { tg.stuck = Math.max(tg.stuck, 0.45); tg.slowF = 0; } for (let i = 0; i < 8; i++) FX.glow.spawn({ x: tg.x, y: ty, z: tg.z, vx: (Math.random() - 0.5) * 6, vy: Math.random() * 4, vz: (Math.random() - 0.5) * 6, life: 0.25, s0: 0.5, s1: 0.05, c: [0.6, 0.85, 1], a0: 1 }); SND.play('zip'); }   // electrified: zap and stun
     if (crit) { S.shake = Math.max(S.shake, 0.12); FX.glow.spawn({ x: tg.x, y: ty + 0.4, z: tg.z, life: 0.3, s0: 3.2, s1: 1, c: [1, 0.8, 0.3], a0: 1 }); }
     FX.glow.spawn({ x: tg.x, y: ty, z: tg.z, life: 0.18, s0: 1.6, s1: 2.6, c: [1, 0.9, 0.8], a0: 0.9 });
     for (let i = 0; i < 4; i++) FX.smoke.spawn({ x: tg.x, y: 0.3, z: tg.z, vx: (Math.random() - 0.5) * 5, vz: (Math.random() - 0.5) * 5, life: 0.4, s0: 0.5, s1: 1.2, c: [0.9, 0.85, 0.8], a0: 0.45, drag: 4 });
@@ -3724,7 +3730,7 @@ function towerAct(tw, dt) {
     if (tw.perk) (tw.pools ||= []).push({ x: tw.x + ux * R * 0.55, z: tw.z + uz * R * 0.55, r: R * 0.45, t: 3, dps: T.dot[L] * 0.7 });   // the fog settles on the floor
     S.shake = Math.max(S.shake, 0.1); SND.play('spray');
   } else if (tw.t === 'paper') {
-    for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, R)) { if (BT[b.t].boss) { hit(b, T.dmg[L] * 1.25); if (!BT[b.t].heavy) { b.stuck = Math.max(b.stuck, 0.35); b.slowF = Math.min(b.slowF, 0.15); } } else hit(b, T.dmg[L]); }   // bosses: +25% and a stagger
+    for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, R)) { if (BT[b.t].boss) { hit(b, T.dmg[L] * 1.25); bossStun(b, 0.35, 0.15); } else hit(b, T.dmg[L]); }   // bosses: +25% and a stagger
     S.rings.push({ x: tw.x, z: tw.z, r: R, t: 0, life: 0.35 });
     for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; FX.smoke.spawn({ x: tw.x + Math.cos(a) * 1.5, y: 0.3, z: tw.z + Math.sin(a) * 1.5, vx: Math.cos(a) * R * 2, vz: Math.sin(a) * R * 2, drag: 4, life: 0.5, s0: 0.6, s1: 1.6, c: [0.92, 0.88, 0.8], a0: 0.45 }); }
     S.shake = Math.max(S.shake, 0.12);
@@ -3773,7 +3779,7 @@ function update(dt) {
     let sp = bt.spd * (b.stuck > 0 && !bt.heavy ? b.slowF : 1) * (b.psnT > 0 && !bt.heavy ? 0.75 : 1) * (b.angry ? 1.45 : 1);
     if (b.ball) b.ball.flash -= dt;
     if (b.eatT > 0) { b.eatT -= dt; sp = 0; b.walk += dt * 6; if (Math.random() < dt * 5) FX.goo.spawn({ x: b.x, y: b.y0 + 0.5, z: b.z, vx: (Math.random() - 0.5) * 2, vy: 2.5, vz: (Math.random() - 0.5) * 2, grav: 14, life: 0.4, s0: 0.14, s1: 0.08, c: [0.75, 0.5, 0.28], a0: 1, a1: 1 }); }
-    b.stuck -= dt; if (b.stuck <= 0) b.slowF = 1;
+    b.stuck -= dt; if (b.stuck <= 0) b.slowF = 1; if (b.stunImm > 0) b.stunImm -= dt;
     if (b.sweptT > 0) b.sweptT -= dt;
     if ((b.dnT = (b.dnT || 0) - dt) <= 0 && (b.dn >= 1 || b.dr >= 1 || b.db >= 1)) flushDmg(b);
     if (b.mdl || b.t === 'fly') sp = specialMove(b, sp, dt);
