@@ -478,7 +478,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v194</div>
+    <div id="ver">v195</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -534,7 +534,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <button class="btn teamBtn" id="teamT" type="button">Team Kitchen <small>2 players · one cake</small></button>
         <button class="btn vsBtn" id="vsT" type="button">Bug Battle <small>2 players · send bugs at each other</small></button>
         <button class="btn" id="v22T" type="button">2v2 <small>4 players · team vs team</small></button>
-        <button class="btn" id="ffaT" type="button">Free for All <small>3–4 players · everyone for themselves</small></button>
+        <button class="btn" id="ffaT" type="button">Free for All <small>2–4 players · everyone for themselves</small></button>
       </div>
       <button class="btn dark" id="onlineBack" type="button">Back</button>
     </div>
@@ -5748,7 +5748,7 @@ let LOBBY_AI = false;
 function openLobby(mode, ai = false) {
   SND.init(); NET.mode = mode; const vs = mode === 'vs'; LOBBY_AI = ai;
   $('lbH').textContent = mode === 'ffa' ? 'Free for All' : mode === 'v22' ? '2v2' : vs ? 'Bug Battle' : 'Team Kitchen'; $('v22Kind').hidden = mode !== 'v22';
-  $('lbSub').textContent = mode === 'ffa' ? 'Three or four players, each defending their own kitchen on the same house with the same waves. First to clear all ' + MAXW + ' waves wins, or be the last cake standing.' : mode === 'v22' ? 'Two teams of two, each defending a Team Kitchen on the same map. Host a game, wait for three friends, and set up the teams. Teammates split every coin 50/50.' : vs ? 'You and a friend each defend your own cake against the same waves. Squash bugs, earn coins, and send extra bugs at each other. Last cake standing wins.' : 'Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.';
+  $('lbSub').textContent = mode === 'ffa' ? 'Two to four players, each defending their own kitchen on the same house with the same waves. First to clear all ' + MAXW + ' waves wins, or be the last cake standing.' : mode === 'v22' ? 'Two teams of two, each defending a Team Kitchen on the same map. Host a game, wait for three friends, and set up the teams. Teammates split every coin 50/50.' : vs ? 'You and a friend each defend your own cake against the same waves. Squash bugs, earn coins, and send extra bugs at each other. Last cake standing wins.' : 'Two lanes, one cake. Each of you builds on your own half. Beat a kitchen together to unlock the next.';
   $('lbBot').hidden = vs || !ai; $('lbPractice').hidden = vs || !ai; $('aiRow').hidden = !vs || !ai;
   for (const el of [$('lbName').parentElement, $('lbCreate'), $('lbStatus'), $('lbOpenH'), $('lbList')]) el.hidden = ai;   // AI games: no hosting or open-games list
   if (ai) $('lbSub').textContent = vs ? 'Defend your own cake while the AI defends its. Pick a house and how tough the AI is.' : 'Two lanes, one cake. You hold the left side, the AI teammate holds the right.';
@@ -5820,11 +5820,11 @@ function v22Teams() { const all = v22All(); return { A: all.filter(p => p.team =
 function v22Render(ro) {   // the roster box (host can tap a player to move them to the other team)
   const host = NET.role === 'host', list = ro ? ro.list : v22All(), esc = t => String(t).replace(/[<>&"]/g, '');
   if (NET.mode === 'ffa') {   // Free for All: just a list of players
-    const n = list.length, ok = n >= 3 && n <= 4, house = HOUSES[ro ? ro.lv : VS_LV];
+    const n = list.length, ok = n >= 2 && n <= 4, house = HOUSES[ro ? ro.lv : VS_LV];
     let h = '<div class="roster ffa"><div class="rt rtF"><b>Players</b>';
     for (const p of list) h += `<span class="${p.gid === NET.gid ? 'me' : ''}">${esc(p.name)}${p.gid === NET.gid ? ' (you)' : ''}</span>`;
-    for (let i = n; i < 3; i++) h += '<span class="empty">waiting…</span>';
-    lobbyStatus((host ? (ok ? 'Ready! Tap Start (' + n + ' players)' + (n < 4 ? '. One more can still join' : '') : 'Waiting for players: ' + n + '/4 (need at least 3)') : 'In ' + esc((list[0] || {}).name || 'the host') + '\'s game' + (house ? ' · ' + house.name : '') + '. Waiting for the host to start…') + h + '</div></div>');
+    for (let i = n; i < 2; i++) h += '<span class="empty">waiting…</span>';
+    lobbyStatus((host ? (ok ? 'Ready! Tap Start (' + n + ' players)' + (n < 4 ? '. ' + (4 - n) + ' more can still join' : '') : 'Waiting for players: ' + n + '/4 (need at least 2)') : 'In ' + esc((list[0] || {}).name || 'the host') + '\'s game' + (house ? ' · ' + house.name : '') + '. Waiting for the host to start…') + h + '</div></div>');
     if (host) $('lbStart22').disabled = !ok; return;
   }
   const col = (tm, nm) => { const ps = list.filter(p => p.team === tm); let h = `<div class="rt rt${tm}"><b>${nm}</b>`;
@@ -5862,7 +5862,7 @@ function v22Lobby(m) {
 }
 $('lbStart22').addEventListener('click', () => {
   if (NET.mode === 'ffa') {
-    const all = v22All(); if (NET.role !== 'host' || all.length < 3) { SND.play('err'); return; }
+    const all = v22All(); if (NET.role !== 'host' || all.length < 2) { SND.play('err'); return; }
     const m = { k: 'start22', ffa: 1, code: NET.code, lv: VS_LV, ids: all.map(p => p.gid), names: Object.fromEntries(all.map(p => [p.gid, p.name])) };
     lobbyAd(false); netSend(m); v22Begin(m); return;
   }
