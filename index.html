@@ -143,6 +143,12 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #belt .ch.boss{background:rgba(214,60,50,.32);box-shadow:inset 0 0 0 1px rgba(255,120,100,.55)}
 #belt .ch.boss b{color:#ffb3a8}
 @media (max-width:700px){#belt{top:58px;height:34px} #belt .ch svg{width:22px;height:22px} #belt .ch b{font-size:13px} #belt .bh{padding:0 8px 0 10px;gap:6px} #belt .bh b{font-size:14px} #belt .bh em{font-size:17px}}
+/* wide screens with the stats on the tray: the belt rides along the top bar, right of the buttons, and bugs roll off at the cogwheel */
+@media (min-width:701px){
+  .tstats #belt{top:10px;left:var(--ctlR,200px);right:12px;height:40px;border-radius:12px;overflow:hidden}
+  .tstats #belt .bh{order:2;padding:0 14px 0 12px;box-shadow:-6px 0 10px rgba(0,0,0,.45)}
+  .tstats #undo{top:60px}
+}
 @media (orientation:landscape) and (max-height:560px){#belt{top:44px;height:32px} #belt .ch svg{width:22px;height:22px} #belt .ch b{font-size:13px} #belt .bh b{font-size:14px} #belt .bh em{font-size:17px}}
 #tip .tl{display:block}
 #tip .td{display:block;font-weight:700;font-size:13px;color:var(--dim);max-width:52ch;margin:3px auto}
@@ -483,7 +489,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v199</div>
+    <div id="ver">v200</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4794,7 +4800,13 @@ function clearBoard() {
 }
 // the cake / coins / wave pills sit on the tool tray next to the tabs (except phones held sideways, where the tray is a narrow column)
 const MQ_TRAY = matchMedia('(orientation:landscape) and (max-height:560px)');
-function placeStats() { const st = document.querySelector('.stats'), want = MQ_TRAY.matches ? $('hud') : $('trayStats'); if (st && st.parentElement !== want) want.prepend(st); }
+function placeStats() { const st = document.querySelector('.stats'), want = MQ_TRAY.matches ? $('hud') : $('trayStats'); if (st && st.parentElement !== want) want.prepend(st); document.body.classList.toggle('tstats', !MQ_TRAY.matches); syncBeltPos(); }
+function syncBeltPos() {   // where the top buttons end, so the belt starts right after the cogwheel
+  const c = document.querySelector('#hud .ctl'), sg = $('stage'); if (!c || !sg) return;
+  const r = c.getBoundingClientRect(); if (!r.width) return;
+  document.body.style.setProperty('--ctlR', Math.round(r.right - sg.getBoundingClientRect().left + 10) + 'px');
+}
+addEventListener('resize', () => requestAnimationFrame(syncBeltPos));
 try { MQ_TRAY.addEventListener('change', placeStats); } catch (e) { MQ_TRAY.addListener(placeStats); }
 placeStats();
 function toTitle() {
@@ -4815,7 +4827,7 @@ function toTitle() {
 function startGame(lv = LV, net = null, aiDiff = 1) {
   $('rsAsk').hidden = true;
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
-  clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools';
+  clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools'; requestAnimationFrame(syncBeltPos);
   if (LEVELS[lv].team) {
     S.ext.x = ccx(4); S.ext.z = ccz(9);
     if (net) {
