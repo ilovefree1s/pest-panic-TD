@@ -344,6 +344,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch}
 /* phones held upright: cake, coins and wave sit on the tool tray, next to the tabs */
 .tabrow{display:flex;align-items:center;gap:40px;min-width:0}
+.tstats .tabrow{justify-content:center;flex-wrap:wrap;row-gap:6px} .tstats #trayStats{flex:0 1 auto}
 @media (max-width:700px){.tabrow{gap:16px}} .tabrow .stabs{flex:none}
 #trayStats{flex:1;min-width:0;display:flex;justify-content:flex-start;align-items:center;gap:10px;flex-wrap:wrap}
 #trayStats #undo{position:relative;transform:none;top:auto;left:auto;flex:none;z-index:1;overflow:hidden} #trayStats:empty{display:none}
@@ -493,7 +494,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v213</div>
+    <div id="ver">v214</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
