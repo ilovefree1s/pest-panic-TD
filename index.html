@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v241</div>
+    <div id="ver">v242</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3166,10 +3166,18 @@ const SND = (() => {
     s.buffer = noise; f.type = type; f.frequency.value = freq; f.Q.value = q;
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); s.connect(f).connect(g).connect(out); s.start(t); s.stop(t + dur + 0.02);
   }
+  function mrrp() {   /* the cat's happy rolling 'mrrrp' that curls up at the end: a trilled buzz through two moving mouth resonances */
+    const dur = 0.42, vol = 0.4, t = ac.currentTime + 0.02, o = ac.createOscillator(); o.type = 'sawtooth';
+    o.frequency.setValueAtTime(340, t); o.frequency.linearRampToValueAtTime(380, t + 0.6 * dur); o.frequency.linearRampToValueAtTime(620, t + dur);
+    const l = ac.createOscillator(), lg = ac.createGain(), am = ac.createGain(); l.frequency.value = 28; lg.gain.value = 0.5; am.gain.value = 0.5; l.connect(lg).connect(am.gain); o.connect(am);
+    const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.04); g.gain.setValueAtTime(vol, t + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    for (const [a, b, k] of [[500, 900, 3], [1400, 2000, 2.1]]) { const bp = ac.createBiquadFilter(), bg = ac.createGain(); bp.type = 'bandpass'; bp.Q.value = 6; bp.frequency.setValueAtTime(a, t); bp.frequency.linearRampToValueAtTime(b, t + dur); bg.gain.value = k; am.connect(bp).connect(bg).connect(g); }
+    g.connect(out); o.start(t); l.start(t); o.stop(t + dur + 0.05); l.stop(t + dur + 0.05);
+  }
   const P = {
     swat: () => { hiss(0.07, 0.5, 2200, 1.2); tone('square', 320, 110, 0.06, 0.08); },
     tongue: () => tone('sine', 260, 420, 0.05, 0.035),
-    meow: () => { tone('triangle', 540, 860, 0.16, 0.11); tone('triangle', 860, 470, 0.32, 0.11, 0.14); tone('sine', 1080, 1700, 0.14, 0.03); },
+    meow: () => mrrp(),
     spray: () => hiss(0.4, 0.22, 5000, 0.6, 'highpass'),
     sweep: () => { hiss(0.22, 0.3, 1800, 0.8); hiss(0.18, 0.22, 3200, 0.8, 'bandpass', 0.12); },
     slam: () => { tone('sine', 150, 40, 0.28, 0.6); hiss(0.18, 0.35, 500, 1); },
