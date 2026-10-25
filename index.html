@@ -337,8 +337,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch}
 /* phones held upright: cake, coins and wave sit on the tool tray, next to the tabs */
 .tabrow{display:flex;align-items:center;gap:8px;min-width:0} .tabrow .stabs{flex:none}
-#trayStats{flex:1;min-width:0;display:flex;justify-content:flex-end} #trayStats:empty{display:none}
-#trayStats .stats{flex:0 1 auto;justify-content:flex-end;gap:6px} #trayStats .stat{font-size:17px;padding:3px 11px 3px 4px} #trayStats .stat svg{width:22px;height:22px}
+#trayStats{flex:1;min-width:0;display:flex;justify-content:flex-start} #trayStats:empty{display:none}
+#trayStats .stats{flex:0 1 auto;justify-content:flex-start;gap:6px} #trayStats .stat{font-size:17px;padding:3px 11px 3px 4px} #trayStats .stat svg{width:22px;height:22px}
 @media (max-width:700px){#trayStats .stats{gap:5px} #trayStats .stat{font-size:15px;padding:2px 9px 2px 3px} #trayStats .stat svg{width:19px;height:19px}}
 #shopWrap{display:grid;grid-template-rows:auto minmax(0,1fr);gap:6px;min-width:0;position:relative}
 /* the tool list and a picked tool's info sit in the same spot: the tray keeps the tool list's size either way */
@@ -483,7 +483,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v198</div>
+    <div id="ver">v199</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2077,7 +2077,7 @@ function finishJob(j) {
 // full gold for the opening 5 waves, then the 15% cut kicks in
 function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : 0.85 * 0.8; }
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
-const ABIL = { cd: 60, cost: 40, dur: 3.2, range: 7.5, cone: 0.78, dps: 22, speed: 26 };
+const ABIL = { cd: 60, cost: 40, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
 function leadBug() {
   let best = null;
   for (const b of S.bugs) if (!b.dead && b.y0 < 0.5 && (!best || b.s > best.s)) best = b;
@@ -2173,7 +2173,7 @@ function abilUpdate(e, dt) {
     if (b.dead) continue;
     const bx = b.x - e.x, bz = b.z - e.z, d = Math.hypot(bx, bz);
     if (d > ABIL.range || (d > 1 && (bx * fx + bz * fz) / d < ABIL.cone)) continue;
-    CUR_SRC = 'abil'; hit(b, ABIL.dps * S.hpMul * dt, true); CUR_SRC = null;
+    CUR_SRC = 'abil'; hit(b, BT[b.t].boss ? b.max * ABIL.bossPct / ABIL.dur * dt : ABIL.dps * S.hpMul * dt, true); CUR_SRC = null;
     b.psnT = Math.max(b.psnT, 1.2); b.stuck = 0.15; b.slowF = Math.min(b.slowF, BT[b.t].boss ? 0.75 : 0.5);
   }
   if ((a.snd -= dt) <= 0) { a.snd = 0.35; SND.play('spray'); }
@@ -4922,6 +4922,7 @@ async function netJoin(code) {
 }
 function netOnMsg(m) {
   if (!m || !m.k || (m.gi && m.gi === NET.gid)) return;
+  if (m.ch === 'r') { rulesMsg(m); return; }   // 'everyone read the rules' messages go to the whole room
   if (NET.tcode && m.ch !== 'b' && m.rm && m.rm !== NET.tcode) return;   // 2v2: all four share one room; only listen to our own team (plus captain-to-captain 'b' messages)
   NET.last = performance.now(); (NET.rx ||= {})[m.k] = (NET.rx[m.k] || 0) + 1;
   if (m.sn != null) NET.peerSn = m.sn;
@@ -5157,6 +5158,7 @@ setInterval(() => {
   const st = NET.link && NET.link.state ? NET.link.state() : 'joined';
   if ((!NET.link || st === 'closed' || st === 'errored') && performance.now() - NET.rejoinAt > 5000) { netRejoin(); return; }
   if (NET.link && NET.role === 'host' && S && S.net === 'host') netSend({ k: 'back' });
+  if (S && S.vs && S.vs.allIds && S.vs.allIds[0] === NET.gid) { if (!S.vs.went) rulesCheck(); else if (performance.now() - S.vs.goAt < 6000) netSend({ k: 'go1', ch: 'r' }); }
 }, 1000);
 setInterval(() => { if (document.hidden) return; if (NET.link && NET.role === 'guest') { const ping = S && (S.net === 'guest' || S.net === 'vs'); netSend(ping ? { k: 'ping', sn: (NET.rx && NET.rx.s) || 0 } : { k: 'hello', gid: NET.gid, name: myName() }); } }, 1000);
 
@@ -5901,13 +5903,40 @@ function rules22(team, mate, battle) {
     '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed, then sell it from your jar: <b>keep all 100 coins</b> or <b>split it 50/50</b> with your teammate.'
   ];
   $('r22L').innerHTML = L.map(t => '<li>' + t + '</li>').join('');
-  $('rules22').hidden = false;
+  $('r22Ok').disabled = false; $('r22Ok').textContent = 'Got it!'; $('rules22').hidden = false;
 }
 $('r22Ok').addEventListener('click', () => {
-  SND.init(); SND.play('tap'); $('rules22').hidden = true; if (S && S.vs && S.vs.v22) showMySide();
-  if (!S || !S.vs) return; S.vs.rkMe = 1;
-  if (S.vs.remote) { netSend({ k: 'rk' }); setTimeout(() => netSend({ k: 'rk' }), 1500); }
+  SND.init(); SND.play('tap');
+  if (!S || !S.vs || !S.vs.allIds) { $('rules22').hidden = true; return; }
+  const v = S.vs; if (v.iRead) return; v.iRead = true; (v.readSet ||= new Set()).add(NET.gid);
+  netSend({ k: 'rk2', ch: 'r' }); clearInterval(v.rkT); v.rkT = setInterval(() => { if (!S || !S.vs || S.vs.went) return; netSend({ k: 'rk2', ch: 'r' }); }, 2000);
+  rulesWait(); rulesCheck();
 });
+const GO1_WAIT = 15, RULES_MAX = 60000;
+function rulesWait() {   // the button turns into a 'waiting for everyone' counter
+  const v = S.vs, b = $('r22Ok'); if (!v.iRead) return;
+  const n = v.allIds.filter(g => v.readSet && v.readSet.has(g)).length;
+  b.disabled = true; b.textContent = 'Waiting for everyone… ' + n + '/' + v.allIds.length;
+}
+function rulesCheck() {   // the game's host starts everyone once all have tapped Got it (or after a minute, so nobody can stall it)
+  const v = S && S.vs; if (!v || !v.allIds || v.went || v.allIds[0] !== NET.gid) return;
+  const all = v.allIds.every(g => v.readSet && v.readSet.has(g));
+  if (all || performance.now() - v.t0r > RULES_MAX) { v.goAt = performance.now(); netSend({ k: 'go1', ch: 'r' }); rulesGo(); }
+}
+function rulesGo() {
+  const v = S && S.vs; if (!v || v.went) return;
+  v.went = true; clearInterval(v.rkT); v.rkMe = v.rkMate = 1;
+  $('rules22').hidden = true; $('r22Ok').disabled = false; $('r22Ok').textContent = 'Got it!';
+  if (v.v22) showMySide();
+  if ((v.race || v.ffa) && S.net !== 'guest' && S.mode === 'play' && !S.wave && !S.active) { S.nextT = GO1_WAIT; showBelt(); syncGo(); }
+  SND.play('wave');
+  setTimeout(() => S && S.mode === 'play' && banner('Everyone\'s ready. Go!', (v.race || v.ffa) ? 'Wave 1 starts in ' + GO1_WAIT + ' seconds for everyone' : 'Same waves, same time', false, 2600), v.v22 ? 3000 : 200);
+}
+function rulesMsg(m) {
+  const v = S && S.vs; if (!v || !v.allIds) return;
+  if (m.k === 'rk2' && m.gi) { (v.readSet ||= new Set()).add(m.gi); rulesWait(); rulesCheck(); }
+  else if (m.k === 'go1') rulesGo();
+}
 async function v22Begin(m) {
   if ((S && S.mode === 'play') || NET.v22Starting) return;   // only once, even if the start message arrives twice
   if (m.ffa) { ffaBegin(m); return; }
@@ -5921,7 +5950,7 @@ async function v22Begin(m) {
   NET.tcode = code + team; NET.role = cap ? 'host' : 'guest'; NET.mode = 'v22'; NET.last = performance.now(); NET.lastSnap = performance.now(); NET.rx = {}; NET.peerSn = 0;
   $('lobby').hidden = true; TEAM_LV = m.lv;
   startGame(m.lv, cap ? 'host' : 'guest'); NET.v22Starting = false;
-  vsInit(); Object.assign(S.vs, { v22: true, battle: !!m.battle, race: !m.battle, leader, remote: !cap, team, capGid: mates[0] });
+  vsInit(); Object.assign(S.vs, { v22: true, battle: !!m.battle, race: !m.battle, leader, remote: !cap, team, capGid: mates[0], allIds: [...m.A, ...m.B], t0r: performance.now() });
   document.querySelector('.stabs [data-tab="send"]').hidden = !m.battle; $('foe').hidden = false; $('foe').innerHTML = '';
   rules22(team, mateName, !!m.battle);
 }
@@ -5955,7 +5984,7 @@ function ffaBegin(m) {
   if (!m.ids.includes(NET.gid)) return;
   NET.mode = 'ffa'; NET.last = performance.now(); $('lobby').hidden = true; VS_LV = m.lv;
   startGame(m.lv, 'vs');
-  Object.assign(S.vs, { ffa: true, race: true, names: m.names, ids: m.ids, foes: {}, watch: null, t0: performance.now() });
+  Object.assign(S.vs, { ffa: true, race: true, names: m.names, ids: m.ids, foes: {}, watch: null, t0: performance.now(), allIds: m.ids, t0r: performance.now() });
   S.lives = FFA_LIVES; setCake(FFA_LIVES); syncHud();   // shorter cake: 10 slices
   document.querySelector('.stabs [data-tab="send"]').hidden = true; $('foe').hidden = false; $('foe').innerHTML = '';
   if (shopTab === 'send') { shopTab = 'tools'; renderShop(); }
@@ -5971,7 +6000,7 @@ function rulesFfa(n) {
     'Tap the <b>VS</b> bar at the top to watch anyone else\'s kitchen.',
     '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed, then sell it from your jar for <b>100 coins</b>.'
   ].map(t => '<li>' + t + '</li>').join('');
-  $('rules22').hidden = false;
+  $('r22Ok').disabled = false; $('r22Ok').textContent = 'Got it!'; $('rules22').hidden = false;
 }
 const ffaName = gi => { const n = S && S.vs && S.vs.names && S.vs.names[gi]; return n ? String(n).replace(/[<>&"]/g, '') : 'Someone'; };
 function ffaMsg(m) {
