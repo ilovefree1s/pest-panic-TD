@@ -478,7 +478,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v195</div>
+    <div id="ver">v197</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3080,7 +3080,8 @@ const SND = (() => {
         lfo.start(t); lfo.stop(t + dur + 0.02);
       } catch (e) {}
     },
-    play(k) { if (!ac || muted) return; const now = ac.currentTime; if (last[k] && now - last[k] < 0.05) return; last[k] = now; try { P[k](); } catch (e) {} },
+    play(k) { if (!ac || muted) return; const want = 0.55 * vol * (typeof S !== 'undefined' && S && S.mode === 'title' ? 0.05 : 1); if (Math.abs(out.gain.value - want) > 1e-4) out.gain.value = want;   // the title screen is nearly silent
+      const now = ac.currentTime; if (last[k] && now - last[k] < 0.05) return; last[k] = now; try { P[k](); } catch (e) {} },
   };
 })();
 // ---------------------------------------------------------------- music: a little synth band, made on the fly (no audio files)
@@ -4790,7 +4791,7 @@ function toTitle() {
   if (BLD.testing) { BLD.testing = false; setTimeout(openBuilder, 0); }
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
   clearBoard(); loadLevel(0); S = newState('title'); shown = {};
-  for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['swat', 2, 1, 2], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
+  for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
   $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('peek').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
   SOLO.forEach((lv, i) => {
@@ -4827,6 +4828,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   if (!S.vs) tutStart();
+  clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
   if (!toolLocked('fogger') && !LEVELS[LV].team && !S.vs) { let seen = 1; try { seen = +localStorage.getItem('ppd-fogger-new') || 0; localStorage.setItem('ppd-fogger-new', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (S.mode === 'play') { banner('New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.', false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard('fogger'); }, 3100); } }, 3500); }
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
   requestAnimationFrame(resize);
@@ -4884,11 +4886,11 @@ async function netOpen(code, onMsg) {
 }
 const MYVER = () => ($('ver').textContent || '').trim();
 function netSend(m) {
-  try { if (NET.link) { m._v = MYVER(); m.gi = NET.gid; if (NET.mode === 'v22') m.rm = NET.code; NET.tx = (NET.tx || 0) + 1; if (m.k === 's' && NET.tx % 40 === 1) NET.txSize = JSON.stringify(m).length;
+  try { if (NET.link) { m._v = MYVER(); m.gi = NET.gid; if (NET.mode === 'v22') m.rm = NET.tcode || NET.code; NET.tx = (NET.tx || 0) + 1; if (m.k === 's' && NET.tx % 40 === 1) NET.txSize = JSON.stringify(m).length;
     const r = NET.link.send(m); if (r && r.then) r.then(st => { if (st && st !== 'ok') NET.txBad = String(st); }, e => { NET.txBad = String(e && e.message || e); }); } }
   catch (e) { NET.txBad = String(e && e.message || e); }
 }
-function netLeave() { if (NET.battle) { try { NET.battle.send({ k: 'bye', ch: 'b' }); NET.battle.close(); } catch (e) {} NET.battle = null; } NET.roster = []; if (NET.role === 'host') lobbyAd(false); NET.rx = {}; NET.tx = 0; NET.peerSn = 0; NET.txBad = ''; NET.lastSnap = 0; NET.awayAt = 0; NET.gaveUp = false; NET.last = 0; if (S) S.hold = false; NET.code = ''; if (NET.link) { netSend({ k: 'bye' }); try { NET.link.close(); } catch (e) {} } NET.link = null; NET.role = null; $('netWarn').hidden = true; }
+function netLeave() { if (NET.link && S && S.vs && S.vs.v22 && !S.vs.remote && S.mode === 'play') { try { NET.link.send({ k: 'bye', ch: 'b', gi: NET.gid }); } catch (e) {} } NET.tcode = ''; NET.roster = []; if (NET.role === 'host') lobbyAd(false); NET.rx = {}; NET.tx = 0; NET.peerSn = 0; NET.txBad = ''; NET.lastSnap = 0; NET.awayAt = 0; NET.gaveUp = false; NET.last = 0; if (S) S.hold = false; NET.code = ''; if (NET.link) { netSend({ k: 'bye' }); try { NET.link.close(); } catch (e) {} } NET.link = null; NET.role = null; $('netWarn').hidden = true; }
 function lobbyStatus(h) { const el = $('lbStatus'); if (el._h !== h) { el._h = h; el.innerHTML = h; } }
 async function netCreate() {
   netLeave(); const code = String(100000 + Math.floor(Math.random() * 900000)); NET.code = code; NET.role = 'host'; NET.partner = null; NET.roster = []; NET.gid ||= Math.random().toString(36).slice(2, 10); syncLobbyUi();
@@ -4910,6 +4912,7 @@ async function netJoin(code) {
 }
 function netOnMsg(m) {
   if (!m || !m.k || (m.gi && m.gi === NET.gid)) return;
+  if (NET.tcode && m.ch !== 'b' && m.rm && m.rm !== NET.tcode) return;   // 2v2: all four share one room; only listen to our own team (plus captain-to-captain 'b' messages)
   NET.last = performance.now(); (NET.rx ||= {})[m.k] = (NET.rx[m.k] || 0) + 1;
   if (m.sn != null) NET.peerSn = m.sn;
   // two different versions can't play together properly: tell both players to reopen the game
@@ -4917,9 +4920,9 @@ function netOnMsg(m) {
   if (m.k === 'away') { NET.awayAt = NET.last; return; }
   NET.awayAt = 0;
   if (m.k === 'back') return;
-  if (m.ch === 'b') { if (S && S.vs && S.vs.v22 && !S.vs.remote) vsMsg(m); return; }
+  if (m.ch === 'b') { if (S && S.vs && S.vs.v22) { if (!S.vs.remote) vsMsg(m); else if (m.k === 'v' && m.gi && m.gi !== S.vs.capGid) { m.at = performance.now(); S.vs.foe = m; syncFoe(); } } return; }   // teammates watch the other team's captain directly
   if (S && S.vs && S.vs.ffa && (m.k === 'hello' || m.k === 'start' || m.k === 'roster' || m.k === 'start22' || m.k === 'pause' || m.k === 'speed')) return;
-  if (S && S.vs && S.vs.v22 && ((m.rm && m.rm !== NET.code) || m.k === 'hello' || m.k === 'start' || m.k === 'roster' || m.k === 'start22')) return;   // 2v2: only listen to our own team's room, and never restart into a plain Team Kitchen   // 2v2: between the two team captains
+  if (S && S.vs && S.vs.v22 && ((m.rm && m.rm !== (NET.tcode || NET.code)) || m.k === 'hello' || m.k === 'start' || m.k === 'roster' || m.k === 'start22')) return;   // 2v2: only listen to our own team's room, and never restart into a plain Team Kitchen   // 2v2: between the two team captains
   if (S && S.net === 'vs' && m.k !== 'start' && m.k !== 'hello') { vsMsg(m); return; }
   if (ROSTER_MODE() && !(S && S.vs && (S.vs.v22 || S.vs.ffa)) && v22Lobby(m)) return;
   if (NET.role === 'host') {
@@ -5024,7 +5027,7 @@ function teamReady(pid) {   // Team Kitchen: a wave only goes early once BOTH pl
   syncGo(); syncTray();
 }
 const teamAsk = () => [vsPaced() ? 'Your teammate is ready!' : !S.wave ? 'Your partner is ready!' : 'Your partner wants wave ' + (S.wave + 1) + '!', !S.wave && !vsPaced() ? 'Tap Ready to start wave 1' : 'Tap it too to send it', false, 2200];
-function v22Snap() { const v = S.vs; if (!v || !v.v22) return undefined; v.snapN = (v.snapN || 0) + 1; return { dd: v.dead ? 1 : 0, cl: v.cl || 0, c: v.counting ? 1 : 0, r: v.rdy ? 1 : 0, fr: v.foeRdy || (v.foe && v.foe.r) ? 1 : 0, fin: v.fin ? 1 : 0, eco: v.eco, sent: v.sent, cd: v.cd, foe: v.snapN % 2 === 1 ? v.foe : undefined }; }
+function v22Snap() { const v = S.vs; if (!v || !v.v22) return undefined; v.snapN = (v.snapN || 0) + 1; return { dd: v.dead ? 1 : 0, cl: v.cl || 0, c: v.counting ? 1 : 0, r: v.rdy ? 1 : 0, fr: v.foeRdy || (v.foe && v.foe.r) ? 1 : 0, fin: v.fin ? 1 : 0, eco: v.eco, sent: v.sent, cd: v.cd, foe: undefined }; }
 function netSnap() {
   const P = [S, S.p2], g = k => P[0][k], h = k => P[1][k];
   return { k: 's', vs: v22Snap(), rd: S.rdy || [0, 0], w: S.wave, a: S.active ? 1 : 0, l: S.lives, nt: r2(S.nextT || 0), sp: S.speed, pz: S.paused ? 1 : 0,
@@ -5058,7 +5061,7 @@ function netApply(m) {
   // waves starting and ending
   if (S.wave > oldWave && S.active) {
     hideBelt(); const boss = m.b.some(b => BT[b[1]].boss) || m.qq > 0;
-    SND.play(boss ? 'boss' : 'wave');   // (the host sends the wave message itself) for (const t of S.towers) t.fresh = 0;
+    SND.play(boss ? 'boss' : 'wave'); for (const t of S.towers) t.fresh = 0;   // (the host sends the wave message itself)
   }
   if (wasActive && !S.active) { SND.play('clear'); showBelt(); }
   if (!S.active && S.nextT > 0) syncBeltT();
@@ -5143,8 +5146,6 @@ setInterval(() => {
   if (!NET.role || document.hidden) return;
   const st = NET.link && NET.link.state ? NET.link.state() : 'joined';
   if ((!NET.link || st === 'closed' || st === 'errored') && performance.now() - NET.rejoinAt > 5000) { netRejoin(); return; }
-  const bs = NET.battle && NET.battle.state ? NET.battle.state() : 'joined';
-  if (NET.battle && NET.room && (bs === 'closed' || bs === 'errored') && !NET.battleRe && S && S.vs && S.vs.v22) { NET.battleRe = true; const old = NET.battle; (async () => { try { await old.close(); } catch (e) {} try { NET.battle = await netOpen(NET.room, netOnMsg); } catch (e) {} NET.battleRe = false; })(); }
   if (NET.link && NET.role === 'host' && S && S.net === 'host') netSend({ k: 'back' });
 }, 1000);
 setInterval(() => { if (document.hidden) return; if (NET.link && NET.role === 'guest') { const ping = S && (S.net === 'guest' || S.net === 'vs'); netSend(ping ? { k: 'ping', sn: (NET.rx && NET.rx.s) || 0 } : { k: 'hello', gid: NET.gid, name: myName() }); } }, 1000);
@@ -5170,7 +5171,7 @@ const SENDS = [
 const SEND_NAME = { ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarm', queen: 'Roach King', hopper: 'Grasshoppers', centi: 'Centipede', stink: 'Stink Bugs', moth: 'Moths', mantis: 'Praying Mantis', gmantis: 'Giant Mantis' };
 const sentCount = d => d.n * (d.t === 'bed' ? BT.bed.swarm : d.t === 'centi' ? BT.centi.segs : 1);
 const vsLeader = () => S.vs.bot || (S.vs.v22 ? S.vs.leader : NET.role === 'host');
-function vsNet(m) { if (S && S.vs && S.vs.v22) { if (NET.battle) { m.ch = 'b'; m._v = MYVER(); m.gi = NET.gid; try { NET.battle.send(m); } catch (e) {} } } else netSend(m); }
+function vsNet(m) { if (S && S.vs && S.vs.v22) { if (NET.link) { m.ch = 'b'; m._v = MYVER(); m.gi = NET.gid; try { NET.link.send(m); } catch (e) {} } } else netSend(m); }
 function vsInit() { S.vs = { foe: null, fin: false, rdy: false, foeRdy: false, counting: false, eco: 0, sent: 0, cd: {}, inbox: [], inT: 0, stT: 0, goAt: 0, shopK: '' }; }
 function vsCleared() { return !S.active && !S.bugs.length && !S.vs.inbox.length; }
 function vsStatus() {
@@ -5310,7 +5311,7 @@ const CAKE_ICON = '<svg viewBox="0 0 48 48"><path d="M6 30 24 12l18 18v10H6z" fi
 function syncFoe() {
   const v = S.vs, f = v && v.foe, el = $('foe'); if (!f) return;
   if (v.ffa) {
-    const h = '<small>VS</small>' + v.ids.filter(g => g !== NET.gid).map(g => { const o = v.foes[g]; return `<span class="ff${g === v.watch ? ' on' : ''}${o && (o.l <= 0 || o.gone) ? ' out' : ''}" data-g="${g}">${ffaName(g)} <b>${o ? Math.max(0, o.l) : 20}</b><i>W${o ? o.w : 0}</i></span>`; }).join('') + '<em>👀 Watch</em>';
+    const h = '<small>VS</small>' + v.ids.filter(g => g !== NET.gid).map(g => { const o = v.foes[g]; return `<span class="ff${g === v.watch ? ' on' : ''}${o && (o.l <= 0 || o.gone) ? ' out' : ''}" data-g="${g}">${ffaName(g)} <b>${o ? Math.max(0, o.l) : FFA_LIVES}</b><i>W${o ? o.w : 0}</i></span>`; }).join('') + '<em>👀 Watch</em>';
     if (el.innerHTML !== h) el.innerHTML = h; return;
   }
   const ok = !f.a && f.c, h = `<small>VS</small>${CAKE_ICON}<b>${Math.max(0, f.l)}</b><i class="${ok ? 'ok' : ''}">W${f.w}${ok ? ' ✓' : ''}</i><em>👀 Watch</em>`;
@@ -5372,7 +5373,7 @@ function vsFrame(dt) {
   if (S.mode === 'play' && !S.paused) for (const i in v.cd) if (v.cd[i] > 0) v.cd[i] -= dt;
   if (v.remote && (v.stT -= dt) <= 0) { v.stT = 0.25; if (S.mode === 'play') { if (!S.active) syncGo(); syncFoe(); } }
   if (v.bot && (v.stT -= dt) <= 0) { v.stT = 0.25; if (S.mode === 'play') { if (!S.active) syncGo(); syncFoe(); vsCheckEnd(); } }
-  if (!v.bot && !v.remote && (v.stT -= dt) <= 0 && (v.v22 ? NET.battle : NET.link) && (S.mode === 'play' || S.mode === 'over')) { v.stT = 0.25; vsNet(vsStatus()); if (S.mode === 'play') { if (!S.active) syncGo(); syncFoe(); if (v.ffa) ffaCheckEnd(); } }
+  if (!v.bot && !v.remote && (v.stT -= dt) <= 0 && NET.link && (S.mode === 'play' || S.mode === 'over')) { v.stT = 0.25; vsNet(vsStatus()); if (S.mode === 'play') { if (!S.active) syncGo(); syncFoe(); if (v.ffa) ffaCheckEnd(); } }
   if (shopTab === 'send') { const k = sendKey(); if (k !== v.shopK) { v.shopK = k; renderShop(); syncTray(); } }
   vsHostTick();
   try { drawPeek(); } catch (e) { showErr('peek', e); }
@@ -5808,7 +5809,7 @@ function syncLobbyUi() {
 setInterval(() => {
   if ($('lobby').hidden || LOBBY_AI) { if (LOB.link) lobbyClose(); return; }
   if (!LOB.link) lobbyOpen();
-  if (NET.role === 'host' && NET.code && !(S && S.net && S.mode === 'play')) { if (ROSTER_MODE()) v22Tick(); if (!(ROSTER_MODE() && (NET.roster || []).length >= 3)) lobbyAd(true); }
+  if (NET.role === 'host' && NET.code && !(S && S.net && S.mode === 'play') && !(S && S.vs && (S.vs.v22 || S.vs.ffa))) { if (ROSTER_MODE()) v22Tick(); if (!(ROSTER_MODE() && (NET.roster || []).length >= 3)) lobbyAd(true); }
   renderLobbyList();
 }, 2000);
 // ---------------------------------------------------------------- 2v2: four players, two Team Kitchens, same map
@@ -5891,7 +5892,7 @@ function rules22(team, mate, battle) {
   $('rules22').hidden = false;
 }
 $('r22Ok').addEventListener('click', () => {
-  SND.init(); SND.play('tap'); $('rules22').hidden = true;
+  SND.init(); SND.play('tap'); $('rules22').hidden = true; if (S && S.vs && S.vs.v22) showMySide();
   if (!S || !S.vs) return; S.vs.rkMe = 1;
   if (S.vs.remote) { netSend({ k: 'rk' }); setTimeout(() => netSend({ k: 'rk' }), 1500); }
 });
@@ -5903,24 +5904,47 @@ async function v22Begin(m) {
   const mates = m[team], cap = mates[0] === me, leader = cap && team === 'A', room = NET.link, code = m.code || NET.code;
   const mateName = m.names[mates.find(g => g !== me)] || 'your teammate';
   lobbyStatus('Starting 2v2…');
-  if (cap) NET.battle = room; else { try { room.close(); } catch (e) {} }
-  // switch to the team's own room. Block the auto-reconnect while we do: it would otherwise grab the old room
-  // (and the host would send the game to the wrong place, so the teammate sees no bugs)
-  NET.rejoining = true; NET.link = null; NET.code = code + team; NET.room = code;
-  try { NET.link = await netOpen(code + team, netOnMsg); } catch (e) { NET.rejoining = false; NET.v22Starting = false; lobbyStatus('Could not connect to your team. Try again.'); return; }
-  NET.rejoining = false; NET.rejoinAt = performance.now(); NET.role = cap ? 'host' : 'guest'; NET.mode = 'v22'; NET.last = performance.now(); NET.lastSnap = performance.now();
+  // all four players stay in the room they're already connected to (switching rooms mid-start was unreliable);
+  // each message is tagged with its team, and the other team's messages are ignored
+  NET.tcode = code + team; NET.role = cap ? 'host' : 'guest'; NET.mode = 'v22'; NET.last = performance.now(); NET.lastSnap = performance.now(); NET.rx = {}; NET.peerSn = 0;
   $('lobby').hidden = true; TEAM_LV = m.lv;
   startGame(m.lv, cap ? 'host' : 'guest'); NET.v22Starting = false;
-  vsInit(); Object.assign(S.vs, { v22: true, battle: !!m.battle, race: !m.battle, leader, remote: !cap, team });
+  vsInit(); Object.assign(S.vs, { v22: true, battle: !!m.battle, race: !m.battle, leader, remote: !cap, team, capGid: mates[0] });
   document.querySelector('.stabs [data-tab="send"]').hidden = !m.battle; $('foe').hidden = false; $('foe').innerHTML = '';
   rules22(team, mateName, !!m.battle);
 }
 // ---------------------------------------------------------------- Free for All: 3-4 players, each in their own kitchen, everyone races the same waves
+const FFA_LIVES = 10;
+const SIDE = { mesh: null, label: null, t: 0 };
+function showMySide() {
+  if (!S || !S.p2 || !LEVELS[LV].team || !S.net) return;
+  clearMySide();
+  const left = (S.me || 0) === 0, col = left ? '#4aa8ff' : '#ff5a46', w = CS * 10, d = CS * ROWS;
+  const x = left ? X0 + w / 2 : X0 + CS * 11 + w / 2, z = Z0 + d / 2;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, 0.12, z); m.renderOrder = 5; scene.add(m);
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const g = cv.getContext('2d');
+  g.fillStyle = 'rgba(10,13,16,.85)'; g.beginPath(); g.roundRect(6, 6, 500, 116, 40); g.fill(); g.lineWidth = 8; g.strokeStyle = col; g.stroke();
+  g.fillStyle = '#fff'; g.font = '900 64px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('YOUR SIDE', 256, 68);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
+  sp.scale.set(20, 5, 1); sp.position.set(x, 7, Z0 + CS * 7.5); sp.renderOrder = 20; scene.add(sp);
+  SIDE.mesh = m; SIDE.label = sp; SIDE.t = 7;
+  setTimeout(() => S && S.mode === 'play' && banner(left ? 'You\'re the BLUE exterminator' : 'You\'re the RED exterminator', 'You defend the ' + (left ? 'LEFT' : 'RIGHT') + ' side of the kitchen', false, 3200), 2400);
+}
+function clearMySide() { if (SIDE.mesh) { scene.remove(SIDE.mesh); scene.remove(SIDE.label); SIDE.mesh = SIDE.label = null; } SIDE.t = 0; }
+function sideTick(dt) {
+  if (!SIDE.mesh) return;
+  SIDE.t -= dt; if (SIDE.t <= 0 || !S || S.mode !== 'play') { clearMySide(); return; }
+  const fade = Math.min(1, SIDE.t / 1.2), pulse = 0.5 + 0.5 * Math.sin((7 - SIDE.t) * 5);
+  SIDE.mesh.material.opacity = (0.16 + 0.22 * pulse) * fade; SIDE.label.material.opacity = fade;
+  SIDE.label.position.y = 7 + Math.sin((7 - SIDE.t) * 3) * 0.4;
+}
 function ffaBegin(m) {
   if (!m.ids.includes(NET.gid)) return;
   NET.mode = 'ffa'; NET.last = performance.now(); $('lobby').hidden = true; VS_LV = m.lv;
   startGame(m.lv, 'vs');
   Object.assign(S.vs, { ffa: true, race: true, names: m.names, ids: m.ids, foes: {}, watch: null, t0: performance.now() });
+  S.lives = FFA_LIVES; setCake(FFA_LIVES); syncHud();   // shorter cake: 10 slices
   document.querySelector('.stabs [data-tab="send"]').hidden = true; $('foe').hidden = false; $('foe').innerHTML = '';
   if (shopTab === 'send') { shopTab = 'tools'; renderShop(); }
   rulesFfa(m.ids.length); banner('Free for All: ' + HOUSES[m.lv].name, m.ids.length + ' players · first to clear ' + MAXW + ' waves wins', false, 2600);
@@ -5931,7 +5955,7 @@ function rulesFfa(n) {
     'Everyone plays <b>' + HOUSES[LV].name + '</b> with the <b>same waves</b>, each in their own kitchen.',
     'You go at <b>your own pace</b>. Send waves early to get ahead.',
     '<b>First to clear all ' + MAXW + ' waves wins!</b>',
-    'If your cake gets eaten, you\'re out. If everyone else is out, the <b>last cake standing wins</b> right away.',
+    'Your cake has <b>' + FFA_LIVES + ' slices</b>. If it gets eaten, you\'re out. If everyone else is out, the <b>last cake standing wins</b> right away.',
     'Tap the <b>VS</b> bar at the top to watch anyone else\'s kitchen.'
   ].map(t => '<li>' + t + '</li>').join('');
   $('rules22').hidden = false;
@@ -6374,6 +6398,7 @@ function step(now, draw) {
     const sk = S.shake > 0 ? S.shake * 0.8 : 0;
     aim((Math.random() - 0.5) * sk, (Math.random() - 0.5) * sk);
     if (SPEC.on) specFrame(dt); else { drawTowers(dt, clock); drawPlacement(clock); drawFx(S.paused ? 0 : dt, clock); }
+    sideTick(dt);
   } catch (e) { showErr('draw', e); }
   if (draw) try { if (S.mode === 'play') syncHud(); syncAbil(); syncUndo(); syncCatch(); } catch (e) { showErr('hud', e); }
   try { tutTick(dt); } catch (e) { showErr('tutorial', e); }
