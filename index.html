@@ -475,7 +475,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v191</div>
+    <div id="ver">v192</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3269,7 +3269,7 @@ function startWave0() {
   S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
   if (!rush && !LEVELS[LV].team) S.routeN = (LONG_R - 1 + ROUTES.length) % ROUTES.length;   // the wave opens on the longest trail   // every wave in this push pays its clear bonus at the end
-  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1) * (LEVELS[LV].team ? 1.2 : 1);   // Team Kitchen bugs are 20% tougher if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%
+  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1) * (LEVELS[LV].team ? 1.2 : 1); if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%; Team Kitchen bugs are 20% tougher
   // endless: past the last wave every wave gets another 6% tougher on top, and they pour out faster
   if (S.wave > MAXW) { S.hpMul *= 1.06 ** (S.wave - MAXW); S.gap = Math.max(0.24, 0.34 - (S.wave - MAXW) * 0.005); }
   S.trio = new Set(S.queue.filter(t => BT[t].boss)).size > 1;
@@ -4865,6 +4865,7 @@ const SB_URL = 'https://ljrnzpqepssnkidlcgha.supabase.co', SB_KEY = 'sb_publisha
 const NET = { mode: 'team', awayAt: 0, gaveUp: false, rejoinAt: 0, link: null, role: null, code: '', last: 0, snapT: 0, pingT: 0, helloT: 0, lost: false, sb: null };
 async function netOpen(code, onMsg) {
   if (/local/.test(location.hash) || !navigator.onLine && 'BroadcastChannel' in window) {
+    if (/slow/.test(location.hash)) await new Promise(r => setTimeout(r, 1500));   // test hook: act like a slow server
     const bc = new BroadcastChannel('ppd-' + code); bc.onmessage = e => onMsg(e.data);
     return { send: m => bc.postMessage(m), close: () => bc.close() };
   }
@@ -4879,7 +4880,7 @@ async function netOpen(code, onMsg) {
 }
 const MYVER = () => ($('ver').textContent || '').trim();
 function netSend(m) {
-  try { if (NET.link) { m._v = MYVER(); NET.tx = (NET.tx || 0) + 1; if (m.k === 's' && NET.tx % 40 === 1) NET.txSize = JSON.stringify(m).length;
+  try { if (NET.link) { m._v = MYVER(); m.gi = NET.gid; if (NET.mode === 'v22') m.rm = NET.code; NET.tx = (NET.tx || 0) + 1; if (m.k === 's' && NET.tx % 40 === 1) NET.txSize = JSON.stringify(m).length;
     const r = NET.link.send(m); if (r && r.then) r.then(st => { if (st && st !== 'ok') NET.txBad = String(st); }, e => { NET.txBad = String(e && e.message || e); }); } }
   catch (e) { NET.txBad = String(e && e.message || e); }
 }
@@ -4888,7 +4889,9 @@ function lobbyStatus(h) { const el = $('lbStatus'); if (el._h !== h) { el._h = h
 async function netCreate() {
   netLeave(); const code = String(100000 + Math.floor(Math.random() * 900000)); NET.code = code; NET.role = 'host'; NET.partner = null; NET.roster = []; NET.gid ||= Math.random().toString(36).slice(2, 10); syncLobbyUi();
   lobbyStatus('Opening your game…');
-  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { lobbyStatus('Could not open a game. Check your internet and try again.'); NET.role = null; NET.code = ''; syncLobbyUi(); return; }
+  NET.rejoining = true;
+  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { NET.rejoining = false; lobbyStatus('Could not open a game. Check your internet and try again.'); NET.role = null; NET.code = ''; syncLobbyUi(); return; }
+  NET.rejoining = false; NET.rejoinAt = performance.now();
   if (NET.code !== code) return;
   lobbyStatus('Your game is open. Waiting for someone to join…'); lobbyAd(true); if (NET.mode === 'v22') v22Render();
 }
@@ -4896,11 +4899,13 @@ async function netJoin(code) {
   code = (code || '').replace(/\D/g, ''); if (!code) return;
   const g = LOB.games.get(code), who = g ? g.name : 'the host';
   netLeave(); NET.code = code; NET.role = 'guest'; NET.gid ||= Math.random().toString(36).slice(2, 10); syncLobbyUi(); lobbyStatus('Joining ' + who + '…');
-  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { lobbyStatus('Could not connect. Check your internet and try again.'); NET.role = null; NET.code = ''; syncLobbyUi(); return; }
+  NET.rejoining = true;   // don't let the auto-reconnect open a second copy of the room while this one is still connecting
+  try { NET.link = await netOpen(code, netOnMsg); } catch (e) { NET.rejoining = false; lobbyStatus('Could not connect. Check your internet and try again.'); NET.role = null; NET.code = ''; syncLobbyUi(); return; }
+  NET.rejoining = false; NET.rejoinAt = performance.now();
   NET.helloT = 0; lobbyStatus('Connected. Waiting for ' + who + '…');
 }
 function netOnMsg(m) {
-  if (!m || !m.k) return;
+  if (!m || !m.k || (m.gi && m.gi === NET.gid)) return;
   NET.last = performance.now(); (NET.rx ||= {})[m.k] = (NET.rx[m.k] || 0) + 1;
   if (m.sn != null) NET.peerSn = m.sn;
   // two different versions can't play together properly: tell both players to reopen the game
@@ -4908,7 +4913,8 @@ function netOnMsg(m) {
   if (m.k === 'away') { NET.awayAt = NET.last; return; }
   NET.awayAt = 0;
   if (m.k === 'back') return;
-  if (m.ch === 'b') { if (S && S.vs && S.vs.v22 && !S.vs.remote) vsMsg(m); return; }   // 2v2: between the two team captains
+  if (m.ch === 'b') { if (S && S.vs && S.vs.v22 && !S.vs.remote) vsMsg(m); return; }
+  if (S && S.vs && S.vs.v22 && ((m.rm && m.rm !== NET.code) || m.k === 'hello' || m.k === 'start' || m.k === 'roster' || m.k === 'start22')) return;   // 2v2: only listen to our own team's room, and never restart into a plain Team Kitchen   // 2v2: between the two team captains
   if (S && S.net === 'vs' && m.k !== 'start' && m.k !== 'hello') { vsMsg(m); return; }
   if (NET.mode === 'v22' && !(S && S.vs && S.vs.v22) && v22Lobby(m)) return;
   if (NET.role === 'host') {
@@ -5132,6 +5138,8 @@ setInterval(() => {
   if (!NET.role || document.hidden) return;
   const st = NET.link && NET.link.state ? NET.link.state() : 'joined';
   if ((!NET.link || st === 'closed' || st === 'errored') && performance.now() - NET.rejoinAt > 5000) { netRejoin(); return; }
+  const bs = NET.battle && NET.battle.state ? NET.battle.state() : 'joined';
+  if (NET.battle && NET.room && (bs === 'closed' || bs === 'errored') && !NET.battleRe && S && S.vs && S.vs.v22) { NET.battleRe = true; const old = NET.battle; (async () => { try { await old.close(); } catch (e) {} try { NET.battle = await netOpen(NET.room, netOnMsg); } catch (e) {} NET.battleRe = false; })(); }
   if (NET.link && NET.role === 'host' && S && S.net === 'host') netSend({ k: 'back' });
 }, 1000);
 setInterval(() => { if (document.hidden) return; if (NET.link && NET.role === 'guest') { const ping = S && (S.net === 'guest' || S.net === 'vs'); netSend(ping ? { k: 'ping', sn: (NET.rx && NET.rx.s) || 0 } : { k: 'hello', gid: NET.gid, name: myName() }); } }, 1000);
@@ -5157,7 +5165,7 @@ const SENDS = [
 const SEND_NAME = { ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarm', queen: 'Roach King', hopper: 'Grasshoppers', centi: 'Centipede', stink: 'Stink Bugs', moth: 'Moths', mantis: 'Praying Mantis', gmantis: 'Giant Mantis' };
 const sentCount = d => d.n * (d.t === 'bed' ? BT.bed.swarm : d.t === 'centi' ? BT.centi.segs : 1);
 const vsLeader = () => S.vs.bot || (S.vs.v22 ? S.vs.leader : NET.role === 'host');
-function vsNet(m) { if (S && S.vs && S.vs.v22) { if (NET.battle) { m.ch = 'b'; m._v = MYVER(); try { NET.battle.send(m); } catch (e) {} } } else netSend(m); }
+function vsNet(m) { if (S && S.vs && S.vs.v22) { if (NET.battle) { m.ch = 'b'; m._v = MYVER(); m.gi = NET.gid; try { NET.battle.send(m); } catch (e) {} } } else netSend(m); }
 function vsInit() { S.vs = { foe: null, fin: false, rdy: false, foeRdy: false, counting: false, eco: 0, sent: 0, cd: {}, inbox: [], inT: 0, stT: 0, goAt: 0, shopK: '' }; }
 function vsCleared() { return !S.active && !S.bugs.length && !S.vs.inbox.length; }
 function vsStatus() {
@@ -5832,7 +5840,7 @@ function v22Lobby(m) {
 }
 $('lbStart22').addEventListener('click', () => {
   if (NET.role !== 'host' || !v22Ready(v22All())) { SND.play('err'); return; }
-  const T = v22Teams(), m = { k: 'start22', lv: TEAM_LV, battle: V22_BATTLE, A: T.A.map(p => p.gid), B: T.B.map(p => p.gid), names: Object.fromEntries(v22All().map(p => [p.gid, p.name])) };
+  const T = v22Teams(), m = { k: 'start22', code: NET.code, lv: TEAM_LV, battle: V22_BATTLE, A: T.A.map(p => p.gid), B: T.B.map(p => p.gid), names: Object.fromEntries(v22All().map(p => [p.gid, p.name])) };
   lobbyAd(false); netSend(m); v22Begin(m);
 });
 function rules22(team, mate, battle) {
@@ -5861,17 +5869,20 @@ $('r22Ok').addEventListener('click', () => {
   if (S.vs.remote) { netSend({ k: 'rk' }); setTimeout(() => netSend({ k: 'rk' }), 1500); }
 });
 async function v22Begin(m) {
-  if (S && S.mode === 'play') return;
+  if ((S && S.mode === 'play') || NET.v22Starting) return;   // only once, even if the start message arrives twice
   const me = NET.gid, team = m.A.includes(me) ? 'A' : m.B.includes(me) ? 'B' : null; if (!team) return;
-  const mates = m[team], cap = mates[0] === me, leader = cap && team === 'A', room = NET.link, code = NET.code;
+  NET.v22Starting = true;
+  const mates = m[team], cap = mates[0] === me, leader = cap && team === 'A', room = NET.link, code = m.code || NET.code;
   const mateName = m.names[mates.find(g => g !== me)] || 'your teammate';
   lobbyStatus('Starting 2v2…');
   if (cap) NET.battle = room; else { try { room.close(); } catch (e) {} }
-  NET.link = null;
-  try { NET.link = await netOpen(code + team, netOnMsg); } catch (e) { lobbyStatus('Could not connect to your team. Try again.'); return; }
-  NET.code = code + team; NET.role = cap ? 'host' : 'guest'; NET.mode = 'v22'; NET.last = performance.now(); NET.lastSnap = performance.now();
+  // switch to the team's own room. Block the auto-reconnect while we do: it would otherwise grab the old room
+  // (and the host would send the game to the wrong place, so the teammate sees no bugs)
+  NET.rejoining = true; NET.link = null; NET.code = code + team; NET.room = code;
+  try { NET.link = await netOpen(code + team, netOnMsg); } catch (e) { NET.rejoining = false; NET.v22Starting = false; lobbyStatus('Could not connect to your team. Try again.'); return; }
+  NET.rejoining = false; NET.rejoinAt = performance.now(); NET.role = cap ? 'host' : 'guest'; NET.mode = 'v22'; NET.last = performance.now(); NET.lastSnap = performance.now();
   $('lobby').hidden = true; TEAM_LV = m.lv;
-  startGame(m.lv, cap ? 'host' : 'guest');
+  startGame(m.lv, cap ? 'host' : 'guest'); NET.v22Starting = false;
   vsInit(); Object.assign(S.vs, { v22: true, battle: !!m.battle, race: !m.battle, leader, remote: !cap, team });
   document.querySelector('.stabs [data-tab="send"]').hidden = !m.battle; $('foe').hidden = false; $('foe').innerHTML = '';
   rules22(team, mateName, !!m.battle);
