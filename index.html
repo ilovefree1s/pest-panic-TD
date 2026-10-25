@@ -494,7 +494,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v214</div>
+    <div id="ver">v216</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2342,7 +2342,7 @@ function elCost(el) { return el.dataset.send != null ? SENDS[+el.dataset.send].c
 function costOf(t) { return t === 'license' ? (S.lic >= 3 ? Infinity : TT.license.costs[S.lic]) : TT[t].cost; }
 // perks: once a tool is level 3 it can buy one special power (a big upgrade with its own look)
 const PERK = {
-  swat:   { name: 'Electrified Swatter', icon: '⚡', amp: 0.8, d: '+80% damage, and every smack zaps the bug, stunning it for a moment.' },
+  swat:   { name: 'Electrified Swatter', icon: '⚡', amp: 0.8, d: 'Turns gunmetal black with lightning crackling across it. +80% damage, and every smack zaps the bug, stunning it for a moment.' },
   venus:  { name: 'Miracle Grow', icon: '🌱', range: 1.5, d: 'The plant grows huge: 50% more reach, chews much faster, and it can swallow small crawling bugs too.' },
   spray:  { name: 'Extra Strength', icon: '☠️', d: 'Poison burns twice as hard and lasts 5 seconds instead of 3.' },
   paper:  { name: 'Sunday Edition', icon: '📰', range: 1.5, amp: 0.25, d: 'A giant rolled-up paper: 50% bigger slam and 25% more damage.' },
@@ -2708,7 +2708,32 @@ const BUILD = {
     // level 3: a gold frame around the head
     const frame = mesh(new THREE.BoxGeometry(1.14, 0.1, 1.29), TM.gold); frame.position.z = 2.45; frame.scale.set(1, 0.6, 1); pivot.add(frame);
     const o = { root: g, turn, pivot, rim, pips: pips(g) };
-    o.setPerk = () => { side.color.set('#1fb8ff'); side.emissive = new THREE.Color('#1f8fff'); side.emissiveIntensity = 0.8; hm.emissive = new THREE.Color('#3aa0ff'); hm.emissiveIntensity = 0.4; o.baseScale = 1.1; o.sparky = true; };
+    o.setPerk = () => {   // Electrified Swatter: gunmetal black head and handle, with lightning that crackles across it now and then
+      TEX.swatX ||= swatTexture('#3b3e45', '#121316', '#8f99a6');
+      face.map = TEX.swatX; face.needsUpdate = true; side.color.set('#18191d'); side.emissive = new THREE.Color('#000'); side.emissiveIntensity = 0;
+      hm.color.set('#2b2d33'); hm.metalness = 0.7; hm.roughness = 0.3; hm.emissive = new THREE.Color('#000'); hm.emissiveIntensity = 0;
+      frame.material = std({ color: '#3a3d44', metalness: 0.9, roughness: 0.3 });
+      o.baseScale = 1.1; o.sparky = true;
+      if (!o.bolts) {
+        const bm = new THREE.MeshBasicMaterial({ color: '#d8f4ff', transparent: true, opacity: 1, depthWrite: false }), gm = new THREE.MeshBasicMaterial({ color: '#4ab8ff', transparent: true, opacity: 0.55, depthWrite: false });
+        o.bolts = new THREE.Group(); o.bolts.visible = false; o.bolts.position.copy(head.position); o.bolts.position.y += 0.06; pivot.add(o.bolts);
+        o.boltSegs = [];
+        for (let k = 0; k < 2; k++) for (let i = 0; i < 6; i++) { const core = mesh(new THREE.BoxGeometry(1, 0.02, 0.035), bm), glow = mesh(new THREE.BoxGeometry(1, 0.015, 0.11), gm); o.bolts.add(core, glow); o.boltSegs.push([core, glow]); }
+        o.zap = () => {   // two jagged streaks across the head, a new shape every time
+          let n = 0;
+          for (let k = 0; k < 2; k++) {
+            let x = -0.5 + Math.random() * 0.3, z = (Math.random() - 0.5) * 1.0;
+            for (let i = 0; i < 6; i++) {
+              const nx = x + 0.12 + Math.random() * 0.1, nz = Math.max(-0.55, Math.min(0.55, z + (Math.random() - 0.5) * 0.45));
+              const [core, glow] = o.boltSegs[n++], len = Math.hypot(nx - x, nz - z), a = -Math.atan2(nz - z, nx - x);
+              for (const m of [core, glow]) { m.position.set((x + nx) / 2, 0, (z + nz) / 2); m.scale.set(len, 1, 1); m.rotation.y = a; }
+              x = nx; z = nz;
+            }
+          }
+          o.bolts.visible = true;
+        };
+      }
+    };
     o.setLevel = lv => {
       rimLevel(o, lv);
       face.map = TEX.swat[lv - 1]; face.needsUpdate = true;
@@ -3445,14 +3470,14 @@ function zapHop(z) {
   SND.play(z.hit.size > 1 ? 'zip' : 'zap');
 }
 let CUR_AMP = 0;
-function candleRng(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1] * PR(c)) ? TT.candle.rng[c.lv - 1] : 0; }
-function candleAmp(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1] * PR(c)) ? TT.candle.amp[c.lv - 1] + (c.perk ? 0.1 : 0) : 0; }
+function candleRng(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1] * PR(c) * (1 + (c.rmul || 0))) ? TT.candle.rng[c.lv - 1] : 0; }
+function candleAmp(tw, c) { return !c.pending && tw !== c && inRange(c, tw, TT.candle.range[c.lv - 1] * PR(c) * (1 + (c.rmul || 0))) ? TT.candle.amp[c.lv - 1] + (c.perk ? 0.1 : 0) : 0; }
 function syncCandles() {
   const candles = S.towers.filter(c => c.t === 'candle' && !c.pending && !c.snuff);
   // up to two candles stack: add the two strongest boosts, a third candle does nothing
   for (const tw of S.towers) {
     const A = [], Rg = [];
-    if (tw.t !== 'candle' && !tw.pending) for (const c of candles) { const a = candleAmp(tw, c); if (a > 0) { A.push(a); Rg.push(candleRng(tw, c)); } }
+    if (!tw.pending) for (const c of candles) {   /* candles boost each other too: a lit candle in another's glow scorches harder and glows wider */ const a = candleAmp(tw, c); if (a > 0) { A.push(a); Rg.push(candleRng(tw, c)); } }
     A.sort((x, y) => y - x); Rg.sort((x, y) => y - x);
     tw.amp = (A[0] || 0) + (A[1] || 0); tw.rmul = (Rg[0] || 0) + (Rg[1] || 0); tw.lit = Math.min(2, A.length);
   }
@@ -4124,6 +4149,11 @@ function drawTowers(dt, t) {
     if (tw.pop < 1) { tw.pop = Math.min(1, tw.pop + dt * 5); const k = tw.pop, e = 1 + Math.sin(k * Math.PI) * 0.25; o.root.scale.setScalar(Math.max(0.01, k * e) * (o.baseScale || 1)); }
     if (o.turn) { let da = tw.yawT - tw.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); tw.yaw += da * Math.min(1, dt * 14); o.turn.rotation.y = tw.yaw; }
     const a = tw.anim;
+    if (o.zap && !tw.pending) {   // electrified swatter: a lightning streak every second or two
+      tw.boltT = (tw.boltT ?? Math.random() * 2) - dt;
+      if (tw.boltT <= 0) { o.zap(); tw.boltT = 0.9 + Math.random() * 1.6; tw.boltOn = 0.14; }
+      else if (tw.boltOn > 0 && (tw.boltOn -= dt) <= 0) o.bolts.visible = false;
+    }
     if (o.sparky && !tw.pending && Math.random() < dt * 6) { const hx = tw.x + Math.sin(tw.yaw) * 2.6, hz = tw.z + Math.cos(tw.yaw) * 2.6; FX.glow.spawn({ x: hx + (Math.random() - 0.5), y: 1.2 + Math.random(), z: hz + (Math.random() - 0.5), vx: (Math.random() - 0.5) * 2, vy: 1, vz: (Math.random() - 0.5) * 2, life: 0.2, s0: 0.45, s1: 0.05, c: [0.5, 0.85, 1], a0: 1 }); }
     if (tw.t === 'venus') {
       const hs = tw.vh || [];
@@ -4702,7 +4732,7 @@ function statsHtml(tw) { const base = statsHtml0(tw); return PERK[tw.t] && tw.lv
 function statsHtml0(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'glue') return fmtStat('Bugs left', T.cap[L] - tw.uses, N != null ? T.cap[N] - Math.max(0, tw.uses - 6) : null) + fmtStat('Slows to', Math.round(T.slow[L] * 100), N != null ? Math.round(T.slow[N] * 100) : null, '%') + fmtStat('Burn', T.dps[L], N != null ? T.dps[N] : null, '/s');
-  if (tw.t === 'candle') return fmtStat('Scorch', T.burn[L], N != null ? T.burn[N] : null, '/s') + fmtStat('Tools in glow', '+' + Math.round(T.amp[L] * 100), N != null ? '+' + Math.round(T.amp[N] * 100) : null, '% damage') + fmtStat('and', '+' + Math.round(T.rng[L] * 100), N != null ? '+' + Math.round(T.rng[N] * 100) : null, '% range') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + `<li>Boosting <b>${S.towers.filter(o => o.t !== 'candle' && candleAmp(o, tw)).length}</b> tools</li>`;
+  if (tw.t === 'candle') return (tw.amp ? `<li class="boost">${tw.lit >= 2 ? '🔥🔥 2 candles' : '🔥 Candle'} boost <b>+${Math.round(tw.amp * 100)}%</b> scorch, <b>+${Math.round((tw.rmul || 0) * 100)}%</b> glow</li>` : '') + fmtStat('Scorch', T.burn[L], N != null ? T.burn[N] : null, '/s') + fmtStat('Tools in glow', '+' + Math.round(T.amp[L] * 100), N != null ? '+' + Math.round(T.amp[N] * 100) : null, '% damage') + fmtStat('and', '+' + Math.round(T.rng[L] * 100), N != null ? '+' + Math.round(T.rng[N] * 100) : null, '% range') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + `<li>Boosting <b>${S.towers.filter(o => o.t !== 'candle' && candleAmp(o, tw)).length}</b> tools</li>`;
   if (tw.amp) return statsBase(tw) + `<li class="boost">${tw.lit >= 2 ? '🔥🔥 2 candles' : '🔥 Candle'} boost <b>+${Math.round(tw.amp * 100)}%</b> damage, <b>+${Math.round((tw.rmul || 0) * 100)}%</b> range</li>`;
   return statsBase(tw);
 }
