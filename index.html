@@ -183,6 +183,16 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .achl b{font:400 16px var(--display);letter-spacing:.03em;color:var(--text)} .achl li.on b{color:var(--gold)}
 .achl p{margin:2px 0 0;font-weight:700;font-size:12.5px;color:var(--dim)}
 .achl small{display:block;margin-top:3px;font-weight:900;font-size:11px;color:var(--gold)}
+.shc{margin:0;font:400 22px var(--display);color:var(--gold)} .shnote{margin:-6px 0 0;font-size:13px;color:var(--dim)}
+#shinies{overflow-y:auto;justify-content:flex-start;padding-top:24px;padding-bottom:24px;gap:12px}
+.shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;width:min(720px,92vw)}
+.sh{background:rgba(10,13,16,.78);border-radius:14px;padding:10px 8px;display:grid;justify-items:center;gap:4px;text-align:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.sh svg{width:52px;height:52px} .sh b{font:800 13px var(--body);color:var(--text)} .sh small{font-size:11px;color:var(--dim)}
+.sh.no svg{filter:brightness(0) opacity(.4)} .sh.no b{color:var(--dim)}
+.sh.yes{box-shadow:inset 0 0 0 2px rgba(255,216,74,.6)} .sh.yes svg{animation:shRain 3s linear infinite}
+@keyframes shRain{from{filter:hue-rotate(0deg) saturate(1.6) drop-shadow(0 0 6px rgba(255,255,255,.6))}to{filter:hue-rotate(360deg) saturate(1.6) drop-shadow(0 0 6px rgba(255,255,255,.6))}}
+@media (prefers-reduced-motion:reduce){.sh.yes svg{animation:none}}
+.shrew{list-style:none;margin:0;padding:0;display:grid;gap:6px;width:min(720px,92vw)} .shrew li{background:rgba(10,13,16,.78);border-radius:12px;padding:8px 12px;font-weight:700;display:flex;justify-content:space-between;gap:10px} .shrew li.on{color:var(--gold)} .shrew li span{color:var(--dim);font-weight:800}
 .gtabs{display:flex;gap:4px;background:rgba(10,13,16,.8);border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .gtabs button{border:0;border-radius:999px;padding:8px 16px;font:400 17px var(--display);letter-spacing:.03em;color:var(--dim);background:none;cursor:pointer}
 .gtabs button.on{background:var(--gold);color:#2a1600}
@@ -494,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v225</div>
+    <div id="ver">v227</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -529,6 +539,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       </div>
       <div class="tsmall">
         <button id="guideT" type="button" aria-label="Field guide and achievements" title="Field guide and achievements"><svg viewBox="0 0 24 24"><path d="M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Guide</span></button>
+        <button id="shinyT" type="button" aria-label="Shiny Collection" title="Shiny Collection"><svg viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7z" fill="currentColor"/><path d="M19 15l.9 2.3 2.1.7-2.1.8L19 21l-.9-2.2-2.1-.8 2.1-.7z" fill="currentColor" opacity=".7"/></svg></button>
         <button id="setT" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 20 20"><path d="M8.6 2h2.8l.4 2.1 1.5.7 1.8-1.2 2 2-1.2 1.8.7 1.5 2.1.4v2.8l-2.1.4-.7 1.5 1.2 1.8-2 2-1.8-1.2-1.5.7-.4 2.1H8.6l-.4-2.1-1.5-.7-1.8 1.2-2-2 1.2-1.8-.7-1.5L1.3 11.4V8.6l2.1-.4.7-1.5-1.2-1.8 2-2 1.8 1.2 1.5-.7z" fill="currentColor"/><circle cx="10" cy="10" r="2.8" fill="#1a1f25"/></svg><span>Settings</span></button>
         <button id="fullT" type="button" hidden aria-label="Full screen" title="Full screen"><svg viewBox="0 0 20 20"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Full</span></button>
       </div>
@@ -587,6 +598,17 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <div id="achCount" class="achc"></div>
       <ul id="achList" class="achl"></ul>
       <button class="btn" id="achBack" type="button">Back</button>
+    </div>
+    <div class="screen" id="shinies" hidden>
+      <h2 class="t">Shiny Collection</h2>
+      <p class="shc" id="shCount"></p>
+      <div class="shgrid" id="shGrid"></div>
+      <h3 class="lhead2">Boss trophies</h3>
+      <p class="shnote">Super rare: about 1 boss in 10,000 comes out shiny.</p>
+      <div class="shgrid boss" id="shBoss"></div>
+      <h3 class="lhead2">Rewards</h3>
+      <ul class="shrew" id="shRew"></ul>
+      <button class="btn" id="shBack" type="button">Back</button>
     </div>
     <div class="screen" id="settings" hidden>
       <h2 class="t">Settings</h2>
@@ -2028,7 +2050,14 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
   const nozzle = mesh(new THREE.ConeGeometry(0.06, 0.16, 10), steel); nozzle.position.y = -1.18; nozzle.rotation.x = Math.PI; wand.add(nozzle);
   const tip = new THREE.Object3D(); tip.position.y = -1.28; wand.add(tip);
   wand.visible = false;
-  root.userData = { body, legs, arms, head, hammer, wand, tip };
+  // Shiny Collection rewards (hidden until earned): rainbow trim, a glittery tank, a golden backpack, a rainbow glow
+  const trimM = new THREE.MeshStandardMaterial({ color: '#ff4a4a', emissive: '#ff4a4a', emissiveIntensity: 0.7, roughness: 0.3 });
+  const trim = new THREE.Group(); trim.visible = false; body.add(trim);
+  for (const [y, r] of [[0.92, 0.335], [1.42, 0.29]]) { const t = mesh(new THREE.TorusGeometry(r, 0.035, 8, 28), trimM); t.rotation.x = Math.PI / 2; t.position.y = y; trim.add(t); }
+  for (const s of [-1, 1]) { const c = mesh(new THREE.TorusGeometry(0.105, 0.025, 6, 16), trimM); c.rotation.x = Math.PI / 2; c.position.y = -0.42; arms[s < 0 ? 0 : 1].add(c); }
+  const halo = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.95, 40), new THREE.MeshBasicMaterial({ color: '#ff4a4a', transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  halo.rotation.x = -Math.PI / 2; halo.position.y = 0.06; halo.visible = false; root.add(halo);
+  root.userData = { body, legs, arms, head, hammer, wand, tip, trim, trimM, tankM, tankBase: tankM.color.clone(), halo };
   root.traverse(o => { if (o.isMesh) o.castShadow = true; });
   root.scale.setScalar(1.55);
   root.visible = false;
@@ -2097,7 +2126,38 @@ function leadBug() {
 // ---- shiny bugs: a very rare rainbow bug. Tap Catch and the exterminator runs over and grabs it before it's squashed
 const SHINY_CHANCE = 0.0015;
 const BUG_NAME = { ant: 'Ant', fly: 'Fly', spider: 'Spider', bed: 'Bed Bug', dung: 'Dung Beetle', baby: 'Baby Spider', hopper: 'Grasshopper', centi: 'Centipede', stink: 'Stink Bug', moth: 'Moth', mantis: 'Praying Mantis' };
-const shinyName = b => 'shiny ' + (BUG_NAME[b.t] || 'bug');
+const shinyName = b => 'shiny ' + (BUG_NAME[b.t] || (BT[b.t] && BT[b.t].name) || 'bug');
+// ---- the Shiny Collection: every type you've caught, kept forever (selling from the jar doesn't take it away)
+const SHINY_BOSS = 0.0001;
+const DEX_REG = ['ant', 'fly', 'spider', 'bed', 'dung', 'baby', 'hopper', 'centi', 'stink', 'moth', 'mantis'];
+const DEX_BOSS = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis'];
+const DEX_REWARDS = [[3, 'Rainbow trim on your exterminator\'s suit'], [6, 'A glittery rainbow spray tank'], [9, 'A golden backpack'], [11, 'A rainbow glow around your exterminator, and the Shiny Hunter achievement']];
+function dexGet() { try { return JSON.parse(localStorage.getItem('ppd-shinydex') || '{}') || {}; } catch (e) { return {}; } }
+function dexTypes() { const d = dexGet(); return DEX_REG.filter(t => d[t]).length; }
+function dexTier() { const n = dexTypes(); return n >= 11 ? 4 : n >= 9 ? 3 : n >= 6 ? 2 : n >= 3 ? 1 : 0; }
+function dexAdd(t) {
+  const d = dexGet(), first = !d[t], before = dexTier();
+  d[t] = { n: ((d[t] && d[t].n) || 0) + 1, d: (d[t] && d[t].d) || new Date().toISOString().slice(0, 10) };
+  try { localStorage.setItem('ppd-shinydex', JSON.stringify(d)); } catch (e) {}
+  if (!first) return;
+  const boss = DEX_BOSS.includes(t), n = dexTypes();
+  setTimeout(() => { banner(boss ? '🏆 Boss trophy!' : '✨ New shiny!', boss ? 'A shiny ' + (BT[t].name || t) + ' is in your collection' : 'Added to your Shiny Collection (' + n + ' / ' + DEX_REG.length + ')', false, 2600); SND.play('clear'); }, 2700);
+  const after = dexTier();
+  if (after > before) setTimeout(() => { banner('Unlocked!', DEX_REWARDS[after - 1][1], false, 3000); SND.play('up'); }, 5600);
+  if (n >= DEX_REG.length) ACH.unlock('shiny11');
+}
+const dexIcon = t => BUGICON[t] || (BT[t] && BUGICON[BT[t].base]) || BUGICON.spider;
+const dexName = t => BUG_NAME[t] || (BT[t] && BT[t].name) || t;
+function renderDex() {
+  const d = dexGet(), n = dexTypes();
+  $('shCount').textContent = n + ' / ' + DEX_REG.length + ' caught';
+  const slot = t => { const e = d[t]; return `<div class="sh ${e ? 'yes' : 'no'}">${dexIcon(t)}<b>${e ? dexName(t) : '?'}</b><small>${e ? '×' + e.n + ' · first ' + e.d : 'not caught yet'}</small></div>`; };
+  $('shGrid').innerHTML = DEX_REG.map(slot).join('');
+  $('shBoss').innerHTML = DEX_BOSS.map(slot).join('');
+  $('shRew').innerHTML = DEX_REWARDS.map(([k, txt]) => `<li class="${n >= k ? 'on' : ''}">${n >= k ? '✓ ' : ''}${txt}<span>${Math.min(n, k)} / ${k}</span></li>`).join('');
+}
+$('shinyT').addEventListener('click', () => { SND.init(); SND.play('tap'); renderDex(); $('title').hidden = true; $('shinies').hidden = false; $('shinies').scrollTop = 0; });
+$('shBack').addEventListener('click', () => { SND.play('tap'); $('shinies').hidden = true; $('title').hidden = false; });
 function makeShiny(b) { b.shiny = true; BN_FWD++; try { banner('✨ A ' + shinyName(b) + '!', 'Tap Catch before it gets squashed!', false, 2400); } finally { BN_FWD--; } SND.play('up'); }
 function jarCount() { try { return +localStorage.getItem('ppd-shiny') || 0; } catch (e) { return 0; } }
 function jarSet(n) { try { localStorage.setItem('ppd-shiny', String(Math.max(0, n))); } catch (e) {} syncCatch(); }
@@ -2118,8 +2178,8 @@ function catchUpdate(e, dt) {
   b.dead = true; hideBug(b); e.catch = null; e.state = e.job ? 'walk' : 'idle'; e.rest = null;
   for (let i = 0; i < 24; i++) { const a = Math.random() * TAU, v = 2 + Math.random() * 4; FX.glow.spawn({ x: b.x, y: 1, z: b.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 4, vz: Math.sin(a) * v, grav: 8, life: 0.8, s0: 0.6, s1: 0.1, c: [Math.random(), Math.random(), 1], a0: 1 }); }
   SND.play('clear');
-  banner('Caught a ' + shinyName(b) + '!', 'It\'s in your Shiny Jar. Sell it any time for 100 coins.', false, 2600);
-  if (S.p2 && (S.cur || 0) !== (S.me || 0)) netSend({ k: 'caught', t: b.t }); else jarSet(jarCount() + 1);
+  banner('Caught a ' + shinyName(b) + '!', 'It\'s in your Shiny Collection for good. Sell it from the jar any time for 100 coins.', false, 2600);
+  if (S.p2 && (S.cur || 0) !== (S.me || 0)) netSend({ k: 'caught', t: b.t }); else { jarSet(jarCount() + 1); dexAdd(b.t); }
 }
 function sellShiny(split) {
   if (S.mode !== 'play' || jarCount() <= 0) return;
@@ -2249,8 +2309,20 @@ function findRest(e) {
   return best;
 }
 // both exterminators: yours (S.ext) and, in a team game, your partner's (S.p2.ext)
+const extC = new THREE.Color();
+function extCosmetics(EXTM, tier) {   // your Shiny Collection rewards (only on your own exterminator)
+  const u = EXTM.userData, h = (performance.now() / 2600) % 1;
+  u.trim.visible = tier >= 1; if (tier >= 1) { extC.setHSL(h, 1, 0.55); u.trimM.color.copy(extC); u.trimM.emissive.copy(extC); }
+  if (tier >= 3) { u.tankM.color.set('#f3c24a'); u.tankM.metalness = 1; u.tankM.roughness = 0.18; u.tankM.emissive.set('#6a4300'); u.tankM.emissiveIntensity = 0.5 + Math.random() * 0.25; }
+  else if (tier >= 2) { extC.setHSL((h + 0.5) % 1, 0.9, 0.62); u.tankM.color.copy(extC); u.tankM.metalness = 0.4; u.tankM.roughness = 0.15; u.tankM.emissive.copy(extC); u.tankM.emissiveIntensity = 0.15 + (Math.random() < 0.25 ? 0.6 : 0); }
+  else if (u.tankM.metalness) { u.tankM.color.copy(u.tankBase); u.tankM.metalness = 0; u.tankM.roughness = 0.35; u.tankM.emissiveIntensity = 0; }
+  u.halo.visible = tier >= 4; if (tier >= 4) { u.halo.material.color.setHSL((h * 2) % 1, 1, 0.55); u.halo.rotation.z += 0.02; u.halo.scale.setScalar(1 + Math.sin(performance.now() / 300) * 0.06); }
+}
+let DEX_TIER = -1, DEX_T = 0;
 function drawExt(dt) {
   const show = S.mode === 'play' || S.mode === 'over', me = S.me || 0, M = [EXT, EXT2];
+  if ((DEX_T -= dt) <= 0) { DEX_T = 2; DEX_TIER = dexTier(); }
+  extCosmetics(M[me], DEX_TIER); extCosmetics(M[1 - me], 0);
   drawOneExt(dt, M[me], S.ext, show);
   drawOneExt(dt, M[1 - me], S.p2 && S.p2.ext, show && !!S.p2);
 }
@@ -2344,7 +2416,7 @@ function costOf(t) { return t === 'license' ? (S.lic >= 3 ? Infinity : TT.licens
 const PERK = {
   swat:   { name: 'Electrified Swatter', icon: '⚡', amp: 0.8, d: 'Turns gunmetal black with lightning crackling across it. +80% damage, and every smack zaps the bug, stunning it for a moment.' },
   venus:  { name: 'Miracle Grow', icon: '🌱', range: 1.5, d: 'The plant grows bigger: 50% more reach, chews much faster, and it can swallow small crawling bugs too.' },
-  spray:  { name: 'Extra Strength', icon: '☠️', d: 'Poison burns twice as hard and lasts 5 seconds instead of 3.' },
+  spray:  { name: 'Extra Strength', icon: '☠️', d: 'Three toxic cans that glow green. Poison burns twice as hard and lasts 5 seconds instead of 3.' },
   paper:  { name: 'Sunday Edition', icon: '📰', range: 1.5, amp: 0.25, d: 'A giant rolled-up paper: 50% bigger slam and 25% more damage.' },
   lens:   { name: 'Wildfire', icon: '🔥', d: 'The bug it burns sets fire to bugs right next to it.' },
   zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'The bolt hops to twice as many bugs.' },
@@ -2761,6 +2833,12 @@ const BUILD = {
       twin.visible = strap.visible = lv >= 2; wand.visible = lv >= 3;
       bodyM.color.set(lv >= 3 ? '#ff8a3c' : '#7fd36a'); stripM.color.set(lv >= 3 ? '#2a2d33' : '#d43a2b'); capM.color.set(lv >= 3 ? '#f3c24a' : '#f0ece2');
       capM.metalness = lv >= 3 ? 1 : 0;
+    };
+    o.setPerk = () => {   // Extra Strength: toxic cans, three of them, glowing green
+      o.perk = true; o.toxic = true; o.baseScale = 1.12;
+      bodyM.color.set('#2a1838'); bodyM.metalness = 0.5; labM.color.set('#7dff4a'); labM.emissive = new THREE.Color('#3aff2a'); labM.emissiveIntensity = 0.7;
+      stripM.color.set('#7dff4a'); stripM.emissive = new THREE.Color('#2ad01a'); stripM.emissiveIntensity = 0.5; capM.color.set('#7dff4a'); capM.metalness = 0;
+      if (!o.third) { o.third = makeCan(-0.72, 0.82); o.third.position.z = -0.2; can.add(o.third); }
     };
     return o;
   },
@@ -3235,9 +3313,10 @@ function bossesFor(n) {
   const lap = (LEVELS[LV] && (LEVELS[LV].bosses || LEVELS[LV].team)) ? BL[(n / 5 - 1) % 4] : EL[(n / 5 - 5) % EL.length], extra = Math.floor((n - MAXW) / 20);
   const out = []; for (let i = 0; i <= extra; i++) out.push(...lap); return out;
 }
-function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && (LEVELS[LV].bossMulW[S.wave][t] || LEVELS[LV].bossMulW[S.wave]['*'])) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1) * (LEVELS[LV] && LEVELS[LV].team && S.wave === 5 ? 1 / 1.2 : 1) * lateRamp(S.mode === 'play' ? S.wave : 0) * (S.wave === 5 ? 0.7225 : 1)); }   // bosses climb 5% a wave after wave 5 too; the first boss (wave 5) is 15% + 15% softer so it can be beaten without a wall of magnifying glasses   // (the wave 5 boss skips the Team Kitchen +20%)   // bosses are 5% softer in Bug Battle and Team Kitchen
+function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && (LEVELS[LV].bossMulW[S.wave][t] || LEVELS[LV].bossMulW[S.wave]['*'])) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1) * (LEVELS[LV] && LEVELS[LV].team && S.wave === 5 ? 1 / 1.2 : 1) * bossRamp(S.mode === 'play' ? S.wave : 0) * (S.wave === 5 ? 0.7225 : 1)); }   // bosses climb 2% a wave after wave 5; the first boss (wave 5) is 15% + 15% softer so it can be beaten without a wall of magnifying glasses   // (the wave 5 boss skips the Team Kitchen +20%)   // bosses are 5% softer in Bug Battle and Team Kitchen
 const MAXW = 25;
-const LATE_RAMP = 1.05;   // after wave 5, regular bugs and bosses get 5% tougher every wave (stacking). Beetle shells are not affected
+const LATE_RAMP = 1.05;   // after wave 5, regular bugs get 5% tougher every wave (stacking). Bosses climb 2% (bossRamp). Beetle shells are not affected
+const bossRamp = w => w > 5 ? 1.02 ** (Math.min(w, MAXW) - 5) : 1;   // bosses: +2% a wave after wave 5
 const lateRamp = w => w > 5 ? LATE_RAMP ** (Math.min(w, MAXW) - 5) : 1;   // (endless keeps its own climb past wave 25)
 // bug toughness by wave: climbs fast to wave 20, then +7% a wave through the last five
 function hpCurve(w) { const a = Math.min(w, 20) - 1; return (1 + 0.17 * a + 0.011 * a * a) * (w > 20 ? 1 + 0.07 * (Math.min(w, MAXW) - 20) : 1); }
@@ -3280,7 +3359,7 @@ function spawnBug(t, route = nextRoute()) {
   const bt = BT[t], LL = LEVELS[LV], wm = ((S.mode === 'play' && LL.bugMulW && LL.bugMulW[S.wave] && (LL.bugMulW[S.wave][t] || LL.bugMulW[S.wave]['*'])) || 1) * (S.mode === 'play' && LL.bugMulAfter && S.wave > LL.bugMulAfter[0] ? LL.bugMulAfter[1] : 1), hp = bt.boss ? bossHp(t) : Math.round(bt.hp * S.hpMul * wm * (S.mode === 'play' && S.wave >= 10 ? 1.2 : 1) * (S.mode === 'play' && S.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(S.mode === 'play' ? S.wave : 0)), b = { id: S.nid++, t, s: 0, off: (Math.random() - 0.5) * (bt.boss ? 0.2 : 1.3), hp, max: hp,
     x: 0, y0: 0, z: 0, ang: 0, pitch: 0, flash: 0, psnT: 0, psnD: 0, pacc: 0, stuck: 0, slowF: 1, walk: Math.random() * 6, glued: 0 };
   b.route = route; pathAt(0, tmpP, route); b.x = tmpP.x; b.z = tmpP.z; b.ang = Math.atan2(tmpP.dx, tmpP.dz);
-  if (S.mode === 'play' && S.net !== 'guest' && !bt.boss && Math.random() < SHINY_CHANCE) makeShiny(b);
+  if (S.mode === 'play' && S.net !== 'guest' && Math.random() < (bt.boss ? SHINY_BOSS : SHINY_CHANCE)) makeShiny(b);
   if (bt.ball) { const h = Math.round(bt.ball * S.hpMul * wm * (S.wave === 6 || S.wave === 7 ? 0.7 / 0.9 : 1));   // beetle balls 30% weaker on waves 6-7
     b.ball = { hp: h, max: h, flash: 0 }; }
   if (bt.boss) { b.mesh = getBoss(t); $('queen').hidden = false; if (t === 'widow') b.clutch = 2; if (bt.base) b.mdl = b.mesh; }
@@ -3613,11 +3692,11 @@ function towerAct(tw, dt) {
     // a jet of fine droplets (not a cloud like the Fogger): fast, narrow, a little arc, light blue
     for (let i = 0; i < 40; i++) {
       const sp = R * (1.5 + Math.random() * 1.1), j = (Math.random() - 0.5) * 0.65, c = Math.cos(j), s = Math.sin(j);
-      FX.goo.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: 0.6 + Math.random() * 1.6, vz: (uz * c + ux * s) * sp, grav: 9, drag: 1.4, life: 0.4 + Math.random() * 0.2, s0: 0.22 + Math.random() * 0.12, s1: 0.1, c: [0.55, 0.85, 1], a0: 1, a1: 0.6 });
+      FX.goo.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: 0.6 + Math.random() * 1.6, vz: (uz * c + ux * s) * sp, grav: 9, drag: 1.4, life: 0.4 + Math.random() * 0.2, s0: 0.22 + Math.random() * 0.12, s1: 0.1, c: tw.perk ? [0.5, 1, 0.3] : [0.55, 0.85, 1], a0: 1, a1: 0.6 });
     }
     for (let i = 0; i < 12; i++) {   // bright glints in the jet
       const sp = R * (1.4 + Math.random() * 1.0), j = (Math.random() - 0.5) * 0.5, c = Math.cos(j), s = Math.sin(j);
-      FX.glow.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: 0.4 + Math.random(), vz: (uz * c + ux * s) * sp, grav: 7, drag: 1.4, life: 0.35, s0: 0.4, s1: 0.12, c: [0.6, 0.9, 1], a0: 1 });
+      FX.glow.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: 0.4 + Math.random(), vz: (uz * c + ux * s) * sp, grav: 7, drag: 1.4, life: 0.35, s0: 0.4, s1: 0.12, c: tw.perk ? [0.6, 1, 0.4] : [0.6, 0.9, 1], a0: 1 });
     }
     for (let i = 0; i < 5; i++) {   // a thin, quick haze along the jet
       const sp = R * (1.4 + Math.random() * 0.6), j = (Math.random() - 0.5) * 0.25, c = Math.cos(j), s = Math.sin(j);
@@ -4169,6 +4248,7 @@ function drawTowers(dt, t) {
     if (tw.pop < 1) { tw.pop = Math.min(1, tw.pop + dt * 5); const k = tw.pop, e = 1 + Math.sin(k * Math.PI) * 0.25; o.root.scale.setScalar(Math.max(0.01, k * e) * (o.baseScale || 1)); }
     if (o.turn) { let da = tw.yawT - tw.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); tw.yaw += da * Math.min(1, dt * 14); o.turn.rotation.y = tw.yaw; }
     const a = tw.anim;
+    if (o.toxic && !tw.pending && Math.random() < dt * 5) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.4, y: 1.4 + Math.random() * 1.6, z: tw.z + (Math.random() - 0.5) * 1.0, vy: 0.9, life: 0.9, s0: 0.4, s1: 0.05, c: [0.45, 1, 0.3], a0: 0.85 });   // toxic fumes
     if (o.zap && !tw.pending) {   // electrified swatter: small zapper lightning crackles across it every second or so
       tw.boltT = (tw.boltT ?? Math.random() * 1.5) - dt;
       if (tw.boltT <= 0) { o.zap(); tw.boltT = 0.5 + Math.random() * 1.1; }
@@ -5028,7 +5108,7 @@ function netOnMsg(m) {
     if (!S || S.net !== 'guest') return;
     if (rsAnswer(m)) return;
     if (m.k === 'bn') { banner(m.a, m.b, !!m.r, m.ms); return; }
-    if (m.k === 'caught') { jarSet(jarCount() + 1); return; }
+    if (m.k === 'caught') { jarSet(jarCount() + 1); if (m.t) dexAdd(m.t); return; }
     if (m.k === 's') { NET.lastSnap = performance.now(); netApply(m); }
     else if (m.k === 'vsOver') { if (S.vs) vsEnd(m.res, m.why); }
     else if (m.k === 'over') { S.lives = m.l; S.wave = m.w; S.kills = m.kills; if (m.st) S.stats = m.st; gameOver(m.won); }
@@ -5514,7 +5594,7 @@ function aiSpawn(t, sent) {
   const A = S.vs.bot, bt = BT[t];
   let lead = null;
   const make = (s0, off) => {
-    const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1) * 0.95 * lateRamp(A.wave) * (A.wave === 5 ? 0.7225 : 1)) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(A.wave));
+    const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1) * 0.95 * bossRamp(A.wave) * (A.wave === 5 ? 0.7225 : 1)) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(A.wave));
     const b = { id: A.nid++, t, route: bt.boss || A.wave <= 5 ? LONG_R : A.routeN, s: s0, off, hp, max: hp, ball: bt.ball ? Math.round(bt.ball * A.hpMul * (A.wave === 6 || A.wave === 7 ? 0.7 / 0.9 : 1)) : 0, sent: sent ? 1 : 0, push: 0 };
     A.bugs.push(b); return b;
   };
@@ -6304,6 +6384,7 @@ $('bldLoad').addEventListener('click', () => {
 $('bldExit').addEventListener('click', () => { bldLeave(); toTitle(); });
 // ---------------------------------------------------------------- achievements (saved on this device)
 const ACH_LIST = [
+  ['shiny11', 'Shiny Hunter', 'Catch a shiny of every regular bug.'],
   ['first', 'First Squash', 'Squash your first bug.'],
   ['k1000', 'Pest Control', 'Squash 1,000 bugs in total.', 'kills', 1000],
   ['k10000', 'Exterminator of the Year', 'Squash 10,000 bugs in total.', 'kills', 10000],
