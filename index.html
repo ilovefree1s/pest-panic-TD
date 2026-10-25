@@ -342,7 +342,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #tray{position:relative;background:linear-gradient(#12171c,#0b0e11);border-top:1px solid rgba(255,255,255,.06);padding:10px 12px;
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch}
 /* phones held upright: cake, coins and wave sit on the tool tray, next to the tabs */
-.tabrow{display:flex;align-items:center;gap:8px;min-width:0} .tabrow .stabs{flex:none}
+.tabrow{display:flex;align-items:center;gap:22px;min-width:0}
+@media (max-width:700px){.tabrow{gap:12px}} .tabrow .stabs{flex:none}
 #trayStats{flex:1;min-width:0;display:flex;justify-content:flex-start} #trayStats:empty{display:none}
 #trayStats .stats{flex:0 1 auto;justify-content:flex-start;gap:6px} #trayStats .stat{font-size:17px;padding:3px 11px 3px 4px} #trayStats .stat svg{width:22px;height:22px}
 @media (max-width:700px){#trayStats .stats{gap:5px} #trayStats .stat{font-size:15px;padding:2px 9px 2px 3px} #trayStats .stat svg{width:19px;height:19px}}
@@ -489,7 +490,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v200</div>
+    <div id="ver">v201</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
