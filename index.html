@@ -493,7 +493,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v208</div>
+    <div id="ver">v209</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2293,7 +2293,7 @@ const TT = {
   glue:  { name: 'Glue Trap',   cost: 35,  path: true, air: false, range: [1.7, 1.7, 1.7], cap: [14, 24, 36], slow: [0.35, 0.28, 0.2], dps: [0, 5, 10],
            d: 'Goes right on the trail. Bugs that cross it get stuck and crawl slowly.' },
   swat:  { name: 'Fly Swatter', cost: 55,  air: true,  range: [4.6, 5.0, 5.4], dmg: [16, 26, 38], rate: [0.75, 0.62, 0.5], d: 'Smacks the bug closest to the cake. Cheap and quick, but short reach. Hits flies. Against bosses, every 4th smack is a double-damage critical.' },
-  spray: { name: 'Bug Spray',   cost: 75,  air: true,  range: [6.0, 6.6, 7.2], dmg: [5, 8, 12], dot: [6, 11, 18], rate: [1.1, 1.0, 0.9], d: 'Mists a cone of poison at the bugs. Everything in the cone takes a hit, then the poison keeps burning for 3 seconds and slows them down. Poison ignores shells. Hits flies. On a boss, poison from up to 3 different sprays adds up.' },
+  spray: { name: 'Bug Spray',   cost: 75,  air: true,  range: [6.0, 6.6, 7.2], dmg: [5, 8, 12], dot: [6, 11, 18], rate: [1.1, 1.0, 0.9], d: 'Mists a wide cone of poison at the bugs. Everything in the cone (and anything bunched up around its target) takes a hit, then the poison keeps burning for 3 seconds and slows them down. Poison ignores shells. Hits flies. On a boss, poison from up to 3 different sprays adds up.' },
   paper: { name: 'Newspaper',   cost: 110, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Does 25% extra to bosses and makes them stagger. Can\'t reach flies.' },
   lens:  { name: 'Magnifying Glass', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 12, 18], mult: 4, ramp: 3,
            d: 'Focuses a sunbeam on one bug. The burn grows the longer it stays on that bug, up to 4× after 3 seconds, then holds there. Switching to a new bug starts the burn over. Burns through shells and hits flies.' },
@@ -3410,6 +3410,7 @@ function biteCake(n) {
 function inRange(tw, b, r) { const dx = b.x - tw.x, dz = b.z - tw.z; return dx * dx + dz * dz <= r * r; }
 function canHit(tw, b) { return !b.dead && (TT[tw.t].air || !(BT[b.t].fly || b.air)); }
 // Bug Spray aims at the lead bug that isn't poisoned yet (on a boss: one this spray hasn't dosed), so nothing slips by unsprayed
+const SPRAY_SPLASH = 2.2;
 function sprayTarget(tw, r) {
   let best = null; const now = S.gt || 0;
   for (const b of S.bugs) {
@@ -3578,7 +3579,7 @@ function towerAct(tw, dt) {
     for (const b of S.bugs) {
       if (!canHit(tw, b) || !inRange(tw, b, R)) continue;
       const bx = b.x - tw.x, bz = b.z - tw.z, bd = Math.hypot(bx, bz) || 1;
-      if ((bx * ux + bz * uz) / bd < 0.84 && bd > 1.2) continue;
+      if ((bx * ux + bz * uz) / bd < 0.6 && bd > 1.2 && (b.x - tg.x) ** 2 + (b.z - tg.z) ** 2 > SPRAY_SPLASH ** 2) continue;   // in the cone, or splashed near the target
       const fogP = b.psnT > 0 && b.psnSrc === 'fogger' ? b.psnD : 0;
       hit(b, T.dmg[L]); b.psnT = tw.perk ? 5 : 3; b.psnSrc = 'spray'; b.psnOwn = S.cur || 0;
       const pd = T.dot[L] * (1 + CUR_AMP) * (tw.perk ? 2 : 1);
@@ -3591,11 +3592,11 @@ function towerAct(tw, dt) {
     const nx = tw.x + ux * 0.45, nz = tw.z + uz * 0.45;
     // a jet of fine droplets (not a cloud like the Fogger): fast, narrow, a little arc, light blue
     for (let i = 0; i < 40; i++) {
-      const sp = R * (1.5 + Math.random() * 1.1), j = (Math.random() - 0.5) * 0.32, c = Math.cos(j), s = Math.sin(j);
+      const sp = R * (1.5 + Math.random() * 1.1), j = (Math.random() - 0.5) * 0.9, c = Math.cos(j), s = Math.sin(j);
       FX.goo.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: 0.6 + Math.random() * 1.6, vz: (uz * c + ux * s) * sp, grav: 9, drag: 1.4, life: 0.4 + Math.random() * 0.2, s0: 0.22 + Math.random() * 0.12, s1: 0.1, c: [0.55, 0.85, 1], a0: 1, a1: 0.6 });
     }
     for (let i = 0; i < 12; i++) {   // bright glints in the jet
-      const sp = R * (1.4 + Math.random() * 1.0), j = (Math.random() - 0.5) * 0.25, c = Math.cos(j), s = Math.sin(j);
+      const sp = R * (1.4 + Math.random() * 1.0), j = (Math.random() - 0.5) * 0.7, c = Math.cos(j), s = Math.sin(j);
       FX.glow.spawn({ x: nx, y: 2.2, z: nz, vx: (ux * c - uz * s) * sp, vy: 0.4 + Math.random(), vz: (uz * c + ux * s) * sp, grav: 7, drag: 1.4, life: 0.35, s0: 0.4, s1: 0.12, c: [0.6, 0.9, 1], a0: 1 });
     }
     for (let i = 0; i < 5; i++) {   // a thin, quick haze along the jet
