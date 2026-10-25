@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v228</div>
+    <div id="ver">v229</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2417,7 +2417,7 @@ function costOf(t) { return t === 'license' ? (S.lic >= 3 ? Infinity : TT.licens
 const PERK = {
   swat:   { name: 'Electrified Swatter', icon: '⚡', amp: 0.8, d: 'Turns gunmetal black with lightning crackling across it. +80% damage, and every smack zaps the bug, stunning it for a moment.' },
   venus:  { name: 'Miracle Grow', icon: '🌱', range: 1.5, d: 'The plant grows bigger: 50% more reach, chews much faster, and it can swallow small crawling bugs too.' },
-  spray:  { name: 'Extra Strength', icon: '☠️', d: 'Three toxic cans that glow green. Poison burns twice as hard and lasts 5 seconds instead of 3.' },
+  spray:  { name: 'Extra Strength', icon: '☠️', d: 'Three bright orange cans with toxic green fumes. Poison burns twice as hard and lasts 5 seconds instead of 3.' },
   paper:  { name: 'Sunday Edition', icon: '📰', range: 1.5, amp: 0.25, d: 'A giant rolled-up paper: 50% bigger slam and 25% more damage.' },
   lens:   { name: 'Wildfire', icon: '🔥', d: 'The bug it burns sets fire to bugs right next to it.' },
   zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'The bolt hops to twice as many bugs.' },
@@ -2832,13 +2832,15 @@ const BUILD = {
     o.setLevel = lv => {
       rimLevel(o, lv);
       twin.visible = strap.visible = lv >= 2; wand.visible = lv >= 3;
-      bodyM.color.set(lv >= 3 ? '#ff8a3c' : '#7fd36a'); stripM.color.set(lv >= 3 ? '#2a2d33' : '#d43a2b'); capM.color.set(lv >= 3 ? '#f3c24a' : '#f0ece2');
-      capM.metalness = lv >= 3 ? 1 : 0;
+      // level 3: dark green toxic cans with glowing green labels
+      bodyM.color.set(lv >= 3 ? '#1f4a28' : '#7fd36a'); bodyM.metalness = lv >= 3 ? 0.5 : 0.25; labM.color.set(lv >= 3 ? '#7dff4a' : '#f4efe4');
+      labM.emissive = new THREE.Color(lv >= 3 ? '#3aff2a' : '#000'); labM.emissiveIntensity = lv >= 3 ? 0.6 : 0;
+      stripM.color.set(lv >= 3 ? '#7dff4a' : '#d43a2b'); capM.color.set(lv >= 3 ? '#7dff4a' : '#f0ece2'); capM.metalness = 0;
     };
-    o.setPerk = () => {   // Extra Strength: toxic cans, three of them, glowing green
+    o.setPerk = () => {   // Extra Strength: three orange cans, green fumes
       o.perk = true; o.toxic = true; o.baseScale = 1.12;
-      bodyM.color.set('#2a1838'); bodyM.metalness = 0.5; labM.color.set('#7dff4a'); labM.emissive = new THREE.Color('#3aff2a'); labM.emissiveIntensity = 0.7;
-      stripM.color.set('#7dff4a'); stripM.emissive = new THREE.Color('#2ad01a'); stripM.emissiveIntensity = 0.5; capM.color.set('#7dff4a'); capM.metalness = 0;
+      bodyM.color.set('#ff8a3c'); bodyM.metalness = 0.25; labM.color.set('#f4efe4'); labM.emissive = new THREE.Color('#000'); labM.emissiveIntensity = 0;   // Extra Strength: bright orange cans with gold caps
+      stripM.color.set('#2a2d33'); capM.color.set('#f3c24a'); capM.metalness = 1;
       if (!o.third) { o.third = makeCan(-0.72, 0.82); o.third.position.z = -0.2; can.add(o.third); }
     };
     return o;
