@@ -237,6 +237,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #lbList .lg{display:flex;align-items:center;gap:10px;text-align:left;border:0;border-radius:12px;padding:9px 12px;cursor:pointer;background:rgba(127,216,255,.12);box-shadow:inset 0 0 0 1px rgba(127,216,255,.35);color:var(--text);font:inherit}
 #lbList .lg b{flex:1;font:400 18px var(--display);letter-spacing:.02em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #lbList .lg small{font-weight:800;font-size:12px;color:var(--dim)} #lbList .lg i{font-style:normal;font:900 13px var(--body);color:#08243a;background:#7fd8ff;border-radius:999px;padding:4px 10px}
 #lbList .none{margin:0;text-align:center;font-weight:800;font-size:13px;color:var(--dim)}
+#rules22{z-index:41;background:rgba(6,8,10,.8)} #rules22 .lbox{width:min(420px,90vw);max-height:88vh;overflow:auto} #rules22 h3{margin:0;font:400 26px var(--display);text-align:center;color:var(--gold)} #rules22 .lme{text-align:center;margin:0} #rules22 ul{text-align:left;margin:0;padding-left:20px;display:grid;gap:7px;font-weight:700;line-height:1.3} #rules22 li b{color:var(--gold)}
 #nameBox{z-index:40;background:rgba(6,8,10,.82)} #nameBox .lbox{text-align:center} #nameBox h3{margin:0;font:400 26px var(--display)}
 #nameIn{font:400 24px var(--display);text-align:center;border-radius:14px;border:0;padding:10px;background:#f4efe4;color:#2a1600;min-width:0}
 .ljoin{display:grid;grid-template-columns:1fr auto;gap:8px}
@@ -471,7 +472,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v188</div>
+    <div id="ver">v190</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -556,6 +557,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <textarea id="bldCode" hidden placeholder="Paste a PPT1 code here, then tap Load code again" spellcheck="false"></textarea></div>
     </div>
     <div id="rsAsk" hidden><span>Your partner wants to restart the map.</span><div><button type="button" id="rsYes">Restart</button><button type="button" id="rsNo">Keep playing</button></div></div>
+    <div class="screen" id="rules22" hidden><div class="lbox"><h3 id="r22T">2v2</h3><p class="lme" id="r22Who"></p><ul id="r22L"></ul><button class="btn" id="r22Ok" type="button">Got it!</button></div></div>
     <div class="screen" id="nameBox" hidden><div class="lbox"><h3>What's your name?</h3><p class="lme">Other players see it on your games</p><input id="nameIn" maxlength="16" autocomplete="off" placeholder="Your name"><button class="btn" id="nameOk" type="button">Done</button></div></div>
     <div class="screen" id="achs" hidden>
       <div class="gtabs"><button type="button" data-g="guide">Field guide</button><button type="button" data-g="achs">Achievements</button></div>
@@ -3232,16 +3234,17 @@ function spawnBug(t, route = nextRoute()) {
   return b;
 }
 const RUSH_BONUS = 20;
-function canRush() { return S.mode === 'play' && S.active && !S.vs && (S.endless || S.wave < MAXW); }
+const vsPaced = () => !!(S && S.vs && !S.vs.race);
+function canRush() { return S.mode === 'play' && S.active && !vsPaced() && (S.endless || S.wave < MAXW); }
 function startWave(...a) { BN_FWD++; try { return startWave0(...a); } finally { BN_FWD--; } }
 function startWave0() {
-  if (S.mode !== 'play' || S.over) return;
+  if (S.mode !== 'play' || S.over || (S.vs && S.vs.dead)) return;
   if (S.active && !canRush()) return;
   if (S.net === 'guest') { const r = S.rdy ||= [0, 0]; r[S.me] = r[S.me] ? 0 : 1; SND.play('tap'); syncGo(); netSend({ k: 'send' }); return; }
   if (S.net === 'host' && !S.teamGo && !VSGO) { teamReady(0); return; }   // Team Kitchen: both players have to tap
-  if (S.vs && !S.vs.remote && !VSGO) { vsReady(); return; }
-  if (S.net === 'host' && (!S.vs || VSGO)) S.rdy = [0, 0];
-  const rush = S.active, eb = S.vs ? 0 : rush ? Math.round(RUSH_BONUS) : earlyBonus(); S.nextT = 0; hideBelt(); RUSHARM = -1e9;   // Bug Battle pays the early bonus when you tap Ready instead
+  if (vsPaced() && !S.vs.remote && !VSGO) { vsReady(); return; }
+  if (S.net === 'host' && (!vsPaced() || VSGO)) S.rdy = [0, 0];
+  const rush = S.active, eb = vsPaced() ? 0 : rush ? Math.round(RUSH_BONUS) : earlyBonus(); S.nextT = 0; hideBelt(); RUSHARM = -1e9;   // Bug Battle pays the early bonus when you tap Ready instead
   for (const tw of S.towers) tw.fresh = 0;
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
   if (S.endless && S.wave + 1 >= 30) ACH.unlock('end30');
@@ -3664,15 +3667,16 @@ function update(dt) {
   S.bugs = S.bugs.filter(b => !b.dead);
   if (!S.bugs.some(b => b.mesh) && !S.queue.some(t => BT[t].boss)) $('queen').hidden = true;
   if (S.mode !== 'play' || S.net === 'guest') return;
-  if (S.lives <= 0) { gameOver(false); return; }
+  if (S.lives <= 0) { if (!(S.vs && S.vs.dead)) gameOver(false); return; }
   if (S.active && !S.queue.length && !S.bugs.length && !(S.vs && S.vs.inbox.length)) {
     S.active = false;
     for (const it of [...S.items]) if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it);
+    if (S.vs) S.vs.cl = S.wave;   // waves cleared (2v2 race: more is better)
     if (S.wave >= MAXW && !S.endless) { if (S.vs) vsFinish(); else gameOver(true); return; }
     const cl = S.clears && S.clears.length ? S.clears : [S.wave];
     const bonus = cl.reduce((a, w) => a + Math.round((25 + w * 3) * goldMul()), 0) + (S.vs ? S.vs.eco : 0); S.clears = null; S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
     banner(cl.length > 1 ? 'Waves ' + cl[0] + '–' + cl[cl.length - 1] + ' cleared' : 'Wave ' + S.wave + ' cleared', '+' + bonus + ' coins', false, 1600); SND.play('clear'); renderShop();
-    S.nextT = S.vs ? 0 : LEVELS[LV].team ? 5 : NEXT_WAIT; showBelt(); if (S.vs) { netSend(vsStatus()); syncGo(); } syncTray();   // co-op: next wave 5 seconds after the last bug on either side is gone
+    S.nextT = vsPaced() ? 0 : LEVELS[LV].team ? 5 : NEXT_WAIT; showBelt(); if (vsPaced()) { if (!S.vs.v22) netSend(vsStatus()); syncGo(); } syncTray();   // co-op: next wave 5 seconds after the last bug on either side is gone
     syncTray();
   }
 }
@@ -4453,6 +4457,7 @@ $('go').addEventListener('click', () => {
     if (!((S.net === 'host' || S.net === 'guest') && (tr[0] || tr[1])) && performance.now() - RUSHARM > 3000) { RUSHARM = performance.now(); SND.play('tap'); syncGo(); setTimeout(() => S && S.active && syncGo(), 3100); return; }
     RUSHARM = -1e9;
   }
+  if (!$('rules22').hidden) return;
   startWave();
 });
 function goBusyText(n) {
@@ -4701,7 +4706,8 @@ function syncTray() {
 function syncGo() {
   const go = $('go');
   const team = S.net === 'host' || S.net === 'guest', tr = S.rdy || [0, 0], tMine = team && tr[S.me], tTheirs = team && tr[1 - S.me];
-  if (S.vs && !S.active) {
+  if (S.vs && S.vs.dead) { go.classList.add('busy'); const h = `Cake gone<small>The other team has to clear wave ${S.vs.cl || 0} to beat you</small>`; if (go.innerHTML !== h) go.innerHTML = h; return; }
+  if (vsPaced() && !S.active) {
     if (team && !S.vs.rdy && (tMine || tTheirs)) { go.classList.toggle('busy', !!tMine); const h = tMine ? 'Ready!<small>Waiting for your teammate to tap Ready</small>' : 'Ready<small>Your teammate is ready! Tap to ready your team</small>'; if (go.innerHTML !== h) go.innerHTML = h; return; }
     vsGoText(go); return;
   }
@@ -4961,6 +4967,7 @@ function netHostCmd(m) {
     else if (m.k === 'move' && tw && tw.owner === 1) moveFogger(tw, m.c, m.r);
     else if (m.k === 'undo') undoSell();
     else if (m.k === 'vsSend' && S.vs) vsSend(m.i);
+    else if (m.k === 'rk' && S.vs) S.vs.rkMate = 1;
     else if (m.k === 'catch') startCatch();
     else if (m.k === 'sellShiny') S.money += 100;
     else if (m.k === 'sell' && tw && tw.owner === 1) sell(tw);   // (sell() also remembers it so the partner can undo)
@@ -4980,14 +4987,14 @@ function extSnap(e) { return [r2(e.x), r2(e.z), r2(e.yaw), Math.max(0, EST.index
 // host: what the guest needs to draw the game (always in absolute player order: [blue, red])
 // Team Kitchen: wave 1 only starts once both players have tapped Ready
 function teamReady(pid) {   // Team Kitchen: a wave only goes early once BOTH players tap (tap again to take it back)
-  if (S.mode !== 'play' || S.over || (S.active && !canRush()) || (S.vs && (S.vs.rdy || S.active))) return;
+  if (S.mode !== 'play' || S.over || (S.active && !canRush()) || (vsPaced() && (S.vs.rdy || S.active)) || (S.vs && S.vs.dead)) return;
   const r = S.rdy ||= [0, 0]; r[pid] = r[pid] ? 0 : 1; SND.play('tap');
   if (r[pid] && pid !== S.me && !r[S.me]) banner(...teamAsk());
-  if (r[0] && r[1]) { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } if (S.vs && !S.vs.rdy) S.rdy = [0, 0]; }
+  if (r[0] && r[1]) { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } if (vsPaced() && !S.vs.rdy) S.rdy = [0, 0]; }
   syncGo(); syncTray();
 }
-const teamAsk = () => [S.vs ? 'Your teammate is ready!' : !S.wave ? 'Your partner is ready!' : 'Your partner wants wave ' + (S.wave + 1) + '!', !S.wave && !S.vs ? 'Tap Ready to start wave 1' : 'Tap it too to send it', false, 2200];
-function v22Snap() { const v = S.vs; if (!v || !v.v22) return undefined; v.snapN = (v.snapN || 0) + 1; return { c: v.counting ? 1 : 0, r: v.rdy ? 1 : 0, fr: v.foeRdy || (v.foe && v.foe.r) ? 1 : 0, fin: v.fin ? 1 : 0, eco: v.eco, sent: v.sent, cd: v.cd, foe: v.snapN % 3 === 1 ? v.foe : undefined }; }
+const teamAsk = () => [vsPaced() ? 'Your teammate is ready!' : !S.wave ? 'Your partner is ready!' : 'Your partner wants wave ' + (S.wave + 1) + '!', !S.wave && !vsPaced() ? 'Tap Ready to start wave 1' : 'Tap it too to send it', false, 2200];
+function v22Snap() { const v = S.vs; if (!v || !v.v22) return undefined; v.snapN = (v.snapN || 0) + 1; return { dd: v.dead ? 1 : 0, cl: v.cl || 0, c: v.counting ? 1 : 0, r: v.rdy ? 1 : 0, fr: v.foeRdy || (v.foe && v.foe.r) ? 1 : 0, fin: v.fin ? 1 : 0, eco: v.eco, sent: v.sent, cd: v.cd, foe: v.snapN % 3 === 1 ? v.foe : undefined }; }
 function netSnap() {
   const P = [S, S.p2], g = k => P[0][k], h = k => P[1][k];
   return { k: 's', vs: v22Snap(), rd: S.rdy || [0, 0], w: S.wave, a: S.active ? 1 : 0, l: S.lives, nt: r2(S.nextT || 0), sp: S.speed, pz: S.paused ? 1 : 0,
@@ -5006,7 +5013,7 @@ function remoteTower(id, t, c, r, owner) {
 }
 // guest: bring the local picture in line with the host's
 function netApply(m) {
-  if (m.vs && S.vs) { const v = S.vs, q = m.vs; v.counting = !!q.c; v.rdy = !!q.r; v.foeRdy = !!q.fr; v.fin = !!q.fin; v.eco = q.eco; v.sent = q.sent; v.cd = q.cd || {}; if (q.foe) { q.foe.at = performance.now(); v.foe = q.foe; syncFoe(); } }
+  if (m.vs && S.vs) { const v = S.vs, q = m.vs; v.dead = !!q.dd; v.cl = q.cl; v.counting = !!q.c; v.rdy = !!q.r; v.foeRdy = !!q.fr; v.fin = !!q.fin; v.eco = q.eco; v.sent = q.sent; v.cd = q.cd || {}; if (q.foe) { q.foe.at = performance.now(); v.foe = q.foe; syncFoe(); } }
   const me = S.me, them = 1 - me;
   const wasActive = S.active, oldWave = S.wave;
   if (m.rd) { const o = S.rdy || [0, 0], was = o[them]; if (o[0] !== m.rd[0] || o[1] !== m.rd[1]) { S.rdy = [m.rd[0], m.rd[1]]; S.wave = m.w; if (m.rd[them] && !was && !m.rd[me]) banner(...teamAsk()); setTimeout(syncGo, 0); } }
@@ -5135,7 +5142,7 @@ function vsNet(m) { if (S && S.vs && S.vs.v22) { if (NET.battle) { m.ch = 'b'; m
 function vsInit() { S.vs = { foe: null, fin: false, rdy: false, foeRdy: false, counting: false, eco: 0, sent: 0, cd: {}, inbox: [], inT: 0, stT: 0, goAt: 0, shopK: '' }; }
 function vsCleared() { return !S.active && !S.bugs.length && !S.vs.inbox.length; }
 function vsStatus() {
-  return { k: 'v', l: S.lives, w: S.wave, a: S.active ? 1 : 0, c: vsCleared() ? 1 : 0, f: S.vs.fin ? 1 : 0, r: S.vs.rdy ? 1 : 0, ks: S.kills, sn: S.vs.sent, m: Math.floor(S.money), o: S.mode === 'over' ? 1 : 0,
+  return { k: 'v', l: S.lives, w: S.wave, a: S.active ? 1 : 0, c: vsCleared() ? 1 : 0, f: S.vs.fin ? 1 : 0, r: S.vs.rdy ? 1 : 0, rk: S.vs.rkMe && S.vs.rkMate ? 1 : 0, cl: S.vs.cl || 0, dd: S.vs.dead ? 1 : 0, ks: S.kills, sn: S.vs.sent, m: Math.floor(S.money), o: S.mode === 'over' ? 1 : 0,
     t: S.towers.filter(t => !t.pending).map(t => [t.t, t.c, t.r, t.lv, (t.stunT > 0 ? 1 : 0) | (t.snuff ? 2 : 0)]),
     b: S.bugs.filter(b => !b.dead).slice(0, 150).map(b => [b.route, r2(b.s), b.t, r2(b.off), b.id, b.ball && b.ball.hp > 0 ? 1 : 0, r2(Math.max(0, b.hp) / b.max), r2(b.hy || 0), b.free ? r2(b.x) : null, b.free ? r2(b.z) : null]) };
 }
@@ -5151,12 +5158,13 @@ function vsMsg(m) {
 }
 // the host starts the countdown once both kitchens are clear of bugs, and the wave when it runs out (or both tap Ready)
 function vsHostTick() {
-  const v = S.vs, f = v.foe;
+  const v = S.vs, f = v.foe; if (v.race) return;
   if (!vsLeader() || S.mode !== 'play' || !f) return;
   const now = performance.now();
   // the friend missed the start message: send it again
   if (S.active && f.w === S.wave - 1 && f.c && now - v.goAt > 1500) { v.goAt = now; vsNet({ k: 'go', n: S.wave }); }
   if (S.wave >= MAXW || !vsCleared() || !f.c || f.w !== S.wave) return;
+  if (v.v22 && !S.wave && !v.counting && !(v.rkMe && v.rkMate && f.rk)) return;   // 2v2: everyone reads the rules first
   if (!v.counting) { v.counting = true; S.nextT = S.wave ? NEXT_WAIT : 20; vsNet({ k: 'cd', t: S.nextT, w: S.wave }); showBelt(); syncGo(); if (v.bot) v.bot.money += Math.ceil(S.nextT) * 2; }
   else if (now - v.goAt > 2000) { v.goAt = now; vsNet({ k: 'cd', t: S.nextT, w: S.wave }); }
   if (v.rdy && (v.foeRdy || f.r)) vsGo();
@@ -5188,13 +5196,31 @@ function vsGoText(go) {
   h = FW(h); go.classList.toggle('busy', busy); if (go.innerHTML !== h) go.innerHTML = h;
 }
 function vsFinish() {
+  if (S.vs.race) { const v = S.vs; v.fin = true; v.cl = MAXW; S.nextT = 0; hideBelt(); vsNet(vsStatus()); if (!(v.foe && v.foe.f)) vsEnd('win', 'Your team cleared all ' + MAXW + ' waves first!'); else vsCheckEnd(); return; }
   S.vs.fin = true; S.nextT = 0; hideBelt();
   banner('All ' + MAXW + ' waves done!', FW('Your cake made it. Now your friend has to survive too…'), false, 2600); SND.play('clear');
   vsNet(vsStatus()); syncGo(); vsCheckEnd();
 }
+function raceDie() {   // 2v2 race: our cake is gone, but we can still win if the other team falls short of our wave count
+  const v = S.vs, f = v.foe, mine = v.cl || 0;
+  if (!f || f.f || (f.cl || 0) >= mine || f.l <= 0) { vsEnd('lose', f && f.l <= 0 ? 'Both cakes got eaten. The other team cleared ' + (f.cl || 0) + ' waves, you cleared ' + mine + '.' : 'The bugs ate your whole cake'); return; }
+  v.dead = true; S.lives = 0; S.active = false; S.queue.length = 0; S.nextT = 0; hideBelt(); S.placing = null; unpick();
+  banner('Your cake is gone!', 'You cleared ' + mine + ' waves. If the other team falls before wave ' + mine + ', you still win', true, 4000); SND.play('lose');
+  vsNet(vsStatus()); syncGo(); syncTray();
+}
 function vsCheckEnd() {
   const v = S.vs, f = v && v.foe;
   if (!f || S.mode !== 'play') return;
+  if (v.race) {   // 2v2 Team Kitchen race: first to clear all the waves wins; if both cakes go, most waves cleared wins (a tie goes to the cake that lasted longer)
+    const mine = v.cl || 0, theirs = f.cl || 0;
+    if (f.f && !v.fin) { vsEnd('lose', 'The other team cleared all ' + MAXW + ' waves first'); return; }
+    if (v.dead) { if (f.f || theirs >= mine) vsEnd('lose', 'The other team cleared ' + theirs + ' waves. You cleared ' + mine + '.'); else if (f.l <= 0) vsEnd('win', 'Both cakes got eaten. Your team cleared ' + mine + ' waves, they cleared ' + theirs + '.'); return; }
+    if (f.l <= 0) {
+      if (mine >= theirs) vsEnd('win', 'The other team\'s cake got eaten after ' + theirs + ' waves. Your team lasted longer!');
+      else if (!v.toldDead) { v.toldDead = true; banner('The other team\'s cake is gone!', 'Clear wave ' + theirs + ' to win', false, 3200); }
+    }
+    return;
+  }
   if (f.l <= 0) { vsEnd('win', FW('The bugs ate your friend\'s whole cake')); return; }
   if (v.fin && f.f) { const d = S.lives - f.l; vsEnd(d > 0 ? 'win' : d < 0 ? 'lose' : 'tie', d ? 'You both survived all ' + MAXW + ' waves. More cake left wins.' : 'You both survived with the same cake left!'); }
 }
@@ -5790,6 +5816,31 @@ $('lbStart22').addEventListener('click', () => {
   const T = v22Teams(), m = { k: 'start22', lv: TEAM_LV, battle: V22_BATTLE, A: T.A.map(p => p.gid), B: T.B.map(p => p.gid), names: Object.fromEntries(v22All().map(p => [p.gid, p.name])) };
   lobbyAd(false); netSend(m); v22Begin(m);
 });
+function rules22(team, mate, battle) {
+  const esc = t => String(t).replace(/[<>&"]/g, '');
+  $('r22T').textContent = battle ? '2v2 Bug Battle' : '2v2 Team Kitchen Race';
+  $('r22Who').innerHTML = `You and <b>${esc(mate)}</b> are the <b style="color:${team === 'A' ? '#6fb4ff' : '#ff7a66'}">${team === 'A' ? 'Blue' : 'Red'} team</b>`;
+  const L = battle ? [
+    'Both teams play the <b>same map and the same waves</b>, at the same time.',
+    'Your team is ready when <b>both of you tap Ready</b>. If both teams are ready, the wave comes early and you get early coins.',
+    'From <b>wave 6</b>, open the <b>Send</b> tab to send bugs into the other team\'s kitchen. Either of you can send, paid from your own coins.',
+    '<b>Last cake standing wins.</b> If both teams survive all ' + MAXW + ' waves, the team with more cake left wins.',
+    'Every coin from every kill is <b>split 50/50</b> with your teammate.'
+  ] : [
+    'Both teams play the <b>same map and the same waves</b>, each in their own kitchen.',
+    '<b>First team to clear all ' + MAXW + ' waves wins!</b>',
+    'A wave only goes early when <b>both of you tap Send bugs</b>. Sending early is how you get ahead.',
+    'If a cake gets eaten, the team that <b>cleared more waves</b> wins. Same number of waves? The cake that lasted longer wins.',
+    'Every coin from every kill is <b>split 50/50</b> with your teammate.'
+  ];
+  $('r22L').innerHTML = L.map(t => '<li>' + t + '</li>').join('');
+  $('rules22').hidden = false;
+}
+$('r22Ok').addEventListener('click', () => {
+  SND.init(); SND.play('tap'); $('rules22').hidden = true;
+  if (!S || !S.vs) return; S.vs.rkMe = 1;
+  if (S.vs.remote) { netSend({ k: 'rk' }); setTimeout(() => netSend({ k: 'rk' }), 1500); }
+});
 async function v22Begin(m) {
   if (S && S.mode === 'play') return;
   const me = NET.gid, team = m.A.includes(me) ? 'A' : m.B.includes(me) ? 'B' : null; if (!team) return;
@@ -5802,9 +5853,9 @@ async function v22Begin(m) {
   NET.code = code + team; NET.role = cap ? 'host' : 'guest'; NET.mode = 'v22'; NET.last = performance.now(); NET.lastSnap = performance.now();
   $('lobby').hidden = true; TEAM_LV = m.lv;
   startGame(m.lv, cap ? 'host' : 'guest');
-  vsInit(); Object.assign(S.vs, { v22: true, battle: !!m.battle, leader, remote: !cap, team });
+  vsInit(); Object.assign(S.vs, { v22: true, battle: !!m.battle, race: !m.battle, leader, remote: !cap, team });
   document.querySelector('.stabs [data-tab="send"]').hidden = !m.battle; $('foe').hidden = false; $('foe').innerHTML = '';
-  setTimeout(() => banner((team === 'A' ? 'Blue' : 'Red') + ' team!', 'You and ' + mateName + ' vs the other team. Every coin is split 50/50.', false, 3000), 400);
+  rules22(team, mateName, !!m.battle);
 }
 // ---------------------------------------------------------------- Trail Builder (secret dev tool)
 // Draw trails tile by tile: start on an edge tile (that's the bug door), tap tiles to lay the trail (it goes in straight lines,
@@ -6151,6 +6202,7 @@ function tutTick(dt) {
 }
 $('tutSkip').addEventListener('click', tutEnd);
 function gameOver(won) {
+  if (S.vs && S.vs.race && !won) { raceDie(); return; }
   if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
   if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills, st: (S.p2 && S.p2.stats) || {} });   // the partner's own damage chart
   S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
@@ -6218,7 +6270,7 @@ function step(now, draw) {
     if (!S.paused && !S.hold && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; BN_FWD++; try { for (let i = 0; i < n; i++) update(dt); } finally { BN_FWD--; } }
     if (S.mode === 'play' && !S.paused && !S.hold && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0 && S.net !== 'guest') {
       const was = Math.ceil(S.nextT); S.nextT -= dt;
-      if (S.nextT <= 0) { S.nextT = 0; if (S.vs) vsTimeUp(); else { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } } }
+      if (S.nextT <= 0) { S.nextT = 0; if (vsPaced()) vsTimeUp(); else { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } } }
       else if (Math.ceil(S.nextT) !== was) { syncBeltT(); syncGo(); if (S.nextT <= 3) SND.play('tap'); }
     }
   } catch (e) { showErr('update', e); }
