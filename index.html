@@ -490,7 +490,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v201</div>
+    <div id="ver">v202</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2585,7 +2585,7 @@ function specialMove(b, sp, dt) {
       }
       b.eatCd = 1;
     }
-    if (b.grabCd <= 0) {
+    if (false && b.grabCd <= 0) {   // (the mantis no longer grabs tools: it only eats bugs to heal)
       const R2 = giant ? 6.5 * 6.5 : 4.2 * 4.2, near = S.towers.filter(o => !o.pending && o.t !== 'candle' && !(o.stunT > 0) && (o.x - b.x) ** 2 + (o.z - b.z) ** 2 < R2).sort((p, q) => ((p.x - b.x) ** 2 + (p.z - b.z) ** 2) - ((q.x - b.x) ** 2 + (q.z - b.z) ** 2)).slice(0, giant ? 2 : 1);
       if (near.length) { const tw = near[0]; for (const o of near) o.stunT = giant ? 4 : 3; b.armT = 0.8; b.grabCd = 6; b.ang = Math.atan2(tw.x - b.x, tw.z - b.z); SND.play('slam'); if (S.mode === 'play') banner(giant ? 'Giant Mantis!' : 'Mantis!', 'It grabbed your ' + near.map(o => TT[o.t].short || TT[o.t].name).join(' and '), false, 900); return 0; }
       b.grabCd = 0.5;
@@ -3193,7 +3193,7 @@ const BT = {
   gcenti: { hp: 125, spd: 2.3, gold: 10, lives: 0.4, boss: true, base: 'centi', size: 2.4, segs: 14, gap: 1.35, name: 'Giant Centipede', sub: 'Fourteen segments, and an armored head', goo: [0.5, 0.24, 0.12] },
   gstink: { hp: 1500, spd: 1.2, gold: 140, lives: 5, armor: 3, boss: true, base: 'stink', size: 3.2, name: 'Giant Stink Bug', sub: 'It leaves stink clouds behind as it walks', goo: [0.45, 0.4, 0.22] },
   gmoth:  { hp: 1300, spd: 1.5, gold: 130, lives: 5, fly: true, boss: true, base: 'moth', size: 3.0, name: 'Giant Moth', sub: 'It puts out every candle near where it lands', goo: [0.62, 0.56, 0.46] },
-  gmantis:{ hp: 1900, spd: 1.3, gold: 170, lives: 6, armor: 2, boss: true, base: 'mantis', size: 2.6, noPush: true, name: 'Giant Mantis', sub: 'Grabs two tools at once and eats bugs to heal', goo: [0.42, 0.76, 0.26] },
+  gmantis:{ hp: 1900, spd: 1.3, gold: 170, lives: 6, armor: 2, boss: true, base: 'mantis', size: 2.6, noPush: true, name: 'Giant Mantis', sub: 'Eats other bugs to heal', goo: [0.42, 0.76, 0.26] },
   queen:  { hp: 1260, spd: 1.15, gold: 100, lives: 5, armor: 3, boss: true, name: 'Roach King', sub: 'He is heading for the cake', goo: [0.42, 0.24, 0.1] },
 };
 const BOSS_AT = { 5: ['queen'], 10: ['widow'], 15: ['hornet'], 20: ['hornet', 'widow', 'queen'] };
@@ -4622,12 +4622,12 @@ const BUGINFO = [
   ['centi', 'Centipede', 'Level 7 on', 'Eight fast segments in a line. Squash a middle segment and it splits into two centipedes that keep going. Area damage (Spray, Newspaper, Zapper) shreds it.', '⅓ slice per segment'],
   ['stink', 'Stink Bug', 'Level 8 on', 'Tough shell (blocks about a sixth of every hit). When it dies it lets out a green stink cloud: tools inside work 40% slower for 4 seconds. Squash it away from your best tools.', '1 slice'],
   ['moth', 'Moth', 'Level 9 on', 'Flies. If you have Candles, it leaves the trail and flies to one, beats out the flame and snuffs it. Snuffed candles give no boost until you tap them and Relight (15 coins). Keep a Swatter near your candles.', '1 slice'],
-  ['mantis', 'Praying Mantis', 'Level 9 on', 'Tall and tough. It grabs the nearest tool and holds it still for 3 seconds. Every so often it snatches a small bug off the trail and eats it to heal itself. Burn it down from range.', '2 slices'],
+  ['mantis', 'Praying Mantis', 'Level 9 on', 'Tall and tough. Every so often it snatches a small bug off the trail and eats it to heal itself, so take it down fast.', '2 slices'],
   ['ghop', 'Giant Grasshopper', 'Boss, Levels 6–8 and 9', 'Every so often it hops one tile ahead. Where it lands, the shockwave stuns nearby tools for a moment.', '5 slices'],
   ['gcenti', 'Giant Centipede', 'Boss, Levels 7–10', 'Fourteen big segments. The head is heavily armored (blocks a third of every hit), so hit the body. Break the middle and it splits in two.', '⅖ slice per segment'],
   ['gstink', 'Giant Stink Bug', 'Boss, Levels 8–10', 'Very tough shell. Every few seconds it lets out a stink cloud as it walks, and when it dies the cloud is huge. Tools in the stink work 40% slower.', '5 slices'],
   ['gmoth', 'Giant Moth', 'Boss, Levels 9–10', 'Flies to your candles and puts out every candle near where it lands. Bug Zappers it flies past flicker out for a few seconds.', '5 slices'],
-  ['gmantis', 'Giant Mantis', 'Boss, Levels 9–10', 'Grabs two tools at once and holds them for 4 seconds. Eats bugs often to heal, and the Broom can\'t push it.', '6 slices'],
+  ['gmantis', 'Giant Mantis', 'Boss, Levels 9–10', 'Eats bugs often to heal, and the Broom can\'t push it.', '6 slices'],
   ['queen', 'Roach King', 'Boss, waves 5 and 25', 'Huge health and a shell that blocks about a quarter of every hit. Every tool can take him down: stack sprays, slam him with Newspapers, zap him, smack him, or cook him with a Magnifying Glass.', '5 slices'],
   ['widow', 'Black Widow', 'Boss, waves 10 and 25', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 25', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
@@ -5576,7 +5576,7 @@ function aiSpecial(b, sp, dt) {
       if (prey) { prey.hp = 0; b.hp = Math.min(b.max, b.hp + b.max * (giant ? 0.08 : 0.15)); b.munch = 1; b.eatCd = giant ? 4 + Math.random() * 2 : 7 + Math.random() * 3; return 0; }
       b.eatCd = 1;
     }
-    if (b.grabCd <= 0) {
+    if (false && b.grabCd <= 0) {   // (the mantis no longer grabs tools: it only eats bugs to heal)
       const R2 = giant ? 6.5 * 6.5 : 4.2 * 4.2, near = A.towers.filter(o => o.t !== 'candle' && !(o.stunT > 0) && (ccx(o.c) - px) ** 2 + (ccz(o.r) - pz) ** 2 < R2).slice(0, giant ? 2 : 1);
       if (near.length) { for (const o of near) o.stunT = giant ? 4 : 3; b.armT = 0.8; b.grabCd = 6; return 0; }
       b.grabCd = 0.5;
