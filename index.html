@@ -471,7 +471,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v187</div>
+    <div id="ver">v188</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3237,9 +3237,10 @@ function startWave(...a) { BN_FWD++; try { return startWave0(...a); } finally { 
 function startWave0() {
   if (S.mode !== 'play' || S.over) return;
   if (S.active && !canRush()) return;
-  if (S.net === 'guest') { if (S.wave === 0) { (S.rdy ||= [0, 0])[S.me] = 1; syncGo(); } netSend({ k: 'send' }); return; }
+  if (S.net === 'guest') { const r = S.rdy ||= [0, 0]; r[S.me] = r[S.me] ? 0 : 1; SND.play('tap'); syncGo(); netSend({ k: 'send' }); return; }
+  if (S.net === 'host' && !S.teamGo && !VSGO) { teamReady(0); return; }   // Team Kitchen: both players have to tap
   if (S.vs && !S.vs.remote && !VSGO) { vsReady(); return; }
-  if (S.net === 'host' && S.wave === 0 && !S.teamGo && !S.vs) { teamReady(0); return; }
+  if (S.net === 'host' && (!S.vs || VSGO)) S.rdy = [0, 0];
   const rush = S.active, eb = S.vs ? 0 : rush ? Math.round(RUSH_BONUS) : earlyBonus(); S.nextT = 0; hideBelt(); RUSHARM = -1e9;   // Bug Battle pays the early bonus when you tap Ready instead
   for (const tw of S.towers) tw.fresh = 0;
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
@@ -4448,12 +4449,16 @@ $('go').addEventListener('click', () => {
   SND.init();
   if (S.active) {
     if (!canRush()) return;
-    if (performance.now() - RUSHARM > 3000) { RUSHARM = performance.now(); SND.play('tap'); syncGo(); setTimeout(() => S && S.active && syncGo(), 3100); return; }
+    const tr = S.rdy || [0, 0];
+    if (!((S.net === 'host' || S.net === 'guest') && (tr[0] || tr[1])) && performance.now() - RUSHARM > 3000) { RUSHARM = performance.now(); SND.play('tap'); syncGo(); setTimeout(() => S && S.active && syncGo(), 3100); return; }
     RUSHARM = -1e9;
   }
   startWave();
 });
 function goBusyText(n) {
+  const team = S.net === 'host' || S.net === 'guest', tr = S.rdy || [0, 0];
+  if (team && canRush() && (tr[S.me] || tr[1 - S.me])) { $('go').classList.add('armed', 'rush');
+    return tr[S.me] ? `Waiting for your partner<small>Wave ${S.wave + 1} goes when they tap too · tap to cancel</small>` : `Partner wants wave ${S.wave + 1}!<small>Tap to send it now · +${RUSH_BONUS} coins</small>`; }
   const armed = performance.now() - RUSHARM < 3000 && canRush();
   $('go').classList.toggle('armed', armed); $('go').classList.toggle('rush', canRush());
   return armed ? `Tap again to send wave ${S.wave + 1}<small>+${RUSH_BONUS} coins · on top of this one</small>` : canRush() ? `${n} bugs<small>Wave ${S.wave} · tap to send wave ${S.wave + 1} now</small>` : `${n} bugs<small>Wave ${S.wave} in progress</small>`;
@@ -4695,8 +4700,17 @@ function syncTray() {
 }
 function syncGo() {
   const go = $('go');
-  if (S.vs && !S.active) { vsGoText(go); return; }
-  if ((S.net === 'host' || S.net === 'guest') && !S.wave && !S.active) {
+  const team = S.net === 'host' || S.net === 'guest', tr = S.rdy || [0, 0], tMine = team && tr[S.me], tTheirs = team && tr[1 - S.me];
+  if (S.vs && !S.active) {
+    if (team && !S.vs.rdy && (tMine || tTheirs)) { go.classList.toggle('busy', !!tMine); const h = tMine ? 'Ready!<small>Waiting for your teammate to tap Ready</small>' : 'Ready<small>Your teammate is ready! Tap to ready your team</small>'; if (go.innerHTML !== h) go.innerHTML = h; return; }
+    vsGoText(go); return;
+  }
+  if (team && !S.active && S.wave && S.nextT > 0 && (tMine || tTheirs)) {
+    go.classList.toggle('busy', !!tMine);
+    const h = tMine ? `Ready!<small>Waiting for your partner · wave ${S.wave + 1} starts in ${Math.ceil(S.nextT)}s</small>` : `Next wave early<small>Your partner is ready! Tap to send wave ${S.wave + 1}</small>`;
+    if (go.innerHTML !== h) go.innerHTML = h; return;
+  }
+  if (team && !S.wave && !S.active) {
     const r = S.rdy || [0, 0], mine = r[S.me], theirs = r[1 - S.me];
     go.classList.toggle('busy', !!mine);
     const h = mine ? `Ready!<small>Waiting for your partner to tap Ready</small>` : theirs ? `Ready<small>Your partner is ready! Tap to start wave 1</small>` : `Ready<small>Wave 1 starts when you both tap Ready</small>`;
@@ -4704,7 +4718,7 @@ function syncGo() {
   }
   if (!S.active) go.classList.remove('armed', 'rush');
   if (S.active) { go.classList.add('busy'); go.innerHTML = goBusyText(S.queue.length + S.bugs.length); }
-  else if (S.nextT > 0) { go.classList.remove('busy'); go.innerHTML = `Next wave early<small>+${earlyBonus()} coins · starts in ${Math.ceil(S.nextT)}s</small>`; }
+  else if (S.nextT > 0) { go.classList.remove('busy'); go.innerHTML = `Next wave early<small>+${earlyBonus()} coins · ${team ? 'you both tap · ' : ''}starts in ${Math.ceil(S.nextT)}s</small>`; }
   else if (S.wave >= MAXW && !S.endless) { go.classList.add('busy'); go.innerHTML = `All ${MAXW} waves done<small>${S.mode === 'over' ? 'Level over' : 'Nice work!'}</small>`; }
   else { go.classList.remove('busy'); go.innerHTML = `Send bugs<small>Wave ${S.wave + 1}${S.endless ? ' · Endless' : ' of ' + MAXW}</small>`; }
 }
@@ -4733,7 +4747,7 @@ function syncHud() {
     for (const b of S.bugs) if (b.mesh) cur += Math.max(0, b.hp);
     $('qfill').style.width = Math.max(0, cur / S.qTotal * 100) + '%';
   }
-  if (S.active) { const n = S.queue.length + S.bugs.length, k = n + ':' + S.wave + ':' + (performance.now() - RUSHARM < 3000); if (shown.left !== k) { shown.left = k; $('go').innerHTML = goBusyText(n); } }
+  if (S.active) { const n = S.queue.length + S.bugs.length, k = n + ':' + S.wave + ':' + (performance.now() - RUSHARM < 3000) + ':' + (S.rdy || ''); if (shown.left !== k) { shown.left = k; $('go').innerHTML = goBusyText(n); } }
   syncTip();
 }
 
@@ -4956,7 +4970,7 @@ function netHostCmd(m) {
   });
   if (rsAnswer(m)) return;
   if (m.k === 'rsYes') { teamRestart(true); return; }
-  if (m.k === 'send') { if (S.wave === 0 && !S.vs) teamReady(1); else startWave(); }
+  if (m.k === 'send') teamReady(1);
   else if (m.k === 'pause') setPaused(!!m.p, true);
   else if (m.k === 'speed') { S.speed = m.v; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
 }
@@ -4965,13 +4979,14 @@ const r2 = v => Math.round(v * 100) / 100;
 function extSnap(e) { return [r2(e.x), r2(e.z), r2(e.yaw), Math.max(0, EST.indexOf(e.state)), e.held ? 1 : 0, e.abil ? 1 : 0]; }
 // host: what the guest needs to draw the game (always in absolute player order: [blue, red])
 // Team Kitchen: wave 1 only starts once both players have tapped Ready
-function teamReady(pid) {
-  const r = S.rdy ||= [0, 0]; if (r[pid]) return;
-  r[pid] = 1; SND.play('tap');
-  if (pid !== S.me && !r[S.me]) banner('Your partner is ready!', 'Tap Ready to start wave 1', false, 2200);
-  if (r[0] && r[1]) { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } }
-  syncTray();
+function teamReady(pid) {   // Team Kitchen: a wave only goes early once BOTH players tap (tap again to take it back)
+  if (S.mode !== 'play' || S.over || (S.active && !canRush()) || (S.vs && (S.vs.rdy || S.active))) return;
+  const r = S.rdy ||= [0, 0]; r[pid] = r[pid] ? 0 : 1; SND.play('tap');
+  if (r[pid] && pid !== S.me && !r[S.me]) banner(...teamAsk());
+  if (r[0] && r[1]) { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } if (S.vs && !S.vs.rdy) S.rdy = [0, 0]; }
+  syncGo(); syncTray();
 }
+const teamAsk = () => [S.vs ? 'Your teammate is ready!' : !S.wave ? 'Your partner is ready!' : 'Your partner wants wave ' + (S.wave + 1) + '!', !S.wave && !S.vs ? 'Tap Ready to start wave 1' : 'Tap it too to send it', false, 2200];
 function v22Snap() { const v = S.vs; if (!v || !v.v22) return undefined; v.snapN = (v.snapN || 0) + 1; return { c: v.counting ? 1 : 0, r: v.rdy ? 1 : 0, fr: v.foeRdy || (v.foe && v.foe.r) ? 1 : 0, fin: v.fin ? 1 : 0, eco: v.eco, sent: v.sent, cd: v.cd, foe: v.snapN % 3 === 1 ? v.foe : undefined }; }
 function netSnap() {
   const P = [S, S.p2], g = k => P[0][k], h = k => P[1][k];
@@ -4994,7 +5009,7 @@ function netApply(m) {
   if (m.vs && S.vs) { const v = S.vs, q = m.vs; v.counting = !!q.c; v.rdy = !!q.r; v.foeRdy = !!q.fr; v.fin = !!q.fin; v.eco = q.eco; v.sent = q.sent; v.cd = q.cd || {}; if (q.foe) { q.foe.at = performance.now(); v.foe = q.foe; syncFoe(); } }
   const me = S.me, them = 1 - me;
   const wasActive = S.active, oldWave = S.wave;
-  if (m.rd && !S.wave && !m.w) { const was = (S.rdy || [0, 0])[them]; S.rdy = [m.rd[0], m.rd[1]]; if (m.rd[them] && !was && !m.rd[me]) banner('Your partner is ready!', 'Tap Ready to start wave 1', false, 2200); }
+  if (m.rd) { const o = S.rdy || [0, 0], was = o[them]; if (o[0] !== m.rd[0] || o[1] !== m.rd[1]) { S.rdy = [m.rd[0], m.rd[1]]; S.wave = m.w; if (m.rd[them] && !was && !m.rd[me]) banner(...teamAsk()); setTimeout(syncGo, 0); } }
   S.wave = m.w; S.active = !!m.a; S.lives = m.l; S.nextT = m.nt; S.speed = m.sp; S.hpMul = m.hp;
   if (!!m.pz !== !!S.paused) { S.paused = !!m.pz; $('paused').hidden = !S.paused; }
   $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1);
@@ -6203,7 +6218,7 @@ function step(now, draw) {
     if (!S.paused && !S.hold && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; BN_FWD++; try { for (let i = 0; i < n; i++) update(dt); } finally { BN_FWD--; } }
     if (S.mode === 'play' && !S.paused && !S.hold && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0 && S.net !== 'guest') {
       const was = Math.ceil(S.nextT); S.nextT -= dt;
-      if (S.nextT <= 0) { S.nextT = 0; if (S.vs) vsTimeUp(); else startWave(); }
+      if (S.nextT <= 0) { S.nextT = 0; if (S.vs) vsTimeUp(); else { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } } }
       else if (Math.ceil(S.nextT) !== was) { syncBeltT(); syncGo(); if (S.nextT <= 3) SND.play('tap'); }
     }
   } catch (e) { showErr('update', e); }
