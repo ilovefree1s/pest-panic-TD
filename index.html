@@ -136,7 +136,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
   background:repeating-linear-gradient(110deg,#1d242b 0 12px,#171d23 12px 24px);background-size:52px 100%;animation:belt 1.4s linear infinite}
 @keyframes belt{to{background-position:-52px 0}}
 #belt .trk{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;gap:10px;width:max-content;animation:trk var(--dur,12s) linear infinite}
-@keyframes trk{from{transform:translateX(var(--from,100vw))}to{transform:translateX(-100%)}}
+@keyframes trk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+#belt .sep{flex:none;width:18px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);margin-right:2px}
 #belt .ch{display:flex;align-items:center;gap:3px;padding:2px 8px 2px 4px;border-radius:9px;background:rgba(255,255,255,.08);flex:none}
 #belt .ch svg{width:28px;height:28px}
 #belt .ch b{font:400 15px var(--display);color:var(--text)}
@@ -491,7 +492,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v204</div>
+    <div id="ver">v205</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3317,13 +3318,15 @@ function showBelt() {
   for (const t of q) cnt[t] = (cnt[t] || 0) + 1;
   const order = Object.keys(cnt).sort((a, b) => (BT[a].boss ? 1 : 0) - (BT[b].boss ? 1 : 0));
   $('beltW').textContent = 'Wave ' + n;
-  // the chips ride the belt from the right edge to the left, over and over
-  const chips = order.map(t => `<span class="ch${BT[t].boss ? ' boss' : ''}" title="${BELT_NAME[t] || t}">${BUGICON[t] || ''}<b>×${cnt[t]}</b></span>`).join('');
-  const trk = $('beltRow'); trk.innerHTML = chips;
+  // the chips ride the belt right to left in an endless loop that always fills the whole belt
+  const set = order.map(t => `<span class="ch${BT[t].boss ? ' boss' : ''}" title="${BELT_NAME[t] || t}">${BUGICON[t] || ''}<b>×${cnt[t]}</b></span>`).join('') + '<span class="sep"></span>';
+  const trk = $('beltRow'); trk.innerHTML = set;
   $('belt').classList.remove('off'); $('stage').classList.add('belted');
   requestAnimationFrame(() => {
-    const rw = trk.parentElement.clientWidth, tw = trk.scrollWidth;
-    trk.style.setProperty('--from', rw + 'px'); trk.style.setProperty('--dur', ((rw + tw) / 70).toFixed(1) + 's');
+    const rw = trk.parentElement.clientWidth || 600, one = Math.max(40, trk.scrollWidth);
+    const k = Math.max(1, Math.ceil(rw / one));   // enough copies to cover the belt, then the same again so the loop is seamless
+    trk.innerHTML = set.repeat(k * 2);
+    trk.style.setProperty('--dur', (one * k / 60).toFixed(1) + 's');
     trk.style.animation = 'none'; void trk.offsetWidth; trk.style.animation = '';
   });
   syncBeltT();
