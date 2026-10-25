@@ -190,6 +190,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #foe{pointer-events:auto;cursor:pointer;border:0;color:var(--text);gap:5px;padding-right:10px}
 #foe small{font:900 10px var(--body);letter-spacing:.06em;color:#ffb3a4;background:#7a1d14;border-radius:6px;padding:3px 5px}
 #foe i{font-style:normal;font-size:15px;color:var(--sky)} #foe i.ok{color:#9be37a}
+#foe em{font-style:normal;font:900 11px var(--body);color:#fff;background:rgba(255,255,255,.16);border-radius:8px;padding:3px 7px;margin-left:2px}
 #foe.nudge{animation:foeNudge 1.2s ease-in-out infinite}
 @keyframes foeNudge{50%{box-shadow:inset 0 0 0 2px #ff8a6a,0 0 14px rgba(255,120,90,.6)}}
 #peek{position:absolute;left:10px;top:104px;z-index:6;width:min(46%,360px);background:rgba(11,14,17,.92);border-radius:12px;padding:6px;box-shadow:0 8px 22px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.08)}
@@ -475,7 +476,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v192</div>
+    <div id="ver">v193</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5019,7 +5020,7 @@ function teamReady(pid) {   // Team Kitchen: a wave only goes early once BOTH pl
   syncGo(); syncTray();
 }
 const teamAsk = () => [vsPaced() ? 'Your teammate is ready!' : !S.wave ? 'Your partner is ready!' : 'Your partner wants wave ' + (S.wave + 1) + '!', !S.wave && !vsPaced() ? 'Tap Ready to start wave 1' : 'Tap it too to send it', false, 2200];
-function v22Snap() { const v = S.vs; if (!v || !v.v22) return undefined; v.snapN = (v.snapN || 0) + 1; return { dd: v.dead ? 1 : 0, cl: v.cl || 0, c: v.counting ? 1 : 0, r: v.rdy ? 1 : 0, fr: v.foeRdy || (v.foe && v.foe.r) ? 1 : 0, fin: v.fin ? 1 : 0, eco: v.eco, sent: v.sent, cd: v.cd, foe: v.snapN % 3 === 1 ? v.foe : undefined }; }
+function v22Snap() { const v = S.vs; if (!v || !v.v22) return undefined; v.snapN = (v.snapN || 0) + 1; return { dd: v.dead ? 1 : 0, cl: v.cl || 0, c: v.counting ? 1 : 0, r: v.rdy ? 1 : 0, fr: v.foeRdy || (v.foe && v.foe.r) ? 1 : 0, fin: v.fin ? 1 : 0, eco: v.eco, sent: v.sent, cd: v.cd, foe: v.snapN % 2 === 1 ? v.foe : undefined }; }
 function netSnap() {
   const P = [S, S.p2], g = k => P[0][k], h = k => P[1][k];
   return { k: 's', vs: v22Snap(), rd: S.rdy || [0, 0], w: S.wave, a: S.active ? 1 : 0, l: S.lives, nt: r2(S.nextT || 0), sp: S.speed, pz: S.paused ? 1 : 0,
@@ -5302,7 +5303,7 @@ function vsInbox(dt) {
 const CAKE_ICON = '<svg viewBox="0 0 48 48"><path d="M6 30 24 12l18 18v10H6z" fill="#f3d9a8"/><path d="M6 30 24 12l18 18v4c-3 3-5-1-8 2s-5-1-8 2-5-1-8 2-5-1-8 2z" fill="#ff8fb8"/><rect x="6" y="36" width="36" height="3" fill="#fff4e6"/><circle cx="24" cy="10" r="4" fill="#d6183c"/></svg>';
 function syncFoe() {
   const v = S.vs, f = v && v.foe, el = $('foe'); if (!f) return;
-  const ok = !f.a && f.c, h = `<small>VS</small>${CAKE_ICON}<b>${Math.max(0, f.l)}</b><i class="${ok ? 'ok' : ''}">W${f.w}${ok ? ' ✓' : ''}</i>`;
+  const ok = !f.a && f.c, h = `<small>VS</small>${CAKE_ICON}<b>${Math.max(0, f.l)}</b><i class="${ok ? 'ok' : ''}">W${f.w}${ok ? ' ✓' : ''}</i><em>👀 Watch</em>`;
   if (el.innerHTML !== h) el.innerHTML = h;
   el.classList.toggle('nudge', $('peek').hidden && S.mode === 'play' && !S.active && f.a && !v.peeked);
   $('peekS').textContent = FW(`Wave ${f.w} · ${Math.max(0, f.l)} slices · ${f.ks} squashed`);
@@ -5596,7 +5597,7 @@ function enterSpec() {
   if (!S || !S.vs || !S.vs.foe || S.mode !== 'play') return;
   SPEC.on = true; SPEC.lastF = null; SPEC.myLives = S.lives; S.placing = null; unpick();
   $('peek').hidden = true; $('spec').hidden = false; $('tip').hidden = true;
-  $('specT').textContent = S.vs.bot ? "The AI's kitchen" : "Your friend's kitchen";
+  $('specT').textContent = S.vs.bot ? "The AI's kitchen" : S.vs.v22 ? "The other team's kitchen" : "Your friend's kitchen";
   SND.play('tap'); specTick(0);
 }
 function exitSpec() {
