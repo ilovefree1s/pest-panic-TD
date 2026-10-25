@@ -494,7 +494,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v218</div>
+    <div id="ver">v219</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2086,7 +2086,7 @@ function finishJob(j) {
   if (S.pick === o) syncTray();
 }
 // full gold for the opening 5 waves, then the 15% cut kicks in
-function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : 0.85 * 0.8; }
+function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : S.wave <= 15 ? 0.58 : 0.48; }   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
 const ABIL = { cd: 60, cost: 40, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
 function leadBug() {
@@ -3245,9 +3245,9 @@ function bossesFor(n) {
   const lap = (LEVELS[LV] && (LEVELS[LV].bosses || LEVELS[LV].team)) ? BL[(n / 5 - 1) % 4] : EL[(n / 5 - 5) % EL.length], extra = Math.floor((n - MAXW) / 20);
   const out = []; for (let i = 0; i <= extra; i++) out.push(...lap); return out;
 }
-function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && (LEVELS[LV].bossMulW[S.wave][t] || LEVELS[LV].bossMulW[S.wave]['*'])) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1) * (LEVELS[LV] && LEVELS[LV].team && S.wave === 5 ? 1 / 1.2 : 1)); }   // (the wave 5 boss skips the Team Kitchen +20%)   // bosses are 5% softer in Bug Battle and Team Kitchen
+function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && (LEVELS[LV].bossMulW[S.wave][t] || LEVELS[LV].bossMulW[S.wave]['*'])) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1) * (LEVELS[LV] && LEVELS[LV].team && S.wave === 5 ? 1 / 1.2 : 1) * lateRamp(S.mode === 'play' ? S.wave : 0)); }   // bosses climb 5% a wave after wave 5 too   // (the wave 5 boss skips the Team Kitchen +20%)   // bosses are 5% softer in Bug Battle and Team Kitchen
 const MAXW = 25;
-const LATE_RAMP = 1.05;   // after wave 5, regular bugs get 5% tougher every wave (stacking). Bosses and beetle shells are not affected
+const LATE_RAMP = 1.05;   // after wave 5, regular bugs and bosses get 5% tougher every wave (stacking). Beetle shells are not affected
 const lateRamp = w => w > 5 ? LATE_RAMP ** (Math.min(w, MAXW) - 5) : 1;   // (endless keeps its own climb past wave 25)
 // bug toughness by wave: climbs fast to wave 20, then +7% a wave through the last five
 function hpCurve(w) { const a = Math.min(w, 20) - 1; return (1 + 0.17 * a + 0.011 * a * a) * (w > 20 ? 1 + 0.07 * (Math.min(w, MAXW) - 20) : 1); }
@@ -5523,7 +5523,7 @@ function aiSpawn(t, sent) {
   const A = S.vs.bot, bt = BT[t];
   let lead = null;
   const make = (s0, off) => {
-    const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1) * 0.95) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(A.wave));
+    const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1) * 0.95 * lateRamp(A.wave)) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(A.wave));
     const b = { id: A.nid++, t, route: bt.boss || A.wave <= 5 ? LONG_R : A.routeN, s: s0, off, hp, max: hp, ball: bt.ball ? Math.round(bt.ball * A.hpMul * (A.wave === 6 || A.wave === 7 ? 0.7 / 0.9 : 1)) : 0, sent: sent ? 1 : 0, push: 0 };
     A.bugs.push(b); return b;
   };
