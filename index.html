@@ -494,7 +494,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v223</div>
+    <div id="ver">v224</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2714,25 +2714,14 @@ const BUILD = {
       hm.color.set('#2b2d33'); hm.metalness = 0.7; hm.roughness = 0.3; hm.emissive = new THREE.Color('#000'); hm.emissiveIntensity = 0;
       frame.material = std({ color: '#3a3d44', metalness: 0.9, roughness: 0.3 });
       o.baseScale = 1.1; o.sparky = true;
-      if (!o.bolts) {
-        const bm = new THREE.MeshBasicMaterial({ color: '#d8f4ff', transparent: true, opacity: 1, depthWrite: false }), gm = new THREE.MeshBasicMaterial({ color: '#4ab8ff', transparent: true, opacity: 0.55, depthWrite: false });
-        o.bolts = new THREE.Group(); o.bolts.visible = false; o.bolts.position.copy(head.position); o.bolts.position.y += 0.06; pivot.add(o.bolts);
-        o.boltSegs = [];
-        for (let k = 0; k < 2; k++) for (let i = 0; i < 6; i++) { const core = mesh(new THREE.BoxGeometry(1, 0.02, 0.035), bm), glow = mesh(new THREE.BoxGeometry(1, 0.015, 0.11), gm); o.bolts.add(core, glow); o.boltSegs.push([core, glow]); }
-        o.zap = () => {   // two jagged streaks across the head, a new shape every time
-          let n = 0;
-          for (let k = 0; k < 2; k++) {
-            let x = -0.5 + Math.random() * 0.3, z = (Math.random() - 0.5) * 1.0;
-            for (let i = 0; i < 6; i++) {
-              const nx = x + 0.12 + Math.random() * 0.1, nz = Math.max(-0.55, Math.min(0.55, z + (Math.random() - 0.5) * 0.45));
-              const [core, glow] = o.boltSegs[n++], len = Math.hypot(nx - x, nz - z), a = -Math.atan2(nz - z, nx - x);
-              for (const m of [core, glow]) { m.position.set((x + nx) / 2, 0, (z + nz) / 2); m.scale.set(len, 1, 1); m.rotation.y = a; }
-              x = nx; z = nz;
-            }
-          }
-          o.bolts.visible = true;
-        };
-      }
+      o.zap = () => {   // little Bug Zapper arcs crackling across the swatter head
+        const P = (x, z) => head.localToWorld(new V3(x, 0.06, z));
+        for (let k = 0; k < 2; k++) {
+          const a = P(-0.45 + Math.random() * 0.2, (Math.random() - 0.5) * 1.0), b = P(0.25 + Math.random() * 0.2, (Math.random() - 0.5) * 1.0);
+          arcs.spawn(Math.random() < 0.5 ? a : b, Math.random() < 0.5 ? b : a, 0.15);
+        }
+        const c = P(0, 0); FX.glow.spawn({ x: c.x, y: c.y, z: c.z, life: 0.2, s0: 1.2, s1: 0.4, c: [0.6, 0.8, 1], a0: 0.8 });
+      };
     };
     o.setLevel = lv => {
       rimLevel(o, lv);
@@ -4179,10 +4168,9 @@ function drawTowers(dt, t) {
     if (tw.pop < 1) { tw.pop = Math.min(1, tw.pop + dt * 5); const k = tw.pop, e = 1 + Math.sin(k * Math.PI) * 0.25; o.root.scale.setScalar(Math.max(0.01, k * e) * (o.baseScale || 1)); }
     if (o.turn) { let da = tw.yawT - tw.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); tw.yaw += da * Math.min(1, dt * 14); o.turn.rotation.y = tw.yaw; }
     const a = tw.anim;
-    if (o.zap && !tw.pending) {   // electrified swatter: a lightning streak every second or two
-      tw.boltT = (tw.boltT ?? Math.random() * 2) - dt;
-      if (tw.boltT <= 0) { o.zap(); tw.boltT = 0.9 + Math.random() * 1.6; tw.boltOn = 0.14; }
-      else if (tw.boltOn > 0 && (tw.boltOn -= dt) <= 0) o.bolts.visible = false;
+    if (o.zap && !tw.pending) {   // electrified swatter: small zapper lightning crackles across it every second or so
+      tw.boltT = (tw.boltT ?? Math.random() * 1.5) - dt;
+      if (tw.boltT <= 0) { o.zap(); tw.boltT = 0.5 + Math.random() * 1.1; }
     }
     if (o.sparky && !tw.pending && Math.random() < dt * 6) { const hx = tw.x + Math.sin(tw.yaw) * 2.6, hz = tw.z + Math.cos(tw.yaw) * 2.6; FX.glow.spawn({ x: hx + (Math.random() - 0.5), y: 1.2 + Math.random(), z: hz + (Math.random() - 0.5), vx: (Math.random() - 0.5) * 2, vy: 1, vz: (Math.random() - 0.5) * 2, life: 0.2, s0: 0.45, s1: 0.05, c: [0.5, 0.85, 1], a0: 1 }); }
     if (tw.t === 'venus') {
@@ -4212,7 +4200,7 @@ function drawTowers(dt, t) {
       o.head.rotation.y = mv ? 0 : Math.sin(t * 0.7 + tw.id) * 0.5; o.torso.scale.y = 0.7 + (mv ? 0 : Math.sin(t * 2 + tw.id) * 0.02);
     }
     if (tw.t === 'swat') {
-      const up = -1.15, down = 0.3;
+      const up = -0.5, down = 0.3;
       o.pivot.rotation.x = a < 0.07 ? lerp(up, down, a / 0.07) : a < 0.4 ? lerp(down, up, (a - 0.07) / 0.33) : up + Math.sin(t * 2 + tw.id) * 0.04;
     } else if (tw.t === 'frog') {
       if (!o.tip.parent) scene.add(o.tip);
