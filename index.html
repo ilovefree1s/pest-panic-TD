@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v229</div>
+    <div id="ver">v230</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2125,7 +2125,7 @@ function leadBug() {
   return best;
 }
 // ---- shiny bugs: a very rare rainbow bug. Tap Catch and the exterminator runs over and grabs it before it's squashed
-const SHINY_CHANCE = 0.0015;
+const SHINY_CHANCE = 0.0005;
 const BUG_NAME = { ant: 'Ant', fly: 'Fly', spider: 'Spider', bed: 'Bed Bug', dung: 'Dung Beetle', baby: 'Baby Spider', hopper: 'Grasshopper', centi: 'Centipede', stink: 'Stink Bug', moth: 'Moth', mantis: 'Praying Mantis' };
 const shinyName = b => 'shiny ' + (BUG_NAME[b.t] || (BT[b.t] && BT[b.t].name) || 'bug');
 // ---- the Shiny Collection: every type you've caught, kept forever (selling from the jar doesn't take it away)
