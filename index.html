@@ -357,6 +357,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #shopWrap .more{display:none;position:absolute;z-index:2;pointer-events:none;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#3a2400;
   font:900 15px/24px var(--body);text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.5);animation:morePulse 1.2s ease-in-out infinite}
 #shopWrap.has-more .more{display:block}
+#shopWrap.inf .more{display:none!important} #shopWrap.inf .stabs,#shopWrap.inf #shop{visibility:hidden} #shopWrap > #info{position:absolute;left:0;right:0;bottom:0;top:40px;z-index:2}
 @keyframes morePulse{50%{opacity:.55}}
 .stabs{display:flex;gap:4px;justify-self:start;background:rgba(20,26,32,.92);padding:3px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line)}
 .stabs button{border:0;border-radius:999px;padding:4px 16px;font:900 13px var(--body);color:var(--dim);background:transparent;cursor:pointer}
@@ -492,7 +493,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v206</div>
+    <div id="ver">v208</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -959,7 +960,7 @@ function buildCounterProps() {
   for (const k in P) { P[k].traverse(o => { if (o.isMesh) o.castShadow = true; }); P[k].visible = false; scene.add(P[k]); }
   return P;
 }
-HOUSES[13] = { ...HOUSES[2], name: 'Retro Diner' }; PROP_LAYOUT[13] = PROP_LAYOUT[6];
+HOUSES[13] = { ...HOUSES[2], name: 'Retro Diner' }; LEVELS[13].hp = (LEVELS[13].hp || 1) * 1.1;   // Retro Diner bugs +10% PROP_LAYOUT[13] = PROP_LAYOUT[6];
 HOUSES[14] = { ...HOUSES[9] }; PROP_LAYOUT[14] = PROP_LAYOUT[6];
 HOUSES[15] = { ...HOUSES[10] }; PROP_LAYOUT[15] = PROP_LAYOUT[6];   // The Pretzel: cabin look
 HOUSES[16] = { ...HOUSES[11] }; PROP_LAYOUT[16] = PROP_LAYOUT[6];   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
@@ -2300,7 +2301,7 @@ const TT = {
 };
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.2, 3.0, 3.8], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
-TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [180, 300, 480], dot: [55, 90, 140], rate: [2.2, 2.0, 1.7],
+TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [103, 174, 277], dot: [34, 55, 88], rate: [2.2, 2.0, 1.7],
   d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every bug in the cone, flies too, takes a big hit and keeps choking for 2 seconds. The fog ignores shells, so it melts bosses. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
   d: 'A support tool. Its flame gently scorches every bug in its glow, flies too (4, then 7, then 11 a second; two candles don\'t double it). Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
@@ -2321,7 +2322,7 @@ Object.assign(TT, {
   sticky:  { name: 'Sticky Trap', cost: 35, item: true, path: true, air: false, range: [1.6, 1.6, 1.6],
              d: 'A glue sheet for the trail. For one wave, every crawling bug that walks over it slows to 40% speed. Flies go over it. Placed between waves, it works during the next wave.' },
   bomb:    { name: 'Bug Bomb', cost: 75, item: true, path: true, air: true, range: [2.4, 2.4, 2.4], dps: 30,
-             d: 'A fogger for the trail. For one wave it fills the trail around it with poison fog that burns every bug passing through for 30 per second, flies included. Burns through shells. Placed between waves, it goes off when the next wave starts.' },
+             d: 'A fogger for the trail. It waits on the trail until a bug walks over it, then fills the trail around it with poison fog for the rest of that wave, burning every bug passing through for 30 per second, flies included. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
   license: { name: 'Exterminator License', item: true, instant: true, air: true, costs: [120, 200, 300], range: [0, 0, 0],
              d: 'Every tool you own deals 5% more damage for the rest of the game. Buy it up to 3 times for +15%.' },
 });
@@ -2346,7 +2347,7 @@ const PERK = {
   paper:  { name: 'Sunday Edition', icon: '📰', range: 1.5, amp: 0.25, d: 'A giant rolled-up paper: 50% bigger slam and 25% more damage.' },
   lens:   { name: 'Wildfire', icon: '🔥', d: 'The bug it burns sets fire to bugs right next to it.' },
   zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'The bolt hops to twice as many bugs.' },
-  broom:  { name: 'Push Broom', icon: '🧹', range: 1.3, d: 'A wide push broom: 30% more reach and sweeps bugs 60% further back.' },
+  broom:  { name: 'Push Broom', icon: '🧹', range: 1.15, d: 'A wide push broom: 15% more reach and sweeps bugs 25% further back.' },
   candle: { name: 'Bonfire Candle', icon: '🕯️', range: 1.5, d: 'A big bonfire jar: 50% bigger glow, +10% more damage boost, and it scorches harder.' },
   fogger: { name: 'Industrial Fogger', icon: '🌫️', d: 'The fog settles on the floor for 3 seconds and keeps choking every bug that walks through it.' },
   frog:   { name: 'Bullfrog', icon: '👑', amp: 0.5, d: 'Grows into a huge bullfrog: 50% more damage, and it gulps much bigger bugs whole.' },
@@ -3631,7 +3632,7 @@ function towerAct(tw, dt) {
     for (const b of S.bugs) {
       if (!canHit(tw, b) || !inRange(tw, b, R) || b.sweptT > 0 || b.y0 > 0.5) continue;
       hit(b, T.dmg[L]); if (b.dead) continue;
-      b.push = BT[b.t].noPush ? 0 : T.push[L] * (tw.perk ? 1.6 : 1) * (BT[b.t].boss ? 0.1 * 4 / 2.4 : 1); b.sweptT = 3; n++;
+      b.push = BT[b.t].noPush ? 0 : T.push[L] * (tw.perk ? 1.25 : 1) * (BT[b.t].boss ? 0.1 * 4 / 2.4 : 1); b.sweptT = 3; n++;
       for (let i = 0; i < 3; i++) FX.smoke.spawn({ x: b.x, y: 0.25, z: b.z, vx: (Math.random() - 0.5) * 3, vy: 0.6, vz: (Math.random() - 0.5) * 3, drag: 3, life: 0.45, s0: 0.4, s1: 1.1, c: [0.85, 0.8, 0.7], a0: 0.4 });
     }
     if (!n) { tw.cd = 0.15; return; }
@@ -3706,7 +3707,7 @@ function update(dt) {
   if (S.lives <= 0) { if (!(S.vs && S.vs.dead)) gameOver(false); return; }
   if (S.active && !S.queue.length && !S.bugs.length && !(S.vs && S.vs.inbox.length)) {
     S.active = false;
-    for (const it of [...S.items]) if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it);
+    for (const it of [...S.items]) { if (it.t === 'bomb' && !it.trig && it.waveEnd <= S.wave) it.waveEnd = S.wave + 1; if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it); }   // an unused Bug Bomb waits for the next wave
     if (S.vs) S.vs.cl = S.wave;   // waves cleared (2v2 race: more is better)
     if (S.wave >= MAXW && !S.endless) { if (S.vs) vsFinish(); else gameOver(true); return; }
     const cl = S.clears && S.clears.length ? S.clears : [S.wave];
@@ -3771,8 +3772,9 @@ function itemsAct(dt) {
         b.stuck = 0.15; b.slowF = Math.min(b.slowF, BT[b.t].boss ? 0.6 : 0.4);
       }
     } else if (it.t === 'bomb') {
-      it.o.ledM.emissiveIntensity = armed ? (Math.sin(clock * 10) > 0 ? 3 : 0.3) : 0;
-      if (!armed) continue;
+      if (armed && !it.trig && S.net !== 'guest') for (const b of S.bugs) if (!b.dead && !BT[b.t].fly && (b.x - it.x) ** 2 + (b.z - it.z) ** 2 <= R2 * 0.5 && b.y0 <= 0.5) { it.trig = true; SND.play('spray'); break; }   // waits for a bug to step on it
+      it.o.ledM.emissiveIntensity = !armed ? 0 : it.trig ? (Math.sin(clock * 10) > 0 ? 3 : 0.3) : (Math.sin(clock * 3) > 0.6 ? 1.5 : 0.2);
+      if (!armed || !it.trig) continue;
       for (let n = 0; n < 2; n++) if (Math.random() < dt * 16) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * T.range[0]; FX.smoke.spawn({ x: it.x + Math.cos(a) * d, y: 0.3 + Math.random() * 0.7, z: it.z + Math.sin(a) * d, vx: Math.cos(a) * 0.5, vy: 0.4, vz: Math.sin(a) * 0.5, life: 1.4, s0: 1.4, s1: 3, c: [0.62, 0.9, 0.45], a0: 0.6 }); }
       for (const b of S.bugs) {
         if (b.dead || (b.x - it.x) ** 2 + (b.z - it.z) ** 2 > R2 || b.y0 > 0.5) continue;
@@ -4717,7 +4719,7 @@ function statsBase(tw) {
 let lastTray = '';
 function syncTray() {
   const tw = S.pick;
-  $('info').hidden = !tw; $('shopWrap').hidden = !!tw;
+  $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = $('shop').offsetTop + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel
   if (tw) {
     const T = TT[tw.t], max = tw.lv >= 3 && (tw.perk || !PERK[tw.t]), perkUp = tw.lv >= 3 && !max, c = max ? 0 : upCost(tw);
     $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
@@ -4802,6 +4804,7 @@ function clearBoard() {
 }
 // the cake / coins / wave pills sit on the tool tray next to the tabs (except phones held sideways, where the tray is a narrow column)
 const MQ_TRAY = matchMedia('(orientation:landscape) and (max-height:560px)');
+$('shopWrap').appendChild($('info'));   // the tool panel opens under the tabs row instead of replacing it
 const UNDO_HOME = $('undo').parentElement;
 function placeStats() { const st = document.querySelector('.stats'), want = MQ_TRAY.matches ? $('hud') : $('trayStats'); if (st && st.parentElement !== want) want.prepend(st);
   const uh = MQ_TRAY.matches ? UNDO_HOME : $('trayStats'); if ($('undo').parentElement !== uh) uh.appendChild($('undo'));   /* undo sits on the tray, right after the wave counter */ document.body.classList.toggle('tstats', !MQ_TRAY.matches); syncBeltPos(); }
@@ -5063,7 +5066,7 @@ function netSnap() {
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
       (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0) | (b.shiny ? 32 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
     t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0) | (t.perk ? 16 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0] : [])]),
-    i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd]),
+    i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd, it.trig ? 1 : 0]),
     e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
 }
 function remoteTower(id, t, c, r, owner) {
@@ -5124,11 +5127,11 @@ function netApply(m) {
   for (const tw of [...S.towers]) if (!tseen.has(tw.id)) removeTower(tw);
   // items
   const iseen = new Set();
-  for (const [id, t, c, r, owner, pend, bites, waveEnd] of m.i) {
+  for (const [id, t, c, r, owner, pend, bites, waveEnd, trig] of m.i) {
     iseen.add(id); let it = S.items.find(x => x.id === id);
     if (!it) { const o = makeTower(t); it = { id, t, c, r, owner, x: ccx(c), z: ccz(r), o, bites, waveEnd, pending: true }; o.root.position.set(it.x, 0, it.z); o.root.visible = false; scene.add(o.root); it.marker = makeMarker(it.x, it.z); S.items.push(it); }
     if (it.pending && !pend) finishJob({ kind: 'item', obj: it });
-    it.bites = bites; it.waveEnd = waveEnd;
+    it.bites = bites; it.waveEnd = waveEnd; it.trig = !!trig;
   }
   for (const it of [...S.items]) if (!iseen.has(it.id)) removeItem(it);
   // exterminators
