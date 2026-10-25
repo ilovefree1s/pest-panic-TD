@@ -494,7 +494,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v224</div>
+    <div id="ver">v225</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2947,7 +2947,7 @@ const BUILD = {
       const core = new THREE.Mesh(sph(0.08, 8, 6), coreM); core.scale.set(1, 1.8, 1); core.position.y = 0.22; f.add(core);
       flames.push(f); return [w, f];
     };
-    addWick(0); const extra = [addWick(-0.32), addWick(0.32)];
+    const mid = addWick(0), extra = [addWick(-0.32), addWick(0.32)];
     // the glow on the floor: shows how far it reaches
     // warm candlelight pooled on the floor: bright near the jar, fading softly out to the edge of its reach
     const aura = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: candleGlowTex(), transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -2955,7 +2955,8 @@ const BUILD = {
     const o = { root: g, jar, flames, aura, rim, pips: pips(g) };
     o.setLevel = lv => {
       rimLevel(o, lv);
-      for (const [w, f] of extra) w.visible = f.visible = lv >= 2;
+      mid[0].visible = mid[1].visible = lv !== 2;   /* one flame, then two, then three */
+      extra.forEach(([w, f], i) => { w.visible = f.visible = lv >= 2; const x = (i ? 1 : -1) * (lv === 2 ? 0.17 : 0.32); w.position.x = x; f.position.x = x; });
       lid.visible = lv >= 3; waxM.color.set(lv >= 3 ? '#f0b84a' : '#e9d36a');
       jar.scale.setScalar([1, 1.12, 1.25][lv - 1]);
       const r = TT.candle.range[lv - 1] * 1.08 * (o.perk ? 1.5 : 1); aura.scale.set(r, r, 1); o.auraR = r;
