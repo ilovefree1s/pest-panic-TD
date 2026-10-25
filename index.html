@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v227</div>
+    <div id="ver">v228</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -761,6 +761,7 @@ const CAKE_POS = new V3(ccx(BOARD.cakeCol), TOP_Y, -16.9);
 // each level is one or more trails (cell waypoints) that all end climbing up to the cake
 const LEVELS = [
   { name: 'The Long Way', sub: 'A winding trail with three U-bends', intro: 'Pick a tool below and place it by the trail', hp: 1, money: 160, shift: 0,
+    bosses: [['queen'], ['widow'], ['herc'], ['hornet', 'widow', 'queen']], bossMulW: { 20: { hornet: 0.6 } },   // Hercules Beetle at 15, Hornet Queen (40% lighter) at 20
     routes: [[[1, -0.6], [1, 8], [4, 8], [4, 2], [7, 2], [7, 8], [10, 8], [10, 4], [12, 4], [12, -0.05]]] },
   { name: 'Kitchen Trail', sub: 'A long snake, tougher bugs', intro: 'The trail snakes back and forth, and the bugs are tougher', hp: 1.1, money: 165, bossMul: { widow: 0.95 }, shift: 0,
     routes: [[[1, -0.6], [1, 1], [9, 1], [9, 5], [1, 5], [1, 8], [12, 8], [12, -0.05]]] },   // redrawn in the Trail Builder
@@ -3313,10 +3314,9 @@ function bossesFor(n) {
   const lap = (LEVELS[LV] && (LEVELS[LV].bosses || LEVELS[LV].team)) ? BL[(n / 5 - 1) % 4] : EL[(n / 5 - 5) % EL.length], extra = Math.floor((n - MAXW) / 20);
   const out = []; for (let i = 0; i <= extra; i++) out.push(...lap); return out;
 }
-function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && (LEVELS[LV].bossMulW[S.wave][t] || LEVELS[LV].bossMulW[S.wave]['*'])) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1) * (LEVELS[LV] && LEVELS[LV].team && S.wave === 5 ? 1 / 1.2 : 1) * bossRamp(S.mode === 'play' ? S.wave : 0) * (S.wave === 5 ? 0.7225 : 1)); }   // bosses climb 2% a wave after wave 5; the first boss (wave 5) is 15% + 15% softer so it can be beaten without a wall of magnifying glasses   // (the wave 5 boss skips the Team Kitchen +20%)   // bosses are 5% softer in Bug Battle and Team Kitchen
+function bossHp(t) { return Math.round(BT[t].hp * ((LEVELS[LV] && LEVELS[LV].bossHp) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMul && LEVELS[LV].bossMul[t]) || 1) * ((LEVELS[LV] && LEVELS[LV].bossMulW && S && LEVELS[LV].bossMulW[S.wave] && (LEVELS[LV].bossMulW[S.wave][t] || LEVELS[LV].bossMulW[S.wave]['*'])) || 1) * S.hpMul * (S.trio && S.mode === 'play' ? BOSS_HP20[t] : 1) * (S.vs || (LEVELS[LV] && LEVELS[LV].team) ? 0.95 : 1) * (S.trio && LEVELS[LV] && LEVELS[LV].team ? 0.95 : 1) * (LEVELS[LV] && LEVELS[LV].team && S.wave === 5 ? 1 / 1.2 : 1) * lateRamp(S.mode === 'play' ? S.wave : 0) * (S.wave === 5 ? 0.7225 : 1)); }   // bosses climb 5% a wave after wave 5 too; the first boss (wave 5) is 15% + 15% softer so it can be beaten without a wall of magnifying glasses   // (the wave 5 boss skips the Team Kitchen +20%)   // bosses are 5% softer in Bug Battle and Team Kitchen
 const MAXW = 25;
-const LATE_RAMP = 1.05;   // after wave 5, regular bugs get 5% tougher every wave (stacking). Bosses climb 2% (bossRamp). Beetle shells are not affected
-const bossRamp = w => w > 5 ? 1.02 ** (Math.min(w, MAXW) - 5) : 1;   // bosses: +2% a wave after wave 5
+const LATE_RAMP = 1.05;   // after wave 5, regular bugs and bosses get 5% tougher every wave (stacking). Beetle shells are not affected
 const lateRamp = w => w > 5 ? LATE_RAMP ** (Math.min(w, MAXW) - 5) : 1;   // (endless keeps its own climb past wave 25)
 // bug toughness by wave: climbs fast to wave 20, then +7% a wave through the last five
 function hpCurve(w) { const a = Math.min(w, 20) - 1; return (1 + 0.17 * a + 0.011 * a * a) * (w > 20 ? 1 + 0.07 * (Math.min(w, MAXW) - 20) : 1); }
@@ -5594,7 +5594,7 @@ function aiSpawn(t, sent) {
   const A = S.vs.bot, bt = BT[t];
   let lead = null;
   const make = (s0, off) => {
-    const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1) * 0.95 * bossRamp(A.wave) * (A.wave === 5 ? 0.7225 : 1)) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(A.wave));
+    const hp = bt.boss ? Math.round(bt.hp * A.hpMul * (A.trio ? BOSS_HP20[t] : 1) * 0.95 * lateRamp(A.wave) * (A.wave === 5 ? 0.7225 : 1)) : Math.round(bt.hp * A.hpMul * (A.wave >= 10 ? 1.2 : 1) * (A.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(A.wave));
     const b = { id: A.nid++, t, route: bt.boss || A.wave <= 5 ? LONG_R : A.routeN, s: s0, off, hp, max: hp, ball: bt.ball ? Math.round(bt.ball * A.hpMul * (A.wave === 6 || A.wave === 7 ? 0.7 / 0.9 : 1)) : 0, sent: sent ? 1 : 0, push: 0 };
     A.bugs.push(b); return b;
   };
