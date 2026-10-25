@@ -493,7 +493,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v210</div>
+    <div id="ver">v211</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -960,7 +960,7 @@ function buildCounterProps() {
   for (const k in P) { P[k].traverse(o => { if (o.isMesh) o.castShadow = true; }); P[k].visible = false; scene.add(P[k]); }
   return P;
 }
-HOUSES[13] = { ...HOUSES[2], name: 'Retro Diner' }; LEVELS[13].hp = (LEVELS[13].hp || 1) * 1.1;   // Retro Diner bugs +10% PROP_LAYOUT[13] = PROP_LAYOUT[6];
+HOUSES[13] = { ...HOUSES[2], name: 'Retro Diner' }; PROP_LAYOUT[13] = PROP_LAYOUT[6]; LEVELS[13].hp = (LEVELS[13].hp || 1) * 1.1;   // Retro Diner bugs +10%
 HOUSES[14] = { ...HOUSES[9] }; PROP_LAYOUT[14] = PROP_LAYOUT[6];
 HOUSES[15] = { ...HOUSES[10] }; PROP_LAYOUT[15] = PROP_LAYOUT[6];   // The Pretzel: cabin look
 HOUSES[16] = { ...HOUSES[11] }; PROP_LAYOUT[16] = PROP_LAYOUT[6];   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
