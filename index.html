@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v240</div>
+    <div id="ver">v241</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2117,7 +2117,7 @@ function finishJob(j) {
   }
   if (j.kind === 'wake') {   // purr: little hearts, then the cat hops down and gets to work
     for (let i = 0; i < 10; i++) FX.glow.spawn({ x: o.x + (Math.random() - 0.5) * 1.5, y: 1.5 + Math.random(), z: o.z + (Math.random() - 0.5) * 1.5, vy: 2, life: 0.9, s0: 0.5, s1: 0.1, c: [1, 0.45, 0.65], a0: 1 });
-    banner('Meow!', 'The cat is awake and on the prowl', false, 1400);
+    banner('Meow!', 'The cat is awake and on the prowl', false, 1400); SND.play('meow');
   }
   if (j.kind === 'relight') { o.snuff = false; o.relightPending = false; for (let i = 0; i < 12; i++) FX.glow.spawn({ x: o.x + (Math.random() - 0.5), y: 2 + Math.random(), z: o.z + (Math.random() - 0.5), vy: 2, life: 0.6, s0: 0.6, s1: 0.1, c: [1, 0.8, 0.3], a0: 1 }); SND.play('up'); if (S.pick === o) syncTray(); return; }
   o.pending = false; o.o.root.visible = true; o.pop = 0;
@@ -3169,6 +3169,7 @@ const SND = (() => {
   const P = {
     swat: () => { hiss(0.07, 0.5, 2200, 1.2); tone('square', 320, 110, 0.06, 0.08); },
     tongue: () => tone('sine', 260, 420, 0.05, 0.035),
+    meow: () => { tone('triangle', 540, 860, 0.16, 0.11); tone('triangle', 860, 470, 0.32, 0.11, 0.14); tone('sine', 1080, 1700, 0.14, 0.03); },
     spray: () => hiss(0.4, 0.22, 5000, 0.6, 'highpass'),
     sweep: () => { hiss(0.22, 0.3, 1800, 0.8); hiss(0.18, 0.22, 3200, 0.8, 'bandpass', 0.12); },
     slam: () => { tone('sine', 150, 40, 0.28, 0.6); hiss(0.18, 0.35, 500, 1); },
@@ -3598,7 +3599,7 @@ function catMischief(tw, T, L, dt) {   // now and then: hop up on the counter, s
       if (M.n < SW.length) {   // a little nudge and a wobble
         const f = floorBelow(g.position.x, g.position.z), dx = f.x - g.position.x, dz = f.z - g.position.z, d = Math.hypot(dx, dz) || 1;
         g.position.x += dx / d * 0.18; g.position.z += dz / d * 0.18; M.wob = 0.25; SND.play('tap');
-      } else { knockProp(M.key); tw.knocks = (tw.knocks || 0) + 1; }
+      } else { knockProp(M.key); tw.knocks = (tw.knocks || 0) + 1; setTimeout(() => SND.play('meow'), 700); }
     }
     if (M.wob > 0 && g.visible && !g.userData.fall) { M.wob -= dt; g.rotation.z = Math.sin(M.wob * 40) * 0.08 * (M.wob / 0.25); }
     if (M.t > 4.6) { M.ph = 'down'; M.t = 0; }
