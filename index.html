@@ -591,7 +591,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v279</div>
+    <div id="ver">v280</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2607,13 +2607,14 @@ function useAbility() {
   const onTrail = (x, z) => { const c = Math.floor((x - X0) / CS), r = Math.floor((z - Z0) / CS); return c < 0 || r < 0 || c >= COLS || r >= ROWS || PATH.has(key(c, r)); };
   const blocked = (x, z) => S.towers.some(t => Math.hypot(t.x - x, t.z - z) < 1.6);
   let tx = tmpP.x, tz = tmpP.z;
+  let side = 1;
   pick: for (const d of [2.9, 3.6, 4.4]) for (const sd of [1, -1]) {
     const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd;
-    if (!onTrail(x, z) && !blocked(x, z)) { tx = x; tz = z; break pick; }
+    if (!onTrail(x, z) && !blocked(x, z)) { tx = x; tz = z; side = sd; break pick; }
   }
   if (tx === tmpP.x) for (const d of [2.9, 3.6]) for (const sd of [1, -1]) { const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd; if (!onTrail(x, z)) { tx = x; tz = z; break; } }
   const e = S.ext; e.held = false;
-  e.abil = { kills: 0, phase: 'run', t: 0, tx, tz, face: Math.atan2(lead.x - tx, lead.z - tz), snd: 0 };
+  e.abil = { kills: 0, phase: 'run', t: 0, tx, tz, face: Math.atan2(lead.x - tx, lead.z - tz), snd: 0, side };
   S.money -= ABIL.cost; bumpStat('stCoins');
   S.abilCd = ABIL.cd; SND.play('wave'); syncAbil();
 }
@@ -2626,9 +2627,23 @@ function abilUpdate(e, dt) {
     e.state = 'walk'; return;
   }
   e.state = 'spray'; a.t += dt;
-  // turn toward the closest bug in front of him
-  let tgt = null, td = ABIL.range * ABIL.range;
-  for (const b of S.bugs) { if (b.dead) continue; const d = (b.x - e.x) ** 2 + (b.z - e.z) ** 2; if (d < td) { td = d; tgt = b; } }
+  // keep pace with the front of the pack: walk alongside the trail just ahead of the bug closest to the cake
+  const lead = leadBug();
+  if (lead && !lead.free) {
+    let st = lead.s + 1.6; const rt = lead.route;
+    for (let i = 0; i < 40; i++) { pathAt(st, tmpP, rt); if (tmpP.flat && tmpP.y < 0.3) break; st -= 0.5; }
+    pathAt(st, tmpP, rt);
+    const offTrail = (x, z) => { const c = Math.floor((x - X0) / CS), r = Math.floor((z - Z0) / CS); return c >= 0 && r >= 0 && c < COLS && r < ROWS && !PATH.has(key(c, r)); };
+    let gx = null, gz = null;
+    for (const d of [2.9, 3.6, 4.4]) { for (const sd of [a.side || 1, -(a.side || 1)]) { const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd; if (offTrail(x, z)) { gx = x; gz = z; a.side = sd; break; } } if (gx !== null) break; }
+    if (gx !== null) {
+      const mx = gx - e.x, mz = gz - e.z, md = Math.hypot(mx, mz);
+      if (md > 0.3) { const step = Math.min(md, ABIL.speed * 0.45 * dt); e.x += mx / md * step; e.z += mz / md * step; e.phase += dt * 12; }
+    }
+  }
+  // aim at the bug closest to the cake that he can reach, else the nearest one
+  let tgt = lead && !lead.dead && (lead.x - e.x) ** 2 + (lead.z - e.z) ** 2 < ABIL.range * ABIL.range ? lead : null, td = ABIL.range * ABIL.range;
+  if (!tgt) for (const b of S.bugs) { if (b.dead) continue; const d = (b.x - e.x) ** 2 + (b.z - e.z) ** 2; if (d < td) { td = d; tgt = b; } }
   if (tgt) { const want = Math.atan2(tgt.x - e.x, tgt.z - e.z); let da = want - e.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); e.yaw += da * Math.min(1, dt * 6); }
   const fx = Math.sin(e.yaw), fz = Math.cos(e.yaw);
   for (const b of S.bugs) {
