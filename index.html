@@ -392,6 +392,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 .stabs{display:flex;gap:4px;justify-self:start;background:rgba(20,26,32,.92);padding:3px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line)}
 .stabs button{border:0;border-radius:999px;padding:4px 16px;font:900 13px var(--body);color:var(--dim);background:transparent;cursor:pointer}
 .stabs button.on{background:var(--gold);color:#2a1600}
+.tc.owned1{justify-content:center;opacity:.8} .tc.owned1 span{align-items:center;text-align:center} .tc.owned1 b{font-size:17px}
 .tc.spent svg{opacity:.35} .tc.spent b{opacity:.55} .tc em.used{color:#ff8a7a}
 .ht{font-style:normal;font-family:var(--body);font-weight:900;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;border-radius:999px;line-height:1.5;white-space:nowrap}
 .perkBtn{background:linear-gradient(135deg,#ffb02a,#ff5a3c)!important;color:#2a0d00!important} .perkTag{margin-left:6px;font:900 10px var(--body);text-transform:uppercase;letter-spacing:.05em;color:#2a0d00;background:linear-gradient(135deg,#ffd04a,#ff8a3c);padding:2px 7px;border-radius:999px}
@@ -546,7 +547,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v259</div>
+    <div id="ver">v261</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2195,15 +2196,43 @@ function fitExtModel(root, gltf, red) {
   m.traverse(o => {
     if (!o.isSkinnedMesh) return;
     const g = o.geometry, P = g.attributes.position, J = g.attributes.skinIndex, W = g.attributes.skinWeight, hi = o.skeleton.bones.indexOf(bones.RHand);
-    o.updateMatrixWorld(true); bones.RHand.updateMatrixWorld(true);
+    o.updateMatrixWorld(true); bones.RHand.updateMatrixWorld(true); o.skeleton.update();
     const hp = bones.RHand.getWorldPosition(new V3()); let best = null, bd = -1;
     for (let i = 0; i < P.count; i++) {
       let w = 0; for (let c = 0; c < 4; c++) if (J.getComponent(i, c) === hi) w += W.getComponent(i, c);
       if (w < 0.6) continue;
-      const v = XV1.fromBufferAttribute(P, i).applyMatrix4(o.bindMatrix).applyMatrix4(o.matrixWorld.clone().multiply(o.bindMatrixInverse)), d = v.distanceTo(hp);
+      const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld), d = v.distanceTo(hp);
       if (d > bd) { bd = d; best = v.clone(); }
     }
     if (best) tip.position.copy(bones.RHand.worldToLocal(best));
+  });
+  // the spray wand gets its own bone (out of the hand) so it can hang on his belt while he hammers
+  let holster = null;
+  m.traverse(o => {
+    if (!o.isSkinnedMesh || holster) return;
+    const g = o.geometry, P = g.attributes.position, J = g.attributes.skinIndex, W = g.attributes.skinWeight, sk = o.skeleton, hi = sk.bones.indexOf(bones.RHand);
+    m.updateMatrixWorld(true);
+    o.skeleton.update(); o.computeBoundingBox(); const bb = o.boundingBox.clone().applyMatrix4(o.matrixWorld);
+    const hp = bones.RHand.getWorldPosition(new V3()), toW = o.matrixWorld, H = bb.max.y - bb.min.y;
+    const wb = new THREE.Bone(); wb.name = 'wandBone'; bones.RHand.add(wb); wb.updateMatrixWorld(true);
+    const idx = sk.bones.length; let n = 0;
+    for (let i = 0; i < P.count; i++) {
+      let w = 0; for (let c = 0; c < 4; c++) if (J.getComponent(i, c) === hi) w += W.getComponent(i, c);
+      if (w < 0.5) continue;
+      const v = o.getVertexPosition(i, XV1).applyMatrix4(toW);
+      if (v.y < hp.y + H * 0.06) continue;   // the glove stays with the hand; the rod and nozzle sticking up out of the fist are the wand
+      J.setXYZW(i, idx, 0, 0, 0); W.setXYZW(i, 1, 0, 0, 0); n++;
+    }
+    if (n < 10) { bones.RHand.remove(wb); return; }
+    J.needsUpdate = W.needsUpdate = true;
+    const inv = sk.boneInverses.concat([sk.boneInverses[hi].clone()]);   /* the wand bone starts exactly on the hand, so it shares the hand's bind */
+    o.bind(new THREE.Skeleton(sk.bones.concat([wb]), inv), o.bindMatrix);
+    // where it hangs: upside down at his right hip, hooked on the belt
+    const hips = bones.RUp.parent, hipP = bones.RUp.getWorldPosition(new V3()), out = hipP.x < 0 ? -1 : 1;
+    const want = new THREE.Matrix4().makeTranslation(hipP.x + out * H * 0.13, hipP.y + H * 0.05, hipP.z)
+      .multiply(new THREE.Matrix4().makeRotationZ(Math.PI)).multiply(new THREE.Matrix4().makeTranslation(-hp.x, -hp.y, -hp.z)).multiply(wb.matrixWorld);
+    const L = hips.matrixWorld.clone().invert().multiply(want), lp = new V3(), lq = new THREE.Quaternion(), ls = new V3(); L.decompose(lp, lq, ls);
+    holster = { wb, hips, hand: bones.RHand, lp, lq, ls, hp0: wb.position.clone(), hq0: wb.quaternion.clone(), hs0: wb.scale.clone(), on: false };
   });
   // the hammer moves into the model's right hand
   bones.RHand.add(u.hammer); u.hammer.position.set(0, 0, 0); u.hammer.rotation.set(0, 0, 0);
@@ -2212,7 +2241,7 @@ function fitExtModel(root, gltf, red) {
   const tank = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.62, 0.3), u.tankM); tank.position.set(0, 1.12, -0.42); tank.visible = false; cont.add(tank);
   u.trim.parent && u.trim.parent.remove(u.trim); cont.add(u.trim);
   u.body.visible = false; u.wand.visible = false;
-  u.mdl = { cont, m, mixer, walk, run, bones, skel, rest, tip, tank };
+  u.mdl = { cont, m, mixer, walk, run, bones, skel, rest, tip, tank, holster };
   u.tip = tip;
 }
 function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points the given way (in the model's own space: +z forward, +y up) */
@@ -2222,7 +2251,13 @@ function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points 
   const q = XQ1.setFromUnitVectors(cur, want), bw = bone.getWorldQuaternion(XQ2), pw = bone.parent.getWorldQuaternion(XQ3);
   bone.quaternion.copy(pw.invert().multiply(q.multiply(bw)));
 }
+function extHolster(M, on) {
+  const h = M.holster; if (!h || h.on === on) return; h.on = on;
+  if (on) { h.hips.add(h.wb); h.wb.position.copy(h.lp); h.wb.quaternion.copy(h.lq); h.wb.scale.copy(h.ls); }
+  else { h.hand.add(h.wb); h.wb.position.copy(h.hp0); h.wb.quaternion.copy(h.hq0); h.wb.scale.copy(h.hs0); }
+}
 function poseExtModel(u, e, dt, st) {
+  extHolster(u.mdl, !!(st.work && e.t >= 0.16));
   const M = u.mdl, Bn = M.bones, t = clock, R = -1, L = 1;   // the model's right arm is on its -x side
   const moving = st.walk || e.held;
   if (moving && M.walk) { if (!M.walk.isRunning()) M.walk.reset().play(); M.walk.timeScale = e.held ? 1.8 : 1.3; M.mixer.update(dt); }
@@ -2234,6 +2269,7 @@ function poseExtModel(u, e, dt, st) {
   if (e.held) { const w = Math.sin(e.phase) * 0.3; arm(R, Bn.RArm, Bn.RFore, R * 0.45, 1, w, R * 0.3, 1, w); arm(L, Bn.LArm, Bn.LFore, L * 0.45, 1, -w, L * 0.3, 1, -w); return; }
   arm(L, Bn.LArm, Bn.LFore, L * 0.3, -1, 0.05, L * 0.18, -1, 0.2);   // left arm hangs down
   if (st.spray) { const sw = Math.sin(t * 3.3) * 0.25; arm(R, Bn.RArm, Bn.RFore, R * 0.35 + sw, -0.25, 1, R * 0.05 + sw, 0.15, 1); }
+  else if (st.work && e.t < 0.32) arm(R, Bn.RArm, Bn.RFore, R * 0.35, -1, -0.1, R * 0.1, -1, 0.35);   // reaching down to hook the wand on his belt
   else if (st.work) { const k = Math.sin(e.t * 25); arm(R, Bn.RArm, Bn.RFore, R * 0.2, -0.2 + k * 0.6, 1, R * 0.1, -0.5 + k * 0.8, 1); }
   else if (st.pet) { const k = Math.sin(t * 6) * 0.45; arm(R, Bn.RArm, Bn.RFore, R * 0.5 + k * 0.3, 1, 0.35, R * 0.2 + k, 1, 0.35); }
   else arm(R, Bn.RArm, Bn.RFore, R * 0.3, -1, 0.05, R * 0.18, -1, 0.25);
@@ -2533,7 +2569,7 @@ function drawOneExt(dt, EXTM, e, show) {
     }
   }
   u.body.position.y = walk ? Math.abs(Math.sin(e.phase)) * 0.06 : work ? -0.1 : Math.sin(clock * 2) * 0.02;
-  u.hammer.visible = work;
+  u.hammer.visible = work && (!u.mdl || !u.mdl.holster || e.t >= 0.3);
   B.shadow.add(e.x, 0.03, e.z, 2.2 - e.lift * 0.3, 0, 0, 0, 0, 0.45 - e.lift * 0.12);
   if (e.held) { const d = dropCell(e.x, e.z); if (d) B.shadow.add(ccx(d.c), 0.04, ccz(d.r), CS * 0.8, 0, 0, 0, 0, 0.25); }
 }
@@ -4962,6 +4998,7 @@ function renderShop() {
     const used = itemUsed(t) || ownsUnique(t);
     let isNew = false; if (t === 'fogger') { try { isNew = !localStorage.getItem('ppd-fogger-used'); } catch (e) {} }
     const extra = ownsUnique(t) ? `<em class="used">${t === 'fogger' ? 'One per kitchen · tap yours to move it' : 'One per kitchen'}</em>` : used ? `<em class="used">Used this wave</em>` : isNew ? `<em class="newtag">NEW</em>` : t === 'license' && S && S.lic ? `<em>Owned ${S.lic}/3 · +${S.lic * 5}%</em>` : '';
+    if (TT[t].roam && ownsUnique(t)) return `<button class="tc owned1" type="button" data-t="${t}"><span><b>1 per house</b><em class="used">Tap yours to upgrade</em></span></button>`;   /* the cat: once you have him, his tile just says so */
     return `<button class="tc${used ? ' spent' : ''}" type="button" data-t="${t}">${i + off <= 10 ? `<kbd>${(i + off) % 10}</kbd>` : ''}${ICON[t]}<span><b>${TT[t].short || TT[t].name}</b>${hitTag(t, true)}${extra}<small>${c === Infinity ? 'Maxed' : c}</small></span></button>`;
   }).join('');
   for (const b of document.querySelectorAll('.stabs button')) b.classList.toggle('on', b.dataset.tab === shopTab);
@@ -5246,6 +5283,7 @@ function dmgHtml(tw) {   /* this tool's own numbers for the game so far */
 }
 function syncDmg() { const tw = S.pick; if (!tw || $('info').hidden) return; const h = dmgHtml(tw), el = $('iDmg'); if (el.innerHTML !== h) el.innerHTML = h; }
 function syncTray() {
+  { const own = !!(S && S.towers && S.towers.some(o => TT[o.t].roam && (o.owner || 0) === (S.cur || 0))); if (own !== syncTray.own) { syncTray.own = own; if (shopTab === 'pets') renderShop(); } }
   const tw = S.pick;
   $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = $('shop').offsetTop + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel
   if (tw) {
