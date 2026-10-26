@@ -547,7 +547,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v261</div>
+    <div id="ver">v262</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2257,7 +2257,7 @@ function extHolster(M, on) {
   else { h.hand.add(h.wb); h.wb.position.copy(h.hp0); h.wb.quaternion.copy(h.hq0); h.wb.scale.copy(h.hs0); }
 }
 function poseExtModel(u, e, dt, st) {
-  extHolster(u.mdl, !!(st.work && e.t >= 0.16));
+  extHolster(u.mdl, !!((st.work && e.t >= 0.16) || st.pet));   /* wand on the belt to hammer, and to pet the cat */
   const M = u.mdl, Bn = M.bones, t = clock, R = -1, L = 1;   // the model's right arm is on its -x side
   const moving = st.walk || e.held;
   if (moving && M.walk) { if (!M.walk.isRunning()) M.walk.reset().play(); M.walk.timeScale = e.held ? 1.8 : 1.3; M.mixer.update(dt); }
