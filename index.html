@@ -546,7 +546,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v258</div>
+    <div id="ver">v259</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -742,6 +742,8 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 const V3 = THREE.Vector3, TAU = Math.PI * 2;
 const IS_TOUCH = matchMedia('(pointer:coarse)').matches;
@@ -2156,6 +2158,90 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
   return root;
 }
 const EXT = buildPlayer(), EXT2 = buildPlayer('#c8342a', '#2f6fd0');
+/* ---- the modelled exterminator (made in Meshy, rigged with a Mixamo skeleton): once it loads it replaces the built-from-shapes one.
+   If it can't load, the old one just stays. Player 2 gets a red suit (and a blue cap) painted onto a copy of the texture. */
+const XV1 = new V3(), XV2 = new V3(), XV3 = new V3(), XQ0 = new THREE.Quaternion(), XQ1 = new THREE.Quaternion(), XQ2 = new THREE.Quaternion(), XQ3 = new THREE.Quaternion();
+function extRedTexture(tex) {
+  const im = tex.image, cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
+  const d = x.getImageData(0, 0, cv.width, cv.height), a = d.data;
+  for (let i = 0; i < a.length; i += 4) {
+    const r = a[i], g = a[i + 1], b = a[i + 2];
+    if (b > r + 35 && b > g) { a[i] = b; a[i + 1] = g * 0.55; a[i + 2] = r * 0.7; }   // blue suit and boots -> red
+    else if (r > 150 && r > g * 1.6 && r > b * 2) { a[i] = b; a[i + 1] = g; a[i + 2] = r; }   // orange cap -> blue
+  }
+  x.putImageData(d, 0, 0);
+  const t = new THREE.CanvasTexture(cv); t.flipY = tex.flipY; t.colorSpace = tex.colorSpace; t.wrapS = tex.wrapS; t.wrapT = tex.wrapT; return t;
+}
+function fitExtModel(root, gltf, red) {
+  const u = root.userData, m = SkeletonUtils.clone(gltf.scene), cont = new THREE.Group();
+  let tex = null; m.traverse(o => { if (o.isMesh && o.material && o.material.map) tex = o.material.map; });
+  const map = red && tex ? extRedTexture(tex) : tex;
+  const mat = new THREE.MeshStandardMaterial({ map, color: new THREE.Color(0.62, 0.62, 0.62), roughness: 0.8, metalness: 0 });   /* the kitchen is brightly lit: tone the texture down so the colours don't wash out */
+  m.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; o.frustumCulled = false; } });
+  m.updateMatrixWorld(true);
+  const box = new THREE.Box3();   /* measure him as actually skinned (the skeleton carries a 0.01 scale) */
+  m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox(); box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+  const h = box.max.y - box.min.y || 1, k = 2.25 / h;
+  m.scale.multiplyScalar(k); m.position.y -= box.min.y * k;
+  cont.add(m); root.add(cont);
+  const B = n => m.getObjectByName('mixamorig' + n) || m.getObjectByName('mixamorig:' + n);   /* the loader drops the ':' from bone names */
+  const bones = { LArm: B('LeftArm'), LFore: B('LeftForeArm'), LHand: B('LeftHand'), RArm: B('RightArm'), RFore: B('RightForeArm'), RHand: B('RightHand'), LUp: B('LeftUpLeg'), LLeg: B('LeftLeg'), RUp: B('RightUpLeg'), RLeg: B('RightLeg'), Spine2: B('Spine2') };
+  let skel = null; m.traverse(o => { if (o.isSkinnedMesh) skel = o.skeleton; });
+  const rest = skel ? skel.bones.map(b => [b, b.position.clone(), b.quaternion.clone(), b.scale.clone()]) : [];   /* the T-pose as loaded, to go back to between animations */
+  const mixer = new THREE.AnimationMixer(m), clip = n => gltf.animations.find(a => a.name === n);
+  const walk = clip('Walking') ? mixer.clipAction(clip('Walking')) : null, run = clip('Running') ? mixer.clipAction(clip('Running')) : null;
+  // the spray nozzle: the vertex furthest from the right hand that moves with the hand (the top of the wand)
+  const tip = new THREE.Object3D(); bones.RHand.add(tip);
+  m.traverse(o => {
+    if (!o.isSkinnedMesh) return;
+    const g = o.geometry, P = g.attributes.position, J = g.attributes.skinIndex, W = g.attributes.skinWeight, hi = o.skeleton.bones.indexOf(bones.RHand);
+    o.updateMatrixWorld(true); bones.RHand.updateMatrixWorld(true);
+    const hp = bones.RHand.getWorldPosition(new V3()); let best = null, bd = -1;
+    for (let i = 0; i < P.count; i++) {
+      let w = 0; for (let c = 0; c < 4; c++) if (J.getComponent(i, c) === hi) w += W.getComponent(i, c);
+      if (w < 0.6) continue;
+      const v = XV1.fromBufferAttribute(P, i).applyMatrix4(o.bindMatrix).applyMatrix4(o.matrixWorld.clone().multiply(o.bindMatrixInverse)), d = v.distanceTo(hp);
+      if (d > bd) { bd = d; best = v.clone(); }
+    }
+    if (best) tip.position.copy(bones.RHand.worldToLocal(best));
+  });
+  // the hammer moves into the model's right hand
+  bones.RHand.add(u.hammer); u.hammer.position.set(0, 0, 0); u.hammer.rotation.set(0, 0, 0);
+  root.updateMatrixWorld(true); const ws = u.hammer.getWorldScale(XV1).x || 1; u.hammer.scale.multiplyScalar(root.getWorldScale(XV2).x / ws);
+  // a shiny tank cover for the Shiny Collection rewards, sitting over the model's own tank
+  const tank = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.62, 0.3), u.tankM); tank.position.set(0, 1.12, -0.42); tank.visible = false; cont.add(tank);
+  u.trim.parent && u.trim.parent.remove(u.trim); cont.add(u.trim);
+  u.body.visible = false; u.wand.visible = false;
+  u.mdl = { cont, m, mixer, walk, run, bones, skel, rest, tip, tank };
+  u.tip = tip;
+}
+function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points the given way (in the model's own space: +z forward, +y up) */
+  bone.updateWorldMatrix(true, true);
+  const a = bone.getWorldPosition(XV1), cur = child.getWorldPosition(XV2).sub(a).normalize();
+  const want = XV3.set(dx, dy, dz).normalize().applyQuaternion(cont.getWorldQuaternion(XQ0));
+  const q = XQ1.setFromUnitVectors(cur, want), bw = bone.getWorldQuaternion(XQ2), pw = bone.parent.getWorldQuaternion(XQ3);
+  bone.quaternion.copy(pw.invert().multiply(q.multiply(bw)));
+}
+function poseExtModel(u, e, dt, st) {
+  const M = u.mdl, Bn = M.bones, t = clock, R = -1, L = 1;   // the model's right arm is on its -x side
+  const moving = st.walk || e.held;
+  if (moving && M.walk) { if (!M.walk.isRunning()) M.walk.reset().play(); M.walk.timeScale = e.held ? 1.8 : 1.3; M.mixer.update(dt); }
+  else { if (M.walk && M.walk.isRunning()) M.walk.stop(); for (const [b, p, q, sc] of M.rest) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(sc); } }
+  M.cont.rotation.x = st.work ? 0.3 : st.spray ? 0.1 : 0;
+  M.cont.position.y = st.work ? -0.08 : (!moving ? Math.sin(t * 2) * 0.015 : 0);
+  if (moving && !e.held && !st.spray) return;   // walking: the clip does it all
+  const arm = (s, up, fore, ux, uy, uz, fx, fy, fz) => { aimBone(M.cont, up, fore, ux, uy, uz); aimBone(M.cont, fore, s < 0 ? Bn.RHand : Bn.LHand, fx, fy, fz); };
+  if (e.held) { const w = Math.sin(e.phase) * 0.3; arm(R, Bn.RArm, Bn.RFore, R * 0.45, 1, w, R * 0.3, 1, w); arm(L, Bn.LArm, Bn.LFore, L * 0.45, 1, -w, L * 0.3, 1, -w); return; }
+  arm(L, Bn.LArm, Bn.LFore, L * 0.3, -1, 0.05, L * 0.18, -1, 0.2);   // left arm hangs down
+  if (st.spray) { const sw = Math.sin(t * 3.3) * 0.25; arm(R, Bn.RArm, Bn.RFore, R * 0.35 + sw, -0.25, 1, R * 0.05 + sw, 0.15, 1); }
+  else if (st.work) { const k = Math.sin(e.t * 25); arm(R, Bn.RArm, Bn.RFore, R * 0.2, -0.2 + k * 0.6, 1, R * 0.1, -0.5 + k * 0.8, 1); }
+  else if (st.pet) { const k = Math.sin(t * 6) * 0.45; arm(R, Bn.RArm, Bn.RFore, R * 0.5 + k * 0.3, 1, 0.35, R * 0.2 + k, 1, 0.35); }
+  else arm(R, Bn.RArm, Bn.RFore, R * 0.3, -1, 0.05, R * 0.18, -1, 0.25);
+}
+function extModelLoad() {
+  try { new GLTFLoader().load('assets/exterminator.glb', g => { try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
+}
+extModelLoad();
 const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6, wake: 1.6 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
@@ -2408,6 +2494,7 @@ const extC = new THREE.Color();
 function extCosmetics(EXTM, tier) {   // your Shiny Collection rewards (only on your own exterminator)
   const u = EXTM.userData, h = (performance.now() / 2600) % 1;
   u.trim.visible = tier >= 1; if (tier >= 1) { extC.setHSL(h, 1, 0.55); u.trimM.color.copy(extC); u.trimM.emissive.copy(extC); }
+  if (u.mdl) u.mdl.tank.visible = tier >= 2;
   if (tier >= 3) { u.tankM.color.set('#f3c24a'); u.tankM.metalness = 1; u.tankM.roughness = 0.18; u.tankM.emissive.set('#6a4300'); u.tankM.emissiveIntensity = 0.5 + Math.random() * 0.25; }
   else if (tier >= 2) { extC.setHSL((h + 0.5) % 1, 0.9, 0.62); u.tankM.color.copy(extC); u.tankM.metalness = 0.4; u.tankM.roughness = 0.15; u.tankM.emissive.copy(extC); u.tankM.emissiveIntensity = 0.15 + (Math.random() < 0.25 ? 0.6 : 0); }
   else if (u.tankM.metalness) { u.tankM.color.copy(u.tankBase); u.tankM.metalness = 0; u.tankM.roughness = 0.35; u.tankM.emissiveIntensity = 0; }
@@ -2430,13 +2517,14 @@ function drawOneExt(dt, EXTM, e, show) {
   const walk = e.state === 'walk', work = e.state === 'work', spray = e.state === 'spray' && !!e.abil, pet = e.state === 'pet';
   if (u.bubble) u.bubble.visible = pet;
   if (e.sayT > 0) e.sayT -= dt; if (u.candleSay) u.candleSay.visible = !pet && e.sayT > 0;
-  u.legs.forEach((l, i) => l.rotation.x = walk ? Math.sin(e.phase + i * Math.PI) * 0.75 : e.held ? Math.sin(e.phase + i * Math.PI) * 0.45 : 0);
+  if (u.mdl) poseExtModel(u, e, dt, { walk, work, spray, pet });
+  else u.legs.forEach((l, i) => l.rotation.x = walk ? Math.sin(e.phase + i * Math.PI) * 0.75 : e.held ? Math.sin(e.phase + i * Math.PI) * 0.45 : 0);
   u.arms[0].rotation.x = spray ? -0.9 : walk ? Math.sin(e.phase) * 0.6 : work ? -0.5 : e.held ? -2.6 + Math.sin(e.phase) * 0.3 : 0;
   u.arms[1].rotation.x = spray ? -1.35 + Math.sin(clock * 9) * 0.06 : walk ? -Math.sin(e.phase) * 0.6 : work ? -1.5 + Math.sin(e.t * 25) * 0.8 : e.held ? -2.6 - Math.sin(e.phase) * 0.3 : 0;
   u.arms[1].rotation.z = spray ? Math.sin(clock * 3.3) * 0.25 : 0;
   if (pet) { u.arms[1].rotation.x = -2.2; u.arms[1].rotation.z = Math.sin(clock * 6) * 0.35; }   // reaching up and waving to the cat
   u.body.rotation.x = work ? 0.35 : spray ? 0.12 : 0;
-  u.wand.visible = spray || (walk && !!e.abil);
+  u.wand.visible = !u.mdl && (spray || (walk && !!e.abil));
   if (spray && dt > 0) {
     u.tip.getWorldPosition(tmpV); const fx = Math.sin(EXTM.rotation.y), fz = Math.cos(EXTM.rotation.y);
     for (let i = 0; i < 4; i++) {
