@@ -96,6 +96,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
   text-shadow:0 0 2px #000,0 1.5px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000}
 #dmg i.burn{color:#c6f56a} #dmg i.shield{color:#f0c27a} #dmg i.big{font-size:23px;color:#ffd44a}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#goldFlash{position:absolute;inset:0;pointer-events:none;z-index:30;opacity:0;background:radial-gradient(circle,rgba(255,214,90,.0) 20%,rgba(255,190,40,.55) 100%)} #goldFlash.go{animation:gflash 1.8s ease-out}
+@keyframes gflash{0%{opacity:0}10%{opacity:1}35%{opacity:.4}50%{opacity:.9}100%{opacity:0}}
 #stageTag{position:absolute;right:14px;top:102px;z-index:3;pointer-events:none;font:700 11px/1.2 system-ui,sans-serif;color:#fff;opacity:.85;text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.6);letter-spacing:.03em;white-space:nowrap} .tstats #stageTag{top:56px} @media (orientation:landscape) and (max-height:560px){#stageTag{top:80px}}
 #ver{position:fixed;right:calc(4px + env(safe-area-inset-right));bottom:calc(2px + env(safe-area-inset-bottom));z-index:9999;font:600 10px/1 system-ui,sans-serif;color:#fff;opacity:.55;text-shadow:0 1px 2px #000;pointer-events:none;letter-spacing:.03em}
 #vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 58%,rgba(0,0,0,.42) 100%)}
@@ -193,6 +195,10 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .sh.yes{box-shadow:inset 0 0 0 2px rgba(255,216,74,.6)} .sh.yes svg{animation:shRain 3s linear infinite}
 @keyframes shRain{from{filter:hue-rotate(0deg) saturate(1.6) drop-shadow(0 0 6px rgba(255,255,255,.6))}to{filter:hue-rotate(360deg) saturate(1.6) drop-shadow(0 0 6px rgba(255,255,255,.6))}}
 @media (prefers-reduced-motion:reduce){.sh.yes svg{animation:none}}
+.lkrow{display:grid;gap:6px;width:min(720px,92vw);text-align:left} .lkrow>b{font:400 18px var(--display);color:var(--gold);letter-spacing:.03em}
+.lkopts{display:flex;flex-wrap:wrap;gap:8px} .lk{min-height:44px;border-radius:12px;border:0;padding:8px 14px;background:rgba(10,13,16,.82);color:var(--text);font:800 14px var(--body);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);text-align:left}
+.lk.on{background:var(--gold);color:#2a1a00;box-shadow:0 3px 0 #8d5a00} .lk:disabled{opacity:.5;cursor:default} .lk small{display:block;font-size:11px;font-weight:700;opacity:.85}
+#lkPrev{width:180px;height:210px;border-radius:16px;background:radial-gradient(circle at 50% 40%,#3a4250,#161a20)}
 .shrew{list-style:none;margin:0;padding:0;display:grid;gap:6px;width:min(720px,92vw)} .shrew li{background:rgba(10,13,16,.78);border-radius:12px;padding:8px 12px;font-weight:700;display:flex;justify-content:space-between;gap:10px} .shrew li.on{color:var(--gold)} .shrew li span{color:var(--dim);font-weight:800}
 .gtabs{display:flex;gap:4px;background:rgba(10,13,16,.8);border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .gtabs button{border:0;border-radius:999px;padding:8px 16px;font:400 17px var(--display);letter-spacing:.03em;color:var(--dim);background:none;cursor:pointer}
@@ -582,7 +588,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v273</div>
+    <div id="goldFlash" aria-hidden="true"></div>
+    <div id="ver">v274</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -689,8 +696,10 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <h3 class="lhead2">Boss trophies</h3>
       <p class="shnote">Super rare: about 1 boss in 10,000 comes out shiny.</p>
       <div class="shgrid boss" id="shBoss"></div>
-      <h3 class="lhead2">Rewards</h3>
-      <ul class="shrew" id="shRew"></ul>
+      <h3 class="lhead2">Locker</h3>
+      <p class="shnote">Catch shinies to unlock gear. Everyone in your game sees what you wear.</p>
+      <canvas id="lkPrev" width="360" height="420" aria-label="Your exterminator in his current outfit"></canvas>
+      <div id="locker"></div>
       <button class="btn" id="shBack" type="button">Back</button>
     </div>
     <div class="screen" id="settings" hidden>
@@ -2201,6 +2210,32 @@ const EXT = buildPlayer(), EXT2 = buildPlayer('#c8342a', '#2f6fd0');
 /* ---- the modelled exterminator (made in Meshy, rigged with a Mixamo skeleton): once it loads it replaces the built-from-shapes one.
    If it can't load, the old one just stays. Player 2 gets a red suit (and a blue cap) painted onto a copy of the texture. */
 const XV1 = new V3(), XV2 = new V3(), XV3 = new V3(), XQ0 = new THREE.Quaternion(), XQ1 = new THREE.Quaternion(), XQ2 = new THREE.Quaternion(), XQ3 = new THREE.Quaternion();
+/* ---- outfits (Shiny Collection rewards): the model's texture is repainted per look. Blue = suit and boots, orange = cap (team colour), the tank is cut out with a mask made from the model's own shape */
+const OUTFIT_SUIT = {
+  standard: null, black: [40, 42, 48], hazmat: [236, 206, 32], gold: [242, 190, 60],
+  camo: (px, py, lum) => { const n = vnoise(px / 26, py / 26) * 0.6 + vnoise(px / 9, py / 9) * 0.4; const C = n < 0.42 ? [70, 84, 44] : n < 0.55 ? [118, 128, 76] : n < 0.66 ? [52, 44, 30] : [150, 140, 100]; return C.map(v => v * (0.75 + lum * 0.45)); },
+};
+function vhash(x, y) { const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453; return n - Math.floor(n); }
+function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, a = vhash(xi, yi), b = vhash(xi + 1, yi), c = vhash(xi, yi + 1), d = vhash(xi + 1, yi + 1), u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf); return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v; }
+function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per look)
+  const key = suit + '|' + (red ? 1 : 0) + '|' + (toxic ? 1 : 0); M.cache ||= {};
+  if (M.cache[key]) return M.cache[key];
+  const im = M.baseImg, W = im.width, H = im.height, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
+  const D = x.getImageData(0, 0, W, H), a = D.data, mask = M.tankMask, sc = OUTFIT_SUIT[suit] || null;
+  let gcv = null, ga = null, GD = null; if (toxic) { gcv = document.createElement('canvas'); gcv.width = W; gcv.height = H; GD = gcv.getContext('2d').createImageData(W, H); ga = GD.data; }
+  for (let i = 0; i < a.length; i += 4) {
+    const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
+    if (inTank && toxic && r > 120 && g > 120 && b > 120) { a[i] = 90 * lum; a[i + 1] = 255 * lum; a[i + 2] = 60 * lum; ga[i] = 70; ga[i + 1] = 255; ga[i + 2] = 40; ga[i + 3] = 255; continue; }
+    if (b > r + 35 && b > g && !inTank) {   // suit and boots
+      let c = sc ? (typeof sc === 'function' ? sc(p % W, (p / W) | 0, lum) : sc.map(v => v * lum * 1.25)) : red ? [b, g * 0.55, r * 0.7] : null;
+      if (c) { a[i] = Math.min(255, c[0]); a[i + 1] = Math.min(255, c[1]); a[i + 2] = Math.min(255, c[2]); }
+    } else if (red && r > 150 && r > g * 1.6 && r > b * 2) { a[i] = b; a[i + 1] = g; a[i + 2] = r; }   // orange cap -> blue for player 2
+  }
+  x.putImageData(D, 0, 0);
+  const mk = c => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; return t; };
+  let glow = null; if (gcv) { gcv.getContext('2d').putImageData(GD, 0, 0); glow = mk(gcv); }
+  return (M.cache[key] = { map: mk(cv), glow });
+}
 function extRedTexture(tex) {
   const im = tex.image, cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
   const d = x.getImageData(0, 0, cv.width, cv.height), a = d.data;
@@ -2216,8 +2251,8 @@ function fitExtModel(root, gltf, red) {
   const u = root.userData, m = SkeletonUtils.clone(gltf.scene), cont = new THREE.Group();
   let tex = null; m.traverse(o => { if (o.isMesh && o.material && o.material.map) tex = o.material.map; });
   const map = red && tex ? extRedTexture(tex) : tex;
-  const mat = new THREE.MeshStandardMaterial({ map, color: new THREE.Color(0.62, 0.62, 0.62), roughness: 0.8, metalness: 0 });   /* the kitchen is brightly lit: tone the texture down so the colours don't wash out */
-  m.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; o.frustumCulled = false; } });
+  const mat = new THREE.MeshStandardMaterial({ map, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0, color: new THREE.Color(0.62, 0.62, 0.62), roughness: 0.8, metalness: 0 });   /* the kitchen is brightly lit: tone the texture down so the colours don't wash out */
+  m.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; o.frustumCulled = false; if (o.isSkinnedMesh) o.geometry = o.geometry.clone(); } });   /* own copy: the wand split below rewrites its bone weights */
   m.updateMatrixWorld(true);
   const box = new THREE.Box3();   /* measure him as actually skinned (the skeleton carries a 0.01 scale) */
   m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox(); box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
@@ -2280,7 +2315,35 @@ function fitExtModel(root, gltf, red) {
   const tank = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.62, 0.3), u.tankM); tank.position.set(0, 1.12, -0.42); tank.visible = false; cont.add(tank);
   u.trim.parent && u.trim.parent.remove(u.trim); cont.add(u.trim);
   u.body.visible = false; u.wand.visible = false;
-  u.mdl = { cont, m, mixer, walk, run, bones, skel, rest, tip, tank, holster };
+  // the tank's patch of the texture: triangles on his back that hang off the spine (so a tank colour never touches his teeth or eyes)
+  let tankMask = null, crown = null;
+  try {
+    m.traverse(o => {
+      if (!o.isSkinnedMesh || tankMask || !tex) return;
+      const g = o.geometry, P = g.attributes.position, J = g.attributes.skinIndex, W = g.attributes.skinWeight, UV = g.attributes.uv, I = g.index, sk = o.skeleton;
+      const spine = new Set(['Hips', 'Spine', 'Spine1', 'Spine2'].map(n => sk.bones.indexOf(B(n))).filter(k => k >= 0)), neckY = B('Neck').getWorldPosition(new V3()).y;
+      o.skeleton.update(); const bb = new THREE.Box3(); o.computeBoundingBox(); bb.copy(o.boundingBox).applyMatrix4(o.matrixWorld);
+      const Hh = bb.max.y - bb.min.y, hz = B('Spine2').getWorldPosition(new V3()).z, back = new Uint8Array(P.count);
+      for (let i = 0; i < P.count; i++) { let best = -1, bw = 0; for (let c = 0; c < 4; c++) if (W.getComponent(i, c) > bw) { bw = W.getComponent(i, c); best = J.getComponent(i, c); } if (!spine.has(best)) continue; const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.z < hz - Hh * 0.07 && v.y < neckY) back[i] = 1; }   /* the tank hangs off his hips and back, below the neck */
+      const iw = tex.image.width, ih = tex.image.height, cv = document.createElement('canvas'); cv.width = iw; cv.height = ih; const x = cv.getContext('2d'); x.fillStyle = '#fff';
+      const n = I ? I.count : P.count;
+      for (let t = 0; t < n; t += 3) {
+        const A = I ? I.getX(t) : t, Bv = I ? I.getX(t + 1) : t + 1, C = I ? I.getX(t + 2) : t + 2;
+        if (!(back[A] && back[Bv] && back[C])) continue;
+        x.beginPath(); x.moveTo(UV.getX(A) * iw, UV.getY(A) * ih); x.lineTo(UV.getX(Bv) * iw, UV.getY(Bv) * ih); x.lineTo(UV.getX(C) * iw, UV.getY(C) * ih); x.closePath(); x.fill(); x.lineWidth = 1; x.strokeStyle = '#fff'; x.stroke();
+      }
+      const d = x.getImageData(0, 0, iw, ih).data; tankMask = new Uint8Array(iw * ih); for (let i = 0; i < tankMask.length; i++) tankMask[i] = d[i * 4] > 128 ? 1 : 0;
+      // the Exterminator King's crown, sitting on top of his cap
+      const head = B('Head'); let top = -1e9; for (let i = 0; i < P.count; i++) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.y > top) top = v.y; }
+      const hp = head.getWorldPosition(new V3()), R = Hh * 0.1, goldM = std({ color: '#ffcc33', metalness: 1, roughness: 0.25, emissive: '#5a3a00', emissiveIntensity: 0.4 }), gem = std({ color: '#e0283a', roughness: 0.2, emissive: '#600', emissiveIntensity: 0.6 });
+      crown = new THREE.Group();
+      crown.add(mesh(new THREE.CylinderGeometry(R, R * 0.92, R * 0.45, 20, 1, true), goldM));
+      for (let k = 0; k < 6; k++) { const ang = k / 6 * TAU, sp = mesh(new THREE.ConeGeometry(R * 0.22, R * 0.62, 6), goldM); sp.position.set(Math.sin(ang) * R * 0.95, R * 0.5, Math.cos(ang) * R * 0.95); crown.add(sp); const ball = mesh(sph(R * 0.09, 8, 6), goldM); ball.position.set(Math.sin(ang) * R * 0.95, R * 0.85, Math.cos(ang) * R * 0.95); crown.add(ball); }
+      const gm = mesh(sph(R * 0.16, 10, 8), gem); gm.position.set(0, 0, R * 0.95); gm.scale.z = 0.5; crown.add(gm);
+      crown.position.set(hp.x, top - R * 0.02, hp.z - Hh * 0.01); crown.rotation.x = -0.12; scene.add(crown); head.attach(crown); crown.visible = false;
+    });
+  } catch (err) { console.warn('outfit setup', err); }
+  u.mdl = { cont, m, mixer, walk, run, bones, skel, rest, tip, tank, holster, mat, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, crown, red, look: '' };
   u.tip = tip;
 }
 function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points the given way (in the model's own space: +z forward, +y up) */
@@ -2314,8 +2377,35 @@ function poseExtModel(u, e, dt, st) {
   else if (st.pet) { const k = Math.sin(t * 6) * 0.45; arm(R, Bn.RArm, Bn.RFore, R * 0.5 + k * 0.3, 1, 0.35, R * 0.2 + k, 1, 0.35); }
   else arm(R, Bn.RArm, Bn.RFore, R * 0.3, -1, 0.05, R * 0.18, -1, 0.25);
 }
+let EXT_GLTF = null, LKP = null;
+function lockerPreview() {   /* the exterminator in your chosen outfit, drawn into the Locker */
+  const cv = $('lkPrev'); if (!cv) return;
+  const M = EXT.userData.mdl; if (!EXT_GLTF || !M) { cv.hidden = true; return; } cv.hidden = false;
+  if (!LKP) {
+    const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight('#ffffff', '#556070', 1.5)); const d = new THREE.DirectionalLight('#fff4e0', 2.2); d.position.set(3, 5, 6); sc.add(d); const d2 = new THREE.DirectionalLight('#9fd0ff', 1); d2.position.set(-5, 2, -3); sc.add(d2);
+    const m = SkeletonUtils.clone(EXT_GLTF.scene), mat = new THREE.MeshStandardMaterial({ map: M.mat.map, color: new THREE.Color(0.75, 0.75, 0.75), roughness: 0.8, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0 });
+    m.traverse(o => { if (o.isMesh) { o.material = mat; o.frustumCulled = false; } }); sc.add(m);
+    const mx = new THREE.AnimationMixer(m), cl = EXT_GLTF.animations.find(a => a.name === 'Walking'); if (cl) { mx.clipAction(cl).play(); mx.setTime(0.35); }
+    m.updateMatrixWorld(true); const box = new THREE.Box3(); m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox(); box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+    const c = box.getCenter(new V3()), h = box.max.y - box.min.y; m.rotation.y = -0.35;
+    const cam = new THREE.PerspectiveCamera(26, cv.width / cv.height, 0.01, 100); cam.position.set(c.x + h * 0.9, c.y + h * 0.3, c.z + h * 3.2); cam.lookAt(c.x, c.y, c.z);
+    let crown = null; if (M.crown) {
+      const hb = m.getObjectByName(M.crown.parent.name); let top = -1e9; m.updateMatrixWorld(true); m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); const P = o.geometry.attributes.position; for (let i = 0; i < P.count; i++) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.y > top) top = v.y; } } });
+      crown = M.crown.clone(); const ws = M.crown.getWorldScale(new V3()).x / (EXT.userData.mdl.m.getWorldScale(new V3()).x || 1);   // crown size relative to the model
+      crown.scale.setScalar(ws * m.getWorldScale(new V3()).x); const hp = hb.getWorldPosition(new V3()); crown.position.set(hp.x, top - h * 0.055, hp.z - h * 0.01); crown.rotation.set(-0.12, 0, 0); sc.add(crown); if (hb) hb.attach(crown);
+    }
+    const rt = new THREE.WebGLRenderTarget(cv.width, cv.height); rt.texture.colorSpace = THREE.SRGBColorSpace;
+    LKP = { sc, m, mat, cam, rt, crown, buf: new Uint8Array(cv.width * cv.height * 4) };
+  }
+  const look = myLook(), T = outfitTextures(M, look.suit, false, look.tank === 'toxic');
+  LKP.mat.map = T.map; LKP.mat.emissiveMap = T.glow; LKP.mat.emissiveIntensity = T.glow ? 0.8 : 0; LKP.mat.needsUpdate = true; if (LKP.crown) LKP.crown.visible = !!look.crown;
+  const prevT = renderer.getRenderTarget(); renderer.setRenderTarget(LKP.rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(LKP.sc, LKP.cam); renderer.readRenderTargetPixels(LKP.rt, 0, 0, cv.width, cv.height, LKP.buf); renderer.setRenderTarget(prevT);
+  const x = cv.getContext('2d'), id = x.createImageData(cv.width, cv.height), W = cv.width * 4;
+  for (let y = 0; y < cv.height; y++) id.data.set(LKP.buf.subarray((cv.height - 1 - y) * W, (cv.height - y) * W), y * W);   // flip: GL reads bottom-up
+  x.putImageData(id, 0, 0);
+}
 function extModelLoad() {
-  try { new GLTFLoader().load('assets/exterminator.glb', g => { try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
+  try { new GLTFLoader().load('assets/exterminator.glb', g => { EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
 }
 extModelLoad();
 const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6, wake: 1.6, shelf: 0.9 };
@@ -2389,34 +2479,75 @@ const shinyName = b => 'shiny ' + (BUG_NAME[b.t] || (BT[b.t] && BT[b.t].name) ||
 const SHINY_BOSS = 0.0001;
 const DEX_REG = ['ant', 'fly', 'spider', 'bed', 'dung', 'baby', 'hopper', 'centi', 'stink', 'moth', 'mantis'];
 const DEX_BOSS = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis'];
-const DEX_REWARDS = [[3, 'Rainbow trim on your exterminator\'s suit'], [6, 'A glittery rainbow spray tank'], [9, 'A golden backpack'], [11, 'A rainbow glow around your exterminator, and the Shiny Hunter achievement']];
+/* the Locker: what you've earned, and what you're wearing. reg = regular shiny types caught, boss = boss shiny types caught */
+const LOCKER = [
+  ['suit', 'Suit', [['standard', 'Standard issue'], ['black', 'Blackout suit', { reg: 3 }], ['hazmat', 'Hazmat suit', { reg: 7 }], ['camo', 'Camo suit', { reg: 9 }], ['gold', 'Gold suit', { reg: 11 }]]],
+  ['tank', 'Tank', [['standard', 'Standard tank'], ['toxic', 'Toxic tank', { reg: 5 }]]],
+  ['spray', 'Backpack spray', [['mist', 'Mist'], ['flame', 'Flame spray', { boss: 1 }], ['bolt', 'Lightning spray', { boss: 3 }]]],
+  ['trail', 'Footsteps', [['none', 'Nothing'], ['smoke', 'Smoke trail', { boss: 5 }], ['sparks', 'Gold sparks', { reg: 11 }]]],
+  ['crown', 'Headgear', [['', 'Cap'], ['crown', 'Exterminator King crown', { boss: 9 }]]],
+];
+const LOOK_DEFAULT = { suit: 'standard', tank: 'standard', spray: 'mist', trail: 'none', crown: '' };
+function dexBossTypes() { const d = dexGet(); return DEX_BOSS.filter(t => d[t]).length; }
+function sanitizeLook(l) { const out = { ...LOOK_DEFAULT }; if (l && typeof l === 'object') for (const [slot, , opts] of LOCKER) if (opts.some(o => o[0] === l[slot])) out[slot] = l[slot]; return out; }   /* only known outfit names from the other player */
+function lockOpen(req) { return !req || ((req.reg == null || dexTypes() >= req.reg) && (req.boss == null || dexBossTypes() >= req.boss)); }
+function lockNeed(req) { return req.boss != null ? 'Catch ' + req.boss + ' shiny boss' + (req.boss > 1 ? 'es' : '') : 'Catch ' + req.reg + ' shiny types'; }
+let LOOK_CACHE = null, LOOK_T = 0;
+function myLook() {   /* what I'm wearing (only things I've actually unlocked) */
+  if (LOOK_CACHE && performance.now() - LOOK_T < 3000) return LOOK_CACHE;
+  let saved = {}; try { saved = JSON.parse(localStorage.getItem('ppd-locker') || '{}') || {}; } catch (e) {}
+  const out = { ...LOOK_DEFAULT };
+  for (const [slot, , opts] of LOCKER) { const want = saved[slot], o = opts.find(x => x[0] === want); if (o && lockOpen(o[2])) out[slot] = want; }
+  LOOK_CACHE = out; LOOK_T = performance.now(); return out;
+}
+function setLook(slot, val) {
+  let saved = {}; try { saved = JSON.parse(localStorage.getItem('ppd-locker') || '{}') || {}; } catch (e) {}
+  saved[slot] = val; try { localStorage.setItem('ppd-locker', JSON.stringify(saved)); } catch (e) {}
+  LOOK_CACHE = null; renderLocker(); lockerPreview();
+}
+function unlockedList() { const out = []; for (const [, , opts] of LOCKER) for (const o of opts) if (o[2] && lockOpen(o[2])) out.push(o[1]); return out; }
 function dexGet() { try { return JSON.parse(localStorage.getItem('ppd-shinydex') || '{}') || {}; } catch (e) { return {}; } }
 function dexTypes() { const d = dexGet(); return DEX_REG.filter(t => d[t]).length; }
-function dexTier() { const n = dexTypes(); return n >= 11 ? 4 : n >= 9 ? 3 : n >= 6 ? 2 : n >= 3 ? 1 : 0; }
 function dexAdd(t) {
-  const d = dexGet(), first = !d[t], before = dexTier();
+  const d = dexGet(), first = !d[t], before = unlockedList();
   d[t] = { n: ((d[t] && d[t].n) || 0) + 1, d: (d[t] && d[t].d) || new Date().toISOString().slice(0, 10) };
   try { localStorage.setItem('ppd-shinydex', JSON.stringify(d)); } catch (e) {}
   if (!first) return;
   const boss = DEX_BOSS.includes(t), n = dexTypes();
   setTimeout(() => { banner(boss ? '🏆 Boss trophy!' : '✨ New shiny!', boss ? 'A shiny ' + (BT[t].name || t) + ' is in your collection' : 'Added to your Shiny Collection (' + n + ' / ' + DEX_REG.length + ')', false, 2600); SND.play('clear'); }, 2700);
-  const after = dexTier();
-  if (after > before) setTimeout(() => { banner('Unlocked!', DEX_REWARDS[after - 1][1], false, 3000); SND.play('up'); }, 5600);
+  LOOK_CACHE = null; const fresh = unlockedList().filter(x => !before.includes(x));
+  if (fresh.length) setTimeout(() => { banner('Unlocked: ' + fresh.join(' + ') + '!', 'Put it on in Collection → Locker', false, 3400); SND.play('up'); }, 5600);
+  if (boss) setTimeout(syncTrophies, 400);
   if (n >= DEX_REG.length) ACH.unlock('shiny11');
 }
 const dexIcon = t => BUGICON[t] || (BT[t] && BUGICON[BT[t].base]) || BUGICON.spider;
 const dexName = t => BUG_NAME[t] || (BT[t] && BT[t].name) || t;
+function renderLocker() {
+  const look = myLook(), el = $('locker'); if (!el) return;
+  el.innerHTML = LOCKER.map(([slot, label, opts]) => `<div class="lkrow"><b>${label}</b><div class="lkopts">${opts.map(([v, name, req]) => { const open = lockOpen(req), on = look[slot] === v; return `<button type="button" class="lk${on ? ' on' : ''}" data-slot="${slot}" data-v="${v}"${open ? '' : ' disabled'} aria-pressed="${on}">${name}${open ? '' : `<small>🔒 ${lockNeed(req)}</small>`}</button>`; }).join('')}</div></div>`).join('');
+}
 function renderDex() {
   const d = dexGet(), n = dexTypes();
   $('shCount').textContent = n + ' / ' + DEX_REG.length + ' caught';
   const slot = t => { const e = d[t]; return `<div class="sh ${e ? 'yes' : 'no'}">${dexIcon(t)}<b>${e ? dexName(t) : '?'}</b><small>${e ? '×' + e.n + ' · first ' + e.d : 'not caught yet'}</small></div>`; };
   $('shGrid').innerHTML = DEX_REG.map(slot).join('');
   $('shBoss').innerHTML = DEX_BOSS.map(slot).join('');
-  $('shRew').innerHTML = DEX_REWARDS.map(([k, txt]) => `<li class="${n >= k ? 'on' : ''}">${n >= k ? '✓ ' : ''}${txt}<span>${Math.min(n, k)} / ${k}</span></li>`).join('');
+  renderLocker();
 }
-$('shinyT').addEventListener('click', () => { SND.init(); SND.play('tap'); renderDex(); $('title').hidden = true; $('shinies').hidden = false; $('shinies').scrollTop = 0; });
+$('shinyT').addEventListener('click', () => { SND.init(); SND.play('tap'); renderDex(); setTimeout(lockerPreview, 30); $('title').hidden = true; $('shinies').hidden = false; $('shinies').scrollTop = 0; });
+$('locker').addEventListener('click', ev => { const b = ev.target.closest('.lk'); if (!b || b.disabled) return; SND.play('tap'); setLook(b.dataset.slot, b.dataset.v); });
 $('shBack').addEventListener('click', () => { SND.play('tap'); $('shinies').hidden = true; $('title').hidden = false; });
-function makeShiny(b) { b.shiny = true; BN_FWD++; try { banner('✨ A ' + shinyName(b) + '!', 'Tap Catch before it gets squashed!', false, 2400); } finally { BN_FWD--; } SND.play('up'); }
+function makeShiny(b) {
+  b.shiny = true;
+  if (BT[b.t].boss) {   // the big one: a gold flash over the whole screen
+    BN_FWD++; try { banner('🏆 SHINY BOSS!', 'A golden ' + (BT[b.t].name || b.t) + '! Catch it before it gets squashed!', false, 4200); } finally { BN_FWD--; }
+    const fl = $('goldFlash'); if (fl) { fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
+    SND.play('boss'); setTimeout(() => SND.play('up'), 250); setTimeout(() => SND.play('clear'), 600);
+    if (S.net === 'host') netSend({ k: 'flash' });
+    return;
+  }
+  BN_FWD++; try { banner('✨ A ' + shinyName(b) + '!', 'Tap Catch before it gets squashed!', false, 2400); } finally { BN_FWD--; } SND.play('up');
+}
 function jarCount() { try { return +localStorage.getItem('ppd-shiny') || 0; } catch (e) { return 0; } }
 function jarSet(n) { try { localStorage.setItem('ppd-shiny', String(Math.max(0, n))); } catch (e) {} syncCatch(); }
 function startCatch() {
@@ -2568,22 +2699,20 @@ function findRest(e) {
 }
 // both exterminators: yours (S.ext) and, in a team game, your partner's (S.p2.ext)
 const extC = new THREE.Color();
-function extCosmetics(EXTM, tier) {   // your Shiny Collection rewards (only on your own exterminator)
-  const u = EXTM.userData, h = (performance.now() / 2600) % 1;
-  u.trim.visible = tier >= 1; if (tier >= 1) { extC.setHSL(h, 1, 0.55); u.trimM.color.copy(extC); u.trimM.emissive.copy(extC); }
-  if (u.mdl) u.mdl.tank.visible = tier >= 2;
-  if (tier >= 3) { u.tankM.color.set('#f3c24a'); u.tankM.metalness = 1; u.tankM.roughness = 0.18; u.tankM.emissive.set('#6a4300'); u.tankM.emissiveIntensity = 0.5 + Math.random() * 0.25; }
-  else if (tier >= 2) { extC.setHSL((h + 0.5) % 1, 0.9, 0.62); u.tankM.color.copy(extC); u.tankM.metalness = 0.4; u.tankM.roughness = 0.15; u.tankM.emissive.copy(extC); u.tankM.emissiveIntensity = 0.15 + (Math.random() < 0.25 ? 0.6 : 0); }
-  else if (u.tankM.metalness) { u.tankM.color.copy(u.tankBase); u.tankM.metalness = 0; u.tankM.roughness = 0.35; u.tankM.emissiveIntensity = 0; }
-  u.halo.visible = tier >= 4; if (tier >= 4) { u.halo.material.color.setHSL((h * 2) % 1, 1, 0.55); u.halo.rotation.z += 0.02; u.halo.scale.setScalar(1 + Math.sin(performance.now() / 300) * 0.06); }
+function extLook(EXTM, look) {   /* put an outfit on a modelled exterminator (repaints only when it changes) */
+  const u = EXTM.userData, M = u.mdl; u.look = look; u.trim.visible = false; u.halo.visible = false;
+  if (!M) return;
+  const key = look.suit + '|' + look.tank;
+  if (M.look !== key && M.baseImg) { M.look = key; const T = outfitTextures(M, look.suit, M.red, look.tank === 'toxic'); M.mat.map = T.map; M.mat.emissiveMap = T.glow; M.mat.emissiveIntensity = T.glow ? 0.9 : 0; M.mat.needsUpdate = true; }
+  if (M.mat.emissiveMap) M.mat.emissiveIntensity = 0.7 + Math.sin(performance.now() / 260) * 0.3;   // the toxic tank pulses
+  if (M.crown) M.crown.visible = !!look.crown;
+  if (M.tank) M.tank.visible = false;
 }
-let DEX_TIER = -1, DEX_T = 0;
 const EXT_SEL = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.6, 48), new THREE.MeshBasicMaterial({ color: '#ffd23a', transparent: true, opacity: 0.95, depthWrite: false }));
 EXT_SEL.rotation.x = -Math.PI / 2; EXT_SEL.renderOrder = 7; EXT_SEL.visible = false; scene.add(EXT_SEL);
 function drawExt(dt) {
   const show = S.mode === 'play' || S.mode === 'over', me = S.me || 0, M = [EXT, EXT2];
-  if ((DEX_T -= dt) <= 0) { DEX_T = 2; DEX_TIER = dexTier(); }
-  extCosmetics(M[me], DEX_TIER); extCosmetics(M[1 - me], 0);
+  extLook(M[me], myLook()); extLook(M[1 - me], (S.p2 && S.p2look) || LOOK_DEFAULT);
   drawOneExt(dt, M[me], S.ext, show);
   drawOneExt(dt, M[1 - me], S.p2 && S.p2.ext, show && !!S.p2);
 }
@@ -2609,8 +2738,16 @@ function drawOneExt(dt, EXTM, e, show) {
     u.tip.getWorldPosition(tmpV); const fx = Math.sin(EXTM.rotation.y), fz = Math.cos(EXTM.rotation.y);
     for (let i = 0; i < 4; i++) {
       const j = (Math.random() - 0.5) * 0.9, c = Math.cos(j), sn = Math.sin(j), sp = 9 + Math.random() * 5;
-      FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: (fx * c - fz * sn) * sp, vy: -0.6 + Math.random() * 1.2, vz: (fz * c + fx * sn) * sp, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.82, 0.96, 0.85], a0: 0.5 });
+      const vx = (fx * c - fz * sn) * sp, vy = -0.6 + Math.random() * 1.2, vz = (fz * c + fx * sn) * sp, st = (u.look && u.look.spray) || 'mist';
+      if (st === 'flame') { for (let q = 0; q < 2; q++) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: vx * (0.8 + q * 0.3), vy: vy + 0.8, vz: vz * (0.8 + q * 0.3), drag: 2.4, life: 0.45 + Math.random() * 0.25, s0: 0.6, s1: 2.4, c: [1, 0.28 + Math.random() * 0.3, 0.04], a0: 1 }); if (i === 0) FX.smoke.spawn({ x: tmpV.x + vx * 0.06, y: tmpV.y + 0.4, z: tmpV.z + vz * 0.06, vx: vx * 0.6, vy: 1.5, vz: vz * 0.6, drag: 2, life: 0.8, s0: 0.4, s1: 1.8, c: [0.18, 0.16, 0.15], a0: 0.35 }); }
+      else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: st === 'bolt' ? [0.72, 0.86, 1] : [0.82, 0.96, 0.85], a0: 0.5 });
     }
+    if (u.look && u.look.spray === 'bolt' && Math.random() < dt * 9) { const L = 2.5 + Math.random() * 3, j = (Math.random() - 0.5) * 0.8; arcs.spawn(tmpV.clone(), new V3(tmpV.x + (fx * Math.cos(j) - fz * Math.sin(j)) * L, tmpV.y + (Math.random() - 0.5), tmpV.z + (fz * Math.cos(j) + fx * Math.sin(j)) * L), 0.2, { w: 0.35, jit: 0.45, life: 0.14 }); }
+  }
+  if (walk && !e.held && u.look && u.look.trail !== 'none' && Math.random() < dt * 16) {   // footstep trail
+    const bx = e.x - Math.sin(EXTM.rotation.y) * 0.5 + (Math.random() - 0.5) * 0.5, bz = e.z - Math.cos(EXTM.rotation.y) * 0.5 + (Math.random() - 0.5) * 0.5;
+    if (u.look.trail === 'smoke') FX.smoke.spawn({ x: bx, y: 0.3, z: bz, vx: (Math.random() - 0.5), vy: 0.8, vz: (Math.random() - 0.5), drag: 2, life: 0.9, s0: 0.5, s1: 1.6, c: [0.2, 0.2, 0.23], a0: 0.45 });
+    else if (u.look.trail === 'sparks') FX.glow.spawn({ x: bx, y: 0.2, z: bz, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 2, grav: 9, life: 0.5, s0: 0.35, s1: 0.05, c: [1, 0.8, 0.25], a0: 1 });
   }
   u.body.position.y = walk ? Math.abs(Math.sin(e.phase)) * 0.06 : work ? -0.1 : Math.sin(clock * 2) * 0.02;
   u.hammer.visible = work && (!u.mdl || !u.mdl.holster || e.t >= 0.3);
@@ -2865,7 +3002,7 @@ function drawMdl(b, t, sh) {
   if (u.head) u.head.visible = !b.lead || b.lead.dead;
   u.body.position.y = base === 'centi' ? Math.sin(w * 0.8) * 0.04 : hop ? (u.crY || 0) + (b.jump > 0 ? 0 : Math.abs(Math.sin(w)) * 0.025) : 0;
   const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : b.munch > 0 ? 0.3 : 0;
-  if (b.shiny) { u.f = -1; shinyC.setHSL((t * 0.5 + b.id * 0.13) % 1, 1, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.8, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
+  if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.8, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
   else if (u.f !== f) { u.f = f; for (const m of u.mats) m.emissive.setRGB(f * (b.munch > 0 ? 0.3 : 1), f * (b.psnT > 0 || b.munch > 0 ? 2 : 1), f * (b.munch > 0 ? 0.3 : 1)); }
   if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, (u.shadow || 1.4) * q.scale.x, 0, 0, 0, 0, bt.fly || b.air ? 0.25 : 0.45);
 }
@@ -4491,11 +4628,12 @@ const angryC = new THREE.Color(2.2, 0.7, 0.6), ballC = new THREE.Color(1, 1, 1);
 const DOWN = new V3(0, -1, 0), white = new THREE.Color(1, 1, 1), flashC = new THREE.Color(5, 5, 5), stuckC = new THREE.Color(1.6, 1.4, 0.5), psnC = new THREE.Color(0.75, 1.5, 0.7), babyC = new THREE.Color(0.55, 0.45, 0.6);
 function setI(m, i, x, y, z, ry, s = 1, rx = 0, rz = 0) { tmpE.set(rx, ry, rz, 'YXZ'); tmpQ.setFromEuler(tmpE); sclV.set(s, s, s); tmpM.compose(posV.set(x, y, z), tmpQ, sclV); m.setMatrixAt(i, tmpM); return tmpM; }
 const shinyC = new THREE.Color();
+function shinyCol(b, t, l) { return BT[b.t].boss ? shinyC.setHSL(0.12, 1, l + Math.sin(t * 5) * 0.08) : shinyC.setHSL(((b.id * 0.61803) % 1), 1, l + Math.sin(t * 4 + b.id) * 0.06); }   /* each shiny glows its own colour; bosses glow gold */
 function drawBugs(t) {
   const c = { ant: 0, antLeg: 0, fly: 0, wing: 0, spider: 0, spiderLeg: 0, dung: 0, dungLeg: 0, ball: 0, bed: 0, bedLeg: 0 }, sh = B.shadow;
   for (const b of S.bugs) {
     if (b.mdl) { drawMdl(b, t, sh); continue; }
-    const fl = b.shiny ? shinyC.setHSL((t * 0.5 + b.id * 0.13) % 1, 1, 0.6).multiplyScalar(3.2) : b.flash > 0 ? flashC : b.stuck > 0 ? stuckC : b.psnT > 0 ? psnC : white;
+    const fl = b.shiny ? shinyCol(b, t, 0.6).multiplyScalar(3.2) : b.flash > 0 ? flashC : b.stuck > 0 ? stuckC : b.psnT > 0 ? psnC : white;
     if (b.shiny && Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 });
     if (b.t === 'ant') {
       const i = c.ant++, base = baseM.copy(setI(IM.ant, i, b.x, b.y0, b.z, b.ang, 1.15, b.pitch)); IM.ant.setColorAt(i, fl);
@@ -4658,12 +4796,43 @@ function propFalls(dt) {
     }
   }
 }
+const TROPHIES = [];
+function trophySpots() {   /* back counter first, then the sides: clear of the clutter, fridge, stove, cake and cat bed */
+  const ex = BOARD.ex, sx = ex + 1.9, busy = [[BOARD.fridgeX, -16.9, 4.6], [BOARD.stoveX, -16.9, 5], [ccx(BOARD.cakeCol), -16.9, 3.6]];
+  if (KIT.props) for (const k in KIT.props) { const g = KIT.props[k]; if (g.visible && !g.userData.knocked) busy.push([g.position.x, g.position.z, k.startsWith('sm_') ? 1.4 : 2.4]); }
+  const bed = catBedSpot(); if (bed) busy.push([bed[0], bed[1], 2.8]);
+  const out = [], cands = [];
+  for (let x = -ex + 1.5; x <= ex - 1.5; x += 0.6) cands.push([x, -16.9]);
+  for (let z = -12; z <= 9; z += 0.6) { cands.push([-sx, z]); cands.push([sx, z]); }
+  for (const shrink of [1, 0.75, 0.55]) {   // squeeze in a bit closer to the clutter if the counters are crowded
+    for (const c of cands) { if (out.length >= DEX_BOSS.length) break; if (busy.every(([x, z, r]) => Math.hypot(c[0] - x, c[1] - z) > r * shrink) && out.every(o => Math.hypot(c[0] - o[0], c[1] - o[1]) > 1.15)) out.push(c); }
+    if (out.length >= DEX_BOSS.length) break;
+  }
+  return out;
+}
+function makeTrophy(t) {
+  const g = new THREE.Group(), gold = std({ color: '#ffcc33', metalness: 1, roughness: 0.22, emissive: '#4a3000', emissiveIntensity: 0.35 }), dark = std({ color: '#2a2018', roughness: 0.6 });
+  const base = mesh(new THREE.BoxGeometry(0.62, 0.22, 0.62), dark); base.position.y = 0.11; g.add(base);
+  const stem = mesh(cyl(0.07, 0.12, 0.35, 10), gold); stem.position.y = 0.4; g.add(stem);
+  const cup = mesh(cyl(0.34, 0.12, 0.5, 16), gold); cup.position.y = 0.82; g.add(cup);
+  for (const s of [-1, 1]) { const h = mesh(new THREE.TorusGeometry(0.14, 0.04, 6, 12, Math.PI * 1.2), gold); h.position.set(0.36 * s, 0.86, 0); h.rotation.z = s > 0 ? -0.6 : Math.PI + 0.6; g.add(h); }
+  const c = new THREE.Color(BT[t] && BT[t].color ? BT[t].color : '#e0283a'); const gem = mesh(sph(0.1, 10, 8), std({ color: c, emissive: c, emissiveIntensity: 0.6, roughness: 0.2 })); gem.position.set(0, 0.86, 0.3); g.add(gem);
+  g.scale.setScalar(1.35); g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return g;
+}
+function syncTrophies() {
+  for (const g of TROPHIES) scene.remove(g); TROPHIES.length = 0;
+  if (!S || S.mode !== 'play') return;
+  const d = dexGet(), caught = DEX_BOSS.filter(t => d[t]); if (!caught.length) return;
+  const spots = trophySpots();
+  caught.forEach((t, k) => { const sp = spots[k]; if (!sp) return; const g = makeTrophy(t); g.position.set(sp[0], TOP_Y, sp[1]); g.rotation.y = sp[1] < -16 ? 0 : sp[0] < 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(g); TROPHIES.push(g); });
+}
 function venusHeads(tw) { return tw.perk ? 3 : Math.min(2, tw.lv); }   /* 1 head, then 2, and Miracle Grow adds a third */
 function venusSpot() {   /* a random free spot on the left or right counter, clear of the clutter, the cat bed and the cake */
   const team = !!(LEVELS[LV] && LEVELS[LV].team), cands = [];
   for (let z = -9; z <= 7; z += 0.5) cands.push(...(team ? [CL2(z), CR2(z)] : [CL(z), CR(z)]));
   const busy = []; if (KIT.props) for (const k in KIT.props) { const g = KIT.props[k]; if (g.visible && !g.userData.knocked) busy.push([g.position.x, g.position.z, k.startsWith('sm_') ? 1.5 : 2.4]); }
   const bed = catBedSpot(); if (bed) busy.push([bed[0], bed[1], 2.8]);
+  for (const g of TROPHIES) busy.push([g.position.x, g.position.z, 1.4]);
   const ok = cands.filter(c => busy.every(([x, z, r]) => Math.hypot(c[0] - x, c[1] - z) > r));
   const c = (ok.length ? ok : cands)[Math.floor(Math.random() * (ok.length || cands.length))];
   return { x: c[0], z: c[1] };
@@ -4902,7 +5071,7 @@ function drawFx(dt, t) {
   for (const r of S.rings) { const k = r.t / r.life; B.ring.add(r.x, 0.08, r.z, r.r * 2 * (0.3 + 0.7 * k), 0, 1, 0.95, 0.85, 1 - k); }
   for (const tw of S.towers) if (tw.t !== 'glue') B.shadow.add(tw.x, 0.03, tw.z, 3, 0, 0, 0, 0, 0.35);
   for (const tw of S.towers) if (tw.amp > 0 && !tw.pending) B.glow.add(tw.x + 0.95, 0.75, tw.z + 0.95, 1.6, 0, 1, 0.6, 0.2, 0.42 + Math.sin(clock * 2.5 + tw.id) * 0.06);
-  for (const b of S.bugs) if (b.shiny && !b.dead) { const c = shinyC.setHSL((clock * 0.5 + b.id * 0.13) % 1, 1, 0.6); B.glow.add(b.x, bugY(b) + 0.5, b.z, 2.4 + Math.sin(clock * 6) * 0.3, clock * 2, c.r, c.g, c.b, 0.6); }   // rainbow halo on shiny bugs
+  for (const b of S.bugs) if (b.shiny && !b.dead) { const c = shinyCol(b, clock, 0.6), boss = BT[b.t].boss; B.glow.add(b.x, bugY(b) + 0.5, b.z, (boss ? 5 : 2.4) + Math.sin(clock * 6) * 0.3, clock * 2, c.r, c.g, c.b, 0.6); }   // a coloured halo on shiny bugs (gold and big on a boss)
   for (const tw of S.towers) if (tw.t === 'lens' && tw.o.tip.visible && tw.lock) { const k = tw.heat / TT.lens.ramp, l = tw.lock; B.glow.add(l.x, bugY(l) + 0.35, l.z, 0.8 + 1.6 * k, clock * 3, 1, 0.8 - 0.3 * k, 0.4 - 0.3 * k, 0.6 + 0.4 * k); }
   let ci = 0;
   S.coins = S.coins.filter(c => (c.t += dt) < 0.7);
@@ -5477,7 +5646,7 @@ placeStats();
 function toTitle() {
   if (BLD.testing) { BLD.testing = false; setTimeout(openBuilder, 0); }
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
-  clearBoard(); loadLevel(0); S = newState('title'); shown = {}; $('stageTag').hidden = true;
+  clearBoard(); loadLevel(0); S = newState('title'); shown = {}; $('stageTag').hidden = true; syncTrophies();
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
   syncResume(); $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('peek').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
@@ -5555,6 +5724,8 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   if (!S.vs) tutStart();
   { const L = LEVELS[LV], el = $('stageTag'); el.textContent = S.vs && S.vs.ffa ? 'Free for All · ' + HOUSES[LV].name : S.vs ? 'Bug Battle · ' + HOUSES[LV].name : L.team ? 'Team Kitchen ' + (TEAM_MAPS.indexOf(LV) + 1) + ' · ' + L.name : 'Level ' + soloNum(LV) + ' · ' + HOUSES[LV].name; el.hidden = false; }
+  syncTrophies();
+  if (S.net === 'host' || S.net === 'guest') { const sendLook = () => { if (S && (S.net === 'host' || S.net === 'guest')) netSend({ k: 'look', l: myLook() }); }; setTimeout(sendLook, 1500); setTimeout(sendLook, 6000); }   /* your partner sees your outfit */
   clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
   if (!toolLocked('fogger') && !LEVELS[LV].team && !S.vs) { let seen = 1; try { seen = +localStorage.getItem('ppd-fogger-new') || 0; localStorage.setItem('ppd-fogger-new', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (S.mode === 'play') { banner('New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.', false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard('fogger'); }, 3100); } }, 3500); }
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
@@ -5692,6 +5863,8 @@ function netOnMsg(m) {
     if (rsAnswer(m)) return;
     if (m.k === 'bn') { banner(m.a, m.b, !!m.r, m.ms); return; }
     if (m.k === 'knock') { knockProp(m.p); return; }
+    if (m.k === 'flash') { const fl = $('goldFlash'); if (fl) { fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); } SND.play('boss'); return; }
+    if (m.k === 'look') { if (S.p2) S.p2look = sanitizeLook(m.l); return; }
     if (m.k === 'ghosts') { setPartnerGhosts(m.g, 0); return; }
     if (m.k === 'caught') { jarSet(jarCount() + 1); if (m.t) dexAdd(m.t); return; }
     if (m.k === 's') { NET.lastSnap = performance.now(); netApply(m); }
@@ -5741,6 +5914,7 @@ function netWarn(t) { const el = $('netWarn'); el.textContent = t; el.hidden = f
 // host: carry out the guest's request as player 2
 function netHostCmd(m) {
   if (m.k === 'sellShiny' && m.split) { S.money += 50; S.p2.money += 50; BN_FWD++; try { banner('Shiny bug shared!', '+50 coins each', false, 1600); } finally { BN_FWD--; } return; }
+  if (m.k === 'look') { if (S.p2) S.p2look = sanitizeLook(m.l); return; }
   if (m.k === 'ghosts') { setPartnerGhosts(m.g, 1); return; }
   const tw = m.id != null ? S.towers.find(t => t.id === m.id) : null;
   withPlayer(1, () => {
