@@ -546,7 +546,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v257</div>
+    <div id="ver">v258</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -660,6 +660,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <label><span>Music</span><b id="setMusV">100%</b><input type="range" id="setMus" min="0" max="100" step="5" value="100"></label>
       </div>
       <button class="btn dark" id="setTut" type="button">Replay tutorial</button>
+      <button class="btn dark" id="setUpd" type="button">Check for updates</button>
       <button class="btn" id="setDone" type="button">Done</button>
     </div>
     <div class="screen" id="paused" hidden>
@@ -5393,6 +5394,24 @@ async function netOpen(code, onMsg) {
   return { send: m => ch.send({ type: 'broadcast', event: 'm', payload: m }), close: () => NET.sb.removeChannel(ch), state: () => ch.state };
 }
 const MYVER = () => ($('ver').textContent || '').trim();
+/* updates: home-screen apps (iPhone especially) keep running an old copy, so the game asks the site which version is newest */
+async function latestVer() { try { const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return null; return (await r.json()).v || null; } catch (e) { return null; } }
+const vnum = v => +String(v || '').replace(/\D/g, '') || 0;
+async function applyUpdate(v) {
+  try { if (navigator.serviceWorker) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.update().catch(() => {}))); } } catch (e) {}
+  try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } } catch (e) {}
+  try { saveRun(); } catch (e) {}
+  location.replace(location.pathname + '?v=' + encodeURIComponent(v || Date.now()) + location.hash);
+}
+async function checkUpdate(manual) {
+  const b = $('setUpd'); if (manual && b) b.textContent = 'Checking…';
+  const v = await latestVer(), mine = MYVER();
+  if (!v) { if (manual && b) b.textContent = 'Couldn\'t check (offline?)'; return; }
+  if (vnum(v) > vnum(mine)) {
+    if (b) { b.textContent = 'Update to ' + v + ' now'; b.classList.remove('dark'); b.onclick = () => { b.textContent = 'Updating…'; applyUpdate(v); }; }
+    if (!manual && (!S || S.mode !== 'play')) banner('Update ready: ' + v, 'Open Settings and tap Update to get it', false, 3500);
+  } else if (manual && b) { b.textContent = 'You\'re up to date (' + mine + ')'; setTimeout(() => { if (b.textContent.startsWith('You')) b.textContent = 'Check for updates'; }, 3000); }
+}
 function netSend(m) {
   try { if (NET.link) { m._v = MYVER(); m.gi = NET.gid; if (NET.mode === 'v22') m.rm = NET.tcode || NET.code; NET.tx = (NET.tx || 0) + 1; if (m.k === 's' && NET.tx % 40 === 1) NET.txSize = JSON.stringify(m).length;
     const r = NET.link.send(m); if (r && r.then) r.then(st => { if (st && st !== 'ok') NET.txBad = String(st); }, e => { NET.txBad = String(e && e.message || e); }); } }
@@ -6260,6 +6279,8 @@ function renderTeamMaps() {
     return `<button class="tmap${lv === TEAM_LV ? ' on' : ''}" type="button" data-lv="${lv}" ${ok ? '' : 'disabled'}><b>${i + 1}. ${L.name}</b><em class="d${i}">${L.sub}</em><small>${!ok ? '🔒 Beat map ' + i + ' first' : b >= MAXW ? starStr(Math.max(1, st)) : b ? 'Best: wave ' + b : HOUSES[lv].name}</small></button>`; }).join('');
 }
 $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (HOUSE_MODE()) VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); if (NET.role === 'host') { lobbyAd(true); if (ROSTER_MODE()) v22Broadcast(); } });
+$('setUpd').addEventListener('click', () => { if (!$('setUpd').onclick) checkUpdate(true); });
+if (location.protocol.startsWith('http')) { setTimeout(() => checkUpdate(false), 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - (checkUpdate.at || 0) > 600000) { checkUpdate.at = Date.now(); checkUpdate(false); } }); }
 $('resumeT').addEventListener('click', () => { SND.init(); resumeRun(); });
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
 $('soloBack').addEventListener('click', () => { $('solo').hidden = true; $('title').hidden = false; });
