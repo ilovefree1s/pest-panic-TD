@@ -589,7 +589,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v274</div>
+    <div id="ver">v275</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5220,7 +5220,7 @@ canvas.addEventListener('pointerdown', e => {
     const same = S.prev && S.prev.c === cell.c && S.prev.r === cell.r;
     if (ptrType === 'mouse' || same) {
       if (S.money < costOf(S.placing) && ghostable(S.placing)) { if (addGhost(S.placing, cell.c, cell.r)) { S.prev = null; S.placing = null; syncTray(); } }
-      else if (placeTower(S.placing, cell.c, cell.r)) { S.prev = null; if ((S.money < costOf(S.placing) && !ghostable(S.placing)) || itemUsed(S.placing)) S.placing = null; syncTray(); }
+      else if (placeTower(S.placing, cell.c, cell.r)) { S.prev = null; S.placing = null; syncTray(); }   /* one build per pick: the tray goes back to nothing selected */
     } else S.prev = cell;
     return;
   }
