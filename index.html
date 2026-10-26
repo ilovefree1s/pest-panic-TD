@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v243</div>
+    <div id="ver">v244</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1967,14 +1967,14 @@ class Arcs {
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
     this.mesh = new THREE.Mesh(g, m); this.mesh.frustumCulled = false; this.mesh.renderOrder = 20; this.g = g; this.list = []; scene.add(this.mesh);
   }
-  spawn(a, b, arch = 0) {
+  spawn(a, b, arch = 0, o = {}) {   /* o: w = width, jit = how jagged, am = brightness, life */
     const pts = [];
     for (let i = 0; i < this.pts; i++) {
       const t = i / (this.pts - 1), p = new V3().lerpVectors(a, b, t); p.y += Math.sin(t * Math.PI) * arch;
-      if (i && i < this.pts - 1) { const j = 0.55 * Math.sin(t * Math.PI); p.x += (Math.random() - 0.5) * j * 1.6; p.y += (Math.random() - 0.5) * j; p.z += (Math.random() - 0.5) * j * 1.6; }
+      if (i && i < this.pts - 1) { const j = (o.jit ?? 0.55) * Math.sin(t * Math.PI); p.x += (Math.random() - 0.5) * j * 1.6; p.y += (Math.random() - 0.5) * j; p.z += (Math.random() - 0.5) * j * 1.6; }
       pts.push(p);
     }
-    this.list.push({ pts, life: 0.32, max: 0.32 }); if (this.list.length > this.max) this.list.shift();
+    const lf = o.life || 0.32; this.list.push({ pts, life: lf, max: lf, w: o.w || 1, am: o.am ?? 1 }); if (this.list.length > this.max) this.list.shift();
   }
   update(dt) {
     const fwd = new V3(); camera.getWorldDirection(fwd); let v = 0;
@@ -1983,9 +1983,9 @@ class Arcs {
       const k = a.life / a.max;
       for (let i = 0; i < this.pts; i++) {
         const p = a.pts[i], q = a.pts[Math.min(i + 1, this.pts - 1)], o = a.pts[Math.max(i - 1, 0)];
-        const side = new V3().crossVectors(new V3().subVectors(q, o).normalize(), fwd).normalize().multiplyScalar(0.12 + 0.14 * k);
+        const side = new V3().crossVectors(new V3().subVectors(q, o).normalize(), fwd).normalize().multiplyScalar((0.12 + 0.14 * k) * a.w);
         this.pos.set([p.x + side.x, p.y + side.y, p.z + side.z], v * 3); this.pos.set([p.x - side.x, p.y - side.y, p.z - side.z], v * 3 + 3);
-        this.alpha[v] = this.alpha[v + 1] = k; v += 2;
+        this.alpha[v] = this.alpha[v + 1] = k * a.am; v += 2;
       }
     }
     this.aPos.needsUpdate = this.aA.needsUpdate = true;
@@ -2830,11 +2830,13 @@ const BUILD = {
       o.baseScale = 1.1; o.sparky = true;
       o.zap = () => {   // little Bug Zapper arcs crackling across the swatter head
         const P = (x, z) => head.localToWorld(new V3(x, 0.06, z));
-        for (let k = 0; k < 2; k++) {
-          const a = P(-0.45 + Math.random() * 0.2, (Math.random() - 0.5) * 1.0), b = P(0.25 + Math.random() * 0.2, (Math.random() - 0.5) * 1.0);
-          arcs.spawn(Math.random() < 0.5 ? a : b, Math.random() < 0.5 ? b : a, 0.15);
+        for (let k = 0; k < 2; k++) {   /* a thin, sharp, jagged white-blue bolt over a faint wider halo, small enough to stay on the head */
+          const a = P(-0.38 + Math.random() * 0.15, (Math.random() - 0.5) * 0.8), b = P(0.2 + Math.random() * 0.15, (Math.random() - 0.5) * 0.8);
+          const [s0, s1] = Math.random() < 0.5 ? [a, b] : [b, a];
+          arcs.spawn(s0, s1, 0.03, { w: 0.15, jit: 0.22, life: 0.18 });
+          const last = arcs.list[arcs.list.length - 1]; if (last) { arcs.list.push({ ...last, pts: last.pts.map(p => p.clone()), w: 0.38, am: 0.25 }); if (arcs.list.length > arcs.max) arcs.list.shift(); }
         }
-        const c = P(0, 0); FX.glow.spawn({ x: c.x, y: c.y, z: c.z, life: 0.2, s0: 1.2, s1: 0.4, c: [0.6, 0.8, 1], a0: 0.8 });
+        const c = P(0, 0); FX.glow.spawn({ x: c.x, y: c.y, z: c.z, life: 0.12, s0: 0.45, s1: 0.15, c: [0.6, 0.8, 1], a0: 0.5 });
       };
     };
     o.setLevel = lv => {
