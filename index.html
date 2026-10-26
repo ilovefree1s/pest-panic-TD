@@ -96,6 +96,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
   text-shadow:0 0 2px #000,0 1.5px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000}
 #dmg i.burn{color:#c6f56a} #dmg i.shield{color:#f0c27a} #dmg i.big{font-size:23px;color:#ffd44a}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#stageTag{position:absolute;right:14px;top:102px;z-index:3;pointer-events:none;font:700 11px/1.2 system-ui,sans-serif;color:#fff;opacity:.85;text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.6);letter-spacing:.03em;white-space:nowrap} .tstats #stageTag{top:56px} @media (orientation:landscape) and (max-height:560px){#stageTag{top:80px}}
 #ver{position:fixed;right:calc(4px + env(safe-area-inset-right));bottom:calc(2px + env(safe-area-inset-bottom));z-index:9999;font:600 10px/1 system-ui,sans-serif;color:#fff;opacity:.55;text-shadow:0 1px 2px #000;pointer-events:none;letter-spacing:.03em}
 #vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 58%,rgba(0,0,0,.42) 100%)}
 #hurt{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(255,0,0,0) 45%,rgba(200,0,0,.55) 100%);transition:opacity .25s}
@@ -504,7 +505,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v244</div>
+    <div id="stageTag" hidden></div>
+    <div id="ver">v245</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5169,7 +5171,7 @@ placeStats();
 function toTitle() {
   if (BLD.testing) { BLD.testing = false; setTimeout(openBuilder, 0); }
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
-  clearBoard(); loadLevel(0); S = newState('title'); shown = {};
+  clearBoard(); loadLevel(0); S = newState('title'); shown = {}; $('stageTag').hidden = true;
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
   $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('peek').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
@@ -5207,6 +5209,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   if (!S.vs) tutStart();
+  { const L = LEVELS[LV], el = $('stageTag'); el.textContent = S.vs && S.vs.ffa ? 'Free for All · ' + HOUSES[LV].name : S.vs ? 'Bug Battle · ' + HOUSES[LV].name : L.team ? 'Team Kitchen ' + (TEAM_MAPS.indexOf(LV) + 1) + ' · ' + L.name : 'Level ' + soloNum(LV) + ' · ' + HOUSES[LV].name; el.hidden = false; }
   clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
   if (!toolLocked('fogger') && !LEVELS[LV].team && !S.vs) { let seen = 1; try { seen = +localStorage.getItem('ppd-fogger-new') || 0; localStorage.setItem('ppd-fogger-new', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (S.mode === 'play') { banner('New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.', false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard('fogger'); }, 3100); } }, 3500); }
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
