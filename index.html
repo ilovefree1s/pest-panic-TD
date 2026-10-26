@@ -406,6 +406,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #info ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:2px 14px;font-size:13px;font-weight:800;color:var(--dim)}
 #info ul b{color:var(--text);font-weight:900;font-variant-numeric:tabular-nums}
 #info ul b.up{color:var(--goo)}
+#iDmg{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:6px} #iDmg span{background:rgba(255,255,255,.07);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:800;color:var(--dim);white-space:nowrap} #iDmg b{color:#fff;font-weight:900;font-variant-numeric:tabular-nums} #iDmg .rk b{color:var(--gold)}
 #info .acts{display:flex;gap:8px;align-items:center}
 .tc em.newtag{background:#ff6a3a;color:#fff;border-radius:6px;padding:1px 6px;font-style:normal;font-weight:900;font-size:10px;letter-spacing:.06em;align-self:flex-start}
 #info .acts .btn{font-size:16px;padding:9px 16px;line-height:1.1}
@@ -499,14 +500,14 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <button id="abil" type="button" hidden aria-label="Backpack Spray: the exterminator runs to the front of the bugs and sprays them">
       <svg viewBox="0 0 48 48"><rect x="10" y="8" width="16" height="24" rx="5" fill="#8fd0f0"/><rect x="13" y="5" width="10" height="5" rx="2.5" fill="#5aa8d0"/><rect x="13" y="18" width="10" height="5" fill="#1c1d22"/>
       <path d="M18 32c0 6 4 8 9 8l12-8" stroke="#1c1d22" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M39 32l7-5M39 32l7 1M39 32l6 6" stroke="#bff0c8" stroke-width="2.5" stroke-linecap="round"/></svg>
-      <b>Spray</b><small>40</small><i id="abilT"></i></button>
+      <b>Spray</b><small>Free</small><i id="abilT"></i></button>
     <button id="catch" type="button" hidden aria-label="Catch the shiny bug"><span>✨</span>Catch</button>
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v245</div>
+    <div id="ver">v246</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -642,7 +643,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
           <li>Pick a tool in the tray to see its range circle, then place it on any empty floor tile beside the trail.</li>
           <li>Your exterminator builds everything you order: he walks over, hammers it together, then moves on to the next job. Orders line up, so build before you send the next wave.</li>
           <li>Don't like where he's standing? Press and drag him to any open tile. He'll wait there between jobs.</li>
-          <li><b>Backpack Spray</b> (round button, bottom left, or press E): he sprints to the front of the bugs, turns around and fogs everything coming at him for 3 seconds from beside the trail. Costs 40 coins. Burns through shells and slows them. Recharges in 60 seconds.</li>
+          <li><b>Backpack Spray</b> (round button, bottom left, or press E): he sprints to the front of the bugs, turns around and fogs everything coming at him for 3 seconds from beside the trail. Free. Burns through shells and slows them. Recharges in 60 seconds.</li>
           <li>Changed your mind? Anything you build or upgrade between waves sells back for the full price until the next wave starts.</li>
           <li>Sound and music volume: tap the gear button (top right) for the Settings sliders.</li>
           <li>Not sure what a tool does? Hold your finger on it in the tray for a second (or hold the mouse button) to see its full description.</li>
@@ -674,7 +675,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="shopWrap"><div class="tabrow"><div class="stabs" role="tablist"><button type="button" class="on" data-tab="tools">Tools</button><button type="button" data-tab="pets">Pets</button><button type="button" data-tab="items">Items</button><button type="button" data-tab="send" hidden>Send bugs</button></div><div id="trayStats"></div></div><div id="shop"></div></div>
     <div id="info" hidden>
       <div class="ic" id="iIc"></div>
-      <div><div class="nm"><b id="iName"></b><span id="iLv"></span></div><p class="desc" id="iDesc"></p><ul id="iStats"></ul></div>
+      <div><div class="nm"><b id="iName"></b><span id="iLv"></span></div><p class="desc" id="iDesc"></p><ul id="iStats"></ul><div id="iDmg"></div></div>
       <div class="acts">
         <button class="btn alt" id="bUp" type="button">Upgrade<small id="bUpC"></small></button>
         <button class="btn dark" id="bMove" type="button" hidden>Move<small id="bMoveC"></small></button>
@@ -2159,7 +2160,7 @@ function finishJob(j) {
 // full gold for the opening 5 waves, then the 15% cut kicks in
 function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : S.wave <= 15 ? 0.42 : 0.33; }   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
-const ABIL = { cd: 60, cost: 40, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
+const ABIL = { cd: 60, cost: 0, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
 function leadBug() {
   let best = null;
   for (const b of S.bugs) if (!b.dead && b.y0 < 0.5 && (!best || b.s > best.s)) best = b;
@@ -3442,7 +3443,7 @@ function startWave0() {
   S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
   if (!rush && !LEVELS[LV].team) S.routeN = (LONG_R - 1 + ROUTES.length) % ROUTES.length;   // the wave opens on the longest trail   // every wave in this push pays its clear bonus at the end
-  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1) * (LEVELS[LV].team ? 1.2 : 1); if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%; Team Kitchen bugs are 20% tougher
+  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1) * (LEVELS[LV].team ? 1.2 : 1); for (const tw of S.towers) { tw.wdmg = 0; tw.wbonus = 0; } if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%; Team Kitchen bugs are 20% tougher
   // endless: past the last wave every wave gets another 6% tougher on top, and they pour out faster
   if (S.wave > MAXW) { S.hpMul *= 1.06 ** (S.wave - MAXW); S.gap = Math.max(0.24, 0.34 - (S.wave - MAXW) * 0.005); }
   S.trio = new Set(S.queue.filter(t => BT[t].boss)).size > 1;
@@ -3492,18 +3493,25 @@ function syncBeltT() {
 function bugY(b) { return b.y0 + (BT[b.t].fly ? 0.9 + Math.sin(b.walk * 1.3) * 0.12 : 0) + (b.hy || 0); }
 // end-of-level stats: who did the damage and who got the kills
 let CUR_SRC = null, SCORCH_N = 0;
+let CUR_TW = null, CUR_CAMP = null;   /* CUR_CAMP: the candle boost already baked into damage that lands later (zap hops, poison) */   // the exact tower doing damage right now (for its own damage count)
 let CUR_OWN = null;   // which player's tool did it (for damage that lands later: poison, zap hops, bombs)
 function statFor(src) { const mine = !S.p2 || CUR_OWN == null || CUR_OWN === S.cur, st = mine ? (S.stats ||= {}) : (S.p2.stats ||= {}); return st[src] || (st[src] = { dmg: 0, kills: 0 }); }
 // armor blocks a share of every hit: 8% per point, at most half (so small, fast hits still count)
 const armorKeep = b => 1 - Math.min(0.5, 0.08 * (b.armor ?? BT[b.t].armor ?? 0));
+function credit(real, killed) {   /* per-tower damage for the info card: the tower's own total, and the candles' share of the boost */
+  const tw = CUR_TW; if (!tw || !(real > 0)) return;
+  tw.dmg = (tw.dmg || 0) + real; tw.wdmg = (tw.wdmg || 0) + real; if (killed) tw.kills = (tw.kills || 0) + 1;
+  const amp = CUR_CAMP ?? CUR_AMP;
+  if (tw.ampSrc && amp > 0) for (const [c, a] of tw.ampSrc) { const bn = real * a / (1 + amp); c.bonus = (c.bonus || 0) + bn; c.wbonus = (c.wbonus || 0) + bn; }
+}
 function hit(b, d, raw) {
   if (b.dead) return;
   if (S.net === 'guest') { if (!raw) { b.flash = 0.08; if (b.ball && b.ball.hp > 0) b.ball.flash = 0.08; } return; }
   d *= S.dmgMul * (1 + CUR_AMP);
   const show = S.mode === 'play';
-  if (b.ball && b.ball.hp > 0) { const bd = Math.min(d, b.ball.hp); b.ball.hp -= d; b.ball.flash = 0.08; if (show) { b.db = (b.db || 0) + bd; if (CUR_SRC) statFor(CUR_SRC).dmg += bd; } if (b.ball.hp <= 0) breakBall(b); return; }
+  if (b.ball && b.ball.hp > 0) { const bd = Math.min(d, b.ball.hp); b.ball.hp -= d; b.ball.flash = 0.08; if (show) { b.db = (b.db || 0) + bd; if (CUR_SRC) statFor(CUR_SRC).dmg += bd; credit(bd, false); } if (b.ball.hp <= 0) breakBall(b); return; }
   const dd = raw ? d : d * armorKeep(b);
-  if (show) { const real = Math.min(dd, Math.max(0, b.hp)); if (raw) b.dr = (b.dr || 0) + real; else b.dn = (b.dn || 0) + real; if (CUR_SRC) { const st = statFor(CUR_SRC); st.dmg += real; if (b.hp - dd <= 0) st.kills++; } }
+  if (show) { const real = Math.min(dd, Math.max(0, b.hp)); if (raw) b.dr = (b.dr || 0) + real; else b.dn = (b.dn || 0) + real; if (CUR_SRC) { const st = statFor(CUR_SRC); st.dmg += real; if (b.hp - dd <= 0) st.kills++; } credit(real, b.hp - dd <= 0); }
   b.hp -= dd; if (!raw) b.flash = 0.08;
   if (b.hp <= 0) kill(b);
   else if (b.clutch && b.hp / b.max < b.clutch / 3) { b.clutch--; layClutch(b); }
@@ -3591,7 +3599,7 @@ function zapHop(z) {
   FX.glow.spawn({ x: to.x, y: to.y, z: to.z, life: 0.3, s0: 2.2, s1: 0.5, c: [0.7, 0.8, 1], a0: 1 });
   for (let i = 0; i < 6; i++) { const a = Math.random() * TAU, v = 3 + Math.random() * 4; FX.glow.spawn({ x: to.x, y: to.y, z: to.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 3, vz: Math.sin(a) * v, grav: 10, life: 0.35, s0: 0.35, s1: 0.05, c: [0.8, 0.9, 1], a0: 1 }); }
   z.hit.add(b.id); z.last = b; z.left--; z.t = 0;
-  { const a = CUR_AMP, sr = CUR_SRC, so = CUR_OWN; CUR_AMP = 0; CUR_SRC = 'zap'; CUR_OWN = z.own ?? null; hit(b, z.dmg * (BT[b.t].fly ? 1.6 : 1) * (BT[b.t].boss ? 1.25 : 1)); CUR_AMP = a; CUR_SRC = sr; CUR_OWN = so; }
+  { const a = CUR_AMP, sr = CUR_SRC, so = CUR_OWN, st = CUR_TW; CUR_AMP = 0; CUR_SRC = 'zap'; CUR_OWN = z.own ?? null; CUR_TW = z.tw || null; CUR_CAMP = z.amp ?? null; hit(b, z.dmg * (BT[b.t].fly ? 1.6 : 1) * (BT[b.t].boss ? 1.25 : 1)); CUR_AMP = a; CUR_SRC = sr; CUR_OWN = so; CUR_TW = st; CUR_CAMP = null; }
   SND.play(z.hit.size > 1 ? 'zip' : 'zap');
 }
 let CUR_AMP = 0;
@@ -3607,9 +3615,9 @@ function syncCandles() {
   const candles = S.towers.filter(c => c.t === 'candle' && !c.pending && !c.snuff);
   // up to two candles stack: add the two strongest boosts, a third candle does nothing
   for (const tw of S.towers) {
-    const A = [], Rg = [];
-    if (!tw.pending) for (const c of candles) {   /* candles boost each other too: a lit candle in another's glow scorches harder and glows wider */ const a = candleAmp(tw, c); if (a > 0) { A.push(a); Rg.push(candleRng(tw, c)); } }
-    A.sort((x, y) => y - x); Rg.sort((x, y) => y - x);
+    const A = [], Rg = [], AC = [];
+    if (!tw.pending) for (const c of candles) {   /* candles boost each other too: a lit candle in another's glow scorches harder and glows wider */ const a = candleAmp(tw, c); if (a > 0) { A.push(a); AC.push([c, a]); Rg.push(candleRng(tw, c)); } }
+    A.sort((x, y) => y - x); Rg.sort((x, y) => y - x); AC.sort((x, y) => y[1] - x[1]); tw.ampSrc = AC.slice(0, 2);
     tw.amp = (A[0] || 0) + (A[1] || 0); tw.rmul = (Rg[0] || 0) + (Rg[1] || 0); tw.lit = Math.min(2, A.length);
   }
   for (const c of candles) { const r = c.o.auraR || 4.8; c.glowN = candles.filter(d => d !== c && Math.hypot(d.x - c.x, d.z - c.z) < (r + (d.o.auraR || 4.8)) * 0.55).length; }
@@ -3798,7 +3806,7 @@ function towerAct(tw, dt) {
       const fogP = b.psnT > 0 && b.psnSrc === 'fogger' ? b.psnD : 0;
       hit(b, T.dmg[L]);
       if (!BT[b.t].boss && b.psnT > 0 && b.psnSrc === 'spray') continue;   // a regular bug already poisoned by spray isn't topped up: its poison runs out first
-      b.psnT = tw.perk ? 5 : 3; b.psnSrc = 'spray'; b.psnOwn = S.cur || 0;
+      b.psnT = tw.perk ? 5 : 3; b.psnSrc = 'spray'; b.psnOwn = S.cur || 0; b.psnTw = tw; b.psnAmp = CUR_AMP;
       const pd = T.dot[L] * (1 + CUR_AMP) * (tw.perk ? 2 : 1);
       if (BT[b.t].boss) {   // on a boss, poison from up to 3 different sprays adds up
         const by = b.psnBy ||= {}, now = S.gt || 0; by[tw.id] = { d: pd, until: now + (tw.perk ? 5 : 3) };
@@ -3828,7 +3836,7 @@ function towerAct(tw, dt) {
       if (!canHit(tw, b)) continue;
       const bx = b.x - tw.x, bz = b.z - tw.z, bd = Math.hypot(bx, bz) || 1;
       if (bd > R || ((bx * ux + bz * uz) / bd < 0.6 && bd > 2.2)) continue;   // a wide cone
-      hit(b, T.dmg[L], true); b.flash = 0.08; b.psnT = Math.max(b.psnT, 2); b.psnD = Math.max(b.psnD, T.dot[L] * (1 + CUR_AMP)); b.psnSrc = 'fogger'; b.psnOwn = S.cur || 0;
+      hit(b, T.dmg[L], true); b.flash = 0.08; b.psnT = Math.max(b.psnT, 2); b.psnD = Math.max(b.psnD, T.dot[L] * (1 + CUR_AMP)); b.psnSrc = 'fogger'; b.psnOwn = S.cur || 0; b.psnTw = tw; b.psnAmp = CUR_AMP;
       for (let i = 0; i < 4; i++) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 1.2, y: 0.6 + Math.random(), z: b.z + (Math.random() - 0.5) * 1.2, vy: 1.2, life: 0.7, s0: 0.7, s1: 0.15, c: [0.55, 1, 0.35], a0: 1 });   // a green puff on every bug it hits
     }
     const nx = tw.x + ux * 1.8, nz = tw.z + uz * 1.8;
@@ -3861,7 +3869,7 @@ function towerAct(tw, dt) {
     SND.play('sweep');
   } else if (tw.t === 'zap') {
     // the bolt hits the first bug, then hops from bug to bug one at a time so you can watch it travel
-    const z = { from: new V3(tw.x, tw.o.top.position.y + (tw.lv >= 3 ? 1.45 : 0), tw.z), last: null, next: tg, hit: new Set(), left: T.chain[L] * (tw.perk ? 2 : 1), dmg: T.dmg[L] * (1 + CUR_AMP), t: 0, own: S.cur || 0 };
+    const z = { from: new V3(tw.x, tw.o.top.position.y + (tw.lv >= 3 ? 1.45 : 0), tw.z), last: null, next: tg, hit: new Set(), left: T.chain[L] * (tw.perk ? 2 : 1), dmg: T.dmg[L] * (1 + CUR_AMP), t: 0, own: S.cur || 0, tw, amp: CUR_AMP };
     S.zaps.push(z); zapHop(z);
   }
 }
@@ -3882,7 +3890,7 @@ function update(dt) {
     const bt = BT[b.t];
     if (b.psnT > 0) {
       b.psnT -= dt; b.pacc += b.psnD * dt;
-      if (b.pacc >= 1) { const d = Math.floor(b.pacc); b.pacc -= d; CUR_SRC = b.psnSrc || 'spray'; CUR_OWN = b.psnOwn ?? null; hit(b, d, true); CUR_SRC = null; CUR_OWN = null; }
+      if (b.pacc >= 1) { const d = Math.floor(b.pacc); b.pacc -= d; CUR_SRC = b.psnSrc || 'spray'; CUR_OWN = b.psnOwn ?? null; CUR_TW = b.psnTw && S.towers.includes(b.psnTw) ? b.psnTw : null; CUR_CAMP = b.psnAmp || 0; hit(b, d, true); CUR_SRC = null; CUR_OWN = null; CUR_TW = null; CUR_CAMP = null; }
       if (Math.random() < dt * 6) FX.smoke.spawn({ x: b.x, y: bugY(b) + 0.6, z: b.z, vy: 1.2, life: 0.5, s0: 0.25, s1: 0.6, c: [0.6, 1, 0.5], a0: 0.6 });
     } else b.psnD = 0;
     if (b.dead) continue;
@@ -3912,7 +3920,7 @@ function update(dt) {
   cloudsAct(dt);
   syncCandles();
   SCORCH_N++;
-  for (const tw of S.towers) { CUR_AMP = (tw.amp || 0) + ((tw.perk && PERK[tw.t].amp) || 0); CUR_SRC = tw.t; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; }
+  for (const tw of S.towers) { CUR_AMP = (tw.amp || 0) + ((tw.perk && PERK[tw.t].amp) || 0); CUR_SRC = tw.t; CUR_TW = tw; if (S.p2 && (tw.owner || 0) !== S.cur) withPlayer(tw.owner, () => towerAct(tw, dt)); else towerAct(tw, dt); CUR_AMP = 0; CUR_SRC = null; CUR_TW = null; }
   itemsAct(dt);
   if (S.mode === 'play' && S.net !== 'guest') { extUpdate(dt); if (S.p2) withPlayer(1 - S.cur, () => extUpdate(dt)); }
   if (S.mode === 'play' && S.net === 'bot' && (S.botT -= dt) <= 0) { S.botT = 1.1; withPlayer(1, botThink); }
@@ -3978,7 +3986,7 @@ function itemsAct(dt) {
         if ((b.x - it.x) ** 2 + (b.z - it.z) ** 2 > R2 || b.y0 > 0.5) continue;
         (b.ate ||= new Set()).add(it.id);
         const boss = BT[b.t].boss; b.eatT = boss ? 3 : 1.5; it.bites -= boss ? 5 : 1;
-        b.psnT = Math.max(b.psnT, (boss ? 5 : 3) + b.eatT); b.psnD = Math.max(b.psnD, T.psn); b.psnSrc = 'crumbs'; b.psnOwn = it.owner || 0;   // the crumbs were sprayed: whoever eats gets poisoned
+        b.psnT = Math.max(b.psnT, (boss ? 5 : 3) + b.eatT); b.psnD = Math.max(b.psnD, T.psn); b.psnSrc = 'crumbs'; b.psnOwn = it.owner || 0; b.psnTw = null;   // the crumbs were sprayed: whoever eats gets poisoned
       }
       it.o.root.scale.setScalar(1.25 * (0.45 + 0.55 * Math.max(0, it.bites) / T.bites));
       if (Math.random() < dt * 2.5) FX.smoke.spawn({ x: it.x + (Math.random() - 0.5) * 1.4, y: 0.3, z: it.z + (Math.random() - 0.5) * 1.4, vy: 0.6, drag: 1, life: 1, s0: 0.3, s1: 0.9, c: [0.55, 0.85, 0.3], a0: 0.3 });   // a faint green whiff
@@ -4451,6 +4459,7 @@ function syncCatBed(dt = 0) {
   CATBED.g.visible = true;
 }
 function drawTowers(dt, t) {
+  if ((drawTowers.dT = (drawTowers.dT || 0) + dt) > 0.25) { drawTowers.dT = 0; syncDmg(); }
   syncCatBed(dt); propFalls(dt); ghostBuy(); drawGhosts(t);
   if (S.mode === 'play') syncCandles();
   for (const tw of S.towers) {
@@ -5069,13 +5078,22 @@ function statsBase(tw) {
   return s;
 }
 let lastTray = '';
+function fmtN(n) { n = Math.round(n || 0); return n >= 100000 ? (n / 1000).toFixed(0) + 'k' : n.toLocaleString('en-US'); }
+function dmgHtml(tw) {   /* this tool's own numbers for the game so far */
+  const cand = tw.t === 'candle', score = o => o.t === 'candle' ? (o.bonus || 0) : (o.dmg || 0);
+  const mine = S.towers.filter(o => (o.owner || 0) === (tw.owner || 0) && !TT[o.t].roam || o === tw), rank = mine.filter(o => score(o) > score(tw)).length + 1;
+  return cand
+    ? `<span>✨ Bonus damage given <b>${fmtN(tw.bonus)}</b></span><span>🌊 This wave <b>${fmtN(tw.wbonus)}</b></span><span class="rk">🏆 <b>#${rank}</b> of ${mine.length}</span>`
+    : `<span>💥 Damage <b>${fmtN(tw.dmg)}</b></span><span>🐞 Kills <b>${fmtN(tw.kills)}</b></span><span>🌊 This wave <b>${fmtN(tw.wdmg)}</b></span><span class="rk">🏆 <b>#${rank}</b> of ${mine.length}</span>`;
+}
+function syncDmg() { const tw = S.pick; if (!tw || $('info').hidden) return; const h = dmgHtml(tw), el = $('iDmg'); if (el.innerHTML !== h) el.innerHTML = h; }
 function syncTray() {
   const tw = S.pick;
   $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = $('shop').offsetTop + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel
   if (tw) {
     const T = TT[tw.t], max = tw.lv >= 3 && (tw.perk || !PERK[tw.t]), perkUp = tw.lv >= 3 && !max, c = max ? 0 : upCost(tw);
     $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
-    $('iStats').innerHTML = statsHtml(tw); $('iDesc').textContent = T.d;
+    $('iStats').innerHTML = statsHtml(tw); $('iDesc').textContent = T.d; $('iDmg').innerHTML = dmgHtml(tw);
     const busy = tw.pending || tw.upPending, theirs = S.p2 && (tw.owner || 0) !== S.cur;
     if (theirs) $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t) + ` <span class="partner">${S.net === 'bot' ? 'AI teammate\'s' : 'Partner\'s'} tool</span>`;
     $('bSell').disabled = !!theirs;
@@ -5421,6 +5439,7 @@ function netSnap() {
     qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0), qn: $('qname').textContent, hp: S.hpMul,
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
       (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0) | (b.shiny ? 32 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
+    ds: (S.dsN = ((S.dsN || 0) + 1) % 6) ? undefined : S.towers.map(t => [t.id, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.wdmg || 0), Math.round(t.bonus || 0), Math.round(t.wbonus || 0)]),
     t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0) | (t.perk ? 16 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0, r2(t.cy || 0)] : [])]),
     i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd, it.trig ? 1 : 0]),
     e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
@@ -5432,6 +5451,7 @@ function remoteTower(id, t, c, r, owner) {
 }
 // guest: bring the local picture in line with the host's
 function netApply(m) {
+  if (m.ds) for (const [id, d, k, wd, bn, wb] of m.ds) { const tw = S.towers.find(t => t.id === id); if (tw) { tw.dmg = d; tw.kills = k; tw.wdmg = wd; tw.bonus = bn; tw.wbonus = wb; } }
   if (m.vs && S.vs) { const v = S.vs, q = m.vs; v.dead = !!q.dd; v.cl = q.cl; v.counting = !!q.c; v.rdy = !!q.r; v.foeRdy = !!q.fr; v.fin = !!q.fin; v.eco = q.eco; v.sent = q.sent; v.cd = q.cd || {}; if (q.foe) { q.foe.at = performance.now(); v.foe = q.foe; syncFoe(); } }
   const me = S.me, them = 1 - me;
   const wasActive = S.active, oldWave = S.wave;
