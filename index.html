@@ -582,7 +582,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v272</div>
+    <div id="ver">v273</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2682,7 +2682,7 @@ function costOf(t) { return t === 'license' ? (S.lic >= 3 ? Infinity : TT.licens
 // perks: once a tool is level 3 it can buy one special power (a big upgrade with its own look)
 const PERK = {
   swat:   { name: 'Electrified Swatter', icon: '⚡', amp: 0.8, d: 'Turns gunmetal black with lightning crackling across it. +80% damage, and every smack zaps the bug, stunning it for a moment.' },
-  venus:  { name: 'Miracle Grow', icon: '🌱', d: 'The plant grows a big third head, so it lures and eats three flies at a time.' },
+  venus:  { name: 'Miracle Grow', icon: '🌱', d: 'The plant grows a big third head, so it lures and eats three flies at a time (each head chews a bit longer).' },
   spray:  { name: 'Extra Strength', icon: '☠️', d: 'Three bright orange cans with toxic green fumes. Poison burns twice as hard and lasts 5 seconds instead of 3.' },
   paper:  { name: 'Sunday Edition', icon: '📰', range: 1.5, amp: 0.25, d: 'A giant rolled-up paper: 50% bigger slam and 25% more damage.' },
   lens:   { name: 'Wildfire', icon: '🔥', d: 'The bug it burns sets fire to bugs right next to it.' },
@@ -3962,7 +3962,7 @@ function towerAct(tw, dt) {
       let tg = null; for (const b of S.bugs) if (canHit(tw, b) && (BT[b.t].fly || b.free) && !taken.has(b.id) && inRange(tw, b, R) && (!tg || b.s > tg.s)) tg = b;   // flying bugs only
       if (!tg) continue; taken.add(tg.id);
       const whole = !BT[tg.t].boss;   // gulped whole
-      hit(tg, whole ? tg.hp + 1 + (tg.ball ? tg.ball.hp : 0) : T.dmg[L], true); h.cd = T.chew[L]; h.t = 0; h.yaw = Math.atan2(tg.x - tw.x, tg.z - tw.z);
+      hit(tg, whole ? tg.hp + 1 + (tg.ball ? tg.ball.hp : 0) : T.dmg[L], true); h.cd = T.chew[L] * (tw.perk ? 1.4 : 1);   /* three heads, but each chews longer */ h.t = 0; h.yaw = Math.atan2(tg.x - tw.x, tg.z - tw.z);
       for (let i = 0; i < 6; i++) FX.goo.spawn({ x: tg.x, y: 0.8, z: tg.z, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 3, grav: 14, life: 0.4, s0: 0.2, s1: 0.1, c: BT[tg.t].goo || [0.5, 0.3, 0.2], a0: 1, a1: 1 });
       SND.play('slam');
     }
@@ -5354,7 +5354,7 @@ function statsBase0(tw) { const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L +
 function statsBase(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'broom') return fmtStat('Sweeps back', f(T.push[L]), N != null ? f(T.push[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + '<li>Can\'t reach flies</li>';
-  if (tw.t === 'venus') { const f2 = v => Math.round(v * 10) / 10; return fmtStat('Heads', venusHeads(tw), tw.lv < 2 ? 2 : null) + fmtStat('Chews for', f2(T.chew[L]), N != null ? f2(T.chew[N]) : null, 's') + '<li>Lures flies from the <b>whole kitchen</b></li>' + fmtStat('Boss bite', T.dmg[L], N != null ? T.dmg[N] : null) + '<li>Eats flies and moths whole</li>'; }
+  if (tw.t === 'venus') { const f2 = v => Math.round(v * 10) / 10; return fmtStat('Heads', venusHeads(tw), tw.lv < 2 ? 2 : null) + fmtStat('Chews for', f2(T.chew[L] * (tw.perk ? 1.4 : 1)), N != null ? f2(T.chew[N]) : null, 's') + '<li>Lures flies from the <b>whole kitchen</b></li>' + fmtStat('Boss bite', T.dmg[L], N != null ? T.dmg[N] : null) + '<li>Eats flies and moths whole</li>'; }
   if (tw.t === 'cat') return fmtStat('Swipe', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Pins for', f(T.pin[L]), N != null ? f(T.pin[N]) : null, 's') + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Pounce reach', f(T.range[L]), N != null ? f(T.range[N]) : null) + '<li>Roams the whole kitchen</li>';
   if (tw.t === 'frog') return statsBase0(tw) + '<li>Flies take double · gulps little bugs</li>';
   if (tw.t === 'lens') return fmtStat('Burn', f(T.dps[L]), N != null ? f(T.dps[N]) : null, '/s') + `<li>grows to <b>${f(T.dps[L] * T.mult)}/s</b>${N != null ? ` → <b class="up">${f(T.dps[N] * T.mult)}/s</b>` : ''}</li>` + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null);
