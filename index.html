@@ -582,7 +582,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v269</div>
+    <div id="ver">v270</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2310,6 +2310,7 @@ function poseExtModel(u, e, dt, st) {
   if (st.spray) { const sw = Math.sin(t * 3.3) * 0.25; arm(R, Bn.RArm, Bn.RFore, R * 0.35 + sw, -0.25, 1, R * 0.05 + sw, 0.15, 1); }
   else if (st.work && e.t < 0.32) arm(R, Bn.RArm, Bn.RFore, R * 0.35, -1, -0.1, R * 0.1, -1, 0.35);   // reaching down to hook the wand on his belt
   else if (st.work) { const k = Math.sin(e.t * 25); arm(R, Bn.RArm, Bn.RFore, R * 0.2, -0.2 + k * 0.6, 1, R * 0.1, -0.5 + k * 0.8, 1); }
+  else if (st.place) { arm(R, Bn.RArm, Bn.RFore, R * 0.25, 1, 0.6, R * 0.1, 1, 0.5); arm(L, Bn.LArm, Bn.LFore, L * 0.25, 1, 0.6, L * 0.1, 1, 0.5); }   // both hands up, setting the pot on the counter
   else if (st.pet) { const k = Math.sin(t * 6) * 0.45; arm(R, Bn.RArm, Bn.RFore, R * 0.5 + k * 0.3, 1, 0.35, R * 0.2 + k, 1, 0.35); }
   else arm(R, Bn.RArm, Bn.RFore, R * 0.3, -1, 0.05, R * 0.18, -1, 0.25);
 }
@@ -2317,7 +2318,7 @@ function extModelLoad() {
   try { new GLTFLoader().load('assets/exterminator.glb', g => { try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
 }
 extModelLoad();
-const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6, wake: 1.6 };
+const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6, wake: 1.6, shelf: 0.9 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
 function makeMarker(x, z) {
@@ -2337,7 +2338,7 @@ function sideOf(c) { return !LEVELS[LV].team ? -1 : c < BOARD.cakeCol ? 0 : c > 
 function mySide(c) { const sd = sideOf(c); return !S.p2 || sd < 0 || sd === S.cur; }
 function addJob(kind, obj) {
   const j = { kind, obj };
-  if (kind !== 'up' && kind !== 'relight' && kind !== 'move' && kind !== 'wake') obj.marker = makeMarker(obj.x, obj.z);
+  if (kind !== 'up' && kind !== 'relight' && kind !== 'move' && kind !== 'wake' && kind !== 'shelf') obj.marker = makeMarker(obj.x, obj.z);
   S.jobs.push(j);
 }
 function cancelJobs(obj) {
@@ -2536,12 +2537,12 @@ function extUpdate(dt) {
   if (e.state === 'walk') {
     const dx = e.x - o.x, dz = e.z - o.z, d = Math.hypot(dx, dz) || 1;
     const sx = o.x + dx / d * 1.8, sz = o.z + dz / d * 1.8, mx = sx - e.x, mz = sz - e.z, md = Math.hypot(mx, mz), step = EXT_SPEED * dt;
-    if (md <= step) { e.x = sx; e.z = sz; e.state = j.kind === 'wake' ? 'pet' : 'work'; e.t = 0; }
+    if (md <= step) { e.x = sx; e.z = sz; e.state = j.kind === 'wake' ? 'pet' : j.kind === 'shelf' ? 'place' : 'work'; e.t = 0; }
     else { e.x += mx / md * step; e.z += mz / md * step; e.yaw = Math.atan2(mx, mz); e.phase += dt * 13; }
   } else {
     e.yaw = Math.atan2(o.x - e.x, o.z - e.z);
     const prev = e.t; e.t += dt;
-    if (e.state !== 'pet' && Math.floor(e.t / 0.25) !== Math.floor(prev / 0.25)) {
+    if (e.state !== 'pet' && e.state !== 'place' && Math.floor(e.t / 0.25) !== Math.floor(prev / 0.25)) {
       for (let i = 0; i < 3; i++) FX.smoke.spawn({ x: o.x + (Math.random() - 0.5), y: 0.3, z: o.z + (Math.random() - 0.5), vy: 1.2, life: 0.35, s0: 0.3, s1: 0.8, c: [0.95, 0.92, 0.85], a0: 0.45 });
       FX.glow.spawn({ x: o.x, y: 0.6, z: o.z, life: 0.12, s0: 0.8, s1: 0.2, c: [1, 0.95, 0.8], a0: 0.8 });
       SND.play('tap');
@@ -2592,14 +2593,15 @@ function drawOneExt(dt, EXTM, e, show) {
   e.lift = (e.lift || 0) + ((e.held ? 1.4 : 0) - (e.lift || 0)) * Math.min(1, dt * 14);
   EXTM.position.set(e.x, e.lift, e.z);
   let da = e.yaw - EXTM.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); EXTM.rotation.y += da * Math.min(1, dt * 12);
-  const walk = e.state === 'walk', work = e.state === 'work', spray = e.state === 'spray' && !!e.abil, pet = e.state === 'pet';
+  const walk = e.state === 'walk', work = e.state === 'work', spray = e.state === 'spray' && !!e.abil, pet = e.state === 'pet', place = e.state === 'place';
   if (u.bubble) u.bubble.visible = pet;
   if (e.sayT > 0) e.sayT -= dt; if (u.candleSay) u.candleSay.visible = !pet && e.sayT > 0;
-  if (u.mdl) poseExtModel(u, e, dt, { walk, work, spray, pet });
+  if (u.mdl) poseExtModel(u, e, dt, { walk, work, spray, pet: pet || place, place });
   else u.legs.forEach((l, i) => l.rotation.x = walk ? Math.sin(e.phase + i * Math.PI) * 0.75 : e.held ? Math.sin(e.phase + i * Math.PI) * 0.45 : 0);
   u.arms[0].rotation.x = spray ? -0.9 : walk ? Math.sin(e.phase) * 0.6 : work ? -0.5 : e.held ? -2.6 + Math.sin(e.phase) * 0.3 : 0;
   u.arms[1].rotation.x = spray ? -1.35 + Math.sin(clock * 9) * 0.06 : walk ? -Math.sin(e.phase) * 0.6 : work ? -1.5 + Math.sin(e.t * 25) * 0.8 : e.held ? -2.6 - Math.sin(e.phase) * 0.3 : 0;
   u.arms[1].rotation.z = spray ? Math.sin(clock * 3.3) * 0.25 : 0;
+  if (place) { u.arms[0].rotation.x = u.arms[1].rotation.x = -2.6; }
   if (pet) { u.arms[1].rotation.x = -2.2; u.arms[1].rotation.z = Math.sin(clock * 6) * 0.35; }   // reaching up and waving to the cat
   u.body.rotation.x = work ? 0.35 : spray ? 0.12 : 0;
   u.wand.visible = !u.mdl && (spray || (walk && !!e.abil));
@@ -4403,7 +4405,7 @@ function buyPet(t) {
   if (T.counter) {
     const sp = venusSpot(); tw.ctr = sp; const f = floorBelow(sp.x, sp.z);
     tw.x = tw.cx = f.x; tw.z = tw.cz = f.z; o.root.position.set(f.x, 0, f.z); o.root.visible = false; tw.pending = true;
-    addJob('build', tw); banner('Flytrap!', 'Your exterminator is setting it up on the counter', false, 1800); SND.play('tap');
+    addJob('shelf', tw); banner('Flytrap!', 'Your exterminator is setting it up on the counter', false, 1800); SND.play('tap');
     return true;
   }
   if (t === 'cat') {
