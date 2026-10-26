@@ -546,7 +546,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v256</div>
+    <div id="ver">v257</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2169,7 +2169,7 @@ function makeMarker(x, z) {
 const PF = ['money', 'ext', 'jobs', 'abilCd', 'lic', 'dmgMul', 'itemUsed', 'stats', 'undo'];   // each player keeps their own damage chart
 function swapP() { const o = S.p2; for (const k of PF) { const v = S[k]; S[k] = o[k]; o[k] = v; } S.cur = 1 - S.cur; }
 function withPlayer(pid, fn) { if (!S.p2 || pid === S.cur) return fn(); swapP(); try { return fn(); } finally { swapP(); } }
-function addGold(pid, g) { if (!S.p2 || pid === S.cur) { S.money += g; if (S.active) S.waveEarn = (S.waveEarn || 0) + g; } else S.p2.money += g; }
+function addGold(pid, g) { if (!S.p2 || pid === S.cur) { let k = g; if (S.active) { S.waveEarn = (S.waveEarn || 0) + g; const w = Math.min(k, S.withhold || 0); S.withhold = (S.withhold || 0) - w; k -= w; } S.money += k; } else S.p2.money += g; }   /* withhold: after a mid-wave resume, the bugs you'd already killed don't pay twice */
 // which half of the Team Kitchen a tile is on: 0 left, 1 right, -1 the shared middle column
 function sideOf(c) { return !LEVELS[LV].team ? -1 : c < BOARD.cakeCol ? 0 : c > BOARD.cakeCol ? 1 : -1; }
 function mySide(c) { const sd = sideOf(c); return !S.p2 || sd < 0 || sd === S.cur; }
@@ -3493,7 +3493,7 @@ function startWave0() {
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
   if (S.endless && S.wave + 1 >= 30) ACH.unlock('end30');
   if (S.endless && S.wave + 1 >= 50) ACH.unlock('end50');
-  if (!rush) S.waveEarn = 0;
+  if (!rush) { S.waveEarn = 0; if (!S.resumeWave) { S.withhold = 0; S.owed0 = 0; } S.resumeWave = false; }
   S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
   if (!rush && !LEVELS[LV].team) S.routeN = (LONG_R - 1 + ROUTES.length) % ROUTES.length;   // the wave opens on the longest trail   // every wave in this push pays its clear bonus at the end
@@ -5276,7 +5276,7 @@ function runSavable() { return S && S.mode === 'play' && !S.net && !S.vs && !LEV
 function saveRun() {
   if (!runSavable()) return;
   const mid = S.active;
-  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.max(0, Math.floor(S.money - (mid ? S.waveEarn || 0 : 0))), lives: S.lives, lic: S.lic || 0, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(),
+  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(),
     towers: S.towers.map(t => [t.t, t.c, t.r, Math.min(3, t.lv + (t.upPending && t.lv < 3 ? 1 : 0)), t.perk || (t.upPending && t.lv >= 3) ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
   try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
 }
@@ -5302,7 +5302,7 @@ function resumeRun() {
     tw.dmg = dmg; tw.kills = kills; tw.bonus = bonus; tw.spent = spent; tw.fresh = 0;
   }
   S.mode = m0; S.undo = null; syncUndo(); S.jobs = []; S.ext.job = null; S.ext.state = 'idle';
-  S.money = d.money; S.lives = d.lives; S.wave = d.wave; S.kills = d.kills; S.earlyCalls = d.early; S.endless = d.endless; S.stats = d.stats || {};
+  S.money = d.money; S.withhold = S.owed0 = d.owed || 0; S.resumeWave = S.withhold > 0; S.lives = d.lives; S.wave = d.wave; S.kills = d.kills; S.earlyCalls = d.early; S.endless = d.endless; S.stats = d.stats || {};
   S.lic = 0; for (let i = 0; i < d.lic; i++) { S.lic++; } S.dmgMul = 1 + 0.05 * S.lic;
   setCake(S.lives); S.nextT = 0; tutEnd(); syncHud(); syncTray(); showBelt(); renderShop();
   banner('Welcome back!', 'Level ' + soloNum(d.lv) + ', picking up after wave ' + d.wave, false, 2200);
