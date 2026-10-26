@@ -589,7 +589,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v275</div>
+    <div id="ver">v276</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5177,11 +5177,7 @@ canvas.addEventListener('pointermove', e => {
   if (e.pointerType === 'mouse' && S.mode === 'play' && !S.paused) canvas.style.cursor = !S.placing && onExt(e) ? 'grab' : '';
 });
 canvas.addEventListener('pointerup', e => {
-  if (extTap && extTap.id === e.pointerId) {   // a plain tap on him: select (or unselect)
-    extTap = null; S.extSel = !S.extSel; SND.play('tap');
-    if (S.extSel) { unpick(); if (!S.extTold) { S.extTold = 1; banner('Exterminator selected', 'Tap an empty floor tile to send him there', false, 1800); } }
-    return;
-  }
+  if (extTap && extTap.id === e.pointerId) { extTap = null; return; }   // a plain tap on him does nothing: drag him to move him
   if (dragId === e.pointerId) endDrag();
 });
 canvas.addEventListener('pointercancel', e => { if (dragId === e.pointerId) endDrag(); });
@@ -5194,13 +5190,6 @@ canvas.addEventListener('pointerdown', e => {
   if (!S.placing && !S.moving && tapSleepingCat(e)) return;
   if (dragId === null && !S.placing && onExt(e)) {   // a tap on him selects him; pressing and dragging still picks him up
     extTap = { id: e.pointerId, x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-    return;
-  }
-  if (S.extSel && !S.placing) {   // he's selected: tap a floor tile and he walks there and waits
-    const cell = cellAt(e);
-    if (!cell) { S.extSel = false; return; }
-    if (restFree(cell.c, cell.r) && mySide(cell.c)) { extSendTo(cell); S.extSel = false; }
-    else { SND.play('err'); banner('Not there', 'Pick an empty floor tile off the trail', true, 1100); }
     return;
   }
   if (!S.placing && !S.moving) {   // a roaming pet under the finger?
