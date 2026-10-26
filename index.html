@@ -591,7 +591,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v277</div>
+    <div id="ver">v278</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2638,7 +2638,7 @@ function abilUpdate(e, dt) {
     CUR_SRC = 'abil'; hit(b, BT[b.t].boss ? b.max * ABIL.bossPct / ABIL.dur * dt : ABIL.dps * S.hpMul * dt, true); CUR_SRC = null;
     b.psnT = Math.max(b.psnT, 1.2); b.stuck = 0.15; b.slowF = Math.min(b.slowF, BT[b.t].boss ? 0.75 : 0.5);
   }
-  if ((a.snd -= dt) <= 0) { a.snd = 0.35; SND.play('spray'); }
+  if (!a.sndOn) { a.sndOn = true; SND.play('longSpray'); }   // one long spray sound, not a stutter
   if (a.t >= ABIL.dur) { e.abil = null; e.state = e.job ? 'walk' : 'idle'; e.rest = null; }
 }
 function syncAbil() {
@@ -3579,6 +3579,12 @@ const SND = (() => {
     tongue: () => tone('sine', 260, 420, 0.05, 0.035),
     meow: () => mrrp(),
     spray: () => hiss(0.4, 0.22, 5000, 0.6, 'highpass'),
+    longSpray: () => {   /* one steady psssssht for the whole backpack spray: quick attack, held, then tails off */
+      const dur = ABIL.dur, t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), f2 = ac.createBiquadFilter(), g = ac.createGain();
+      s.buffer = noise; s.loop = true; f.type = 'highpass'; f.frequency.value = 3800; f.Q.value = 0.5; f2.type = 'lowpass'; f2.frequency.value = 9000;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.2, t + 0.06); g.gain.setValueAtTime(0.2, t + dur - 0.35); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(f).connect(f2).connect(g).connect(out); s.start(t); s.stop(t + dur + 0.05);
+    },
     sweep: () => { hiss(0.22, 0.3, 1800, 0.8); hiss(0.18, 0.22, 3200, 0.8, 'bandpass', 0.12); },
     slam: () => { tone('sine', 150, 40, 0.28, 0.6); hiss(0.18, 0.35, 500, 1); },
     zap: () => { tone('sawtooth', 110, 70, 0.16, 0.12); hiss(0.1, 0.22, 7000, 2); },
