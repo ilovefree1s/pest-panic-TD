@@ -545,7 +545,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v252</div>
+    <div id="ver">v253</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2130,13 +2130,22 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
   const halo = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.95, 40), new THREE.MeshBasicMaterial({ color: '#ff4a4a', transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
   halo.rotation.x = -Math.PI / 2; halo.position.y = 0.06; halo.visible = false; root.add(halo);
   // a little speech bubble for calling the cat
+  const speech = txt => {   /* a white speech bubble sprite over his head */
+    const bc = document.createElement('canvas'); bc.width = 512; bc.height = 160; const bx = bc.getContext('2d');
+    bx.fillStyle = '#fff'; bx.strokeStyle = '#2a2d33'; bx.lineWidth = 8; bx.beginPath(); bx.roundRect(8, 8, 496, 112, 48); bx.fill(); bx.stroke();
+    bx.beginPath(); bx.moveTo(220, 116); bx.lineTo(256, 154); bx.lineTo(292, 116); bx.fill(); bx.beginPath(); bx.moveTo(220, 120); bx.lineTo(256, 154); bx.lineTo(292, 120); bx.stroke();
+    bx.fillStyle = '#2a2d33'; bx.font = '900 50px system-ui, sans-serif'; bx.textAlign = 'center'; bx.textBaseline = 'middle'; bx.fillText(txt, 256, 66);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthTest: false }));
+    sp.scale.set(4, 1.25, 1); sp.position.set(0, 3.1, 0); sp.renderOrder = 25; sp.visible = false; root.add(sp); return sp;
+  };
+  const candleSay = speech('You no take candle!');
   const bc = document.createElement('canvas'); bc.width = 512; bc.height = 160; const bx = bc.getContext('2d');
   bx.fillStyle = '#fff'; bx.strokeStyle = '#2a2d33'; bx.lineWidth = 8; bx.beginPath(); bx.roundRect(8, 8, 496, 112, 48); bx.fill(); bx.stroke();
   bx.beginPath(); bx.moveTo(220, 116); bx.lineTo(256, 154); bx.lineTo(292, 116); bx.fill(); bx.beginPath(); bx.moveTo(220, 120); bx.lineTo(256, 154); bx.lineTo(292, 120); bx.stroke();
   bx.fillStyle = '#2a2d33'; bx.font = '900 54px system-ui, sans-serif'; bx.textAlign = 'center'; bx.textBaseline = 'middle'; bx.fillText('Here kitty kitty!', 256, 66);
   const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthTest: false }));
   bubble.scale.set(4, 1.25, 1); bubble.position.set(0, 3.1, 0); bubble.renderOrder = 25; bubble.visible = false; root.add(bubble);
-  root.userData = { body, legs, arms, head, hammer, wand, tip, trim, trimM, tankM, tankBase: tankM.color.clone(), halo, bubble };
+  root.userData = { body, legs, arms, head, hammer, wand, tip, trim, trimM, tankM, tankBase: tankM.color.clone(), halo, bubble, candleSay };
   root.traverse(o => { if (o.isMesh) o.castShadow = true; });
   root.scale.setScalar(1.55);
   root.visible = false;
@@ -2417,6 +2426,7 @@ function drawOneExt(dt, EXTM, e, show) {
   let da = e.yaw - EXTM.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da)); EXTM.rotation.y += da * Math.min(1, dt * 12);
   const walk = e.state === 'walk', work = e.state === 'work', spray = e.state === 'spray' && !!e.abil, pet = e.state === 'pet';
   if (u.bubble) u.bubble.visible = pet;
+  if (e.sayT > 0) e.sayT -= dt; if (u.candleSay) u.candleSay.visible = !pet && e.sayT > 0;
   u.legs.forEach((l, i) => l.rotation.x = walk ? Math.sin(e.phase + i * Math.PI) * 0.75 : e.held ? Math.sin(e.phase + i * Math.PI) * 0.45 : 0);
   u.arms[0].rotation.x = spray ? -0.9 : walk ? Math.sin(e.phase) * 0.6 : work ? -0.5 : e.held ? -2.6 + Math.sin(e.phase) * 0.3 : 0;
   u.arms[1].rotation.x = spray ? -1.35 + Math.sin(clock * 9) * 0.06 : walk ? -Math.sin(e.phase) * 0.6 : work ? -1.5 + Math.sin(e.t * 25) * 0.8 : e.held ? -2.6 - Math.sin(e.phase) * 0.3 : 0;
@@ -4499,6 +4509,10 @@ function syncCatBed(dt = 0) {
   CATBED.g.visible = true;
 }
 function drawTowers(dt, t) {
+  for (const tw of S.towers) if (tw.t === 'candle' && !tw.pending && !tw.said) {   /* a fresh candle: "You no take candle!" */
+    tw.said = true; if (S.mode !== 'play') continue;
+    const e = (tw.owner || 0) === (S.cur || 0) ? S.ext : S.p2 && S.p2.ext; if (e) e.sayT = 2.4;
+  }
   if ((drawTowers.dT = (drawTowers.dT || 0) + dt) > 0.25) { drawTowers.dT = 0; syncDmg(); }
   syncCatBed(dt); propFalls(dt); ghostBuy(); drawGhosts(t);
   if (S.mode === 'play') syncCandles();
@@ -4718,6 +4732,15 @@ function cellAt(e) {
   return c >= 0 && r2 >= 0 && c < COLS && r2 < ROWS ? { c, r: r2 } : null;
 }
 function previewCell() { return ptrType === 'mouse' ? hoverCell : S.prev; }
+function tapSleepingCat(e) {   /* tapping the cat asleep on his bed opens the Pets tab with him in it */
+  if (!CATBED.g || !CATBED.g.visible || !CATBED.sleeper || !CATBED.sleeper.root.visible) return false;
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera);
+  if (!ray.intersectObject(CATBED.g, true).length) return false;
+  if (S.pick) unpick(); setTab('pets'); showToolCard('cat');
+  const tile = document.querySelector('.tc[data-t="cat"]'); if (tile) { tile.scrollIntoView({ block: 'nearest', inline: 'nearest' }); tile.classList.add('tut-hi'); setTimeout(() => tile.classList.remove('tut-hi'), 2500); }
+  return true;
+}
 function floorAt(e) {
   const r = canvas.getBoundingClientRect();
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
@@ -4784,6 +4807,7 @@ canvas.addEventListener('pointerdown', e => {
   if (e.button === 2) { S.placing = null; S.prev = null; S.moving = null; unpick(); syncTray(); return; }   // right click: cancel, never build
   SND.init(); ptrType = e.pointerType || 'mouse';
   if (S.mode !== 'play' || S.paused) return;
+  if (!S.placing && !S.moving && tapSleepingCat(e)) return;
   if (dragId === null && !S.placing && onExt(e)) {   // with a tool picked, a tap on him builds there and he steps aside
     dragId = e.pointerId; try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
     S.ext.held = true; S.ext.state = 'idle'; S.prev = null;
