@@ -507,7 +507,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v246</div>
+    <div id="ver">v247</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -819,7 +819,7 @@ LEVELS[16] = { ...LEVELS[6], bossMul: null, name: 'Snake Pit', sub: 'Medium', in
 const CAMPAIGN = 5, TEAM0 = 5, TEAM_MAPS = [5, 6, 7, 13, 14, 15, 16], TEAMN = TEAM_MAPS.length;
 const teamNext = lv => { const k = TEAM_MAPS.indexOf(lv); return k >= 0 && k < TEAM_MAPS.length - 1 ? TEAM_MAPS[k + 1] : null; };
 // the solo houses in play order (the last five come after the team maps in the list)
-const SOLO = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12];
+const SOLO = [8, 0, 1, 2, 3, 4, 9, 10, 11, 12];   /* School Cafeteria opens the game; Grandma's Kitchen is Level 2 */
 const soloNum = lv => SOLO.indexOf(lv) + 1, soloNext = lv => { const i = SOLO.indexOf(lv); return i >= 0 && i < SOLO.length - 1 ? SOLO[i + 1] : null; };
 let TEAM_LV = TEAM0;
 const TEAM_ALL_OPEN = true;   // testing: every Team Kitchen map is open (set to false to bring back the unlock order)
@@ -6729,7 +6729,7 @@ const TUT_STEPS = [
   { txt: () => 'That\'s it! <b>Hold</b> any tool in the tray to read what it does. More bugs are coming. Good luck!', done: () => false, min: 5, last: true },
 ];
 function tutDone() { try { return localStorage.getItem('ppd-tut') === '1'; } catch (e) { return false; } }
-function tutStart() { if (LV !== 0 || tutDone()) return; TUT.step = 0; TUT.t = 0; tutShow(); }
+function tutStart() { if (LV !== SOLO[0] || tutDone()) return; TUT.step = 0; TUT.t = 0; tutShow(); }
 function tutEnd() {
   TUT.step = -1; $('tut').hidden = true; $('stage').classList.remove('tutoring'); document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi'));
   if (TUT.ring) TUT.ring.visible = false; try { localStorage.setItem('ppd-tut', '1'); } catch (e) {}
@@ -6743,11 +6743,12 @@ function tutShow() {
     TUT.ring.rotation.x = -Math.PI / 2; TUT.ring.renderOrder = 12; scene.add(TUT.ring);
   }
   TUT.ring.visible = !!st.ring;
-  if (st.ring) { let c = 2, r = 3; for (const [cc, rr] of [[2, 3], [2, 4], [0, 3], [2, 2]]) if (cellOk('swat', cc, rr)) { c = cc; r = rr; break; } TUT.ring.position.set(ccx(c), 0.1, ccz(r)); }
+  if (st.ring) { let c = 2, r = 3, ok = false; for (const [cc, rr] of [[2, 3], [2, 4], [0, 3], [2, 2]]) if (cellOk('swat', cc, rr)) { c = cc; r = rr; ok = true; break; }
+    if (!ok) { const R0 = LEVELS[LV].routes[0]; let bd = 1e9; for (let cc = 0; cc < COLS; cc++) for (let rr = 0; rr < ROWS; rr++) { if (!cellOk('swat', cc, rr) || ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => PATH.has(key(cc + a, rr + b)))) continue; const d = Math.hypot(cc - R0[0][0], rr - R0[0][1]); if (d < bd) { bd = d; c = cc; r = rr; } } }   /* next to the trail, close to where the bugs come in */ TUT.ring.position.set(ccx(c), 0.1, ccz(r)); }
 }
 function tutTick(dt) {
   if (TUT.step < 0) return;
-  if (S.mode !== 'play' || LV !== 0) { if (S.mode === 'over' || S.mode === 'title') { $('tut').hidden = true; $('stage').classList.remove('tutoring'); TUT.step = -1; if (TUT.ring) TUT.ring.visible = false; document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi')); } return; }
+  if (S.mode !== 'play' || LV !== SOLO[0]) { if (S.mode === 'over' || S.mode === 'title') { $('tut').hidden = true; $('stage').classList.remove('tutoring'); TUT.step = -1; if (TUT.ring) TUT.ring.visible = false; document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi')); } return; }
   const st = TUT_STEPS[TUT.step]; TUT.t += dt;
   if (TUT.ring && TUT.ring.visible) { const k = 1 + Math.sin(clock * 5) * 0.08; TUT.ring.scale.set(k, k, 1); TUT.ring.material.opacity = 0.6 + Math.sin(clock * 5) * 0.3; }
   const h = st.hi && st.hi(); if (h && !h.classList.contains('tut-hi')) h.classList.add('tut-hi');
