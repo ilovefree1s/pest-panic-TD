@@ -504,7 +504,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
-    <div id="ver">v242</div>
+    <div id="ver">v243</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -981,6 +981,17 @@ function buildCounterProps() {
     add(g, cyl(0.22, 0.22, h * 0.6, 14), std({ color: c, roughness: 0.8 }), x, h * 0.3, 0);
     add(g, cyl(0.28, 0.28, 0.1, 16), wood, x, h + 0.05, 0);
   }
+  // little things the cat can knock off: spoons, forks, mugs, a glass, shakers, a bowl, a sauce bottle (keys start with sm_; placed on free counter spots per kitchen)
+  const silver = std({ color: '#d4d9df', metalness: 0.95, roughness: 0.2, envMapIntensity: 1.2 }), china = std({ color: '#f6f2ea', roughness: 0.35 });
+  const spoon = () => { const g = new THREE.Group(); add(g, box(0.09, 0.04, 0.9), silver, 0, 0.04, 0.2); const b = add(g, sph(0.17, 12, 8), silver, 0, 0.06, -0.38); b.scale.set(1, 0.3, 1.4); return g; };
+  const fork = () => { const g = new THREE.Group(); add(g, box(0.09, 0.04, 0.8), silver, 0, 0.04, 0.25); add(g, box(0.3, 0.04, 0.12), silver, 0, 0.04, -0.18); for (let i = 0; i < 4; i++) add(g, box(0.04, 0.04, 0.32), silver, -0.12 + i * 0.08, 0.04, -0.38); return g; };
+  const mug = c => { const g = new THREE.Group(), m = std({ color: c, roughness: 0.35 }); add(g, cyl(0.3, 0.27, 0.62, 16), m, 0, 0.31, 0); add(g, cyl(0.25, 0.25, 0.02, 14), std({ color: '#4a2a14', roughness: 0.2 }), 0, 0.58, 0); add(g, new THREE.TorusGeometry(0.16, 0.05, 8, 14), m, 0.32, 0.32, 0, 0, 0, 0); return g; };
+  const cup = () => { const g = new THREE.Group(); add(g, cyl(0.42, 0.42, 0.04, 18), china, 0, 0.02, 0); add(g, cyl(0.26, 0.18, 0.32, 16), china, 0, 0.2, 0); add(g, new THREE.TorusGeometry(0.1, 0.035, 6, 12), china, 0.27, 0.22, 0); return g; };
+  const tumbler = () => { const g = new THREE.Group(); add(g, cyl(0.24, 0.2, 0.7, 16), glass, 0, 0.35, 0); add(g, cyl(0.21, 0.18, 0.4, 14), std({ color: '#9fd8ff', transparent: true, opacity: 0.55, roughness: 0.1 }), 0, 0.22, 0); return g; };
+  const shakers = () => { const g = new THREE.Group(); for (const [x, c] of [[-0.2, '#f6f2ea'], [0.2, '#2a2a2e']]) { add(g, cyl(0.13, 0.15, 0.5, 12), glass, x, 0.25, 0); add(g, cyl(0.11, 0.12, 0.3, 10), std({ color: c, roughness: 0.9 }), x, 0.16, 0); add(g, new THREE.SphereGeometry(0.13, 10, 6, 0, TAU, 0, Math.PI / 2), silver, x, 0.5, 0); } return g; };
+  const bowl = () => { const g = new THREE.Group(); add(g, new THREE.SphereGeometry(0.42, 18, 8, 0, TAU, Math.PI / 2, Math.PI / 2), std({ color: '#8ab8d8', roughness: 0.3, side: THREE.DoubleSide }), 0, 0.42, 0); return g; };
+  const bottle = () => { const g = new THREE.Group(), m = std({ color: '#d42a1e', roughness: 0.3 }); add(g, cyl(0.18, 0.2, 0.75, 14), m, 0, 0.37, 0); add(g, cyl(0.08, 0.16, 0.2, 12), m, 0, 0.84, 0); add(g, cyl(0.06, 0.06, 0.12, 8), std({ color: '#f2f2f2', roughness: 0.5 }), 0, 1.0, 0); return g; };
+  Object.assign(P, { sm_spoon1: spoon(), sm_fork1: fork(), sm_mug1: mug('#e8533c'), sm_cup: cup(), sm_glass: tumbler(), sm_spoon2: spoon(), sm_shakers: shakers(), sm_mug2: mug('#3a8fd4'), sm_fork2: fork(), sm_bowl: bowl(), sm_bottle: bottle() });
   for (const k in P) { P[k].traverse(o => { if (o.isMesh) o.castShadow = true; }); P[k].visible = false; scene.add(P[k]); }
   return P;
 }
@@ -989,6 +1000,22 @@ HOUSES[14] = { ...HOUSES[9] }; PROP_LAYOUT[14] = PROP_LAYOUT[6];
 HOUSES[15] = { ...HOUSES[10] }; PROP_LAYOUT[15] = PROP_LAYOUT[6];   // The Pretzel: cabin look
 HOUSES[16] = { ...HOUSES[11] }; PROP_LAYOUT[16] = PROP_LAYOUT[6];   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
 const houseTex = {};
+function smallSpots(i, L) {   /* free spots on the counters for the little things: away from the big props, the fridge, the stove, the cake and the cat bed; the same every time for a given kitchen */
+  let seed = 9001 + i * 7919; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const ex = BOARD.ex, sx = ex + 1.9, taken = Object.values(L).filter(Array.isArray).map(a => [a[0], a[1], 2.6]);
+  taken.push([BOARD.fridgeX, -16.9, 4.6], [BOARD.stoveX, -16.9, 5], [ccx(BOARD.cakeCol), -16.9, 3.4]);
+  if (KIT.props) { const team = !!LEVELS[i].team, bed = (() => { let best = null, bd = -1; for (let z = -9; z <= 6; z += 0.5) for (const c of team ? [CL2(z), CR2(z)] : [CL(z), CR(z)]) { const d = Math.min(99, ...taken.slice(0, -3).map(u => Math.hypot(u[0] - c[0], u[1] - c[1]))); if (d > bd) { bd = d; best = c; } } return best; })(); if (bed) taken.push([bed[0], bed[1], 2.8]); }
+  const cands = [];
+  for (let x = -ex + 1.5; x <= ex - 1.5; x += 0.7) cands.push([x, -16.9 + (rnd() - 0.5) * 0.8, rnd() * TAU]);
+  for (let z = -11; z <= 8; z += 0.7) { cands.push([-sx + (rnd() - 0.5) * 0.8, z, rnd() * TAU]); cands.push([sx + (rnd() - 0.5) * 0.8, z, rnd() * TAU]); }
+  for (let k = cands.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [cands[k], cands[j]] = [cands[j], cands[k]]; }
+  const out = {}, keys = ['sm_spoon1', 'sm_fork1', 'sm_mug1', 'sm_cup', 'sm_glass', 'sm_spoon2', 'sm_shakers', 'sm_mug2', 'sm_fork2', 'sm_bowl', 'sm_bottle'];
+  for (const k of keys) {
+    const c = cands.find(c => taken.every(([x, z, r]) => Math.hypot(c[0] - x, c[1] - z) > r)); if (!c) break;
+    out[k] = c; taken.push([c[0], c[1], 1.7]);
+  }
+  return out;
+}
 function applyHouse(i) {
   const H = HOUSES[i], T = houseTex[i] ||= { floor: floorTextures(H.floor), cab: cabinetTexture(H.cab) };
   const fm = KIT.floorMat; fm.map = T.floor.map; fm.normalMap = T.floor.normal; fm.roughnessMap = T.floor.rough; fm.needsUpdate = true;
@@ -1009,10 +1036,11 @@ function applyHouse(i) {
   ROOM.blanket.color.set(RM.blanket); ROOM.wood.color.set(RM.wood); ROOM.paint.color.set(RM.paint); ROOM.hall.color.set(RM.hall);
   const L = PROP_LAYOUT[i];
   KIT.accentMat.color.set(L.accent);
+  const smallAt = smallSpots(i, L);
   for (const k in KIT.props) {
-    const g = KIT.props[k], at = L[k];
+    const g = KIT.props[k], at = k.startsWith('sm_') ? smallAt[k] : L[k];
     g.visible = !!at; if (!at) continue;
-    g.position.set(at[0], TOP_Y, at[1]); g.rotation.set(0, at[2], 0); g.scale.setScalar(1.35); g.userData.fall = null; g.userData.knocked = false;
+    g.position.set(at[0], TOP_Y, at[1]); g.rotation.set(0, at[2], 0); g.scale.setScalar(k.startsWith('sm_') ? 1.75 : 1.35); g.userData.fall = null; g.userData.knocked = false;
   }
 }
 function buildRoute(wp) {
@@ -2395,7 +2423,7 @@ TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, s
 // pets: living helpers, in their own tab
 TT.frog = { name: 'Pet Frog', short: 'Frog', cost: 85, air: true, pet: true, range: [5.2, 5.8, 6.4], dmg: [17, 29, 43], rate: [0.85, 0.75, 0.65],
   d: 'A frog on a lily pad. It snaps its tongue at flying bugs first (then the bug closest to the cake). Flies and moths take double, and little bugs (ants, bed bugs, baby spiders, flies) with low health get gulped whole.' };
-TT.cat = { name: 'House Cat', short: 'Cat', cost: 140, air: true, pet: true, unique: true, roam: true, range: [4.5, 5.2, 6], dmg: [22, 36, 55], pin: [1.0, 1.3, 1.7], rate: [2.4, 2.1, 1.8], spd: [3.2, 3.6, 4],
+TT.cat = { name: 'House Cat', short: 'Cat', cost: 80, air: true, pet: true, unique: true, roam: true, range: [4.5, 5.2, 6], dmg: [22, 36, 55], pin: [1.0, 1.3, 1.7], rate: [2.4, 2.1, 1.8], spd: [3.2, 3.6, 4],
   d: 'Not a tool you place: buy it and the cat wanders in and roams the whole kitchen on its own. It stalks any bug it notices and pounces: a big swipe, and the bug is pinned in place for a second (bosses for half as long). One per kitchen. Tap the cat to upgrade or sell it.' };
 TT.venus = { name: 'Venus Flytrap', short: 'Flytrap', cost: 110, air: true, pet: true, fliesOnly: true, range: [4.4, 4.8, 5.2], dmg: [90, 140, 200], chew: [1.4, 1.2, 1.0],
   d: 'A hungry plant in a pot that only eats flying bugs. Its jaws snap shut on a fly or moth and swallow it whole, then it chews for a moment before the next one. Flying bosses just take a big bite. The first upgrade grows a second head so it can eat two at once; the next makes it chew faster and reach further.' };
@@ -3373,7 +3401,7 @@ function unlocked(lv) { const i = SOLO.indexOf(lv); return SOLO_ALL_OPEN || i <=
 let S = null;
 function newState(mode) {
   return { me: 0, cur: 0, p2: null, net: null, mode, lives: 20, money: LEVELS[LV].money, wave: 0, active: false, queue: [], spawnT: 0, gap: 0.8, hpMul: 1, bugs: [], towers: [], decals: [], zaps: [], coins: [], rings: [],
-    kills: 0, earlyCalls: 0, items: [], lic: 0, dmgMul: 1, speed: 1, paused: false, nid: 1, shake: 0, placing: null, pick: null, prev: null, demoT: 0, jobs: [], ext: { x: 0, z: 12, yaw: Math.PI, state: 'idle', t: 0, job: null, phase: 0 } };
+    kills: 0, earlyCalls: 0, items: [], ghosts: [], lic: 0, dmgMul: 1, speed: 1, paused: false, nid: 1, shake: 0, placing: null, pick: null, prev: null, demoT: 0, jobs: [], ext: { x: 0, z: 12, yaw: Math.PI, state: 'idle', t: 0, job: null, phase: 0 } };
 }
 
 // ---------------------------------------------------------------- simulation
@@ -3580,6 +3608,7 @@ function syncCandles() {
     A.sort((x, y) => y - x); Rg.sort((x, y) => y - x);
     tw.amp = (A[0] || 0) + (A[1] || 0); tw.rmul = (Rg[0] || 0) + (Rg[1] || 0); tw.lit = Math.min(2, A.length);
   }
+  for (const c of candles) { const r = c.o.auraR || 4.8; c.glowN = candles.filter(d => d !== c && Math.hypot(d.x - c.x, d.z - c.z) < (r + (d.o.auraR || 4.8)) * 0.55).length; }
 }
 // the house cat: wanders around its bed, and pounces on any bug that comes near
 const CAT_KNOCKS = 4;   // at most this many things knocked off per level
@@ -3609,14 +3638,20 @@ function catMischief(tw, T, L, dt) {   // now and then: hop up on the counter, s
         g.position.x += dx / d * 0.18; g.position.z += dz / d * 0.18; M.wob = 0.25; SND.play('tap');
       } else { knockProp(M.key); tw.knocks = (tw.knocks || 0) + 1; setTimeout(() => SND.play('meow'), 700); }
     }
+    if (M.n < 4 && S.bugs.some(b => !b.dead && (b.x - M.f.x) ** 2 + (b.z - M.f.z) ** 2 < 14 * 14)) { M.ph = 'down'; M.t = 0; g.rotation.z = 0; return true; }   /* a bug is coming: forget the counter, back to work */
     if (M.wob > 0 && g.visible && !g.userData.fall) { M.wob -= dt; g.rotation.z = Math.sin(M.wob * 40) * 0.08 * (M.wob / 0.25); }
     if (M.t > 4.6) { M.ph = 'down'; M.t = 0; }
     return true;
   }
   const k = Math.min(1, M.t / 0.45);   // and back down to the floor
   tw.cx = top.x + (M.f.x - top.x) * k; tw.cz = top.z + (M.f.z - top.z) * k; tw.cy = TOP_Y * (1 - k) + Math.sin(k * Math.PI) * 0.8; tw.cmove = 2;
-  if (k >= 1) { tw.cy = 0; tw.mis = null; tw.misAt = (S.gt || 0) + 45 + Math.random() * 35; tw.goal = null; tw.rest = 0.8; }
+  if (k >= 1) { tw.cy = 0; tw.mis = null; tw.misAt = (S.gt || 0) + 60 + Math.random() * 40; tw.goal = null; tw.rest = 0; tw.cd = 0; catHunt(tw); }
   return true;
+}
+function catHunt(tw) {   /* head for the nearest bug on the floor, wherever it is */
+  let best = null, bd = 1e9;
+  for (const b of S.bugs) { if (b.dead || b.y0 > 0.5 && !BT[b.t].fly) continue; const d = (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2; if (d < bd) { bd = d; best = b; } }
+  if (best) { tw.goal = { x: best.x, z: best.z }; tw.rest = 0; }
 }
 function catPlanMischief(tw) {
   if ((tw.knocks || 0) >= CAT_KNOCKS || !KIT.props) return;
@@ -3633,7 +3668,7 @@ function catAct(tw, T, L, R, dt) {
   if (tw.misAt === undefined) tw.misAt = (S.gt || 0) + 25 + Math.random() * 25;
   if (tw.mis && (tw.mis.ph !== 'go' || !S.bugs.some(b => !b.dead && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < R * R))) { if (catMischief(tw, T, L, dt)) return; }
   else if (tw.mis) tw.mis = null;   // a bug showed up on the way: hunting comes first
-  if (!tw.mis && !tw.pounce && (S.gt || 0) > tw.misAt && !S.bugs.some(b => !b.dead && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < R * R * 2)) { catPlanMischief(tw); tw.misAt = (S.gt || 0) + 20; if (tw.mis) return; }
+  if (!tw.mis && !tw.pounce && (S.gt || 0) > tw.misAt && !S.bugs.some(b => !b.dead && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < Math.max(R * R * 6, 14 * 14))) { catPlanMischief(tw); tw.misAt = (S.gt || 0) + 20; if (tw.mis) return; }
   const P = tw.pounce;
   if (P) {
     const b = S.bugs.find(o => o.id === P.id);
@@ -3652,7 +3687,7 @@ function catAct(tw, T, L, R, dt) {
     let best = null, bd = 1e9;
     for (const b of S.bugs) { if (b.dead || b.y0 > 0.5 && !BT[b.t].fly) continue; const d = (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2; if (d < bd) { bd = d; best = b; } }
     if (best && bd < R * R) { tw.pounce = { id: best.id, t: 0 }; return; }
-    if (best && bd < 14 * 14 && Math.random() < dt * 1.5) { tw.goal = { x: best.x, z: best.z }; tw.rest = 0; }   // notices a bug across the room: stalks toward it
+    if (best && bd < 18 * 18 && Math.random() < dt * 4) { tw.goal = { x: best.x, z: best.z }; tw.rest = 0; }   // notices a bug across the room: stalks toward it
   }
   if (tw.rest > 0) { tw.rest -= dt; tw.cmove = 0; return; }
   // wander: pick a spot near the trail within its range of the bed, stroll there, sit a moment, repeat
@@ -3902,6 +3937,7 @@ function cellOk(t, c, r) {
   if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return false;
   const k = key(c, r);
   if (BLOCK.has(k) || S.towers.some(tw => tw.c === c && tw.r === r) || S.items.some(it => it.c === c && it.r === r)) return false;
+  if ((S.ghosts || []).some(g => g.c === c && g.r === r && g.owner !== (S.cur || 0))) return false;
   if (!mySide(c)) return false;
   return TT[t].path ? PATH.has(k) : !PATH.has(k);
 }
@@ -3964,6 +4000,54 @@ function itemsAct(dt) {
 }
 function toolLocked(t) { return t === 'fogger' && S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < 2; }
 function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (o.owner || 0) === (S.cur || 0))); }
+/* ghost tools: tap a spot when you're short on coins and a see-through tool waits there; the moment you can afford it, it gets bought and built */
+const GHOST_MAX = 3, GHOST_MESH = new Map();
+function ghostable(t) { const T = TT[t]; return !!T && !T.item && !T.roam && t !== 'license'; }
+function myGhosts() { return (S.ghosts || []).filter(g => g.owner === (S.me || 0)); }
+function ghostAt(c, r) { return (S.ghosts || []).find(g => g.c === c && g.r === r); }
+function sendGhosts() { if (S.net === 'host' || S.net === 'guest') netSend({ k: 'ghosts', g: myGhosts().map(g => [g.t, g.c, g.r]) }); }
+function setPartnerGhosts(list, owner) { S.ghosts = (S.ghosts || []).filter(g => g.owner !== owner).concat((list || []).map(([t, c, r]) => ({ t, c, r, owner }))); }
+function addGhost(t, c, r) {
+  if (!ghostable(t) || toolLocked(t) || !cellOk(t, c, r) || ghostAt(c, r)) { SND.play('err'); return false; }
+  if (TT[t].unique && myGhosts().some(g => g.t === t)) { SND.play('err'); return false; }
+  if (myGhosts().length >= GHOST_MAX) { SND.play('err'); banner('Up to ' + GHOST_MAX + ' ghost tools', 'Tap a ghost to cancel it', true, 1500); return false; }
+  S.ghosts.push({ t, c, r, owner: S.me || 0 }); SND.play('tap'); sendGhosts();
+  if (!S.ghostTold) { S.ghostTold = 1; banner('Ghost ' + TT[t].name, 'It builds itself as soon as you have ' + costOf(t) + ' coins. Tap it to cancel.', false, 2400); }
+  return true;
+}
+function cancelGhost(g) { S.ghosts = S.ghosts.filter(x => x !== g); SND.play('sell'); sendGhosts(); }
+function ghostBuy() {   /* buys them in the order they were placed: the first one has to be paid for before the next */
+  if (S.mode !== 'play' || S.paused || S.hold || S.over) return;
+  const g = myGhosts()[0]; if (!g || S.money < costOf(g.t)) return;
+  S.ghosts = S.ghosts.filter(x => x !== g);
+  if (S.cur === (S.me || 0) && !placeTower(g.t, g.c, g.r)) banner('Ghost ' + TT[g.t].name + ' cancelled', 'That spot is taken now', true, 1500);
+  sendGhosts(); syncTray();
+}
+function ghostTag(need) {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 96; const x = cv.getContext('2d');
+  x.fillStyle = 'rgba(20,24,30,.85)'; x.beginPath(); x.roundRect(8, 12, 240, 72, 36); x.fill();
+  x.fillStyle = '#ffc93c'; x.beginPath(); x.arc(52, 48, 22, 0, Math.PI * 2); x.fill(); x.fillStyle = '#b8860b'; x.beginPath(); x.arc(52, 48, 13, 0, Math.PI * 2); x.fill();
+  x.fillStyle = '#fff'; x.font = '900 44px system-ui, sans-serif'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.fillText(need > 0 ? need : '✓', 86, 50);
+  return new THREE.CanvasTexture(cv);
+}
+function drawGhosts(t) {
+  const list = S && S.mode === 'play' ? (S.ghosts || []) : [];
+  for (const [g, m] of GHOST_MESH) if (!list.includes(g)) { scene.remove(m.root); if (m.tag) scene.remove(m.tag); GHOST_MESH.delete(g); }
+  for (const g of list) {
+    let m = GHOST_MESH.get(g);
+    if (!m) {
+      const o = makeTower(g.t); o.root.traverse(n => { if (n.isMesh || n.isSprite) { n.castShadow = false; const fade = q => { q = q.clone(); q.transparent = true; q.opacity = 0.45 * (q.opacity ?? 1); q.depthWrite = false; return q; }; n.material = Array.isArray(n.material) ? n.material.map(fade) : fade(n.material); } });
+      if (o.pips) o.pips.forEach(p => p.visible = false);
+      o.root.position.set(ccx(g.c), 0, ccz(g.r)); o.root.renderOrder = 5; scene.add(o.root);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false })); sp.scale.set(4.4, 1.65, 1); sp.renderOrder = 16; sp.position.set(ccx(g.c), 3.6, ccz(g.r)); scene.add(sp);
+      m = { root: o.root, tag: sp, need: null }; GHOST_MESH.set(g, m);
+    }
+    const mine = g.owner === (S.me || 0), money = S.cur === (S.me || 0) ? S.money : (S.p2 ? S.p2.money : S.money), need = Math.max(0, costOf(g.t) - (mine ? money : 0));
+    m.tag.visible = mine;
+    if (mine && need !== m.need) { m.need = need; if (m.tag.material.map) m.tag.material.map.dispose(); m.tag.material.map = ghostTag(need); m.tag.material.needsUpdate = true; }
+    m.root.position.y = 0.15 + Math.sin(t * 2.5 + g.c) * 0.12;   // a gentle hover so it reads as "not real yet"
+  }
+}
 function placeTower(t, c, r) {
   const T = TT[t];
   if (toolLocked(t)) { SND.play('err'); return false; }
@@ -4091,7 +4175,7 @@ function choose(t) {
   if (t === 'license') { S.placing = null; buyLicense(); return; }
   if (TT[t].roam) { S.placing = null; buyPet(t); syncTray(); return; }
   S.placing = S.placing === t ? null : t;
-  if (S.placing && S.money < costOf(t)) SND.play('err');
+  if (S.placing && S.money < costOf(t) && !ghostable(t)) SND.play('err');
   syncTray();
 }
 
@@ -4363,7 +4447,7 @@ function syncCatBed(dt = 0) {
   CATBED.g.visible = true;
 }
 function drawTowers(dt, t) {
-  syncCatBed(dt); propFalls(dt);
+  syncCatBed(dt); propFalls(dt); ghostBuy(); drawGhosts(t);
   if (S.mode === 'play') syncCandles();
   for (const tw of S.towers) {
     const o = tw.o, T = TT[tw.t];
@@ -4433,7 +4517,7 @@ function drawTowers(dt, t) {
       o.aura.visible = !tw.snuff;
       if (tw.snuff && Math.random() < dt * 2) FX.smoke.spawn({ x: tw.x, y: 2.2, z: tw.z, vy: 0.8, life: 1.2, s0: 0.15, s1: 0.6, c: [0.4, 0.4, 0.4], a0: 0.35 });
       const fl = Math.sin(t * 2.3 + tw.id) * 0.5 + Math.sin(t * 7.1 + tw.id * 2) * 0.3 + Math.sin(t * 15 + tw.id) * 0.2;
-      o.aura.material.opacity = 0.85 + fl * 0.15; const rr = (o.auraR || 4.8) * (1 + fl * 0.015); o.aura.scale.set(rr, rr, 1);
+      o.aura.material.opacity = (0.85 + fl * 0.15) / (1 + 0.8 * (tw.glowN || 0)); const rr = (o.auraR || 4.8) * (1 + fl * 0.015); o.aura.scale.set(rr, rr, 1);
     } else if (tw.t === 'paper') {
       o.hinge.rotation.x = a < 0.09 ? lerp(-0.15, 1.5, a / 0.09) : a < 0.6 ? lerp(1.5, -0.15, (a - 0.09) / 0.51) : -0.15 + Math.sin(t * 1.5 + tw.id) * 0.03;
     } else if (tw.t === 'lens') {
@@ -4660,12 +4744,15 @@ canvas.addEventListener('pointerdown', e => {
   const cell = cellAt(e);
   if (!cell) { S.prev = null; if (!S.placing) unpick(); return; }
   const tw = S.towers.find(x => x.c === cell.c && x.r === cell.r);
+  const gh = !S.moving && ghostAt(cell.c, cell.r);
+  if (gh && gh.owner === (S.me || 0)) { cancelGhost(gh); S.prev = null; return; }
   if (S.moving) { const mv = S.moving; S.moving = null; if (tw !== mv) moveFogger(mv, cell.c, cell.r); return; }
   if (S.placing) {
     if (tw) { pick(tw); return; }
     const same = S.prev && S.prev.c === cell.c && S.prev.r === cell.r;
     if (ptrType === 'mouse' || same) {
-      if (placeTower(S.placing, cell.c, cell.r)) { S.prev = null; if (S.money < costOf(S.placing) || itemUsed(S.placing)) S.placing = null; syncTray(); }
+      if (S.money < costOf(S.placing) && ghostable(S.placing)) { if (addGhost(S.placing, cell.c, cell.r)) { S.prev = null; S.placing = null; syncTray(); } }
+      else if (placeTower(S.placing, cell.c, cell.r)) { S.prev = null; if ((S.money < costOf(S.placing) && !ghostable(S.placing)) || itemUsed(S.placing)) S.placing = null; syncTray(); }
     } else S.prev = cell;
     return;
   }
@@ -5237,6 +5324,7 @@ function netOnMsg(m) {
     if (rsAnswer(m)) return;
     if (m.k === 'bn') { banner(m.a, m.b, !!m.r, m.ms); return; }
     if (m.k === 'knock') { knockProp(m.p); return; }
+    if (m.k === 'ghosts') { setPartnerGhosts(m.g, 0); return; }
     if (m.k === 'caught') { jarSet(jarCount() + 1); if (m.t) dexAdd(m.t); return; }
     if (m.k === 's') { NET.lastSnap = performance.now(); netApply(m); }
     else if (m.k === 'vsOver') { if (S.vs) vsEnd(m.res, m.why); }
@@ -5283,6 +5371,7 @@ function netWarn(t) { const el = $('netWarn'); el.textContent = t; el.hidden = f
 // host: carry out the guest's request as player 2
 function netHostCmd(m) {
   if (m.k === 'sellShiny' && m.split) { S.money += 50; S.p2.money += 50; BN_FWD++; try { banner('Shiny bug shared!', '+50 coins each', false, 1600); } finally { BN_FWD--; } return; }
+  if (m.k === 'ghosts') { setPartnerGhosts(m.g, 1); return; }
   const tw = m.id != null ? S.towers.find(t => t.id === m.id) : null;
   withPlayer(1, () => {
     if (m.k === 'place') placeTower(m.t, m.c, m.r);
