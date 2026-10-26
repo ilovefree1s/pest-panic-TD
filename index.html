@@ -546,10 +546,12 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #title.v2 .tsmall button span{font:400 clamp(10px,1.6vh,15px) var(--display);white-space:nowrap;letter-spacing:.04em;text-transform:uppercase}
 #title.v2 .tsmall svg{width:clamp(22px,3.4vh,30px);height:clamp(22px,3.4vh,30px)}
 @media (orientation:landscape){
-  #title.v2{justify-content:center;align-items:flex-end;padding:16px max(24px,5vw) 16px 16px}
+  #title.v2{justify-content:center;align-items:flex-start;padding:16px 0}
+  /* the buttons start just right of the cake: the wide picture fills the width (or the height on squarer screens) and the cake ends ~58% across it */
+  #title.v2{--tcw:min(clamp(320px,28vw,560px),38vw)}
   #title.v2::after{top:0;height:auto;left:auto;width:50%;background:linear-gradient(90deg,rgba(60,20,6,0),rgba(60,20,6,.38))}
   #title.v2 .tArt{background-image:url(assets/title_wide.jpg);background-position:left 25%}
-  #title.v2 .tCol{width:min(460px,38vw)}
+  #title.v2 .tCol{width:var(--tcw);margin-left:min(calc(max(100vw,150vh) * 0.585 + 2vw),calc(100vw - var(--tcw) - 24px))}
 }
 @media (orientation:landscape) and (max-height:560px){
   #title.v2 .tCol,#title.v2 .tmain{gap:8px}
@@ -580,7 +582,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v265</div>
+    <div id="ver">v266</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
