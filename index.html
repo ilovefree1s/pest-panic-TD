@@ -524,6 +524,39 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   #shopWrap #info .acts #bUp,#shopWrap #info .acts #bSell{grid-column:auto} #shopWrap #info .acts{grid-template-columns:1fr 1fr;padding-right:0}
   #shopWrap #iDmg{grid-template-columns:repeat(4,1fr)} #shopWrap #iDmg span{padding:2px 3px;font-size:10px}
 }
+/* ---- title screen, v2: painted key art up top, big chunky game buttons below (side by side on a wide screen) */
+#title.v2{justify-content:flex-end;align-items:center;gap:0;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#7a3a1e;overflow:hidden}
+#title.v2 .tBlur{position:absolute;inset:-40px;background:url(assets/title.jpg) center/cover no-repeat;filter:blur(28px) brightness(.62) saturate(1.15)}
+#title.v2::after{content:'';position:absolute;left:0;right:0;bottom:0;height:60%;background:linear-gradient(rgba(40,16,6,0),rgba(40,16,6,.55));pointer-events:none}
+#title.v2 .tArt{position:absolute;top:0;left:50%;transform:translateX(-50%);width:min(100vw,calc((100dvh - 330px) * 1.2397));aspect-ratio:1024/826;background:url(assets/title.jpg) top center/cover no-repeat;-webkit-mask-image:linear-gradient(#000 80%,transparent);mask-image:linear-gradient(#000 80%,transparent)}
+#title.v2 .logo,#title.v2 .sub{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#title.v2 .rotTip{display:none}
+#title.v2 .tCol{position:relative;z-index:1;display:flex;flex-direction:column;gap:12px;width:min(520px,100%)}
+#title.v2 .tmain{display:flex;flex-direction:column;gap:12px;width:100%}
+#title.v2 #resumeT,#title.v2 .tmain .btn{width:100%;display:flex;align-items:center;gap:16px;text-align:left;padding:10px 22px;border-radius:26px;border:3px solid rgba(0,0,0,.45);font-family:var(--display);font-size:clamp(26px,4.4vh,38px);line-height:1;min-height:clamp(64px,10.5vh,90px);letter-spacing:.02em}
+#title.v2 #resumeT[hidden]{display:none}
+#title.v2 .ti{flex:none;width:clamp(40px,6vh,54px);display:grid;place-items:center} #title.v2 .ti svg{width:100%;height:auto}
+#title.v2 .tt{flex:1;min-width:0;text-align:center} #title.v2 .tt small{display:block;margin-top:4px;font:900 clamp(12px,1.8vh,15px) var(--body);opacity:.85;letter-spacing:.02em}
+#title.v2 #resumeT{background:linear-gradient(#a6f75c,#3cbf22 55%,#2a9e14);box-shadow:0 7px 0 #176b0a,0 14px 26px rgba(0,0,0,.4);color:#fff;text-shadow:0 2px 0 #0b3d06,0 0 2px #0b3d06,1px 1px 0 #0b3d06,-1px -1px 0 #0b3d06}
+#title.v2 #resumeT small{color:#0b3d06;text-shadow:none;opacity:.9}
+#title.v2 .soloBtn{background:linear-gradient(#ffe866,#ffc61a 55%,#f0a500);box-shadow:0 7px 0 #8d5a00,0 14px 26px rgba(0,0,0,.4);color:#3a2200}
+#title.v2 .teamBtn{background:linear-gradient(#8fe0ff,#3aa8f0 55%,#2389da);box-shadow:0 7px 0 #144b80,0 14px 26px rgba(0,0,0,.4);color:#061f3a}
+#title.v2 .tsmall{width:100%;gap:12px;margin-top:4px}
+#title.v2 .tsmall button{flex:1;height:clamp(60px,9vh,78px);border-radius:18px;background:#181b20;border:3px solid #000;box-shadow:0 5px 0 rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.12);color:#fff}
+#title.v2 .tsmall button span{font:400 clamp(10px,1.6vh,15px) var(--display);white-space:nowrap;letter-spacing:.04em;text-transform:uppercase}
+#title.v2 .tsmall svg{width:clamp(22px,3.4vh,30px);height:clamp(22px,3.4vh,30px)}
+@media (orientation:landscape){
+  #title.v2{justify-content:center;align-items:flex-end;padding:16px max(24px,5vw) 16px 16px}
+  #title.v2::after{top:0;height:auto;left:auto;width:55%;background:linear-gradient(90deg,rgba(40,16,6,0),rgba(40,16,6,.5))}
+  #title.v2 .tArt{left:0;top:0;transform:none;height:100%;width:auto;max-width:60vw;background-position:center top;-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
+  #title.v2 .tCol{width:min(460px,38vw)}
+}
+@media (orientation:landscape) and (max-height:560px){
+  #title.v2 .tCol,#title.v2 .tmain{gap:8px}
+  #title.v2 #resumeT,#title.v2 .tmain .btn{min-height:52px;font-size:24px;padding:6px 16px;border-radius:18px}
+  #title.v2 .tsmall button{height:50px;border-radius:14px}
+}
+
 </style>
 </head>
 <body>
@@ -547,7 +580,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v263</div>
+    <div id="ver">v264</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -573,19 +606,23 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="swipe" hidden><div class="bh">NOW VIEWING</div><div class="row"><b></b></div></div><div id="spec" hidden><div class="sbar"><b id="specT">Watching</b><span id="specS"></span></div><div class="smine" id="specMine"></div><button type="button" class="btn" id="specBack">Back to my kitchen</button></div>
     <div id="banner"></div>
 
-    <div class="screen" id="title">
+    <div class="screen v2" id="title">
+      <div class="tBlur" aria-hidden="true"></div>
+      <div class="tArt" role="img" aria-label="Pest Panic Defense: the exterminator sprays a swarm of ants on the birthday cake"></div>
       <h1 class="logo">Pest<span>Panic Defense</span></h1>
       <p class="sub">The bugs found the birthday cake. It's on the counter. Set out swatters, sprays and zappers along the sugar trail and save every slice you can.</p>
-      <button class="btn" id="resumeT" type="button" hidden>Resume<small id="resumeS"></small></button>
+      <div class="tCol">
+      <button class="btn" id="resumeT" type="button" hidden><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="#0b3d06" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span class="tt">Resume<small id="resumeS"></small></span></button>
       <div class="tmain">
-        <button class="btn soloBtn" id="soloT" type="button">Solo <small>10 houses · 25 waves each</small></button>
-        <button class="btn teamBtn" id="onlineT" type="button">Online <small>play with real people</small></button>
+        <button class="btn soloBtn" id="soloT" type="button"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z" fill="currentColor"/></svg></span><span class="tt">Solo <small>10 houses · 25 waves each</small></span></button>
+        <button class="btn teamBtn" id="onlineT" type="button"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6" fill="currentColor"/><circle cx="17" cy="9" r="3" fill="currentColor"/><path d="M2 20c0-4 3.2-6.5 7-6.5s7 2.5 7 6.5zM15 20c0-2.2-.6-4-1.8-5.4 1-.5 2.1-.8 3.3-.8 3.1 0 5.5 2.1 5.5 6.2z" fill="currentColor"/></svg></span><span class="tt">Online <small>play with real people</small></span></button>
       </div>
       <div class="tsmall">
         <button id="guideT" type="button" aria-label="Field guide and achievements" title="Field guide and achievements"><svg viewBox="0 0 24 24"><path d="M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Guide</span></button>
         <button id="shinyT" type="button" aria-label="Shiny Collection" title="Shiny Collection"><svg viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7z" fill="currentColor"/><path d="M19 15l.9 2.3 2.1.7-2.1.8L19 21l-.9-2.2-2.1-.8 2.1-.7z" fill="currentColor" opacity=".7"/></svg><span>Collection</span></button>
         <button id="setT" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 20 20"><path d="M8.6 2h2.8l.4 2.1 1.5.7 1.8-1.2 2 2-1.2 1.8.7 1.5 2.1.4v2.8l-2.1.4-.7 1.5 1.2 1.8-2 2-1.8-1.2-1.5.7-.4 2.1H8.6l-.4-2.1-1.5-.7-1.8 1.2-2-2 1.2-1.8-.7-1.5L1.3 11.4V8.6l2.1-.4.7-1.5-1.2-1.8 2-2 1.8 1.2 1.5-.7z" fill="currentColor"/><circle cx="10" cy="10" r="2.8" fill="#1a1f25"/></svg><span>Settings</span></button>
         <button id="fullT" type="button" hidden aria-label="Full screen" title="Full screen"><svg viewBox="0 0 20 20"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Full</span></button>
+      </div>
       </div>
       <p class="rotTip">Tip: turn your phone sideways for a bigger board with your tools on the right.</p>
     </div>
