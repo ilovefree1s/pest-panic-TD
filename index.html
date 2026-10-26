@@ -198,6 +198,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .gtabs button{border:0;border-radius:999px;padding:8px 16px;font:400 17px var(--display);letter-spacing:.03em;color:var(--dim);background:none;cursor:pointer}
 .gtabs button.on{background:var(--gold);color:#2a1600}
 .tmain{display:grid;gap:12px;width:min(340px,86vw)}
+#resumeT{width:min(340px,86vw);background:linear-gradient(#9be86a,#3fae3a);box-shadow:0 6px 0 #1f6a1a,0 12px 24px rgba(0,0,0,.4);color:#0c2a08} #resumeT small{display:block;font:900 12px var(--body);opacity:.8}
 #online{z-index:30} .lhead2{margin:6px 0 -4px;font:400 20px var(--display);color:var(--gold)} .aimodes{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(560px,92vw)} .aimodes .btn{font-size:18px;padding:10px 8px} #v22T small,#ffaT small{display:block;font:900 11px var(--body);opacity:.75} #ffaT{background:linear-gradient(#ffc38a,#e0602a);box-shadow:0 6px 0 #7a2a0c,0 12px 24px rgba(0,0,0,.4);color:#3a1204} #v22T{background:linear-gradient(#c9a3ff,#7a4ad0);box-shadow:0 6px 0 #3e1f7a,0 12px 24px rgba(0,0,0,.4);color:#1a0838}
 .roster.ffa{grid-template-columns:1fr} .roster .rtF{background:rgba(255,150,80,.16);box-shadow:inset 0 0 0 2px rgba(255,150,80,.5)}
 .roster{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;text-align:left} .roster .rt{border-radius:12px;padding:8px;display:grid;gap:4px} .roster .rtA{background:rgba(80,160,255,.18);box-shadow:inset 0 0 0 2px rgba(80,160,255,.5)} .roster .rtB{background:rgba(255,90,70,.16);box-shadow:inset 0 0 0 2px rgba(255,90,70,.5)} .roster b{font:400 16px var(--display);color:#fff;letter-spacing:.02em} .roster button,.roster span{border:0;border-radius:8px;padding:5px 8px;font:800 13px var(--body);color:var(--text);background:rgba(0,0,0,.3);text-align:left} .roster button{cursor:pointer} .roster .me{color:var(--gold)} .roster .empty{opacity:.5;font-style:italic}
@@ -545,7 +546,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v253</div>
+    <div id="ver">v254</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -574,6 +575,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div class="screen" id="title">
       <h1 class="logo">Pest<span>Panic Defense</span></h1>
       <p class="sub">The bugs found the birthday cake. It's on the counter. Set out swatters, sprays and zappers along the sugar trail and save every slice you can.</p>
+      <button class="btn" id="resumeT" type="button" hidden>Resume<small id="resumeS"></small></button>
       <div class="tmain">
         <button class="btn soloBtn" id="soloT" type="button">Solo <small>10 houses · 25 waves each</small></button>
         <button class="btn teamBtn" id="onlineT" type="button">Online <small>play with real people</small></button>
@@ -3485,6 +3487,7 @@ function startWave0() {
   if (S.net === 'host' && !S.teamGo && !VSGO) { teamReady(0); return; }   // Team Kitchen: both players have to tap
   if (vsPaced() && !S.vs.remote && !VSGO) { vsReady(); return; }
   if (S.net === 'host' && (!vsPaced() || VSGO)) S.rdy = [0, 0];
+  if (!S.active) saveRun();
   const rush = S.active, eb = vsPaced() ? 0 : rush ? Math.round(RUSH_BONUS) : earlyBonus(); S.nextT = 0; hideBelt(); RUSHARM = -1e9;   // Bug Battle pays the early bonus when you tap Ready instead
   for (const tw of S.towers) tw.fresh = 0;
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
@@ -3989,7 +3992,7 @@ function update(dt) {
     const cl = S.clears && S.clears.length ? S.clears : [S.wave];
     const bonus = cl.reduce((a, w) => a + Math.round((25 + w * 3) * goldMul()), 0) + (S.vs ? S.vs.eco : 0); S.clears = null; S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
     banner(cl.length > 1 ? 'Waves ' + cl[0] + '–' + cl[cl.length - 1] + ' cleared' : 'Wave ' + S.wave + ' cleared', '+' + bonus + ' coins', false, 1600); SND.play('clear'); renderShop();
-    S.nextT = vsPaced() ? 0 : LEVELS[LV].team ? 5 : NEXT_WAIT; showBelt(); if (vsPaced()) { if (!S.vs.v22) netSend(vsStatus()); syncGo(); } syncTray();   // co-op: next wave 5 seconds after the last bug on either side is gone
+    S.nextT = vsPaced() ? 0 : LEVELS[LV].team ? 5 : NEXT_WAIT; saveRun(); showBelt(); if (vsPaced()) { if (!S.vs.v22) netSend(vsStatus()); syncGo(); } syncTray();   // co-op: next wave 5 seconds after the last bug on either side is gone
     syncTray();
   }
 }
@@ -4155,8 +4158,8 @@ function applyPerk(tw) {
   if (!TT[tw.t].roam) { const ring = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.07, 8, 40), new THREE.MeshBasicMaterial({ color: '#ff8a2a' })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.12; tw.o.root.add(ring); tw.o.perkRing = ring; }
   if (tw.o.setPerk) tw.o.setPerk(); else tw.o.baseScale = 1.12;
   for (let i = 0; i < 24; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 2.4, y: 0.5 + Math.random() * 2.5, z: tw.z + (Math.random() - 0.5) * 2.4, vy: 2.5, life: 0.8, s0: 0.8, s1: 0.1, c: [1, 0.6 + Math.random() * 0.3, 0.2], a0: 1 });
-  SND.play('up'); setTimeout(() => SND.play('clear'), 200);
-  if ((tw.owner || 0) === (S.me || 0)) banner(PERK[tw.t].icon + ' ' + PERK[tw.t].name + '!', PERK[tw.t].d, false, 2200);
+  if (!BN_QUIET) { SND.play('up'); setTimeout(() => SND.play('clear'), 200); }
+  if ((tw.owner || 0) === (S.me || 0) && !BN_QUIET) banner(PERK[tw.t].icon + ' ' + PERK[tw.t].name + '!', PERK[tw.t].d, false, 2200);
   if (S.pick === tw) syncTray();
 }
 function applyUpgrade(tw) {
@@ -5256,7 +5259,7 @@ function toTitle() {
   clearBoard(); loadLevel(0); S = newState('title'); shown = {}; $('stageTag').hidden = true;
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
-  $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('peek').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
+  syncResume(); $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('peek').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
   SOLO.forEach((lv, i) => {
     const L = LEVELS[lv], b = loadBest(lv), el = $('best' + lv);
     const st = loadNum(starKey(lv)), en = loadNum(endKey(lv));
@@ -5265,7 +5268,41 @@ function toTitle() {
   });
   requestAnimationFrame(resize);
 }
+/* ---- resume a solo run: saved between waves (when a wave is cleared, when the next one is sent, and when the app goes to the background between waves) */
+const RUN_KEY = 'ppd-run';
+function runSavable() { return S && S.mode === 'play' && !S.net && !S.vs && !LEVELS[LV].team && !BLD.testing && LEVELS[LV].name !== 'My Trail' && S.lives > 0; }
+function saveRun() {
+  if (!runSavable() || S.active) return;
+  const d = { v: 1, lv: LV, wave: S.wave, money: Math.floor(S.money), lives: S.lives, lic: S.lic || 0, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(),
+    towers: S.towers.map(t => [t.t, t.c, t.r, t.lv, t.perk ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
+  try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
+}
+function loadRun() { try { const d = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); return d && d.v === 1 && LEVELS[d.lv] && HOUSES[d.lv] ? d : null; } catch (e) { return null; } }
+function clearRun() { try { localStorage.removeItem(RUN_KEY); } catch (e) {} syncResume(); }
+function syncResume() { const d = loadRun(), b = $('resumeT'); if (!b) return; b.hidden = !d; if (d) $('resumeS').textContent = 'Level ' + soloNum(d.lv) + ' · ' + HOUSES[d.lv].name + ' · wave ' + d.wave + ' cleared'; }
+function resumeRun() {
+  const d = loadRun(); if (!d) return;
+  RESUMING = true; try { startGame(d.lv); } finally { RESUMING = false; }
+  const m0 = S.mode; S.mode = 'demo'; S.money = 1e9;
+  for (const [t, c, r, lv, perk, dmg, kills, bonus, spent] of d.towers) {
+    if (!TT[t]) continue;
+    let tw = null;
+    if (TT[t].roam) { if (buyPet(t)) tw = S.towers[S.towers.length - 1]; if (tw) { cancelJobs(tw); tw.pending = false; tw.o.root.visible = true; tw.o.root.scale.setScalar(1); tw.pop = 1; } }
+    else if (placeTower(t, c, r)) tw = S.towers[S.towers.length - 1];
+    if (!tw) continue;
+    tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); tw.o.root.scale.setScalar(1); tw.pop = 1;
+    if (perk) { BN_QUIET = true; try { applyPerk(tw); } finally { BN_QUIET = false; } }
+    tw.dmg = dmg; tw.kills = kills; tw.bonus = bonus; tw.spent = spent; tw.fresh = 0;
+  }
+  S.mode = m0; S.undo = null; syncUndo(); S.jobs = []; S.ext.job = null; S.ext.state = 'idle';
+  S.money = d.money; S.lives = d.lives; S.wave = d.wave; S.kills = d.kills; S.earlyCalls = d.early; S.endless = d.endless; S.stats = d.stats || {};
+  S.lic = 0; for (let i = 0; i < d.lic; i++) { S.lic++; } S.dmgMul = 1 + 0.05 * S.lic;
+  setCake(S.lives); S.nextT = 0; tutEnd(); syncHud(); syncTray(); showBelt(); renderShop();
+  banner('Welcome back!', 'Level ' + soloNum(d.lv) + ', picking up after wave ' + d.wave, false, 2200);
+}
+let RESUMING = false, BN_QUIET = false;
 function startGame(lv = LV, net = null, aiDiff = 1) {
+  if (!RESUMING) clearRun();
   $('rsAsk').hidden = true;
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
   clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools'; requestAnimationFrame(syncBeltPos);
@@ -5446,6 +5483,8 @@ async function netRejoin() {
   try { NET.link = await netOpen(NET.code, netOnMsg); netSend({ k: 'back' }); } catch (e) { NET.link = null; }
   NET.rejoining = false;
 }
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveRun(); });
+addEventListener('pagehide', () => saveRun());
 document.addEventListener('visibilitychange', () => {
   if (!NET.role) return;
   if (document.hidden) { netSend({ k: 'away' }); return; }
@@ -6214,6 +6253,7 @@ function renderTeamMaps() {
     return `<button class="tmap${lv === TEAM_LV ? ' on' : ''}" type="button" data-lv="${lv}" ${ok ? '' : 'disabled'}><b>${i + 1}. ${L.name}</b><em class="d${i}">${L.sub}</em><small>${!ok ? '🔒 Beat map ' + i + ' first' : b >= MAXW ? starStr(Math.max(1, st)) : b ? 'Best: wave ' + b : HOUSES[lv].name}</small></button>`; }).join('');
 }
 $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (HOUSE_MODE()) VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); if (NET.role === 'host') { lobbyAd(true); if (ROSTER_MODE()) v22Broadcast(); } });
+$('resumeT').addEventListener('click', () => { SND.init(); resumeRun(); });
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
 $('soloBack').addEventListener('click', () => { $('solo').hidden = true; $('title').hidden = false; });
 let LOBBY_AI = false;
@@ -6823,6 +6863,7 @@ function tutTick(dt) {
 }
 $('tutSkip').addEventListener('click', tutEnd);
 function gameOver(won) {
+  if (!(S.vs)) clearRun();
   if (S.vs && S.vs.ffa && !won) { vsEnd('lose', 'The bugs ate your cake. You\'re out!'); return; }
   if (S.vs && S.vs.race && !won) { raceDie(); return; }
   if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
