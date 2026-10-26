@@ -582,7 +582,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v267</div>
+    <div id="ver">v268</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2364,6 +2364,7 @@ function finishJob(j) {
     banner('Meow!', 'The cat is awake and on the prowl', false, 1400); SND.play('meow');
   }
   if (j.kind === 'relight') { o.snuff = false; o.relightPending = false; for (let i = 0; i < 12; i++) FX.glow.spawn({ x: o.x + (Math.random() - 0.5), y: 2 + Math.random(), z: o.z + (Math.random() - 0.5), vy: 2, life: 0.6, s0: 0.6, s1: 0.1, c: [1, 0.8, 0.3], a0: 1 }); SND.play('up'); if (S.pick === o) syncTray(); return; }
+  if (o.ctr) { o.x = o.ctr.x; o.z = o.ctr.z; o.ctrY = TOP_Y; o.o.root.position.set(o.x, TOP_Y, o.z); }   // the flytrap goes up on the counter
   o.pending = false; o.o.root.visible = true; o.pop = 0;
   if (j.kind === 'build') o.o.root.scale.setScalar(0.01);
   for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; FX.smoke.spawn({ x: o.x + Math.cos(a), y: 0.2, z: o.z + Math.sin(a), vx: Math.cos(a) * 3, vz: Math.sin(a) * 3, drag: 4, life: 0.45, s0: 0.5, s1: 1.2, c: [0.95, 0.92, 0.85], a0: 0.4 }); }
@@ -2642,10 +2643,10 @@ TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, s
 // pets: living helpers, in their own tab
 TT.frog = { name: 'Pet Frog', short: 'Frog', cost: 85, air: true, pet: true, range: [5.2, 5.8, 6.4], dmg: [17, 29, 43], rate: [0.85, 0.75, 0.65],
   d: 'A frog on a lily pad. It snaps its tongue at flying bugs first (then the bug closest to the cake). Flies and moths take double, and little bugs (ants, bed bugs, baby spiders, flies) with low health get gulped whole.' };
-TT.cat = { name: 'House Cat', short: 'Cat', cost: 80, air: true, pet: true, unique: true, roam: true, range: [4.5, 5.2, 6], dmg: [22, 36, 55], pin: [1.0, 1.3, 1.7], rate: [2.4, 2.1, 1.8], spd: [3.2, 3.6, 4],
+TT.cat = { name: 'House Cat', short: 'Cat', cost: 80, air: true, pet: true, unique: true, oneKitchen: true, roam: true, range: [4.5, 5.2, 6], dmg: [22, 36, 55], pin: [1.0, 1.3, 1.7], rate: [2.4, 2.1, 1.8], spd: [3.2, 3.6, 4],
   d: 'Not a tool you place: buy it and the cat wanders in and roams the whole kitchen on its own. It stalks any bug it notices and pounces: a big swipe, and the bug is pinned in place for a second (bosses for half as long). One per kitchen. Tap the cat to upgrade or sell it.' };
-TT.venus = { name: 'Venus Flytrap', short: 'Flytrap', cost: 110, air: true, pet: true, fliesOnly: true, range: [4.4, 4.8, 5.2], dmg: [90, 140, 200], chew: [3.2, 2.8, 2.4],
-  d: 'A hungry plant in a pot that only eats flying bugs. Each head lures one nearby fly at a time, snaps it up whole, then chews for a few seconds before it can call the next one. Flying bosses just take a big bite. The first upgrade grows a second head so it can eat two at once; the next makes it chew faster and reach further.' };
+TT.venus = { name: 'Venus Flytrap', short: 'Flytrap', cost: 110, air: true, pet: true, fliesOnly: true, unique: true, oneKitchen: true, roam: true, counter: true, range: [4.4, 4.8, 5.2], dmg: [90, 140, 200], chew: [3.2, 2.8, 2.4],
+  d: 'A hungry plant in a pot that only eats flying bugs. It sits on the counter and lures flies from anywhere in the kitchen, one per head at a time: each fly buzzes over, gets snapped up whole, then the head chews for a few seconds before calling the next. One per kitchen. Flying bosses just take a big bite. The first upgrade grows a second head so it can eat two at once; the next makes it chew faster and reach further.' };
 const PETS = ['frog', 'venus', 'cat'];
 const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger'];
 SHOP.sort((a, b) => TT[a].cost - TT[b].cost);   // the tray lists tools cheapest first
@@ -2932,9 +2933,9 @@ function specialMove(b, sp, dt) {
       let best = null, bd = 1e9;
       for (const c of S.towers) {   /* one fly per hungry head, and only flies passing fairly close by */
         if (c.t !== 'venus' || c.pending) continue;
-        const L = Math.min(2, c.lv - 1), heads = Math.min(2, c.lv), hungry = heads - (c.vh ? c.vh.slice(0, heads).filter(h => h.cd > 0).length : 0);
+        const heads = Math.min(2, c.lv), hungry = heads - (c.vh ? c.vh.slice(0, heads).filter(h => h.cd > 0).length : 0);
         const n = S.bugs.filter(o => o.free && o.free.tw === c && o.free.phase !== 'back').length; if (n >= hungry) continue;
-        const lure = TT.venus.range[L] * (c.perk ? 1.5 : 1) * 2, d = (c.x - b.x) ** 2 + (c.z - b.z) ** 2; if (d > lure * lure) continue;
+        const d = (c.x - b.x) ** 2 + (c.z - b.z) ** 2;   // from the counter it calls flies from anywhere in the kitchen
         if (d < bd) { bd = d; best = c; }
       }
       if (best) b.free = { tw: best, phase: 'go', land: 0 };
@@ -2960,14 +2961,14 @@ function mothFree(b, dt) {
   else { tx = c.x; tz = c.z; }
   const dx = tx - b.fx, dz = tz - b.fz, d = Math.hypot(dx, dz);
   if (f.phase === 'land' && c.t === 'venus') {   // a fly buzzing around the flytrap until it gets snapped up (or gives up after a few seconds)
-    f.land += dt; b.walk += dt * 8; const a = f.land * 5 + b.id; b.fx = c.x + Math.cos(a) * 0.6; b.fz = c.z + Math.sin(a) * 0.6; b.hy = 1 + Math.sin(f.land * 7) * 0.2;
+    f.land += dt; b.walk += dt * 8; const a = f.land * 5 + b.id; b.fx = c.x + Math.cos(a) * 0.6; b.fz = c.z + Math.sin(a) * 0.6; b.hy = 1 + (c.ctrY || 0) + Math.sin(f.land * 7) * 0.2;
     if (f.land >= 4) { b.didVenus = true; f.phase = 'back'; }
   } else if (f.phase === 'land') {
     f.land += dt; b.hy = 0.75; b.walk += dt * 6;
     if (Math.random() < dt * 6) FX.smoke.spawn({ x: c.x, y: 2.4, z: c.z, vy: 1.2, life: 0.6, s0: 0.25, s1: 0.7, c: [0.5, 0.5, 0.5], a0: 0.4 });
     if (f.land >= (BT[b.t].boss ? 1.5 : 3)) { c.snuff = true; if (BT[b.t].boss) for (const o of S.towers) if (o.t === 'candle' && (o.x - c.x) ** 2 + (o.z - c.z) ** 2 < 64) o.snuff = true; b.didCandle = true; f.phase = 'back'; SND.play('sizzle'); for (let i = 0; i < 10; i++) FX.smoke.spawn({ x: c.x, y: 2.2, z: c.z, vy: 1.6, life: 1, s0: 0.4, s1: 1.2, c: [0.35, 0.35, 0.35], a0: 0.5 }); if (S.mode === 'play') banner('Candle snuffed!', 'A moth put it out. Tap the candle to relight it (15 coins)', false, 1600); }
   } else if (d < 0.35) { if (f.phase === 'go') { f.phase = 'land'; f.land = 0; } else { b.free = null; b.hy = 0; return; } }
-  else { const v = Math.min(d, 4.5 * dt); b.fx += dx / d * v; b.fz += dz / d * v; b.ang = Math.atan2(dx, dz); b.walk += dt * 6; b.hy += ((f.phase === 'go' ? 1.2 : 0) - b.hy) * Math.min(1, dt * 3); }
+  else { const v = Math.min(d, 4.5 * dt); b.fx += dx / d * v; b.fz += dz / d * v; b.ang = Math.atan2(dx, dz); b.walk += dt * 6; b.hy += ((f.phase === 'go' ? 1.2 + (c.ctrY || 0) : 0) - b.hy) * Math.min(1, dt * 3); }
   b.x = b.fx; b.z = b.fz; b.y0 = 0;
 }
 function relight(tw = S.pick) {
@@ -4236,7 +4237,7 @@ function itemsAct(dt) {
   }
 }
 function toolLocked(t) { return t === 'fogger' && S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < 2; }
-function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (o.owner || 0) === (S.cur || 0))); }
+function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (TT[t].oneKitchen || (o.owner || 0) === (S.cur || 0)))); }   /* cat and flytrap: one in the whole kitchen, whoever bought it */
 /* ghost tools: tap a spot when you're short on coins and a see-through tool waits there; the moment you can afford it, it gets bought and built */
 const GHOST_MAX = 3, GHOST_MESH = new Map();
 function ghostable(t) { const T = TT[t]; return !!T && !T.item && !T.roam && t !== 'license'; }
@@ -4388,7 +4389,7 @@ function unpick() { S.pick = null; syncTray(); }
 // roaming pets: bought straight from the tray, they walk in through a bug door and need no tile
 function buyPet(t) {
   const T = TT[t];
-  if (ownsUnique(t)) { SND.play('err'); banner('Only one ' + T.name, 'Tap your cat to upgrade or sell it', false, 1500); return false; }
+  if (ownsUnique(t)) { SND.play('err'); banner('Only one ' + T.name, 'There\'s already one in this kitchen. Tap it to upgrade or sell it', false, 1600); return false; }
   if (S.money < T.cost) { SND.play('err'); return false; }
   if (S.net === 'guest') { netSend({ k: 'pet', t }); SND.play('tap'); return true; }
   S.money -= T.cost; bumpStat('stCoins');
@@ -4396,6 +4397,12 @@ function buyPet(t) {
   const o = makeTower(t), tw = { id: S.nid++, t, c: -9, r: -9, x: tmpP.x, z: tmpP.z, cx: tmpP.x, cz: tmpP.z, cyaw: 0, lv: 1, cd: 0.5, anim: 9, yaw: 0, yawT: 0, spent: T.cost, fresh: S.active ? 0 : T.cost, uses: 0, owner: S.cur || 0, o };
   o.pips.forEach((p, i) => p.visible = i < 1); o.root.position.set(tw.x, 0, tw.z); o.root.scale.setScalar(0.01); tw.pop = 0; scene.add(o.root); S.towers.push(tw);
   S.undo = { kind: 'buy', id: tw.id, t, got: T.cost, until: performance.now() + UNDO_MS }; if (S.cur === (S.me || 0)) syncUndo();
+  if (T.counter) {
+    const sp = venusSpot(); tw.ctr = sp; const f = floorBelow(sp.x, sp.z);
+    tw.x = tw.cx = f.x; tw.z = tw.cz = f.z; o.root.position.set(f.x, 0, f.z); o.root.visible = false; tw.pending = true;
+    addJob('build', tw); banner('Flytrap!', 'Your exterminator is setting it up on the counter', false, 1800); SND.play('tap');
+    return true;
+  }
   if (t === 'cat') {
     const w = catWakeSpot(); tw.x = tw.cx = w.x; tw.z = tw.cz = w.z; o.root.position.set(w.x, 0, w.z); o.root.visible = false; tw.pending = true;
     addJob('wake', tw); banner('Wake up, kitty!', 'Your exterminator is going over to pet the cat awake', false, 2000); SND.play('tap');
@@ -4645,6 +4652,15 @@ function propFalls(dt) {
       g.visible = false; g.userData.fall = null;
     }
   }
+}
+function venusSpot() {   /* a random free spot on the left or right counter, clear of the clutter, the cat bed and the cake */
+  const team = !!(LEVELS[LV] && LEVELS[LV].team), cands = [];
+  for (let z = -9; z <= 7; z += 0.5) cands.push(...(team ? [CL2(z), CR2(z)] : [CL(z), CR(z)]));
+  const busy = []; if (KIT.props) for (const k in KIT.props) { const g = KIT.props[k]; if (g.visible && !g.userData.knocked) busy.push([g.position.x, g.position.z, k.startsWith('sm_') ? 1.5 : 2.4]); }
+  const bed = catBedSpot(); if (bed) busy.push([bed[0], bed[1], 2.8]);
+  const ok = cands.filter(c => busy.every(([x, z, r]) => Math.hypot(c[0] - x, c[1] - z) > r));
+  const c = (ok.length ? ok : cands)[Math.floor(Math.random() * (ok.length || cands.length))];
+  return { x: c[0], z: c[1] };
 }
 function catWakeSpot() {
   const at = catBedSpot(); if (!at) return { x: 0, z: 0 };
@@ -4992,6 +5008,8 @@ canvas.addEventListener('pointerdown', e => {
   if (!S.placing && !S.moving) {   // a roaming pet under the finger?
     const f = floorAt(e), pet = f && S.towers.find(o => TT[o.t].roam && Math.hypot(o.x - f.x, o.z - f.z) < (ptrType === 'mouse' ? 1.4 : 2.2));
     if (pet) { pick(pet); return; }
+    const onCtr = f && S.towers.find(o => o.ctr && !o.pending && ray.intersectObject(o.o.root, true).length);   /* the flytrap up on the counter */
+    if (onCtr) { pick(onCtr); return; }
   }
   const cell = cellAt(e);
   if (!cell) { S.prev = null; if (!S.placing) unpick(); return; }
@@ -5328,7 +5346,7 @@ function dmgHtml(tw) {   /* this tool's own numbers for the game so far */
 }
 function syncDmg() { const tw = S.pick; if (!tw || $('info').hidden) return; const h = dmgHtml(tw), el = $('iDmg'); if (el.innerHTML !== h) el.innerHTML = h; }
 function syncTray() {
-  { const own = !!(S && S.towers && S.towers.some(o => TT[o.t].roam && (o.owner || 0) === (S.cur || 0))); if (own !== syncTray.own) { syncTray.own = own; if (shopTab === 'pets') renderShop(); } }
+  { const own = S && S.towers ? S.towers.filter(o => TT[o.t].roam && (TT[o.t].oneKitchen || (o.owner || 0) === (S.cur || 0))).map(o => o.t).sort().join() : ''; if (own !== syncTray.own) { syncTray.own = own; if (shopTab === 'pets') renderShop(); } }
   const tw = S.pick;
   $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = $('shop').offsetTop + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel
   if (tw) {
@@ -5466,7 +5484,7 @@ function resumeRun() {
   for (const [t, c, r, lv, perk, dmg, kills, bonus, spent] of d.towers) {
     if (!TT[t]) continue;
     let tw = null;
-    if (TT[t].roam) { if (buyPet(t)) tw = S.towers[S.towers.length - 1]; if (tw) { cancelJobs(tw); tw.pending = false; tw.o.root.visible = true; tw.o.root.scale.setScalar(1); tw.pop = 1; } }
+    if (TT[t].roam) { if (buyPet(t)) tw = S.towers[S.towers.length - 1]; if (tw) { cancelJobs(tw); if (tw.ctr) finishJob({ kind: 'place', obj: tw }); tw.pending = false; tw.o.root.visible = true; tw.o.root.scale.setScalar(1); tw.pop = 1; } }
     else if (placeTower(t, c, r)) tw = S.towers[S.towers.length - 1];
     if (!tw) continue;
     tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); tw.o.root.scale.setScalar(1); tw.pop = 1;
@@ -5740,7 +5758,7 @@ function netSnap() {
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
       (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0) | (b.shiny ? 32 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
     ds: (S.dsN = ((S.dsN || 0) + 1) % 6) ? undefined : S.towers.map(t => [t.id, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.wdmg || 0), Math.round(t.bonus || 0), Math.round(t.wbonus || 0)]),
-    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0) | (t.perk ? 16 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0, r2(t.cy || 0)] : [])]),
+    t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0) | (t.perk ? 16 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0, r2(t.cy || 0)] : t.ctr ? [r2(t.x), r2(t.z), 0, 0, r2(t.ctrY || 0)] : [])]),
     i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd, it.trig ? 1 : 0]),
     e: [extSnap(P[0].ext), extSnap(P[1].ext)] };
 }
@@ -5797,7 +5815,8 @@ function netApply(m) {
     while (tw.lv < lv) applyUpgrade(tw);
     if (fl & 16 && !tw.perk) applyPerk(tw);
     tw.upPending = !!(fl & 2); tw.stunT = fl & 4 ? 0.2 : 0; tw.snuff = !!(fl & 8);
-    if (gcx != null) { tw.gcx = gcx; tw.gcz = gcz; tw.gcyaw = gcyaw; tw.cmove = cmove; tw.gcy = gcy || 0; }
+    if (gcx != null && TT[t].counter) { tw.x = gcx; tw.z = gcz; tw.ctrY = gcy || 0; tw.ctr = { x: gcx, z: gcz }; tw.o.root.position.set(gcx, tw.ctrY, gcz); }
+    else if (gcx != null) { tw.gcx = gcx; tw.gcz = gcz; tw.gcyaw = gcyaw; tw.cmove = cmove; tw.gcy = gcy || 0; }
     if (tw.c !== c || tw.r !== r) { tw.c = c; tw.r = r; tw.x = ccx(c); tw.z = ccz(r); tw.o.root.position.set(tw.x, 0, tw.z); }
   }
   for (const tw of [...S.towers]) if (!tseen.has(tw.id)) removeTower(tw);
