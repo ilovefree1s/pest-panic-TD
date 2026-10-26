@@ -423,7 +423,16 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #info ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:2px 14px;font-size:13px;font-weight:800;color:var(--dim)}
 #info ul b{color:var(--text);font-weight:900;font-variant-numeric:tabular-nums}
 #info ul b.up{color:var(--goo)}
-#iDmg{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:6px} #iDmg span{background:rgba(255,255,255,.07);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:800;color:var(--dim);white-space:nowrap} #iDmg b{color:#fff;font-weight:900;font-variant-numeric:tabular-nums} #iDmg .rk b{color:var(--gold)}
+#iDmg{display:flex;flex-wrap:wrap;gap:4px 8px;grid-column:2 / -1}
+#info .nm .perkTag{color:#2a0d00;font:900 10px var(--body);letter-spacing:.05em}
+@media (min-width:760px) and (min-height:561px){   /* PC: the damage numbers get their own column beside the buttons, so the card never needs a scrollbar */
+  #info{grid-template-columns:52px minmax(0,1fr) auto auto} #iDmg{grid-column:3;display:grid;grid-template-columns:auto auto;align-content:center} #iDmg span{text-align:left}
+  #info .desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  #info li.perkLi{flex-basis:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+@media (min-width:760px) and (max-width:1199px) and (min-height:561px){   /* mid-size screens: numbers go under the buttons */
+  #info{grid-template-columns:52px minmax(0,1fr) auto;grid-template-rows:auto auto;row-gap:6px} #info .ic{grid-row:1 / 3} #info>div:nth-child(2){grid-row:1 / 3} #info .acts{grid-column:3;grid-row:1;align-self:end} #iDmg{grid-column:3;grid-row:2;align-self:start;gap:3px 6px} #iDmg span{font-size:12px;padding:2px 8px} #info .desc{-webkit-line-clamp:1}
+} #iDmg span{background:rgba(255,255,255,.07);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:800;color:var(--dim);white-space:nowrap} #iDmg b{color:#fff;font-weight:900;font-variant-numeric:tabular-nums} #iDmg .rk b{color:var(--gold)}
 #info .acts{display:flex;gap:8px;align-items:center}
 .tc em.newtag{background:#ff6a3a;color:#fff;border-radius:6px;padding:1px 6px;font-style:normal;font-weight:900;font-size:10px;letter-spacing:.06em;align-self:flex-start}
 #info .acts .btn{font-size:16px;padding:9px 16px;line-height:1.1}
@@ -524,7 +533,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v249</div>
+    <div id="ver">v250</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -694,7 +703,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="shopWrap"><div class="tabrow"><div class="stabs" role="tablist"><button type="button" class="on" data-tab="tools">Tools</button><button type="button" data-tab="pets">Pets</button><button type="button" data-tab="items">Items</button><button type="button" data-tab="send" hidden>Send bugs</button></div><div id="trayStats"></div></div><div id="shop"></div></div>
     <div id="info" hidden>
       <div class="ic" id="iIc"></div>
-      <div><div class="nm"><b id="iName"></b><span id="iLv"></span></div><p class="desc" id="iDesc"></p><ul id="iStats"></ul><div id="iDmg"></div></div>
+      <div><div class="nm"><b id="iName"></b><span id="iLv"></span></div><p class="desc" id="iDesc"></p><ul id="iStats"></ul></div><div id="iDmg"></div>
       <div class="acts">
         <button class="btn alt" id="bUp" type="button">Upgrade<small id="bUpC"></small></button>
         <button class="btn dark" id="bMove" type="button" hidden>Move<small id="bMoveC"></small></button>
@@ -5074,7 +5083,7 @@ function banner(txt, sub, red, ms) {
   bannerTimer = setTimeout(() => el.classList.remove('on'), ms);
 }
 function fmtStat(label, a, b, unit = '') { return `<li>${label} <b>${a}${unit}</b>${b != null ? ` → <b class="up">${b}${unit}</b>` : ''}</li>`; }
-function statsHtml(tw) { const base = statsHtml0(tw); return PERK[tw.t] && tw.lv >= 3 ? base + `<li class="perkLi">${tw.perk ? 'Perk' : 'Perk available'}: <b>${PERK[tw.t].icon} ${PERK[tw.t].name}</b> · ${PERK[tw.t].d}</li>` : base; }
+function statsHtml(tw) { const base = statsHtml0(tw); return PERK[tw.t] && tw.lv >= 3 ? base + `<li class="perkLi" title="${PERK[tw.t].name}: ${PERK[tw.t].d.replace(/"/g, '&quot;')}">${tw.perk ? 'Perk' : 'Perk available'}: <b>${PERK[tw.t].icon} ${PERK[tw.t].name}</b> · ${PERK[tw.t].d}</li>` : base; }
 function statsHtml0(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'glue') return fmtStat('Bugs left', T.cap[L] - tw.uses, N != null ? T.cap[N] - Math.max(0, tw.uses - 6) : null) + fmtStat('Slows to', Math.round(T.slow[L] * 100), N != null ? Math.round(T.slow[N] * 100) : null, '%') + fmtStat('Burn', T.dps[L], N != null ? T.dps[N] : null, '/s');
