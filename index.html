@@ -582,7 +582,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v268</div>
+    <div id="ver">v269</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2577,6 +2577,8 @@ function extCosmetics(EXTM, tier) {   // your Shiny Collection rewards (only on 
   u.halo.visible = tier >= 4; if (tier >= 4) { u.halo.material.color.setHSL((h * 2) % 1, 1, 0.55); u.halo.rotation.z += 0.02; u.halo.scale.setScalar(1 + Math.sin(performance.now() / 300) * 0.06); }
 }
 let DEX_TIER = -1, DEX_T = 0;
+const EXT_SEL = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.6, 48), new THREE.MeshBasicMaterial({ color: '#ffd23a', transparent: true, opacity: 0.95, depthWrite: false }));
+EXT_SEL.rotation.x = -Math.PI / 2; EXT_SEL.renderOrder = 7; EXT_SEL.visible = false; scene.add(EXT_SEL);
 function drawExt(dt) {
   const show = S.mode === 'play' || S.mode === 'over', me = S.me || 0, M = [EXT, EXT2];
   if ((DEX_T -= dt) <= 0) { DEX_T = 2; DEX_TIER = dexTier(); }
@@ -2610,6 +2612,7 @@ function drawOneExt(dt, EXTM, e, show) {
   }
   u.body.position.y = walk ? Math.abs(Math.sin(e.phase)) * 0.06 : work ? -0.1 : Math.sin(clock * 2) * 0.02;
   u.hammer.visible = work && (!u.mdl || !u.mdl.holster || e.t >= 0.3);
+  if (e === S.ext) { EXT_SEL.visible = !!S.extSel && S.mode === 'play'; if (EXT_SEL.visible) { EXT_SEL.position.set(e.x, 0.08, e.z); EXT_SEL.scale.setScalar(1 + Math.sin(clock * 6) * 0.08); } }   // gold ring while he's selected
   B.shadow.add(e.x, 0.03, e.z, 2.2 - e.lift * 0.3, 0, 0, 0, 0, 0.45 - e.lift * 0.12);
   if (e.held) { const d = dropCell(e.x, e.z); if (d) B.shadow.add(ccx(d.c), 0.04, ccz(d.r), CS * 0.8, 0, 0, 0, 0, 0.25); }
 }
@@ -2636,7 +2639,7 @@ const TT = {
 };
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.2, 3.0, 3.8], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
-TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [72, 122, 194], dot: [24, 39, 62], rate: [2.2, 2.0, 1.7],
+TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [58, 98, 155], dot: [19, 31, 50], rate: [2.2, 2.0, 1.7],
   d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every bug in the cone, flies too, takes a big hit and keeps choking for 2 seconds. The fog ignores shells, so it melts bosses. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
   d: 'A support tool. Its flame gently scorches every bug in its glow, flies too (4, then 7, then 11 a second; two candles don\'t double it). Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
@@ -4414,7 +4417,7 @@ function buyPet(t) {
 function choose(t) {
   if (t === 'fogger') { try { localStorage.setItem('ppd-fogger-used', '1'); } catch (e) {} }
   if (S.mode !== 'play') return;
-  S.pick = null; S.prev = null;
+  S.pick = null; S.prev = null; S.extSel = false;
   if (itemUsed(t)) { S.placing = null; SND.play('err'); banner(TT[t].name, 'Already used this wave', true, 1200); syncTray(); return; }
   if (t === 'license') { S.placing = null; buyLicense(); return; }
   if (TT[t].roam) { S.placing = null; buyPet(t); syncTray(); return; }
@@ -4946,7 +4949,14 @@ function onExt(e) {
   const f = { x: hitV.x, z: hitV.z };
   return Math.hypot(f.x - S.ext.x, f.z - S.ext.z) < (ptrType === 'mouse' ? 1.6 : 3.2);
 }
-let dragId = null;
+let dragId = null, extTap = null;
+function extSendTo(d) {
+  const e = S.ext; e.home = d; e.rest = d;
+  if (S.net === 'guest') netSend({ k: 'home', c: d.c, r: d.r });
+  if (!e.job && e.state !== 'spray') e.state = 'idle';
+  for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; FX.glow.spawn({ x: ccx(d.c) + Math.cos(a) * 0.9, y: 0.3, z: ccz(d.r) + Math.sin(a) * 0.9, vy: 1.5, life: 0.5, s0: 0.5, s1: 0.1, c: [1, 0.85, 0.3], a0: 1 }); }
+  SND.play('tap');
+}
 function dragTo(ev) {
   const f = floorAt(ev); if (!f) return;
   const e = S.ext;
@@ -4987,22 +4997,38 @@ for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, e =
 canvas.addEventListener('wheel', e => { if (S.mode !== 'play') return; e.preventDefault(); zoomAbout(ZM.z * (e.deltaY < 0 ? 1.06 : 1 / 1.06), e.clientX, e.clientY); }, { passive: false });
 canvas.addEventListener('pointermove', e => {
   if (e.pointerType === 'mouse') { ptrType = 'mouse'; hoverCell = cellAt(e); }
+  if (extTap && extTap.id === e.pointerId && Math.hypot(e.clientX - extTap.x, e.clientY - extTap.y) > 10) {   // moved: it's a drag after all
+    dragId = extTap.id; extTap = null; S.extSel = false;
+    S.ext.held = true; S.ext.state = 'idle'; S.prev = null; canvas.style.cursor = 'grabbing'; SND.play('tap');
+  }
   if (dragId === e.pointerId) { dragTo(e); return; }
   if (e.pointerType === 'mouse' && S.mode === 'play' && !S.paused) canvas.style.cursor = !S.placing && onExt(e) ? 'grab' : '';
 });
-canvas.addEventListener('pointerup', e => { if (dragId === e.pointerId) endDrag(); });
+canvas.addEventListener('pointerup', e => {
+  if (extTap && extTap.id === e.pointerId) {   // a plain tap on him: select (or unselect)
+    extTap = null; S.extSel = !S.extSel; SND.play('tap');
+    if (S.extSel) { unpick(); if (!S.extTold) { S.extTold = 1; banner('Exterminator selected', 'Tap an empty floor tile to send him there', false, 1800); } }
+    return;
+  }
+  if (dragId === e.pointerId) endDrag();
+});
 canvas.addEventListener('pointercancel', e => { if (dragId === e.pointerId) endDrag(); });
 canvas.addEventListener('pointerleave', () => { hoverCell = null; });
 canvas.addEventListener('contextmenu', e => { e.preventDefault(); S.placing = null; S.prev = null; syncTray(); });
 canvas.addEventListener('pointerdown', e => {
-  if (e.button === 2) { S.placing = null; S.prev = null; S.moving = null; unpick(); syncTray(); return; }   // right click: cancel, never build
+  if (e.button === 2) { S.extSel = false; S.placing = null; S.prev = null; S.moving = null; unpick(); syncTray(); return; }   // right click: cancel, never build
   SND.init(); ptrType = e.pointerType || 'mouse';
   if (S.mode !== 'play' || S.paused) return;
   if (!S.placing && !S.moving && tapSleepingCat(e)) return;
-  if (dragId === null && !S.placing && onExt(e)) {   // with a tool picked, a tap on him builds there and he steps aside
-    dragId = e.pointerId; try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-    S.ext.held = true; S.ext.state = 'idle'; S.prev = null;
-    canvas.style.cursor = 'grabbing'; SND.play('tap');
+  if (dragId === null && !S.placing && onExt(e)) {   // a tap on him selects him; pressing and dragging still picks him up
+    extTap = { id: e.pointerId, x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    return;
+  }
+  if (S.extSel && !S.placing) {   // he's selected: tap a floor tile and he walks there and waits
+    const cell = cellAt(e);
+    if (!cell) { S.extSel = false; return; }
+    if (restFree(cell.c, cell.r) && mySide(cell.c)) { extSendTo(cell); S.extSel = false; }
+    else { SND.play('err'); banner('Not there', 'Pick an empty floor tile off the trail', true, 1100); }
     return;
   }
   if (!S.placing && !S.moving) {   // a roaming pet under the finger?
