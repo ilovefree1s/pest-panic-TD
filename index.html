@@ -546,7 +546,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
-    <div id="ver">v254</div>
+    <div id="ver">v255</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3984,6 +3984,7 @@ function update(dt) {
   if (!S.bugs.some(b => b.mesh) && !S.queue.some(t => BT[t].boss)) $('queen').hidden = true;
   if (S.mode !== 'play' || S.net === 'guest') return;
   if (S.lives <= 0) { if (!(S.vs && S.vs.dead)) gameOver(false); return; }
+  if (S.active && S.lives !== S.savedLives) { S.savedLives = S.lives; runLives(); }
   if (S.active && !S.queue.length && !S.bugs.length && !(S.vs && S.vs.inbox.length)) {
     S.active = false;
     for (const it of [...S.items]) { if (it.t === 'bomb' && !it.trig && it.waveEnd <= S.wave) it.waveEnd = S.wave + 1; if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it); }   // an unused Bug Bomb waits for the next wave
@@ -5277,9 +5278,13 @@ function saveRun() {
     towers: S.towers.map(t => [t.t, t.c, t.r, t.lv, t.perk ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
   try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
 }
+function runLives() {   /* cake eaten during a wave stays eaten: leaving mid-wave can't undo it */
+  if (!runSavable() || !S.active) return; const d = loadRun(); if (!d || d.lv !== LV || !(S.lives < d.lives)) return;
+  d.lives = S.lives; try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
+}
 function loadRun() { try { const d = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); return d && d.v === 1 && LEVELS[d.lv] && HOUSES[d.lv] ? d : null; } catch (e) { return null; } }
 function clearRun() { try { localStorage.removeItem(RUN_KEY); } catch (e) {} syncResume(); }
-function syncResume() { const d = loadRun(), b = $('resumeT'); if (!b) return; b.hidden = !d; if (d) $('resumeS').textContent = 'Level ' + soloNum(d.lv) + ' · ' + HOUSES[d.lv].name + ' · wave ' + d.wave + ' cleared'; }
+function syncResume() { const d = loadRun(), b = $('resumeT'); if (!b) return; b.hidden = !d; if (d) $('resumeS').textContent = 'Level ' + soloNum(d.lv) + ' · ' + HOUSES[d.lv].name + ' · ' + (d.wave ? 'wave ' + d.wave + ' cleared' : 'start') + ' · ' + d.lives + ' slices'; }
 function resumeRun() {
   const d = loadRun(); if (!d) return;
   RESUMING = true; try { startGame(d.lv); } finally { RESUMING = false; }
@@ -5483,8 +5488,8 @@ async function netRejoin() {
   try { NET.link = await netOpen(NET.code, netOnMsg); netSend({ k: 'back' }); } catch (e) { NET.link = null; }
   NET.rejoining = false;
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) saveRun(); });
-addEventListener('pagehide', () => saveRun());
+document.addEventListener('visibilitychange', () => { if (document.hidden) { saveRun(); runLives(); } });
+addEventListener('pagehide', () => { saveRun(); runLives(); });
 document.addEventListener('visibilitychange', () => {
   if (!NET.role) return;
   if (document.hidden) { netSend({ k: 'away' }); return; }
