@@ -6,30 +6,30 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0d1013",
+  "background_color": "#d2653a",
   "theme_color": "#0d1013",
   "description": "3D kitchen tower defense: swatters, sprays and zappers vs. bugs.",
   "icons": [
     {
-      "src": "icons/ext-192.png",
+      "src": "icons/ext2-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/ext-512.png",
+      "src": "icons/ext2-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/ext-mask-192.png",
+      "src": "icons/ext2-mask-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icons/ext-mask-512.png",
+      "src": "icons/ext2-mask-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
