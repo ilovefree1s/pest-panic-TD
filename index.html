@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v287</div>
+    <div id="ver">v288</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2413,6 +2413,46 @@ function extModelLoad() {
   try { new GLTFLoader().load('assets/exterminator.glb', g => { EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
 }
 extModelLoad();
+/* ---- the modelled house cat (Meshy). One model; each level repaints its fur (orange, gray, black, tiger) and collar (red, blue, gold) */
+const CATM = { gltf: null, tex: {}, base: null, flip: false };
+function catTexture(look) {   // look: 'l1' | 'l2' | 'l3' | 'tiger'
+  if (CATM.tex[look]) return CATM.tex[look];
+  const im = CATM.base, W = im.width, H = im.height, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
+  if (look !== 'l1') {
+    const D = x.getImageData(0, 0, W, H), a = D.data;
+    for (let i = 0; i < a.length; i += 4) {
+      const r = a[i], g = a[i + 1], b = a[i + 2], lum = (r * 0.3 + g * 0.59 + b * 0.11) / 255;
+      const collar = r > 140 && g < 75 && b < 75, fur = !collar && r > 110 && r > g * 1.15 && g > b * 1.25;
+      let c = null;
+      if (collar) c = (look === 'l2' ? [50, 120, 220] : [235, 185, 45]).map(v => v * (0.55 + lum * 1.1));
+      else if (fur) {
+        if (look === 'l2') { const v = 40 + lum * 190; c = [v, v * 1.02, v * 1.08]; }
+        else if (look === 'l3') { const v = 18 + lum * 70; c = [v, v, v * 1.12]; }
+        else c = lum < 0.64 ? [24, 18, 14] : [255, 105 + lum * 50, 10];   // tiger: the darker tabby stripes go black, the rest bright orange
+      }
+      if (c) { a[i] = Math.min(255, c[0]); a[i + 1] = Math.min(255, c[1]); a[i + 2] = Math.min(255, c[2]); }
+    }
+    x.putImageData(D, 0, 0);
+  }
+  const t = new THREE.CanvasTexture(cv); t.flipY = CATM.flip; t.colorSpace = THREE.SRGBColorSpace;
+  return (CATM.tex[look] = std({ map: t, roughness: 0.75, metalness: 0, color: new THREE.Color(0.8, 0.8, 0.8) }));
+}
+function catLook(o) { return o.perk ? 'tiger' : 'l' + (o.lv || 1); }
+function attachCatModel(o) {   /* swap a cat tower's built-from-shapes body for the model */
+  if (o.mdl || !CATM.gltf) return;
+  const m = CATM.gltf.scene.clone(true), box = new THREE.Box3().setFromObject(m), h = box.max.y - box.min.y, k = 1.85 / h;
+  m.scale.setScalar(k); m.position.y = -box.min.y * k;
+  const body = new THREE.Group(); body.add(m); o.cat.add(body);
+  m.traverse(n => { if (n.isMesh) { n.castShadow = true; n.material = catTexture(catLook(o)); } });
+  for (const n of [o.torso, o.head, o.tail, ...o.legs, ...o.extra]) n.visible = false;
+  o.mdl = { m, body }; if (o.pips) o.pips.forEach(q => { q.position.y = 2.25; });
+  if (o.sleeping) layCatAsleep(o);
+}
+function layCatAsleep(o) {   // asleep on the bed: lying on his side, a bit smaller
+  if (!o.mdl) return; o.root.scale.set(1.15, 1.15, 1.15); o.root.position.y = 0.3; o.mdl.body.rotation.set(0, 0, Math.PI / 2); o.mdl.body.position.set(0.55, 0, 0);
+}
+function catPaint(o) { if (o.mdl) { const mat = catTexture(catLook(o)); o.mdl.m.traverse(n => { if (n.isMesh) n.material = mat; }); } }
+try { new GLTFLoader().load('assets/cat.glb', g => { let tex = null; g.scene.traverse(n => { if (n.isMesh && n.material && n.material.map) tex = n.material.map; }); if (!tex) return; CATM.base = tex.image; CATM.flip = tex.flipY; CATM.gltf = g; }, undefined, () => {}); } catch (e) {}
 const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6, wake: 1.6, shelf: 0.9 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
@@ -3445,9 +3485,10 @@ const BUILD = {
     const stripes = new THREE.Group(); stripes.visible = false; cat.add(stripes);
     const stripeM = std({ color: '#1a1410', roughness: 0.7 });
     for (let i = 0; i < 5; i++) { const st = mesh(new THREE.TorusGeometry(0.42, 0.045, 6, 16, Math.PI), stripeM, false); st.position.set(0, 0.75, -0.55 + i * 0.26); st.scale.set(1, 0.95, 1); stripes.add(st); }
-    const o = { root: cat, pips: pp, cat, legs, tail, head, torso };
-    o.setPerk = () => { o.perk = true; fur.color.set('#ff7a1a'); stripes.visible = true; o.baseScale = 1.45; cat.scale.setScalar(1.45); };
-    o.setLevel = lv => { fur.color.set(['#e8913a', '#8a8f9a', '#2a2a30'][lv - 1]); collar.material.color.set(['#d63a2c', '#2f7ad0', '#c9a227'][lv - 1]); if (!o.perk) { o.baseScale = [1, 1.1, 1.22][lv - 1]; cat.scale.setScalar(o.baseScale); } };
+    const o = { root: cat, pips: pp, cat, legs, tail, head, torso, extra: [chest, collar, bell, stripes] };
+    o.setPerk = () => { o.perk = true; fur.color.set('#ff7a1a'); stripes.visible = !o.mdl; o.baseScale = 1.45; cat.scale.setScalar(1.45); catPaint(o); };
+    o.setLevel = lv => { o.lv = lv; fur.color.set(['#e8913a', '#8a8f9a', '#2a2a30'][lv - 1]); collar.material.color.set(['#d63a2c', '#2f7ad0', '#c9a227'][lv - 1]); if (!o.perk) { o.baseScale = [1, 1.1, 1.22][lv - 1]; cat.scale.setScalar(o.baseScale); } catPaint(o); };
+    attachCatModel(o);
     return o;
   },
   candle() {
@@ -4890,8 +4931,8 @@ function syncCatBed(dt = 0) {
     for (let i = 0; i < 4; i++) { const t = mesh(cyl(0.12, 0.12, 0.03, 10), dark); const a = i * 1.1 - 1.6; t.position.set(Math.cos(a) * 0.55, 0.53, Math.sin(a) * 0.45); g.add(t); }   // a little paw print
     g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     // the house cat, curled up asleep on the cushion, with little Z's floating up
-    const sl = makeTower('cat'); sl.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
-    sl.root.position.set(0, 0.42, 0); sl.root.scale.set(0.95, 0.62, 0.95); sl.root.rotation.y = 0.6; if (sl.head) { sl.head.rotation.x = 0.55; sl.head.position.y -= 0.25; }
+    const sl = makeTower('cat'); sl.sleeping = true; sl.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    sl.root.position.set(0, 0.42, 0); sl.root.scale.set(0.95, 0.62, 0.95); sl.root.rotation.y = 0.6; if (sl.head) { sl.head.rotation.x = 0.55; sl.head.position.y -= 0.25; } layCatAsleep(sl);
     if (sl.rim) sl.rim.visible = false; if (sl.pips) sl.pips.forEach(p => p.visible = false);
     g.add(sl.root); CATBED.sleeper = sl;
     const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.strokeStyle = '#3a2a5a'; x.lineWidth = 6; x.font = '900 52px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.strokeText('z', 32, 34); x.fillText('z', 32, 34);
@@ -4907,7 +4948,8 @@ function syncCatBed(dt = 0) {
     z.t = (z.t + dt * 0.35) % 1; const k = z.t;
     z.sp.position.set(0.3 + k * 0.6, 1.0 + k * 1.6, -0.2 + Math.sin(k * 6) * 0.15); z.sp.scale.setScalar(0.35 + k * 0.4); z.sp.material.opacity = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8;
   }
-  if (!awake && CATBED.sleeper) CATBED.sleeper.root.scale.y = 0.62 + Math.sin(performance.now() / 700) * 0.025;   // breathing
+  if (CATBED.sleeper && !CATBED.sleeper.mdl) attachCatModel(CATBED.sleeper);
+  if (!awake && CATBED.sleeper) { if (CATBED.sleeper.mdl) CATBED.sleeper.mdl.body.scale.set(1, 1 + Math.sin(performance.now() / 700) * 0.04, 1); else CATBED.sleeper.root.scale.y = 0.62 + Math.sin(performance.now() / 700) * 0.025; }   // breathing
   if (CATBED.lv !== LV) { const at = catBedSpot(); CATBED.lv = LV; if (at) { CATBED.g.position.set(at[0], TOP_Y, at[1]); CATBED.g.rotation.y = at[2]; CATBED.g.scale.setScalar(1.35); } }
   CATBED.g.visible = true;
 }
@@ -4961,6 +5003,11 @@ function drawTowers(dt, t) {
       if (swipe) o.legs[0].rotation.x = -1.6 * swipe;
       o.tail.rotation.z = Math.sin(t * (mv ? 6 : 2) + tw.id) * 0.5; o.tail.rotation.x = mv === 2 ? -0.9 : -0.2;
       o.head.rotation.y = mv ? 0 : Math.sin(t * 0.7 + tw.id) * 0.5; o.torso.scale.y = 0.7 + (mv ? 0 : Math.sin(t * 2 + tw.id) * 0.02);
+      if (!o.mdl) attachCatModel(o);
+      if (o.mdl) { const B = o.mdl.body;   // the model has no bones: a trot bounce, a side-to-side waddle, a lunge on a swipe, breathing when still
+        B.position.y = mv ? Math.abs(Math.sin(ph)) * 0.08 : 0; B.rotation.z = mv ? Math.sin(ph) * 0.07 : 0;
+        B.rotation.x = swipe ? 0.25 * swipe : mv === 2 ? -0.12 : 0; B.position.z = swipe ? 0.35 * swipe : 0;
+        B.scale.set(1, 1 + (mv ? 0 : Math.sin(t * 2 + tw.id) * 0.015), 1); }
     }
     if (tw.t === 'swat') {
       const up = -0.5, down = 0.3;
