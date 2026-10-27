@@ -527,6 +527,13 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   #queen{top:48px}
   .screen{justify-content:flex-start;overflow-y:auto;padding-top:14px}
   .logo{font-size:clamp(40px,10vh,72px)}
+  /* pause menu on a sideways phone: Resume on top, the rest two per row, so nothing scrolls */
+  #paused{display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:center;align-content:center;gap:10px 12px;padding:10px 16px}
+  #paused .t{grid-column:1 / -1;font-size:clamp(28px,7vh,40px);margin-bottom:2px}
+  #paused #resume{grid-column:1 / -1;justify-self:center;min-width:60%}
+  #paused .btn{font-size:clamp(16px,3.6vh,22px);padding:10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #paused #restart[hidden]{display:none}
+  #paused .lstat{grid-column:1 / -1;margin:0}
 }
 @media (prefers-reduced-motion:reduce){#banner,.tc,#hurt{transition:none}.stat.bump{animation:none}}
 @media (orientation:landscape) and (max-height:560px), (max-width:700px){   /* phones (either way up): name, then Upgrade/Sell right away, then the numbers, then the details */
@@ -600,7 +607,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="312">v1.11</div>
+    <div id="ver" data-b="313">v1.12</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2802,8 +2809,10 @@ function makeShiny(b) {
   }
   BN_FWD++; try { banner('✨ A ' + shinyName(b) + '!', 'Tap Catch before it gets squashed!', false, 2400); } finally { BN_FWD--; } SND.play('up');
 }
-function jarCount() { try { return +localStorage.getItem('ppd-shiny') || 0; } catch (e) { return 0; } }
-function jarSet(n) { try { localStorage.setItem('ppd-shiny', String(Math.max(0, n))); } catch (e) {} syncCatch(); }
+/* the jar lives in the run: a shiny you catch can be sold until that game ends, and if you don't it just stays in your collection */
+function jarCount() { return (S && S.jar) || 0; }
+function jarSet(n) { if (S) S.jar = Math.max(0, n); syncCatch(); }
+try { localStorage.removeItem('ppd-shiny'); } catch (e) {}   /* the old everlasting jar */
 function startCatch() {
   if (S.mode !== 'play' || S.paused) return;
   if (S.net === 'guest') { netSend({ k: 'catch' }); SND.play('tap'); $('catch').classList.add('busy'); return; }
@@ -5961,7 +5970,7 @@ function runSavable() { return S && S.mode === 'play' && !S.net && !S.vs && !LEV
 function saveRun() {
   if (!runSavable()) return;
   const mid = S.active;
-  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(),
+  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, jar: S.jar || 0, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(),
     towers: S.towers.map(t => [t.t, t.c, t.r, Math.min(3, t.lv + (t.upPending && t.lv < 3 ? 1 : 0)), t.perk || (t.upPending && t.lv >= 3) ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
   try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
 }
@@ -5988,7 +5997,7 @@ function resumeRun() {
   }
   S.mode = m0; S.undo = null; syncUndo(); S.jobs = []; S.ext.job = null; S.ext.state = 'idle';
   S.money = d.money; S.withhold = S.owed0 = d.owed || 0; S.resumeWave = S.withhold > 0; S.lives = d.lives; S.wave = d.wave; S.kills = d.kills; S.earlyCalls = d.early; S.endless = d.endless; S.stats = d.stats || {};
-  S.lic = 0; for (let i = 0; i < d.lic; i++) { S.lic++; } S.dmgMul = 1 + 0.05 * S.lic;
+  S.lic = 0; for (let i = 0; i < d.lic; i++) { S.lic++; } S.dmgMul = 1 + 0.05 * S.lic; S.jar = d.jar || 0;
   setCake(S.lives); S.nextT = 0; tutEnd(); syncHud(); syncTray(); showBelt(); renderShop();
   banner('Welcome back!', 'Level ' + soloNum(d.lv) + ', picking up after wave ' + d.wave, false, 2200);
 }
@@ -6027,6 +6036,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   if (!toolLocked('fogger') && !LEVELS[LV].team && !S.vs) { let seen = 1; try { seen = +localStorage.getItem('ppd-fogger-new') || 0; localStorage.setItem('ppd-fogger-new', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (S.mode === 'play') { banner('New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.', false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard('fogger'); }, 3100); } }, 3500); }
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
   requestAnimationFrame(resize);
+  try { syncCatch(); } catch (e) {}   /* a fresh run starts with an empty jar: hide the Sell button right away */
 }
 // ---------------------------------------------------------------- AI teammate (plays the right side in practice)
 const BOT_ORDER = ['swat', 'spray', 'swat', 'paper', 'zap', 'spray', 'lens', 'candle', 'zap', 'paper', 'lens', 'broom', 'zap', 'spray'];
