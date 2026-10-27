@@ -608,7 +608,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="322">v1.21</div>
+    <div id="ver" data-b="323">v1.22</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5192,8 +5192,11 @@ function venusSpot() {   /* a random free spot on the left or right counter, cle
   const busy = []; if (KIT.props) for (const k in KIT.props) { const g = KIT.props[k]; if (g.visible && !g.userData.knocked) busy.push([g.position.x, g.position.z, k.startsWith('sm_') ? 1.5 : 2.4]); }
   const bed = catBedSpot(); if (bed) busy.push([bed[0], bed[1], 2.8]);
   for (const g of TROPHIES) busy.push([g.position.x, g.position.z, 1.4]);
-  const ok = cands.filter(c => busy.every(([x, z, r]) => Math.hypot(c[0] - x, c[1] - z) > r));
-  const c = (ok.length ? ok : cands)[Math.floor(Math.random() * (ok.length || cands.length))];
+  /* pick a side first so it doesn't always land on whichever counter happens to be emptier; a crowded side may squeeze in a little closer to the clutter */
+  const clear = (c, k) => busy.every(([x, z, r]) => Math.hypot(c[0] - x, c[1] - z) > r * k);
+  const sides = [cands.filter(c => c[0] < 0), cands.filter(c => c[0] >= 0)].map(list => list.filter(c => clear(c, 1)).length ? list.filter(c => clear(c, 1)) : list.filter(c => clear(c, 0.65))).filter(l => l.length);
+  const pool = sides.length ? sides[Math.floor(Math.random() * sides.length)] : cands;
+  const c = pool[Math.floor(Math.random() * pool.length)];
   return { x: c[0], z: c[1] };
 }
 function catWakeSpot() {
