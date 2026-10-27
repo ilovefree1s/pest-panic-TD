@@ -193,10 +193,11 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;width:min(720px,92vw)}
 .sh{background:rgba(10,13,16,.78);border-radius:14px;padding:10px 8px;display:grid;justify-items:center;gap:4px;text-align:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .sh svg{width:52px;height:52px} .sh b{font:800 13px var(--body);color:var(--text)} .sh small{font-size:11px;color:var(--dim)}
+.sh .shimg{width:72px;height:72px;object-fit:contain} .sh.no .shimg{filter:brightness(0) opacity(.4)} .sh.yes .shimg{animation:shRain 2.4s ease-in-out infinite}
 .sh.no svg{filter:brightness(0) opacity(.4)} .sh.no b{color:var(--dim)}
-.sh.yes{box-shadow:inset 0 0 0 2px rgba(255,216,74,.6)} .sh.yes svg{animation:shRain 3s linear infinite}
-@keyframes shRain{from{filter:hue-rotate(0deg) saturate(1.6) drop-shadow(0 0 6px rgba(255,255,255,.6))}to{filter:hue-rotate(360deg) saturate(1.6) drop-shadow(0 0 6px rgba(255,255,255,.6))}}
-@media (prefers-reduced-motion:reduce){.sh.yes svg{animation:none}}
+.sh.yes{box-shadow:inset 0 0 0 2px rgba(255,216,74,.6)} .sh.yes svg{animation:shRain 2.4s ease-in-out infinite}
+@keyframes shRain{from{filter:drop-shadow(0 0 4px rgba(255,214,90,.55))}50%{filter:drop-shadow(0 0 10px rgba(255,214,90,.95))}to{filter:drop-shadow(0 0 4px rgba(255,214,90,.55))}}   /* caught bugs show in their real colours with a soft gold glow */
+@media (prefers-reduced-motion:reduce){.sh.yes svg,.sh.yes .shimg{animation:none}}
 .lkrow{display:grid;gap:6px;width:min(720px,92vw);text-align:left} .lkrow>b{font:400 18px var(--display);color:var(--gold);letter-spacing:.03em}
 .lkopts{display:flex;flex-wrap:wrap;gap:8px} .lk{min-height:44px;border-radius:12px;border:0;padding:8px 14px;background:rgba(10,13,16,.82);color:var(--text);font:800 14px var(--body);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);text-align:left}
 .lk.on{background:var(--gold);color:#2a1a00;box-shadow:0 3px 0 #8d5a00} .lk:disabled{opacity:.5;cursor:default} .lk small{display:block;font-size:11px;font-weight:700;opacity:.85}
@@ -592,7 +593,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v282</div>
+    <div id="ver">v283</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2523,7 +2524,8 @@ function dexAdd(t) {
   if (boss) setTimeout(syncTrophies, 400);
   if (n >= DEX_REG.length) ACH.unlock('shiny11');
 }
-const dexIcon = t => BUGICON[t] || (BT[t] && BUGICON[BT[t].base]) || BUGICON.spider;
+const dexSvg = t => BUGICON[t] || (BT[t] && BUGICON[BT[t].base]) || BUGICON.spider;
+const dexIcon = t => `<img class="shimg" src="assets/bugs/${t}.png" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{innerHTML:this.dataset.svg}).firstChild)" data-svg="${dexSvg(t).replace(/"/g, '&quot;')}">`;   /* a real picture of the in-game bug */
 const dexName = t => BUG_NAME[t] || (BT[t] && BT[t].name) || t;
 function renderLocker() {
   const look = myLook(), el = $('locker'); if (!el) return;
@@ -2884,8 +2886,8 @@ const BUGICON = {
   ant: '<svg viewBox="0 0 48 48"><ellipse cx="13" cy="26" rx="8" ry="6.5" fill="#9c2417"/><circle cx="24" cy="26" r="3.5" fill="#8e1f14"/><circle cx="33" cy="25" r="6" fill="#7a1a11"/><circle cx="35" cy="22" r="1.5" fill="#111"/><path d="M20 22l-3-7M24 22v-8M28 22l3-7M20 30l-3 7M24 30v8M28 30l3 7M37 20l5-6M38 23l6-3" stroke="#3a0d08" stroke-width="2" stroke-linecap="round"/></svg>',
   fly: '<svg viewBox="0 0 48 48"><ellipse cx="16" cy="16" rx="11" ry="6" fill="#d4ecf8" opacity=".8" transform="rotate(-25 16 16)"/><ellipse cx="32" cy="16" rx="11" ry="6" fill="#d4ecf8" opacity=".8" transform="rotate(25 32 16)"/><ellipse cx="24" cy="30" rx="8" ry="10" fill="#44523f"/><circle cx="24" cy="21" r="6" fill="#2b2f2b"/><circle cx="20.5" cy="20" r="3" fill="#b8201c"/><circle cx="27.5" cy="20" r="3" fill="#b8201c"/></svg>',
   spider: '<svg viewBox="0 0 48 48"><path d="M17 22L5 12M17 26L3 26M17 30L6 40M31 22l12-10M31 26h14M31 30l11 10M19 19l-6-12M29 19l6-12" stroke="#2a1838" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="24" cy="30" rx="10" ry="9" fill="#24152f"/><ellipse cx="24" cy="29" rx="3" ry="5" fill="#d43c2a"/><circle cx="24" cy="18" r="6" fill="#3a2350"/><circle cx="22" cy="17" r="1.3" fill="#ff2a2a"/><circle cx="26" cy="17" r="1.3" fill="#ff2a2a"/></svg>',
-  bed: '<svg viewBox="0 0 48 48"><g fill="#8a3a22"><ellipse cx="14" cy="16" rx="6" ry="4.5"/><ellipse cx="32" cy="12" rx="5" ry="4"/><ellipse cx="24" cy="26" rx="6" ry="4.5"/><ellipse cx="38" cy="30" rx="5" ry="4"/><ellipse cx="12" cy="36" rx="5" ry="4"/><ellipse cx="28" cy="40" rx="5" ry="4"/></g><g fill="#a8502e"><ellipse cx="14" cy="15" rx="3" ry="2"/><ellipse cx="24" cy="25" rx="3" ry="2"/><ellipse cx="38" cy="29" rx="2.5" ry="2"/></g></svg>',
-  dung: '<svg viewBox="0 0 48 48"><circle cx="31" cy="27" r="13" fill="#6e4b2a"/><path d="M24 22l5 2M33 31l4 3M27 34l3-1M35 20l3 2" stroke="#b8975a" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="12" cy="30" rx="8" ry="6" fill="#1b1815"/><ellipse cx="18" cy="28" rx="4" ry="3.5" fill="#24201b"/><path d="M8 25l-3-4M10 35l-3 4M14 35l-1 5M20 25l3-4M21 30l3 0" stroke="#3a3330" stroke-width="2" stroke-linecap="round"/></svg>',
+  bed: '<svg viewBox="0 0 48 48"><g stroke="#4a2414" stroke-width="2" stroke-linecap="round" fill="none"><path d="M17 20l-7-5M16 26l-9-1M17 32l-7 5M31 20l7-5M32 26l9-1M31 32l7 5"/><path d="M21 9l-4-6M27 9l4-6" stroke-width="1.5"/></g><ellipse cx="24" cy="28" rx="10" ry="13" fill="#9a3e22"/><path d="M15 25h18M14.5 30h19M15.5 35h17" stroke="#6e2a14" stroke-width="1.4"/><ellipse cx="24" cy="14" rx="5.5" ry="4" fill="#7a3018"/><ellipse cx="24" cy="11" rx="3" ry="2.2" fill="#5a2210"/><ellipse cx="20.5" cy="23" rx="3" ry="4" fill="#c0603a" opacity=".55"/></svg>',
+  dung: '<svg viewBox="0 0 48 48"><circle cx="34" cy="30" r="11" fill="#7a5530"/><path d="M28 25l4 1M36 34l3 2M30 35l3-1M38 24l2 3" stroke="#b8975a" stroke-width="1.6" stroke-linecap="round"/><g stroke="#2a2420" stroke-width="2" stroke-linecap="round"><path d="M10 26l-5-4M9 31l-6 1M11 36l-4 5M18 26l3-5M19 31l6 1M17 36l4 5"/></g><ellipse cx="14" cy="31" rx="7.5" ry="8.5" fill="#1d2a1f"/><path d="M14 23v16" stroke="#3a5a3e" stroke-width="1.2"/><ellipse cx="14" cy="21.5" rx="4" ry="3" fill="#26332a"/><path d="M12 19l-2-4M16 19l2-4" stroke="#2a2420" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="11.5" cy="28" rx="2" ry="3" fill="#5f8a63" opacity=".55"/></svg>',
   queen: '<svg viewBox="0 0 48 48"><path d="M14 18L4 10M14 26L2 28M15 33L6 42M34 18l10-8M34 26l12 2M33 33l9 9" stroke="#4b2a15" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="24" cy="29" rx="11" ry="14" fill="#3e1f0d"/><path d="M24 16v27" stroke="#2d170b" stroke-width="1.5"/><ellipse cx="24" cy="15" rx="8" ry="5" fill="#5a2e12"/><path d="M17 9l3-6 4 5 4-5 3 6z" fill="#f3c24a"/><circle cx="24" cy="6" r="1.5" fill="#ff3048"/></svg>',
 };
 
