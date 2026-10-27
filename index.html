@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v297</div>
+    <div id="ver">v298</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2520,7 +2520,7 @@ function buildModelBoss(t) {
   return root;
 }
 /* ---- modelled regular bugs (also used, scaled up, for their Giant boss): the mantis */
-const BUG_MODELS = { mantis: { url: 'assets/mantis.glb', hgt: 1.9 } };
+const BUG_MODELS = { mantis: { url: 'assets/mantis.glb', hgt: 1.9 }, hopper: { url: 'assets/hopper.glb', len: 2.3 } };
 function mantisRig(geo) {   // 4 walking legs (2 a side) and the two big grabbing arms
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn;
@@ -2539,6 +2539,33 @@ function mantisRig(geo) {   // 4 walking legs (2 a side) and the two big grabbin
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
   return (geo.userData.rig = { hips, arms: [[-ax, shY, shZ], [ax, shY, shZ]], mn, H });
 }
+function hopperRig(geo) {   // 4 walking legs and the 2 big jumping legs at the back
+  if (geo.userData.rig) return geo.userData.rig;
+  geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, L = bb.max.z - bb.min.z, sc = L / 1.9;
+  const J = new Uint16Array(n * 4), Wt = new Float32Array(n * 4), ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const zBack = -0.3 * sc, zFront = 0.2 * sc;
+  const hips = [[-0.2, -0.2, 0.35], [0.2, -0.2, 0.35], [-0.2, -0.2, -0.05], [0.2, -0.2, -0.05]].map(([x, y, z]) => [x * sc, y * sc, z * sc]);
+  const backs = [[-0.24 * sc, -0.05 * sc, -0.28 * sc], [0.24 * sc, -0.05 * sc, -0.28 * sc]];
+  for (let i = 0; i < n; i++) {
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i), ax = Math.abs(x); let bone = 0, w = 0;
+    if (z < zBack) { w = ss(0.18 * sc, 0.26 * sc, ax); if (w > 0) bone = x < 0 ? 5 : 6; }
+    else if (y < -0.15 * sc) { w = ss(0.22 * sc, 0.3 * sc, ax); if (w > 0) bone = 1 + (x < 0 ? 0 : 1) + (z < zFront ? 2 : 0); }
+    J[i * 4] = bone; Wt[i * 4] = w; Wt[i * 4 + 1] = 1 - w;
+  }
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
+  return (geo.userData.rig = { hips, backs, mn: bb.min.y, L });
+}
+function buildHopperModel() {
+  const M = BUG_MODELS.hopper, root = newBugRoot(), u = root.userData, body = u.body;
+  let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
+  const R = hopperRig(src.geometry), mat = std({ map: src.material.map, roughness: 0.6, metalness: 0, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const bones = [new THREE.Bone()], legs = [], back = [];
+  R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); });
+  R.backs.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); bones[0].add(b); bones.push(b); back.push(b); });
+  const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
+  const k = M.len / R.L; sk.scale.setScalar(k); sk.position.y = -R.mn * k; body.add(sk);
+  u.legs = legs; u.back = back; u.mats = [mat]; u.shadow = 1.5; return root;
+}
 function buildMantisModel() {
   const M = BUG_MODELS.mantis, root = newBugRoot(), u = root.userData, body = u.body;
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
@@ -2550,6 +2577,7 @@ function buildMantisModel() {
   const k = M.hgt / R.H; sk.scale.setScalar(k); sk.position.y = -R.mn * k; body.add(sk);
   u.legs = legs; u.arms = arms; u.mats = [mat]; u.shadow = 2.0; return root;
 }
+try { new GLTFLoader().load(BUG_MODELS.hopper.url, g => { BUG_MODELS.hopper.gltf = g; const old = MODEL_BUILD.hopper; MODEL_BUILD.hopper = () => { try { return buildHopperModel(); } catch (e) { console.warn('hopper model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.mantis.url, g => { BUG_MODELS.mantis.gltf = g; const old = MODEL_BUILD.mantis; MODEL_BUILD.mantis = () => { try { return buildMantisModel(); } catch (e) { console.warn('mantis model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 for (const t in BOSS_MODELS) try { new GLTFLoader().load(BOSS_MODELS[t].url, g => { BOSS_MODELS[t].gltf = g; const old = BOSS_BUILD[t]; BOSS_BUILD[t] = () => { try { return buildModelBoss(t); } catch (e) { console.warn('boss model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 function catLook(o) { return o.perk ? 'tiger' : 'l' + (o.lv || 1); }
