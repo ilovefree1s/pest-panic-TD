@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v288</div>
+    <div id="ver">v289</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2437,6 +2437,34 @@ function catTexture(look) {   // look: 'l1' | 'l2' | 'l3' | 'tiger'
   const t = new THREE.CanvasTexture(cv); t.flipY = CATM.flip; t.colorSpace = THREE.SRGBColorSpace;
   return (CATM.tex[look] = std({ map: t, roughness: 0.75, metalness: 0, color: new THREE.Color(0.8, 0.8, 0.8) }));
 }
+/* the model has no skeleton, so give it one: 4 legs, a tail and a head, each owning the part of the mesh around it (the cat stands facing +z, legs at x ±0.2, z ±0.37) */
+function catRigGeometry(geo) {
+  if (geo.userData.rig) return geo.userData.rig;
+  geo.computeBoundingBox(); const bb = geo.boundingBox, mn = bb.min.y, P = geo.attributes.position, n = P.count;
+  const legs = [[-1, 1], [1, 1], [-1, -1], [1, -1]].map(([sx, sz]) => { let x = 0, z = 0, c = 0; for (let i = 0; i < n; i++) { const vx = P.getX(i), vz = P.getZ(i); if (P.getY(i) - mn < 0.4 && vx * sx > 0 && vz * sz > 0) { x += vx; z += vz; c++; } } return [c ? x / c : 0.2 * sx, c ? z / c : 0.37 * sz]; });
+  const hipY = mn + 0.52, J = new Uint16Array(n * 4), W = new Float32Array(n * 4);
+  const ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  for (let i = 0; i < n; i++) {
+    const x = P.getX(i), y = P.getY(i) - mn, z = P.getZ(i);
+    let bone = 0, w = 0;
+    if (y < 0.56 && z > -0.62) { let best = 0, bd = 1e9; legs.forEach(([lx, lz], k) => { const d = (x - lx) ** 2 + (z - lz) ** 2; if (d < bd) { bd = d; best = k; } }); bone = 1 + best; w = 1 - ss(0.38, 0.56, y); }
+    else if (z < -0.55) { bone = 5; w = ss(-0.55, -0.72, z); }   // tail
+    else if (z > 0.18 && y > 0.68) { bone = 6; w = ss(0.68, 0.86, y) * ss(0.18, 0.3, z); }   // head
+    J[i * 4] = bone; J[i * 4 + 1] = 0; W[i * 4] = w; W[i * 4 + 1] = 1 - w;
+  }
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(W, 4));
+  return (geo.userData.rig = { legs, hipY, mn });
+}
+function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a skinned one
+  const geo = mesh.geometry, R = catRigGeometry(geo);
+  const root = new THREE.Bone(), bones = [root];
+  for (const [x, z] of R.legs) { const b = new THREE.Bone(); b.position.set(x, R.hipY, z); root.add(b); bones.push(b); }
+  const tail = new THREE.Bone(); tail.position.set(0, R.mn + 0.72, -0.58); root.add(tail); bones.push(tail);
+  const head = new THREE.Bone(); head.position.set(0, R.mn + 0.8, 0.3); root.add(head); bones.push(head);
+  const sk = new THREE.SkinnedMesh(geo, mesh.material); sk.add(root); sk.bind(new THREE.Skeleton(bones)); sk.castShadow = true; sk.frustumCulled = false;
+  sk.position.copy(mesh.position); sk.quaternion.copy(mesh.quaternion); sk.scale.copy(mesh.scale); mesh.parent.add(sk); mesh.parent.remove(mesh);
+  return { sk, legs: bones.slice(1, 5), tail, head };
+}
 function catLook(o) { return o.perk ? 'tiger' : 'l' + (o.lv || 1); }
 function attachCatModel(o) {   /* swap a cat tower's built-from-shapes body for the model */
   if (o.mdl || !CATM.gltf) return;
@@ -2444,8 +2472,9 @@ function attachCatModel(o) {   /* swap a cat tower's built-from-shapes body for 
   m.scale.setScalar(k); m.position.y = -box.min.y * k;
   const body = new THREE.Group(); body.add(m); o.cat.add(body);
   m.traverse(n => { if (n.isMesh) { n.castShadow = true; n.material = catTexture(catLook(o)); } });
+  let rig = null; const meshes = []; m.traverse(n => { if (n.isMesh) meshes.push(n); }); try { if (meshes.length) rig = catSkin(meshes[0]); } catch (e) { console.warn('cat rig', e); }
   for (const n of [o.torso, o.head, o.tail, ...o.legs, ...o.extra]) n.visible = false;
-  o.mdl = { m, body }; if (o.pips) o.pips.forEach(q => { q.position.y = 2.25; });
+  o.mdl = { m, body, rig }; if (o.pips) o.pips.forEach(q => { q.position.y = 2.25; });
   if (o.sleeping) layCatAsleep(o);
 }
 function layCatAsleep(o) {   // asleep on the bed: lying on his side, a bit smaller
@@ -5004,9 +5033,16 @@ function drawTowers(dt, t) {
       o.tail.rotation.z = Math.sin(t * (mv ? 6 : 2) + tw.id) * 0.5; o.tail.rotation.x = mv === 2 ? -0.9 : -0.2;
       o.head.rotation.y = mv ? 0 : Math.sin(t * 0.7 + tw.id) * 0.5; o.torso.scale.y = 0.7 + (mv ? 0 : Math.sin(t * 2 + tw.id) * 0.02);
       if (!o.mdl) attachCatModel(o);
-      if (o.mdl) { const B = o.mdl.body;   // the model has no bones: a trot bounce, a side-to-side waddle, a lunge on a swipe, breathing when still
-        B.position.y = mv ? Math.abs(Math.sin(ph)) * 0.08 : 0; B.rotation.z = mv ? Math.sin(ph) * 0.07 : 0;
-        B.rotation.x = swipe ? 0.25 * swipe : mv === 2 ? -0.12 : 0; B.position.z = swipe ? 0.35 * swipe : 0;
+      if (o.mdl) { const B = o.mdl.body, G = o.mdl.rig;   // a real trot: diagonal legs step together, the tail swishes, the head looks around
+        const run = mv === 2, amp = run ? 0.75 : 0.5, gait = run ? [0, 0.4, Math.PI, Math.PI + 0.4] : [0, Math.PI, Math.PI, 0];
+        if (G) {
+          G.legs.forEach((l, i) => { l.rotation.x = mv ? Math.sin(ph + gait[i]) * amp : 0; l.rotation.z = 0; });
+          if (swipe) { G.legs[0].rotation.x = -1.3 * swipe; G.legs[0].rotation.z = -0.3 * swipe; }   // a paw swipe with the front leg
+          G.tail.rotation.y = Math.sin(t * (mv ? 7 : 2.2) + tw.id) * (mv ? 0.35 : 0.5); G.tail.rotation.x = run ? -0.4 : 0;
+          G.head.rotation.y = mv ? 0 : Math.sin(t * 0.7 + tw.id) * 0.5; G.head.rotation.x = swipe ? 0.25 * swipe : 0;
+        }
+        B.position.y = mv ? Math.abs(Math.sin(ph)) * (run ? 0.1 : 0.04) : 0; B.rotation.z = mv ? Math.sin(ph) * 0.03 : 0;
+        B.rotation.x = swipe ? 0.15 * swipe : run ? -0.08 : 0; B.position.z = swipe ? 0.25 * swipe : 0;
         B.scale.set(1, 1 + (mv ? 0 : Math.sin(t * 2 + tw.id) * 0.015), 1); }
     }
     if (tw.t === 'swat') {
