@@ -600,7 +600,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="311">v1.10</div>
+    <div id="ver" data-b="312">v1.11</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5843,7 +5843,7 @@ function syncDmg() { const tw = S.pick; if (!tw || $('info').hidden) return; con
 function syncTray() {
   { const own = S && S.towers ? S.towers.filter(o => TT[o.t].roam && (TT[o.t].oneKitchen || (o.owner || 0) === (S.cur || 0))).map(o => o.t).sort().join() : ''; if (own !== syncTray.own) { syncTray.own = own; if (shopTab === 'pets') renderShop(); } }
   const tw = S.pick;
-  $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = $('shop').offsetTop + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel
+  $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = (matchMedia('(orientation:landscape) and (max-height:560px)').matches ? 0 : $('shop').offsetTop) + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel; on a sideways phone the tabs hide, so the card takes their room
   if (tw) {
     const T = TT[tw.t], max = tw.lv >= 3 && (tw.perk || !PERK[tw.t]), perkUp = tw.lv >= 3 && !max, c = max ? 0 : upCost(tw);
     $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
