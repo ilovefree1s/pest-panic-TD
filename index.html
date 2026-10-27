@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v286</div>
+    <div id="ver">v287</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2470,7 +2470,7 @@ function finishJob(j) {
 // full gold for the opening 5 waves, then the 15% cut kicks in
 function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : S.wave <= 15 ? 0.42 : 0.33; }   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
-const ABIL = { cd: 60, cost: 0, dot: 4, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
+const ABIL = { cd: 60, cost: 0, dot: 12, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
 function leadBug() {
   let best = null;
   for (const b of S.bugs) if (!b.dead && b.y0 < 0.5 && (!best || b.s > best.s)) best = b;
@@ -2664,7 +2664,7 @@ function abilUpdate(e, dt) {
     CUR_SRC = 'abil'; hit(b, BT[b.t].boss ? b.max * ABIL.bossPct / ABIL.dur * dt : ABIL.dps * S.hpMul * dt, true); CUR_SRC = null;
     b.stuck = 0.15; b.slowF = Math.min(b.slowF, BT[b.t].boss ? 0.75 : 0.5);
     if (BT[b.t].boss) b.psnT = Math.max(b.psnT, 1.2);   // bosses: the 10% rule covers it, just the green look
-    else if (!(b.psnT > 0 && b.psnSrc && b.psnSrc !== 'abil' && b.psnD >= ABIL.dot * S.hpMul)) { b.psnT = Math.max(b.psnT, 3); b.psnD = Math.max(b.psnSrc === 'abil' ? 0 : b.psnD, ABIL.dot * S.hpMul); b.psnSrc = 'abil'; b.psnOwn = S.cur || 0; b.psnTw = null; b.psnAmp = 0; }   // a light poison that keeps burning for 3s, like Bug Spray
+    else if (!(b.psnT > 0 && b.psnSrc && b.psnSrc !== 'abil' && b.psnD >= ABIL.dot)) { b.psnT = Math.max(b.psnT, 3); b.psnD = Math.max(b.psnSrc === 'abil' ? 0 : b.psnD, ABIL.dot); b.psnSrc = 'abil'; b.psnOwn = S.cur || 0; b.psnTw = null; b.psnAmp = 0; }   // a light poison that keeps burning for 3s, like Bug Spray
   }
   if (!a.sndOn) { a.sndOn = true; SND.play('sprayStart'); }   // one steady spray sound while he's actually spraying
   if (a.t >= ABIL.dur) { if (a.sndOn) SND.play('sprayStop'); e.abil = null; e.state = e.job ? 'walk' : 'idle'; e.rest = null; }
