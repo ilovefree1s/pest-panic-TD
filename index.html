@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="305">v1.4</div>
+    <div id="ver" data-b="306">v1.5</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2242,7 +2242,7 @@ function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per
     } else if (red && r > 150 && r > g * 1.6 && r > b * 2) { a[i] = b; a[i + 1] = g; a[i + 2] = r; }   // orange cap -> blue for player 2
   }
   x.putImageData(D, 0, 0);
-  const mk = c => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const mk = c => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; if (M.geo) seamSafeMips(t, M.geo); return t; };
   let glow = null; if (gcv) { gcv.getContext('2d').putImageData(GD, 0, 0); glow = mk(gcv); }
   return (M.cache[key] = { map: mk(cv), glow });
 }
@@ -2260,10 +2260,45 @@ function extRedTexture(tex) {
 function smoothModel(g, crease = 1.05) {   /* Meshy models come in with hard edges on every low-poly face, which reads as lines/cracks: smooth the shading across edges flatter than ~60 degrees */
   g.scene.traverse(n => { if (n.isMesh && !n.geometry.userData.smooth) { try { const sg = toCreasedNormals(n.geometry, crease); sg.userData.smooth = true; n.geometry = sg; } catch (e) { console.warn('smooth', e); } } });
 }
+/* Meshy paints a model as hundreds of little patches on one sheet. The small far-away copies of the sheet (mipmaps) blur neighbouring
+   patches into each other, which shows as pale lines along every seam. Build those copies ourselves, averaging only inside the patches. */
+function uvCoverage(geo, W) {   /* which sheet pixels the model actually uses */
+  const key = 'cov' + W; if (geo.userData[key]) return geo.userData[key];
+  const cv = document.createElement('canvas'); cv.width = cv.height = W; const x = cv.getContext('2d'); x.fillStyle = '#fff';
+  const uv = geo.attributes.uv, ix = geo.index, n = ix ? ix.count : uv.count, at = i => ix ? ix.getX(i) : i;
+  x.beginPath(); for (let i = 0; i < n; i += 3) { const a = at(i), b = at(i + 1), c = at(i + 2); x.moveTo(uv.getX(a) * W, uv.getY(a) * W); x.lineTo(uv.getX(b) * W, uv.getY(b) * W); x.lineTo(uv.getX(c) * W, uv.getY(c) * W); x.closePath(); } x.fill();
+  x.lineWidth = 1.5; x.strokeStyle = '#fff'; x.stroke();
+  const d = x.getImageData(0, 0, W, W).data, m = new Uint8Array(W * W); for (let i = 0; i < m.length; i++) m[i] = d[i * 4] > 0 ? 1 : 0;
+  return (geo.userData[key] = m);
+}
+function seamSafeMips(tex, geo) {   /* give the texture hand-made mipmaps that never blend across patch borders */
+  const im = tex.image; if (!im || !geo || !geo.attributes.uv || tex.userData.seamSafe) return tex; tex.userData.seamSafe = true;
+  const W = im.width; if (im.height !== W || (W & (W - 1))) return tex;
+  const cv = document.createElement('canvas'); cv.width = cv.height = W; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
+  let data = x.getImageData(0, 0, W, W), cover = uvCoverage(geo, W);
+  if (tex.flipY) { const f = new Uint8Array(W * W); for (let y = 0; y < W; y++) f.set(cover.subarray(y * W, y * W + W), (W - 1 - y) * W); cover = f; }
+  const mips = [data]; let w = W, src = data.data, cv0 = cover;
+  while (w > 1) {
+    const h = w >> 1, out = new ImageData(h, h), o = out.data, c1 = new Uint8Array(h * h);
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < h; xx++) {
+      let r = 0, g = 0, b = 0, n = 0, ra = 0, ga = 0, ba = 0;
+      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) { const p = (y * 2 + dy) * w + xx * 2 + dx, q = p * 4; ra += src[q]; ga += src[q + 1]; ba += src[q + 2]; if (cv0[p]) { r += src[q]; g += src[q + 1]; b += src[q + 2]; n++; } }
+      const k = (y * h + xx) * 4; if (n) { o[k] = r / n; o[k + 1] = g / n; o[k + 2] = b / n; c1[y * h + xx] = 1; } else { o[k] = ra / 4; o[k + 1] = ga / 4; o[k + 2] = ba / 4; } o[k + 3] = 255;
+    }
+    for (let pass = 0; pass < 2; pass++) {   /* pixels outside the patches copy their nearest patch pixel, so borders stay the patch colour */
+      const c2 = c1.slice(), o2 = o.slice();
+      for (let y = 0; y < h; y++) for (let xx = 0; xx < h; xx++) { const p = y * h + xx; if (c1[p]) continue; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = xx + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= h || Y >= h || !c1[Y * h + X]) continue; const q = (Y * h + X) * 4; o2[p * 4] = o[q]; o2[p * 4 + 1] = o[q + 1]; o2[p * 4 + 2] = o[q + 2]; c2[p] = 1; break; } }
+      o.set(o2); c1.set(c2);
+    }
+    mips.push(out); src = o; cv0 = c1; w = h;
+  }
+  tex.mipmaps = mips; tex.generateMipmaps = false; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.needsUpdate = true; return tex;
+}
 function fitExtModel(root, gltf, red) {
   const u = root.userData, m = SkeletonUtils.clone(gltf.scene), cont = new THREE.Group();
   let tex = null; m.traverse(o => { if (o.isMesh && o.material && o.material.map) tex = o.material.map; });
-  const map = red && tex ? extRedTexture(tex) : tex;
+  let geo0 = null; m.traverse(o => { if (o.isSkinnedMesh && !geo0) geo0 = o.geometry; });
+  const map = red && tex ? extRedTexture(tex) : tex; if (map) seamSafeMips(map, geo0);
   const mat = new THREE.MeshStandardMaterial({ map, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0, color: new THREE.Color(0.62, 0.62, 0.62), roughness: 0.8, metalness: 0 });   /* the kitchen is brightly lit: tone the texture down so the colours don't wash out */
   m.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; o.receiveShadow = false; o.frustumCulled = false;   /* no shadows ON him: the shadow map drew faint lines along every edge of the hat and suit */ if (o.isSkinnedMesh) o.geometry = o.geometry.clone(); } });   /* own copy: the wand split below rewrites its bone weights */
   m.updateMatrixWorld(true);
@@ -2356,7 +2391,7 @@ function fitExtModel(root, gltf, red) {
       crown.position.set(hp.x, top - R * 0.02, hp.z - Hh * 0.01); crown.rotation.x = -0.12; scene.add(crown); head.attach(crown); crown.visible = false;
     });
   } catch (err) { console.warn('outfit setup', err); }
-  u.mdl = { cont, m, mixer, walk, run, bones, skel, rest, tip, tank, holster, mat, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, crown, red, look: '' };
+  u.mdl = { cont, m, mixer, walk, run, bones, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, crown, red, look: '' };
   u.tip = tip;
 }
 function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points the given way (in the model's own space: +z forward, +y up) */
@@ -2442,7 +2477,7 @@ function catTexture(look) {   // look: 'l1' | 'l2' | 'l3' | 'tiger'
     }
     x.putImageData(D, 0, 0);
   }
-  const t = new THREE.CanvasTexture(cv); t.flipY = CATM.flip; t.colorSpace = THREE.SRGBColorSpace;
+  const t = new THREE.CanvasTexture(cv); t.flipY = CATM.flip; t.colorSpace = THREE.SRGBColorSpace; let cg = null; CATM.gltf.scene.traverse(n => { if (n.isMesh && !cg) cg = n.geometry; }); seamSafeMips(t, cg);
   return (CATM.tex[look] = std({ map: t, roughness: 0.75, metalness: 0, color: new THREE.Color(0.8, 0.8, 0.8) }));
 }
 /* the model has no skeleton, so give it one: 4 legs, a tail and a head, each owning the part of the mesh around it (the cat stands facing +z, legs at x ±0.2, z ±0.37) */
@@ -2511,7 +2546,7 @@ function buildModelBoss(t) {
   const M = BOSS_MODELS[t], root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
   if (M.wings) {   // flying boss: two wing bones that buzz, body pitched forward as if flying
-    const R = wingRig(src.geometry), mat = std({ map: src.material.map, roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85), side: THREE.DoubleSide });
+    const R = wingRig(src.geometry), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85), side: THREE.DoubleSide });
     const bones = [new THREE.Bone()], wings = [];
     R.wings.forEach(([x, y, z], k) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { s: k ? 1 : -1 }; bones[0].add(b); bones.push(b); wings.push(b); });
     const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.castShadow = true; sk.frustumCulled = false;
@@ -2519,7 +2554,7 @@ function buildModelBoss(t) {
     root.userData = { body, legs: [], wings, mats: [mat], model: true }; root.visible = false; scene.add(root);
     return root;
   }
-  const R = insectRig(src.geometry, M.legs || 3), mat = std({ map: src.material.map, roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const R = insectRig(src.geometry, M.legs || 3), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [];
   for (const [x, z] of R.hips) { const b = new THREE.Bone(); b.position.set(x, R.hipY, z); b.userData = { yaw: 0 }; bones[0].add(b); bones.push(b); legs.push(b); }
   const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.castShadow = true; sk.frustumCulled = false;
@@ -2567,7 +2602,7 @@ function hopperRig(geo) {   // 4 walking legs and the 2 big jumping legs at the 
 function buildHopperModel() {
   const M = BUG_MODELS.hopper, root = newBugRoot(), u = root.userData, body = u.body;
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
-  const R = hopperRig(src.geometry), mat = std({ map: src.material.map, roughness: 0.6, metalness: 0, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const R = hopperRig(src.geometry), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.6, metalness: 0, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [], back = [];
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); });
   R.backs.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); bones[0].add(b); bones.push(b); back.push(b); });
@@ -2578,7 +2613,7 @@ function buildHopperModel() {
 function buildStinkModel() {
   const M = BUG_MODELS.stink, root = newBugRoot(), u = root.userData, body = u.body;
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
-  const R = insectRig(src.geometry, 3), mat = std({ map: src.material.map, roughness: 0.5, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const R = insectRig(src.geometry, 3), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.5, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [];
   for (const [x, z] of R.hips) { const b = new THREE.Bone(); b.position.set(x, R.hipY, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); }
   const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
@@ -2588,7 +2623,7 @@ function buildStinkModel() {
 function buildMothModel() {   /* wings bones flap; the model's wings rest raised, so they are lowered a bit while flying */
   const M = BUG_MODELS.moth, root = newBugRoot(), u = root.userData, body = u.body;
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
-  const R = wingRig(src.geometry), mat = std({ map: src.material.map, roughness: 0.7, metalness: 0, color: new THREE.Color(0.9, 0.9, 0.9), side: THREE.DoubleSide });
+  const R = wingRig(src.geometry), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.7, metalness: 0, color: new THREE.Color(0.9, 0.9, 0.9), side: THREE.DoubleSide });
   const bones = [new THREE.Bone()], wings = [];
   R.wings.forEach(([x, y, z], k) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { s: k ? 1 : -1 }; bones[0].add(b); bones.push(b); wings.push(b); });
   const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
@@ -2607,7 +2642,7 @@ function buildCentiModel() {
   const root = newBugRoot(), u = root.userData, B = u.body;
   const first = g => { let m = null; g.scene.traverse(n => { if (n.isMesh && !m) m = n; }); return m; };
   const sm = first(CENTI_M.seg), hm = first(CENTI_M.head), R = segRig(sm.geometry);
-  const segMat = std({ map: sm.material.map, roughness: 0.5, color: new THREE.Color(0.85, 0.85, 0.85) }), headMat = std({ map: hm.material.map, roughness: 0.5, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const segMat = std({ map: seamSafeMips(sm.material.map, sm.geometry), roughness: 0.5, color: new THREE.Color(0.85, 0.85, 0.85) }), headMat = std({ map: seamSafeMips(hm.material.map, hm.geometry), roughness: 0.5, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()];
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); u.cLegs = (u.cLegs || []).concat(b); });   /* moved by their own little paddle, not the bug walk (which bends ring segments) */
   const sk = new THREE.SkinnedMesh(sm.geometry, segMat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
@@ -2619,7 +2654,7 @@ function buildCentiModel() {
 function buildMantisModel() {
   const M = BUG_MODELS.mantis, root = newBugRoot(), u = root.userData, body = u.body;
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
-  const R = mantisRig(src.geometry), mat = std({ map: src.material.map, roughness: 0.6, metalness: 0, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const R = mantisRig(src.geometry), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.6, metalness: 0, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [], arms = [];
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); });
   R.arms.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); bones[0].add(b); bones.push(b); arms.push(b); });
