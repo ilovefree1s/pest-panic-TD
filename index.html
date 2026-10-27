@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v290</div>
+    <div id="ver">v291</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2466,14 +2466,14 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 7.4 } };
-function insectRig(geo) {
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 7.4 }, widow: { url: 'assets/boss_widow.glb', len: 6.7, legs: 4 } };
+function insectRig(geo, per = 3) {
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
   const body = Wd * 0.58, hipY = mn + H * 0.3, legSide = [[], []];
   for (let i = 0; i < n; i++) { const x = P.getX(i), y = P.getY(i) - mn; if (Math.abs(x) > body && y < H * 0.4) legSide[x < 0 ? 0 : 1].push(P.getZ(i)); }
   const hips = [];   // three leg roots per side, spread along the body where the legs are
-  legSide.forEach((zs, sd) => { zs.sort((a, b) => a - b); const q = k => zs.length ? zs[Math.floor(zs.length * k)] : 0; for (const k of [0.15, 0.5, 0.85]) hips.push([sd ? body * 0.8 : -body * 0.8, q(k)]); });
+  legSide.forEach((zs, sd) => { zs.sort((a, b) => a - b); const q = k => zs.length ? zs[Math.floor(zs.length * k)] : 0; for (const k of (per === 4 ? [0.12, 0.38, 0.62, 0.88] : [0.15, 0.5, 0.85])) hips.push([sd ? body * 0.8 : -body * 0.8, q(k)]); });
   const J = new Uint16Array(n * 4), Wt = new Float32Array(n * 4), ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
   for (let i = 0; i < n; i++) {
     const x = P.getX(i), y = P.getY(i) - mn, z = P.getZ(i);
@@ -2487,7 +2487,7 @@ function insectRig(geo) {
 function buildModelBoss(t) {
   const M = BOSS_MODELS[t], root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
-  const R = insectRig(src.geometry), mat = std({ map: src.material.map, roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const R = insectRig(src.geometry, M.legs || 3), mat = std({ map: src.material.map, roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [];
   for (const [x, z] of R.hips) { const b = new THREE.Bone(); b.position.set(x, R.hipY, z); b.userData = { yaw: 0 }; bones[0].add(b); bones.push(b); legs.push(b); }
   const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.castShadow = true; sk.frustumCulled = false;
