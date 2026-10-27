@@ -415,7 +415,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   background:rgba(20,26,32,.92);box-shadow:inset 0 0 0 2px rgba(255,255,255,.08);border:0;color:var(--text);cursor:pointer;font:inherit;transition:transform .12s,box-shadow .12s}
 .tc svg{width:40px;height:40px;flex:none}
 .tc span{display:flex;flex-direction:column;align-items:center;min-width:0}
-.tc b{font-family:var(--display);font-weight:400;font-size:15px;letter-spacing:.03em;line-height:1.05;text-align:center}
+.tc b{font-family:var(--display);font-weight:400;font-size:15px;letter-spacing:.03em;line-height:1.05;text-align:center} .tc b u{text-decoration:none} .tc b .abbr{display:none}
 .tc small{font-family:var(--display);font-size:14px;letter-spacing:.04em;color:var(--gold)}
 .tc kbd{position:absolute;left:7px;top:5px;font:900 10px var(--body);color:var(--dim)}
 .tc .tags{display:flex;flex-wrap:wrap;gap:3px;justify-content:center} .tc .ht.reach.gnd{background:#5a3b1c;color:#ffd7a8} .tc .ht.reach.air{background:#1c3f5a;color:#bfe6ff}
@@ -499,9 +499,15 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   .tc{flex-direction:row;justify-content:flex-start;gap:7px;padding:3px 7px;border-radius:11px;min-height:0}
   .tc svg{width:28px;height:28px}
   .tc span{align-items:flex-start}
-  .tc b{font-size:13px;text-align:left;line-height:1.05;flex-basis:100%}
-  .tc span{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:5px;row-gap:2px}
-  .tc small{font-size:12px}
+  /* two tidy lines per card: the name with its price, then the tags in one row (the Ground/Air tag made them spill over) */
+  .tc > span{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-auto-rows:auto;column-gap:4px;row-gap:2px;align-items:center;flex:1;min-width:0}
+  .tc b{font-size:12px;text-align:left;line-height:1.05;grid-column:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .tc b .full{display:none} .tc b .abbr{display:inline}
+  .tc small{font-size:12px;grid-column:2;grid-row:1}
+  .tc .tags{grid-column:1 / -1;flex-direction:row;flex-wrap:nowrap;justify-content:flex-start;gap:3px;overflow:hidden}
+  .tc .tags:empty{display:none}
+  .tc .ht{font-size:8px;padding:0 4px;letter-spacing:.02em;line-height:1.6;margin:0}
+  .tc em{grid-column:1 / -1;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tc.owned1 > span{display:flex}
   .tc kbd{display:none}
   .tc.sel{transform:none}
   #go{min-width:0;min-height:44px;font-size:16px;padding:4px 8px;box-shadow:0 4px 0 #a3600a;grid-column:1;grid-row:2}
@@ -594,7 +600,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="310">v1.9</div>
+    <div id="ver" data-b="311">v1.10</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2866,6 +2872,7 @@ function useAbility() {
 }
 function abilUpdate(e, dt) {
   const a = e.abil;
+  if (!S.active) { if (a.sndOn) SND.play('sprayStop'); e.abil = null; e.state = e.job ? 'walk' : 'idle'; e.rest = null; return; }   // the wave is over: whatever spray was left is gone, same as running out
   if (a.phase === 'run') {
     const mx = a.tx - e.x, mz = a.tz - e.z, md = Math.hypot(mx, mz), step = ABIL.speed * dt;
     if (md <= step) { e.x = a.tx; e.z = a.tz; a.phase = 'spray'; a.t = 0; e.yaw = a.face; }
@@ -3049,7 +3056,7 @@ const TT = {
   swat:  { name: 'Fly Swatter', cost: 55,  air: true,  range: [4.6, 5.0, 5.4], dmg: [16, 26, 38], rate: [0.75, 0.62, 0.5], d: 'Smacks the bug closest to the cake. Cheap and quick, but short reach. Hits flies. Against bosses, every 4th smack is a double-damage critical.' },
   spray: { name: 'Bug Spray',   cost: 75,  air: true,  range: [6.0, 6.6, 7.2], dmg: [5, 8, 12], dot: [5.4, 9.9, 16.2], rate: [1.1, 1.0, 0.9], d: 'Mists a wide cone of poison at the bugs. Everything in the cone (and anything bunched up around its target) takes a hit, then the poison keeps burning for 3 seconds and slows them down. Poison ignores shells. Hits flies. On a boss, poison from up to 3 different sprays adds up.' },
   paper: { name: 'Newspaper',   cost: 100, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Does 25% extra to bosses and makes them stagger. Can\'t reach flies.' },
-  lens:  { name: 'Magnifying Glass', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 15, 26], mult: 4, ramp: 3,
+  lens:  { name: 'Magnifying Glass', abbr: 'Magnifier', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 15, 26], mult: 4, ramp: 3,
            d: 'Focuses a sunbeam on one bug. The burn grows the longer it stays on that bug, up to 4× after 3 seconds, then holds there. Switching to a new bug starts the burn over. Burns through shells and hits flies.' },
   zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [16, 26, 40], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). Flies take 60% extra, bosses 25% extra.' },
 };
@@ -3077,7 +3084,7 @@ Object.assign(TT, {
              d: 'A glue sheet for the trail. For one wave, every crawling bug that walks over it slows to 40% speed. Flies go over it. Placed between waves, it works during the next wave.' },
   bomb:    { name: 'Bug Bomb', cost: 75, item: true, path: true, air: true, range: [2.4, 2.4, 2.4], dps: 30,
              d: 'A fogger for the trail. It waits on the trail until a bug walks over it, then fills the trail around it with poison fog for the rest of that wave, burning every bug passing through for 30 per second, flies included. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
-  license: { name: 'Exterminator License', item: true, instant: true, air: true, costs: [120, 200, 300], range: [0, 0, 0],
+  license: { name: 'Exterminator License', abbr: 'License', item: true, instant: true, air: true, costs: [120, 200, 300], range: [0, 0, 0],
              d: 'Every tool you own deals 5% more damage for the rest of the game. Buy it up to 3 times for +15%.' },
 });
 const ITEMS = ['crumbs', 'sticky', 'bomb', 'license'];
@@ -5550,7 +5557,7 @@ function renderShop() {
     const extra = ownsUnique(t) ? `<em class="used">${t === 'fogger' ? 'One per kitchen · tap yours to move it' : 'One per kitchen'}</em>` : used ? `<em class="used">Used this wave</em>` : isNew ? `<em class="newtag">NEW</em>` : t === 'license' && S && S.lic ? `<em>Owned ${S.lic}/3 · +${S.lic * 5}%</em>` : '';
     if (TT[t].roam && ownsUnique(t)) return `<button class="tc owned1" type="button" data-t="${t}"><span><b>1 per house</b><em class="used">Tap yours to upgrade</em></span></button>`;   /* the cat: once you have him, his tile just says so */
     const reach = TT[t].fliesOnly ? '<i class="ht reach air">Air only</i>' : TT[t].air === false ? '<i class="ht reach gnd">Ground</i>' : '';
-    return `<button class="tc${used ? ' spent' : ''}" type="button" data-t="${t}">${i + off <= 10 ? `<kbd>${(i + off) % 10}</kbd>` : ''}${ICON[t]}<span><b>${TT[t].short || TT[t].name}</b><span class="tags">${TT[t].fliesOnly ? '' : hitTag(t, true)}${reach}</span>${extra}<small>${c === Infinity ? 'Maxed' : c}</small></span></button>`;
+    return `<button class="tc${used ? ' spent' : ''}" type="button" data-t="${t}">${i + off <= 10 ? `<kbd>${(i + off) % 10}</kbd>` : ''}${ICON[t]}<span><b>${TT[t].abbr ? `<u class="full">${TT[t].short || TT[t].name}</u><u class="abbr">${TT[t].abbr}</u>` : TT[t].short || TT[t].name}</b><span class="tags">${TT[t].fliesOnly ? '' : hitTag(t, true)}${reach}</span>${extra}<small>${c === Infinity ? 'Maxed' : c}</small></span></button>`;
   }).join('');
   for (const b of document.querySelectorAll('.stabs button')) b.classList.toggle('on', b.dataset.tab === shopTab);
   requestAnimationFrame(syncMore);
