@@ -608,7 +608,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="323">v1.22</div>
+    <div id="ver" data-b="324">v1.23</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3387,7 +3387,7 @@ function specialMove(b, sp, dt) {
     } else {
       b.hy = 0; b.hopT = (b.hopT ?? 1 + Math.random() * 2) - dt;
       if (b.hopT < CR) sp = 0;   // crouch before the jump (you can see it coming)
-      if (b.hopT <= 0) { if (b.stuck > 0 || b.push > 0) b.hopT = 0.6; else { b.jump = JT; b.hopT = giant ? 7 + Math.random() * 2 : 2.3 + Math.random() * 1.2; } }
+      if (b.hopT <= 0) { if (b.stuck > 0 || b.glueT > 0 || b.push > 0) b.hopT = 0.6; else { b.jump = JT; b.hopT = giant ? 7 + Math.random() * 2 : 2.3 + Math.random() * 1.2; } }
     }
   } else if (base === 'stink' && giant && S.net !== 'guest') {
     b.cloudT = (b.cloudT ?? 3) - dt;
@@ -4471,7 +4471,7 @@ function towerAct(tw, dt) {
     for (const b of S.bugs) {
       if (b.dead || BT[b.t].fly || !inRange(tw, b, R)) continue;
       if (b.glued !== tw.id) { b.glued = tw.id; tw.uses++; }
-      b.stuck = 0.15; b.slowF = Math.min(b.slowF, T.slow[L]);
+      b.glueT = 0.15; b.glueF = T.slow[L];   /* its own timer: glue must not keep a swat stun's zero speed alive (that froze bosses on the trap for good) */
       if (T.dps[L]) hit(b, T.dps[L] * dt, true);
     }
     if (tw.uses >= T.cap[L]) removeTower(tw, true);
@@ -4614,7 +4614,8 @@ function update(dt) {
       if (Math.random() < dt * 6) FX.smoke.spawn({ x: b.x, y: bugY(b) + 0.6, z: b.z, vy: 1.2, life: 0.5, s0: 0.25, s1: 0.6, c: [0.6, 1, 0.5], a0: 0.6 });
     } else b.psnD = 0;
     if (b.dead) continue;
-    let sp = bt.spd * (b.stuck > 0 && !bt.heavy ? b.slowF : 1) * (b.psnT > 0 && !bt.heavy ? 0.75 : 1) * (b.angry ? 1.45 : 1);
+    let sp = bt.spd * (b.stuck > 0 && !bt.heavy ? b.slowF : 1) * (b.glueT > 0 && !bt.heavy ? b.glueF : 1) * (b.psnT > 0 && !bt.heavy ? 0.75 : 1) * (b.angry ? 1.45 : 1);
+    if (b.glueT > 0) b.glueT -= dt;
     if (b.ball) b.ball.flash -= dt;
     if (b.eatT > 0) { b.eatT -= dt; sp = 0; b.walk += dt * 6; if (Math.random() < dt * 5) FX.goo.spawn({ x: b.x, y: b.y0 + 0.5, z: b.z, vx: (Math.random() - 0.5) * 2, vy: 2.5, vz: (Math.random() - 0.5) * 2, grav: 14, life: 0.4, s0: 0.14, s1: 0.08, c: [0.75, 0.5, 0.28], a0: 1, a1: 1 }); }
     b.stuck -= dt; if (b.stuck <= 0) b.slowF = 1; if (b.stunImm > 0) b.stunImm -= dt;
@@ -4717,7 +4718,7 @@ function itemsAct(dt) {
       if (!armed) continue;
       for (const b of S.bugs) {
         if (b.dead || BT[b.t].fly || (b.x - it.x) ** 2 + (b.z - it.z) ** 2 > R2 || b.y0 > 0.5) continue;
-        b.stuck = 0.15; b.slowF = Math.min(b.slowF, BT[b.t].boss ? 0.6 : 0.4);
+        b.glueT = 0.15; b.glueF = BT[b.t].boss ? 0.6 : 0.4;   /* its own timer: the trap must not keep a swat stun's zero speed alive (that froze bosses on it for good) */
       }
     } else if (it.t === 'bomb') {
       if (armed && !it.trig && S.net !== 'guest') for (const b of S.bugs) if (!b.dead && !BT[b.t].fly && (b.x - it.x) ** 2 + (b.z - it.z) ** 2 <= R2 * 0.5 && b.y0 <= 0.5) { it.trig = true; SND.play('spray'); break; }   // waits for a bug to step on it
@@ -4987,7 +4988,7 @@ function drawBugs(t) {
   const c = { ant: 0, antLeg: 0, fly: 0, wing: 0, spider: 0, spiderLeg: 0, dung: 0, dungLeg: 0, ball: 0, bed: 0, bedLeg: 0 }, sh = B.shadow;
   for (const b of S.bugs) {
     if (b.mdl) { drawMdl(b, t, sh); continue; }
-    const fl = b.shiny ? shinyCol(b, t, 0.6).multiplyScalar(3.2) : b.flash > 0 ? flashC : b.stuck > 0 ? stuckC : b.psnT > 0 ? psnC : white;
+    const fl = b.shiny ? shinyCol(b, t, 0.6).multiplyScalar(3.2) : b.flash > 0 ? flashC : b.stuck > 0 || b.glueT > 0 ? stuckC : b.psnT > 0 ? psnC : white;
     if (b.shiny && Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 });
     if (b.t === 'ant') {
       const i = c.ant++, base = baseM.copy(setI(IM.ant, i, b.x, b.y0, b.z, b.ang, 1.15, b.pitch)); IM.ant.setColorAt(i, fl);
@@ -6328,7 +6329,7 @@ function netSnap() {
     m: [Math.floor(g('money')), Math.floor(h('money'))], cd: [r2(g('abilCd') || 0), r2(h('abilCd') || 0)], lic: [g('lic'), h('lic')], iu: [g('itemUsed') || {}, h('itemUsed') || {}],
     qt: S.qTotal || 0, qq: S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0), qn: $('qname').textContent, hp: S.hpMul,
     b: S.bugs.filter(b => !b.dead).map(b => [b.id, b.t, b.route, r2(b.s), r2(b.off), Math.ceil(b.hp), b.max, b.ball ? Math.ceil(Math.max(0, b.ball.hp)) : -1, b.ball ? b.ball.max : 0,
-      (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0) | (b.shiny ? 32 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
+      (b.psnT > 0 ? 1 : 0) | (b.stuck > 0 || b.glueT > 0 ? 2 : 0) | (b.angry ? 4 : 0) | (b.eatT > 0 ? 8 : 0) | (b.munch > 0 || b.armT > 0 ? 16 : 0) | (b.shiny ? 32 : 0), b.lead && !b.lead.dead ? b.lead.id : 0, b.free ? r2(b.x) : null, b.free ? r2(b.z) : null, r2(b.hy || 0)]),
     ds: (S.dsN = ((S.dsN || 0) + 1) % 6) ? undefined : S.towers.map(t => [t.id, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.wdmg || 0), Math.round(t.bonus || 0), Math.round(t.wbonus || 0)]),
     t: S.towers.map(t => [t.id, t.t, t.c, t.r, t.lv, t.owner || 0, (t.pending ? 1 : 0) | (t.upPending ? 2 : 0) | (t.stunT > 0 ? 4 : 0) | (t.snuff ? 8 : 0) | (t.perk ? 16 : 0), ...(t.t === 'cat' ? [r2(t.cx ?? t.x), r2(t.cz ?? t.z), r2(t.cyaw || 0), t.cmove || 0, r2(t.cy || 0)] : t.ctr ? [r2(t.x), r2(t.z), 0, 0, r2(t.ctrY || 0)] : [])]),
     i: S.items.map(it => [it.id, it.t, it.c, it.r, it.owner || 0, it.pending ? 1 : 0, it.bites, it.waveEnd, it.trig ? 1 : 0]),
