@@ -608,7 +608,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="326">v1.25</div>
+    <div id="ver" data-b="327">v1.26</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -921,7 +921,7 @@ const LEVELS = [
   // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
   { name: 'Lunch Line', bosses: [['ghop'], ['queen'], ['widow'], ['ghop', 'queen', 'hornet']], nb: [['hopper', 3, 2]], sub: 'A spiral out of a hole in the floor', intro: 'The bugs crawl up out of the floor in the middle and spiral out to the cake!', hp: 1.34, money: 190, shift: 2,
     routes: [[[6, 4], [5, 4], [5, 5], [7, 5], [7, 3], [3, 3], [3, 7], [9, 7], [9, 1], [1, 1], [1, 9], [12, 9], [12, -0.05]]] },   // redrawn in the Trail Builder
-  { name: 'Hot Delivery', bosses: [['gcenti'], ['ghop'], ['hornet'], ['gcenti', 'ghop', 'widow']], nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a front door', intro: 'A second trail comes in the front door and cuts across the first. Watch it!', hp: 1.25, money: 230, bugMulW: { 1: { '*': 0.8 }, 2: { '*': 0.8, spider: 0.76 }, 3: { '*': 0.85 }, 4: { '*': 0.85 } }, shift: 2,
+  { name: 'Hot Delivery', bosses: [['gcenti'], ['ghop'], ['hornet'], ['gcenti', 'ghop', 'widow']], nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a front door', intro: 'A second trail comes in the front door and cuts across the first. Watch it!', hp: 1.25, money: 230, bossMulW: { 15: { hornet: 0.7 } }, bugMulW: { 1: { '*': 0.8 }, 2: { '*': 0.8, spider: 0.76 }, 3: { '*': 0.85 }, 4: { '*': 0.85 } }, shift: 2,
     routes: [[[-0.6, 2], [3, 2], [3, 8], [7, 8], [7, 4], [12, 4], [12, -0.05]],
              [[10, 10.6], [10, 9], [5, 9], [5, 1], [12, 1], [12, -0.05]]] },   // 2nd trail redrawn in the Trail Builder
   { name: 'Switchbacks', bosses: [['gstink'], ['gcenti'], ['ghop'], ['gstink', 'gcenti', 'queen']], nb: [['hopper', 3, 2], ['centi', 4, 1], ['stink', 5, 2]], sub: 'The cake is on the left this time', intro: 'The cake is on the other side. They come in from the right.', hp: 1.44, money: 200, shift: 3, cakeCol: 1, fridgeX: 6, stoveX: 15,
@@ -3372,7 +3372,7 @@ const MANTIS_EATS = new Set(['ant', 'fly', 'bed', 'baby', 'hopper', 'moth']);
 function specialMove(b, sp, dt) {
   const bt = BT[b.t], base = bt.base || b.t, giant = !!bt.boss;
   if (base === 'centi') {
-    if (b.lead && b.lead.dead) b.lead = null;   // the bit in front got squashed: this segment is a new head
+    if (b.lead && b.lead.dead) { if (giant) b.lead = null; else { let q = b.lead; while (q && q.dead) q = q.lead; b.lead = q; } }   // giant: the bit in front got squashed, this segment is a new head. regular: the chain closes up behind the gap
     if (b.lead) { const want = b.lead.s - (bt.gap || 0.62); sp = b.s < want - 0.05 ? sp * 1.35 : b.s > want ? 0 : sp; }
     if (giant) b.armor = b.lead ? 0 : 4;   // the giant's head is armored
   } else if (base === 'hopper' && S.net !== 'guest') {
@@ -4238,6 +4238,7 @@ function credit(real, killed) {   /* per-tower damage for the info card: the tow
 }
 function hit(b, d, raw) {
   if (b.dead) return;
+  if (b.t === 'centi' && !b.lead) { let f = null; for (const c of S.bugs) if (!c.dead && c.lead === b) { f = c; break; } if (f) { hit(f, d, raw); b.flash = f.flash; return; } }   /* a regular centipede's head passes every hit back to the segment behind it: the head goes last */
   if (S.net === 'guest') { if (!raw) { b.flash = 0.08; if (b.ball && b.ball.hp > 0) b.ball.flash = 0.08; } return; }
   d *= S.dmgMul * (1 + CUR_AMP);
   const show = S.mode === 'play';
@@ -5817,7 +5818,7 @@ const BUGINFO = [
   ['bed', 'Bed Bugs', 'From wave 7', 'Tiny and fast, and they come in swarms of a dozen. One hit kills each one, but single-target tools can\'t keep up. Bring area damage: Bug Spray, the Zapper, the Newspaper and Bug Bombs. It takes 4 bed bugs to eat a slice.', '¼ slice'],
   ['dung', 'Dung Beetle', 'From wave 6', 'Pushes a ball of dung in front of it. The ball soaks up every hit, poison and fog included, until it breaks apart. Then the beetle gets angry and runs 45% faster. Hard-hitting tools like the Newspaper crack the ball quickly.', '1 slice'],
   ['hopper', 'Grasshopper', 'Level 6 on', 'Every few seconds it crouches and leaps two tiles ahead. In the air it can\'t be hit by the Newspaper or Broom. Spread your tools out so it lands next to one. A sticky trap stops it jumping.', '1 slice'],
-  ['centi', 'Centipede', 'Level 7 on', 'Eight fast segments in a line. Squash a middle segment and it splits into two centipedes that keep going. Area damage (Spray, Newspaper, Zapper) shreds it.', '⅓ slice per segment'],
+  ['centi', 'Centipede', 'Level 7 on', 'Eight fast segments in a line. Hits on the head pass back to the body, so the head is the last to go; squash a middle segment and the rest closes up. Area damage (Spray, Newspaper, Zapper) shreds it.', '⅓ slice per segment'],
   ['stink', 'Stink Bug', 'Level 8 on', 'Tough shell (blocks about a sixth of every hit). When it dies it lets out a green stink cloud: tools inside work 40% slower for 4 seconds. Squash it away from your best tools.', '1 slice'],
   ['moth', 'Moth', 'Level 9 on', 'Flies. If you have Candles, it leaves the trail and flies to one, beats out the flame and snuffs it. Snuffed candles give no boost until you tap them and Relight (15 coins). Keep a Swatter near your candles.', '1 slice'],
   ['mantis', 'Praying Mantis', 'Level 9 on', 'Tall and tough. Every so often it snatches a small bug off the trail and eats it to heal itself, so take it down fast.', '2 slices'],
