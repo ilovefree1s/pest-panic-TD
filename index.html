@@ -171,6 +171,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .setbox label b{font:400 17px var(--display);color:var(--gold)}
 .setbox label span{text-align:left}
 .setbox input{grid-column:1/3;width:100%;height:28px;accent-color:#ffc23a;cursor:pointer}
+#sideways{z-index:32;background:rgba(8,10,12,.82)} .swCard{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:340px;padding:22px 20px;border-radius:22px;background:#12171c;box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 16px 40px rgba(0,0,0,.5)} .swCard .t{font-size:28px;line-height:1.05} .swCard p{margin:0;font-size:15px;font-weight:700;color:#d9d3c6;line-height:1.4} .swPhone{width:84px;height:84px;color:var(--gold);animation:swTurn 2.4s ease-in-out infinite} .swPhone svg{width:100%;height:100%} @keyframes swTurn{0%,35%{transform:rotate(0)}55%,80%{transform:rotate(-90deg)}100%{transform:rotate(0)}} @media (prefers-reduced-motion:reduce){.swPhone{animation:none}}
 #settings{z-index:30} #backup{z-index:31;background:#0d1013} #backup #bakCode{width:min(520px,92vw);max-width:100%;font:600 12px/1.3 ui-monospace,Menlo,monospace;color:#d9d3c6;background:#0e1317;border:2px solid #2a333c;border-radius:12px;padding:8px;resize:none;word-break:break-all} #backup .bakRow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center} #backup .lstat{max-width:52ch}
 #achToast{position:absolute;left:50%;top:10px;transform:translate(-50%,-120%);z-index:40;display:flex;gap:10px;align-items:center;background:#1c232a;border-radius:16px;
   padding:8px 16px 8px 10px;box-shadow:0 8px 24px rgba(0,0,0,.55),0 0 0 2px var(--gold);transition:transform .35s cubic-bezier(.2,1.3,.4,1);pointer-events:none}
@@ -607,7 +608,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="321">v1.20</div>
+    <div id="ver" data-b="322">v1.21</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -719,6 +720,14 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <canvas id="lkPrev" width="360" height="420" aria-label="Your exterminator in his current outfit"></canvas>
       <div id="locker"></div>
       <button class="btn" id="shBack" type="button">Back</button>
+    </div>
+    <div class="screen" id="sideways" hidden>
+      <div class="swCard">
+        <div class="swPhone" aria-hidden="true"><svg viewBox="0 0 64 64"><rect x="22" y="6" width="20" height="36" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><path d="M48 20a16 16 0 0 1 0 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M44 40l4 4 4-4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="48" width="48" height="12" rx="3" fill="currentColor" opacity=".9"/></svg></div>
+        <h2 class="t">Turn your phone sideways</h2>
+        <p>Pest Panic plays best in landscape: a bigger kitchen, and your tools lined up on the right. Upright works too, it's just a bit cosy.</p>
+        <button class="btn" id="swGo" type="button">Got it</button>
+      </div>
     </div>
     <div class="screen" id="settings" hidden>
       <h2 class="t">Settings</h2>
@@ -2507,15 +2516,32 @@ const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 5.99 }, widow:
 function insectRig(geo, per = 3) {
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
-  const body = Wd * 0.58, hipY = mn + H * 0.3, legSide = [[], []];
-  for (let i = 0; i < n; i++) { const x = P.getX(i), y = P.getY(i) - mn; if (Math.abs(x) > body && y < H * 0.4) legSide[x < 0 ? 0 : 1].push(P.getZ(i)); }
-  const hips = [];   // three leg roots per side, spread along the body where the legs are
-  legSide.forEach((zs, sd) => { zs.sort((a, b) => a - b); const q = k => zs.length ? zs[Math.floor(zs.length * k)] : 0; for (const k of (per === 4 ? [0.12, 0.38, 0.62, 0.88] : [0.15, 0.5, 0.85])) hips.push([sd ? body * 0.8 : -body * 0.8, q(k)]); });
+  const body = Wd * 0.58, legSide = [[], []]; let hipSum = 0, hipN = 0;
+  for (let i = 0; i < n; i++) { const x = P.getX(i), y = P.getY(i) - mn; if (Math.abs(x) > body && y < H * 0.4) legSide[x < 0 ? 0 : 1].push(P.getZ(i)); if (Math.abs(x) > body * 0.95 && Math.abs(x) < body * 1.15 && y < H * 0.7) { hipSum += y; hipN++; } }
+  const hipY = mn + (hipN ? Math.min(H * 0.6, Math.max(H * 0.3, hipSum / hipN)) : H * 0.45);   /* the hip is where the legs leave the body: pivot there so the whole leg swings, not just the foot */
   const J = new Uint16Array(n * 4), Wt = new Float32Array(n * 4), ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  /* a whole leg must follow one bone, or it tears where two hips meet: group the leg vertices into connected pieces through the
+     triangles, then give each piece the hip nearest to where it joins the body */
+  const isLeg = new Uint8Array(n); for (let i = 0; i < n; i++) { const y = P.getY(i) - mn; isLeg[i] = (Math.abs(P.getX(i)) > body * 0.8 && y < H * 0.7) ? 1 : 0; }
+  const par = new Int32Array(n); for (let i = 0; i < n; i++) par[i] = i; const find = i => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+  const ix = geo.index, tri = ix ? ix.count : n, at = i => ix ? ix.getX(i) : i;
+  for (let t = 0; t < tri; t += 3) { const a = at(t), b = at(t + 1), c = at(t + 2); if (isLeg[a] && isLeg[b]) par[find(a)] = find(b); if (isLeg[b] && isLeg[c]) par[find(b)] = find(c); }
+  { const seen = new Map(), q = 2000 / H; for (let i = 0; i < n; i++) if (isLeg[i]) { const k = Math.round(P.getX(i) * q) + ',' + Math.round(P.getY(i) * q) + ',' + Math.round(P.getZ(i) * q); const o = seen.get(k); if (o === undefined) seen.set(k, i); else par[find(i)] = find(o); } }   /* the mesh is unindexed (every triangle has its own corners), so join corners that sit on the same spot */
+  const root = {};   // per piece: the vertex closest to the body (smallest |x|) tells which hip it hangs from
+  for (let i = 0; i < n; i++) if (isLeg[i]) { const r = find(i), ax = Math.abs(P.getX(i)); if (!root[r] || ax < root[r].ax) root[r] = { ax, z: P.getZ(i), x: P.getX(i) }; }
+  const cnt = {}; for (let i = 0; i < n; i++) if (isLeg[i]) { const r = find(i); cnt[r] = (cnt[r] || 0) + 1; }
+  const hips = [];   /* one hip per leg: the biggest pieces on each side, in order along the body (fallback: spread evenly) */
+  for (const sd of [0, 1]) { const big = Object.keys(root).filter(r => (root[r].x < 0) === (sd === 0)).sort((a, b) => (cnt[b] || 0) - (cnt[a] || 0)).slice(0, per).map(r => root[r].z).sort((a, b) => a - b); const zs = legSide[sd].sort((a, b) => a - b), q = k => zs.length ? zs[Math.floor(zs.length * k)] : 0; const fb = (per === 4 ? [0.12, 0.38, 0.62, 0.88] : [0.15, 0.5, 0.85]).map(q); for (let k = 0; k < per; k++) hips.push([sd ? body * 0.8 : -body * 0.8, big.length === per ? big[k] : fb[k]]); }
+  const boneOf = {}; for (const r in root) { const q = root[r]; let best = 0, bd = 1e9; hips.forEach(([hx, hz], k) => { if ((hx < 0) !== (q.x < 0)) return; const d = Math.abs(q.z - hz); if (d < bd) { bd = d; best = k; } }); boneOf[r] = 1 + best; }
+  /* a leg built from separate pieces (Meshy often leaves the tip loose): a piece that doesn't reach the body borrows the bone of the nearest piece that does */
+  const small = r => root[r].ax >= body * 1.2 || cnt[r] < 60;
+  const bigV = []; for (let i = 0; i < n; i += 2) if (isLeg[i] && !small(find(i))) bigV.push(i);
+  const order = Object.keys(root).filter(r => small(+r)).sort((a, b) => root[a].ax - root[b].ax);   /* nearest the body first, so a chain of loose pieces links up segment by segment */
+  for (const r of order) { let top = -1, ty = -1e9; for (let i = 0; i < n; i++) if (isLeg[i] && find(i) === +r && P.getY(i) > ty) { ty = P.getY(i); top = i; } if (top < 0) continue; const x = P.getX(top), y = P.getY(top), z = P.getZ(top); let best = null, bd = 1e9; for (const j of bigV) { const d = (P.getX(j) - x) ** 2 + (P.getY(j) - y) ** 2 + (P.getZ(j) - z) ** 2; if (d < bd) { bd = d; best = j; } } if (best !== null) boneOf[r] = boneOf[find(best)]; for (let i = 0; i < n; i += 2) if (isLeg[i] && find(i) === +r) bigV.push(i); }   /* a loose piece joins at its top end, so that's where to look for its leg */
   for (let i = 0; i < n; i++) {
-    const x = P.getX(i), y = P.getY(i) - mn, z = P.getZ(i);
+    const x = P.getX(i), y = P.getY(i) - mn;
     let bone = 0, w = 0;
-    if (y < H * 0.45) { const ax = Math.abs(x); w = ss(body * 0.75, body * 1.05, ax) * (1 - ss(H * 0.35, H * 0.45, y)); if (w > 0) { let best = 0, bd = 1e9; hips.forEach(([hx, hz], k) => { if ((hx < 0) !== (x < 0)) return; const d = Math.abs(z - hz); if (d < bd) { bd = d; best = k; } }); bone = 1 + best; } }
+    if (isLeg[i]) { w = ss(body * 0.8, body * 1.05, Math.abs(x)) * (1 - ss(H * 0.55, H * 0.7, y)); if (w > 0) bone = boneOf[find(i)]; }
     J[i * 4] = bone; Wt[i * 4] = w; Wt[i * 4 + 1] = 1 - w;
   }
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
@@ -4740,6 +4766,7 @@ function ghostTag(need) {
 function drawGhosts(t) {
   const list = S && S.mode === 'play' ? (S.ghosts || []) : [];
   for (const [g, m] of GHOST_MESH) if (!list.includes(g)) { scene.remove(m.root); if (m.tag) scene.remove(m.tag); GHOST_MESH.delete(g); }
+  const ahead = new Map(); { const run = {}; for (const g of list) { ahead.set(g, run[g.owner] || 0); run[g.owner] = (run[g.owner] || 0) + costOf(g.t); } }   /* ghosts are bought in placing order, so each one also waits on the ones before it */
   for (const g of list) {
     let m = GHOST_MESH.get(g);
     if (!m) {
@@ -4749,7 +4776,7 @@ function drawGhosts(t) {
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false })); sp.scale.set(4.4, 1.65, 1); sp.renderOrder = 16; sp.position.set(ccx(g.c), 3.6, ccz(g.r)); scene.add(sp);
       m = { root: o.root, tag: sp, need: null }; GHOST_MESH.set(g, m);
     }
-    const mine = g.owner === (S.me || 0), money = S.cur === (S.me || 0) ? S.money : (S.p2 ? S.p2.money : S.money), need = Math.max(0, costOf(g.t) - (mine ? money : 0));
+    const mine = g.owner === (S.me || 0), money = S.cur === (S.me || 0) ? S.money : (S.p2 ? S.p2.money : S.money), need = Math.max(0, ahead.get(g) + costOf(g.t) - (mine ? money : 0));
     m.tag.visible = mine;
     if (mine && need !== m.need) { m.need = need; if (m.tag.material.map) m.tag.material.map.dispose(); m.tag.material.map = ghostTag(need); m.tag.material.needsUpdate = true; }
     m.root.position.y = 0.15 + Math.sin(t * 2.5 + g.c) * 0.12;   // a gentle hover so it reads as "not real yet"
@@ -4909,7 +4936,7 @@ function aim(sx = 0, sz = 0) {
 }
 function fit() {
   const bld = S && S.mode === 'build', topPad = 1 - 2 * (bld ? ($('bld').firstElementChild.offsetHeight + 14) : 56) / view.h, botPad = -1 + 2 * (bld ? ($('bld').lastElementChild.offsetHeight + 14) : 8) / view.h, side = 0.975, v = new V3();
-  const tall = view.h > view.w * 1.1;
+  const tall = innerHeight > innerWidth * 1.1;   /* go by the screen, not the board area: the tray growing a row (undo bar) must not flip the board around */
   view.yaw = tall ? Math.PI / 2 : 0;
   KIT.right.visible = !tall; KIT.rightBase.visible = tall;
   camera.fov = tall ? 24 : 36; camera.updateProjectionMatrix();
@@ -5021,7 +5048,7 @@ function drawBugs(t) {
     } else if (b.mesh) {
       const q = b.mesh, u = q.userData, fy = BT[b.t].fly; q.position.set(b.x, b.y0 + (fy ? 1.6 + Math.sin(b.walk * 0.9) * 0.2 : 0), b.z); q.rotation.set(b.pitch, b.ang, fy ? Math.sin(b.walk * 0.5) * 0.08 : 0, 'YXZ');
       if (u.wings) u.wings.forEach((w, k) => { w.rotation.z = Math.sin(t * 48 + k) * 0.55 * w.userData.s; });
-      if (u.gait) gaitLegs(u.legs, u.gait, b.walk * 1.5, 0.55, 0.3);
+      if (u.gait) gaitLegs(u.legs, u.gait, b.walk * 1.5, 0.55, 0.18);
       else u.legs.forEach((g, k) => { g.rotation.y = g.userData.yaw + Math.sin(b.walk * 0.7 + k * 1.7) * 0.25; g.rotation.z = Math.max(0, Math.sin(b.walk * 0.7 + k)) * 0.12; });
       u.body.position.y = Math.abs(Math.sin(b.walk * 1.5)) * 0.06;
       const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : 0;
@@ -6058,6 +6085,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   if (!S.vs) tutStart();
+  try { if (!localStorage.getItem('ppd-sideways') && matchMedia('(pointer:coarse) and (orientation:portrait)').matches && !net) { localStorage.setItem('ppd-sideways', '1'); $('sideways').hidden = false; S.paused = true; } } catch (e) {}   /* first game on a phone held upright: say sideways is better */
   { const L = LEVELS[LV], el = $('stageTag'); el.textContent = S.vs && S.vs.ffa ? 'Free for All · ' + HOUSES[LV].name : S.vs ? 'Bug Battle · ' + HOUSES[LV].name : L.team ? 'Team Kitchen ' + (TEAM_MAPS.indexOf(LV) + 1) + ' · ' + L.name : 'Level ' + soloNum(LV) + ' · ' + HOUSES[LV].name; el.hidden = false; }
   syncTrophies();
   if (S.net === 'host' || S.net === 'guest') { const sendLook = () => { if (S && (S.net === 'host' || S.net === 'guest')) netSend({ k: 'look', l: myLook() }); }; setTimeout(sendLook, 1500); setTimeout(sendLook, 6000); }   /* your partner sees your outfit */
@@ -7022,6 +7050,7 @@ function loadBackup(code) {
   let n = 0; try { for (const k in o) if (k.startsWith('ppd-') && typeof o[k] === 'string') { localStorage.setItem(k, o[k]); n++; } } catch (e) { return 'Couldn\'t save: your browser is blocking storage.'; }
   return n ? null : 'That code is empty.';
 }
+$('swGo').addEventListener('click', () => { SND.init(); SND.play('tap'); $('sideways').hidden = true; S.paused = false; });
 $('setBak').addEventListener('click', () => { SND.play('tap'); $('bakCode').value = backupCode(); $('bakNote').textContent = 'This code holds your levels, stars, collection, locker and saved run. Copy it somewhere safe, or paste one in to load it.'; $('backup').hidden = false; });
 $('bakBack').addEventListener('click', () => { SND.play('tap'); $('backup').hidden = true; });
 $('bakCopy').addEventListener('click', async () => { SND.play('tap'); const t = $('bakCode'); t.value = backupCode(); t.focus(); t.select(); let ok = false; try { await navigator.clipboard.writeText(t.value); ok = true; } catch (e) { try { ok = document.execCommand('copy'); } catch (e2) {} } $('bakCopy').textContent = ok ? 'Copied!' : 'Select all and copy'; setTimeout(() => { $('bakCopy').textContent = 'Copy code'; }, 2500); });
