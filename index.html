@@ -607,7 +607,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="318">v1.17</div>
+    <div id="ver" data-b="319">v1.18</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -7004,6 +7004,8 @@ function renderTeamMaps() {
 }
 $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (HOUSE_MODE()) VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); if (NET.role === 'host') { lobbyAd(true); if (ROSTER_MODE()) v22Broadcast(); } });
 $('setUpd').addEventListener('click', () => { if (!$('setUpd').onclick) checkUpdate(true); });
+/* ask the phone to keep this site's storage even when space is tight (otherwise Android may evict it) */
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(ok => { if (!ok) console.log('storage not persistent'); }); } catch (e) {}
 /* backup: every saved thing lives in localStorage under ppd-; the code is just all of it, packed */
 function backupCode() { const o = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('ppd-')) o[k] = localStorage.getItem(k); } } catch (e) {} return 'PPD1.' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
 function loadBackup(code) {
@@ -7527,7 +7529,14 @@ const ACH = (() => {
   let got = {}, life = { kills: 0 };
   try { got = JSON.parse(localStorage.getItem('ppd-ach') || '{}'); life = Object.assign(life, JSON.parse(localStorage.getItem('ppd-life') || '{}')); } catch (e) {}
   const q = []; let busy = false;
-  function save() { try { localStorage.setItem('ppd-ach', JSON.stringify(got)); localStorage.setItem('ppd-life', JSON.stringify(life)); } catch (e) {} }
+  function save() {   /* merge with what's on disk first: a copy of the game that started earlier must never wipe achievements another copy (or a loaded backup) saved */
+    try {
+      const d = JSON.parse(localStorage.getItem('ppd-ach') || '{}'); for (const k in d) if (!got[k]) got[k] = d[k];
+      const l = JSON.parse(localStorage.getItem('ppd-life') || '{}'); for (const k in l) if (typeof l[k] === 'number' && !(life[k] >= l[k])) life[k] = l[k];
+      localStorage.setItem('ppd-ach', JSON.stringify(got)); localStorage.setItem('ppd-life', JSON.stringify(life));
+    } catch (e) {}
+  }
+  try { addEventListener('storage', e => { if (e.key === 'ppd-ach' && e.newValue) { const d = JSON.parse(e.newValue); for (const k in d) if (!got[k]) got[k] = d[k]; } }); } catch (e) {}   /* pick up unlocks (or a loaded backup) from another open copy */
   function toast() {
     if (busy || !q.length) return; busy = true;
     const a = q.shift(), el = $('achToast');
