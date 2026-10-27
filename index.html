@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v298</div>
+    <div id="ver">v299</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2520,7 +2520,8 @@ function buildModelBoss(t) {
   return root;
 }
 /* ---- modelled regular bugs (also used, scaled up, for their Giant boss): the mantis */
-const BUG_MODELS = { mantis: { url: 'assets/mantis.glb', hgt: 1.9 }, hopper: { url: 'assets/hopper.glb', len: 2.3 } };
+const CENTI_M = { head: null, seg: null };   /* the centipede is a chain: the front piece is the head model, every other piece a body ring */
+const BUG_MODELS = { mantis: { url: 'assets/mantis.glb', hgt: 1.9 }, hopper: { url: 'assets/hopper.glb', len: 2.3 }, stink: { url: 'assets/stink.glb', len: 1.55 }, moth: { url: 'assets/moth.glb', wid: 2.6, pitch: 0.35 } };
 function mantisRig(geo) {   // 4 walking legs (2 a side) and the two big grabbing arms
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn;
@@ -2566,6 +2567,47 @@ function buildHopperModel() {
   const k = M.len / R.L; sk.scale.setScalar(k); sk.position.y = -R.mn * k; body.add(sk);
   u.legs = legs; u.back = back; u.mats = [mat]; u.shadow = 1.5; return root;
 }
+function buildStinkModel() {
+  const M = BUG_MODELS.stink, root = newBugRoot(), u = root.userData, body = u.body;
+  let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
+  const R = insectRig(src.geometry, 3), mat = std({ map: src.material.map, roughness: 0.5, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const bones = [new THREE.Bone()], legs = [];
+  for (const [x, z] of R.hips) { const b = new THREE.Bone(); b.position.set(x, R.hipY, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); }
+  const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
+  const k = M.len / R.len; sk.scale.setScalar(k); sk.position.y = -R.minY * k; body.add(sk);
+  u.legs = legs; u.mats = [mat]; u.shadow = 1.7; return root;
+}
+function buildMothModel() {   /* wings bones flap; the model's wings rest raised, so they are lowered a bit while flying */
+  const M = BUG_MODELS.moth, root = newBugRoot(), u = root.userData, body = u.body;
+  let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
+  const R = wingRig(src.geometry), mat = std({ map: src.material.map, roughness: 0.7, metalness: 0, color: new THREE.Color(0.9, 0.9, 0.9), side: THREE.DoubleSide });
+  const bones = [new THREE.Bone()], wings = [];
+  R.wings.forEach(([x, y, z], k) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { s: k ? 1 : -1 }; bones[0].add(b); bones.push(b); wings.push(b); });
+  const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
+  const k = M.wid / R.wid, tilt = new THREE.Group(); tilt.rotation.x = M.pitch; sk.scale.setScalar(k); sk.position.y = -R.minY * k * 0.5; tilt.add(sk); body.add(tilt);
+  u.wings = wings; u.mats = [mat]; u.shadow = 1.6; return root;
+}
+function segRig(geo) {   // the body ring: one leg each side hanging below it
+  if (geo.userData.rig) return geo.userData.rig;
+  geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
+  const J = new Uint16Array(n * 4), Wt = new Float32Array(n * 4), ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  for (let i = 0; i < n; i++) { const x = P.getX(i), y = P.getY(i) - mn; let w = (1 - ss(H * 0.32, H * 0.42, y)) * ss(Wd * 0.3, Wd * 0.45, Math.abs(x)); J[i * 4] = w > 0 ? (x < 0 ? 1 : 2) : 0; Wt[i * 4] = w; Wt[i * 4 + 1] = 1 - w; }
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
+  return (geo.userData.rig = { hips: [[-Wd * 0.4, mn + H * 0.42, 0], [Wd * 0.4, mn + H * 0.42, 0]], mn, H, D: bb.max.z - bb.min.z, cz: (bb.max.z + bb.min.z) / 2 });
+}
+function buildCentiModel() {
+  const root = newBugRoot(), u = root.userData, B = u.body;
+  const first = g => { let m = null; g.scene.traverse(n => { if (n.isMesh && !m) m = n; }); return m; };
+  const sm = first(CENTI_M.seg), hm = first(CENTI_M.head), R = segRig(sm.geometry);
+  const segMat = std({ map: sm.material.map, roughness: 0.5, color: new THREE.Color(0.85, 0.85, 0.85) }), headMat = std({ map: hm.material.map, roughness: 0.5, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const bones = [new THREE.Bone()];
+  R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); u.cLegs = (u.cLegs || []).concat(b); });   /* moved by their own little paddle, not the bug walk (which bends ring segments) */
+  const sk = new THREE.SkinnedMesh(sm.geometry, segMat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
+  const k = 0.6 / R.D, seg = new THREE.Group(); sk.scale.set(k, k * 0.5, k); sk.position.set(0, -R.mn * k * 0.5, -R.cz * k); seg.add(sk); B.add(seg);
+  hm.geometry.computeBoundingBox(); const hb = hm.geometry.boundingBox, kh = 1.1 / (hb.max.z - hb.min.z), head = new THREE.Group();
+  const hmesh = new THREE.Mesh(hm.geometry, headMat); hmesh.scale.setScalar(kh); hmesh.position.set(0, -hb.min.y * kh, 0.15 - (hb.max.z + hb.min.z) / 2 * kh); head.add(hmesh); B.add(head);
+  u.head = head; u.seg = seg; u.mats = [segMat, headMat]; u.shadow = 1.0; return root;
+}
 function buildMantisModel() {
   const M = BUG_MODELS.mantis, root = newBugRoot(), u = root.userData, body = u.body;
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
@@ -2577,6 +2619,9 @@ function buildMantisModel() {
   const k = M.hgt / R.H; sk.scale.setScalar(k); sk.position.y = -R.mn * k; body.add(sk);
   u.legs = legs; u.arms = arms; u.mats = [mat]; u.shadow = 2.0; return root;
 }
+{ let n = 0; const done = () => { if (++n < 2) return; const old = MODEL_BUILD.centi; MODEL_BUILD.centi = () => { try { return buildCentiModel(); } catch (e) { console.warn('centipede model', e); return old(); } }; };
+  if (false) /* off until the new centipede body model comes in */ try { new GLTFLoader().load('assets/centi_head.glb', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
+for (const [t, fn] of [['stink', () => buildStinkModel()], ['moth', () => buildMothModel()]]) try { new GLTFLoader().load(BUG_MODELS[t].url, g => { BUG_MODELS[t].gltf = g; const old = MODEL_BUILD[t]; MODEL_BUILD[t] = () => { try { return fn(); } catch (e) { console.warn(t + ' model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.hopper.url, g => { BUG_MODELS.hopper.gltf = g; const old = MODEL_BUILD.hopper; MODEL_BUILD.hopper = () => { try { return buildHopperModel(); } catch (e) { console.warn('hopper model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.mantis.url, g => { BUG_MODELS.mantis.gltf = g; const old = MODEL_BUILD.mantis; MODEL_BUILD.mantis = () => { try { return buildMantisModel(); } catch (e) { console.warn('mantis model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 for (const t in BOSS_MODELS) try { new GLTFLoader().load(BOSS_MODELS[t].url, g => { BOSS_MODELS[t].gltf = g; const old = BOSS_BUILD[t]; BOSS_BUILD[t] = () => { try { return buildModelBoss(t); } catch (e) { console.warn('boss model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
@@ -3213,7 +3258,9 @@ function drawMdl(b, t, sh) {
     u.back.forEach(g => { g.rotation.x += (k - g.rotation.x) * (b.jump > 0 ? 0.5 : 0.2); });
   }
   if (u.arms) { const k = (b.armT > 0 || b.munch > 0) ? -1.2 : 0.1; u.arms.forEach(g => { g.rotation.x += (k - g.rotation.x) * 0.4; }); }
-  if (u.head) u.head.visible = !b.lead || b.lead.dead;
+  if (u.head) u.head.visible = !b.lead || !!b.lead.dead;
+  if (u.seg) u.seg.visible = !u.head.visible;
+  if (u.cLegs) u.cLegs.forEach((g, k) => { g.rotation.x = Math.sin(w * 1.6 + b.id * 0.9 + k * Math.PI) * 0.35; });   // centipede legs paddle front to back, rippling down the chain   // modelled centipede: the head piece already has its own body
   u.body.position.y = base === 'centi' ? Math.sin(w * 0.8) * 0.04 : hop ? (u.crY || 0) + (b.jump > 0 ? 0 : Math.abs(Math.sin(w)) * 0.025) : 0;
   const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : b.munch > 0 ? 0.3 : 0;
   if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.8, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
