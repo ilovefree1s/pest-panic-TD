@@ -171,7 +171,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .setbox label b{font:400 17px var(--display);color:var(--gold)}
 .setbox label span{text-align:left}
 .setbox input{grid-column:1/3;width:100%;height:28px;accent-color:#ffc23a;cursor:pointer}
-#settings{z-index:30}
+#settings{z-index:30} #backup{z-index:31;background:#0d1013} #backup #bakCode{width:min(520px,92vw);max-width:100%;font:600 12px/1.3 ui-monospace,Menlo,monospace;color:#d9d3c6;background:#0e1317;border:2px solid #2a333c;border-radius:12px;padding:8px;resize:none;word-break:break-all} #backup .bakRow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center} #backup .lstat{max-width:52ch}
 #achToast{position:absolute;left:50%;top:10px;transform:translate(-50%,-120%);z-index:40;display:flex;gap:10px;align-items:center;background:#1c232a;border-radius:16px;
   padding:8px 16px 8px 10px;box-shadow:0 8px 24px rgba(0,0,0,.55),0 0 0 2px var(--gold);transition:transform .35s cubic-bezier(.2,1.3,.4,1);pointer-events:none}
 #achToast[hidden]{display:none}
@@ -607,7 +607,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="317">v1.16</div>
+    <div id="ver" data-b="318">v1.17</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -728,7 +728,18 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       </div>
       <button class="btn dark" id="setTut" type="button">Replay tutorial</button>
       <button class="btn dark" id="setUpd" type="button">Check for updates</button>
+      <button class="btn dark" id="setBak" type="button">Backup progress</button>
       <button class="btn" id="setDone" type="button">Done</button>
+    </div>
+    <div class="screen" id="backup" hidden>
+      <h2 class="t">Backup</h2>
+      <p class="lstat" id="bakNote">This code holds your levels, stars, collection, locker and saved run. Copy it somewhere safe, or paste one in to load it.</p>
+      <textarea id="bakCode" rows="5" spellcheck="false" aria-label="Backup code"></textarea>
+      <div class="bakRow">
+        <button class="btn" id="bakCopy" type="button">Copy code</button>
+        <button class="btn alt" id="bakLoad" type="button">Load code</button>
+      </div>
+      <button class="btn dark" id="bakBack" type="button">Back</button>
     </div>
     <div class="screen" id="paused" hidden>
       <h2 class="t">Paused</h2>
@@ -6993,6 +7004,19 @@ function renderTeamMaps() {
 }
 $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (HOUSE_MODE()) VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); if (NET.role === 'host') { lobbyAd(true); if (ROSTER_MODE()) v22Broadcast(); } });
 $('setUpd').addEventListener('click', () => { if (!$('setUpd').onclick) checkUpdate(true); });
+/* backup: every saved thing lives in localStorage under ppd-; the code is just all of it, packed */
+function backupCode() { const o = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('ppd-')) o[k] = localStorage.getItem(k); } } catch (e) {} return 'PPD1.' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
+function loadBackup(code) {
+  code = (code || '').trim(); if (!code.startsWith('PPD1.')) return 'That doesn\'t look like a Pest Panic backup code.';
+  let o; try { o = JSON.parse(decodeURIComponent(escape(atob(code.slice(5))))); } catch (e) { return 'That code is damaged or incomplete.'; }
+  if (!o || typeof o !== 'object') return 'That code is damaged or incomplete.';
+  let n = 0; try { for (const k in o) if (k.startsWith('ppd-') && typeof o[k] === 'string') { localStorage.setItem(k, o[k]); n++; } } catch (e) { return 'Couldn\'t save: your browser is blocking storage.'; }
+  return n ? null : 'That code is empty.';
+}
+$('setBak').addEventListener('click', () => { SND.play('tap'); $('bakCode').value = backupCode(); $('bakNote').textContent = 'This code holds your levels, stars, collection, locker and saved run. Copy it somewhere safe, or paste one in to load it.'; $('backup').hidden = false; });
+$('bakBack').addEventListener('click', () => { SND.play('tap'); $('backup').hidden = true; });
+$('bakCopy').addEventListener('click', async () => { SND.play('tap'); const t = $('bakCode'); t.value = backupCode(); t.focus(); t.select(); let ok = false; try { await navigator.clipboard.writeText(t.value); ok = true; } catch (e) { try { ok = document.execCommand('copy'); } catch (e2) {} } $('bakCopy').textContent = ok ? 'Copied!' : 'Select all and copy'; setTimeout(() => { $('bakCopy').textContent = 'Copy code'; }, 2500); });
+$('bakLoad').addEventListener('click', () => { SND.play('tap'); const err = loadBackup($('bakCode').value); if (err) { $('bakNote').textContent = err; return; } $('bakNote').textContent = 'Loaded! Restarting the game to use it…'; setTimeout(() => location.reload(), 900); });
 if (location.protocol.startsWith('http')) { setTimeout(() => checkUpdate(false), 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - (checkUpdate.at || 0) > 600000) { checkUpdate.at = Date.now(); checkUpdate(false); } }); }
 $('resumeT').addEventListener('click', () => { SND.init(); resumeRun(); });
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
