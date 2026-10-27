@@ -608,7 +608,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="325">v1.24</div>
+    <div id="ver" data-b="326">v1.25</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3648,35 +3648,47 @@ const BUILD = {
   },
   broom() {
     const g = new THREE.Group(), rim = coaster(g);
-    // a real push broom: a wide flat wooden block with short dense bristles underneath and a long handle socketed into the middle.
-    // bro follows the handle (its Y runs up the handle); the head is kept level to the floor each frame
+    // the broom is posed every frame: bristles on the floor, handle up to a grip above the tower
     const bro = new THREE.Group(); g.add(bro);
     const broIn = new THREE.Group(); broIn.scale.setScalar(1.25); bro.add(broIn);
-    const tc = document.createElement('canvas'); tc.width = 128; tc.height = 32; const x = tc.getContext('2d');
-    x.fillStyle = '#d9b45c'; x.fillRect(0, 0, 128, 32);
-    for (let i = 0; i < 160; i++) { x.strokeStyle = ['#b8903c', '#f0d888', '#a07a30', '#e6c56e'][i % 4]; x.lineWidth = 0.8 + Math.random() * 0.8; x.beginPath(); const px = Math.random() * 128; x.moveTo(px, 0); x.lineTo(px + (Math.random() - 0.5) * 2, 32); x.stroke(); }
-    const btex = new THREE.CanvasTexture(tc); btex.colorSpace = THREE.SRGBColorSpace; btex.wrapS = btex.wrapT = THREE.RepeatWrapping; btex.repeat.set(3, 1);
-    const bristM = std({ map: btex, roughness: 0.9 }), woodM = std({ color: '#9a6a3c', roughness: 0.6 }), handM = std({ color: '#b07a44', roughness: 0.55 }), bandM = std({ color: '#c0392b', roughness: 0.45 });
-    const head = new THREE.Group(); bro.add(head);   // level with the floor (posed every frame), scaled like broIn
-    head.scale.setScalar(1.25);
-    const brist = mesh(new THREE.BoxGeometry(1.9, 0.42, 0.36), bristM); brist.position.y = 0.21; head.add(brist);
-    const fringe = mesh(new THREE.BoxGeometry(1.94, 0.12, 0.42), bristM, false); fringe.position.y = 0.06; head.add(fringe);   // bristle ends splay a little at the floor
-    const block = mesh(new THREE.BoxGeometry(2.0, 0.2, 0.44), woodM); block.position.y = 0.52; head.add(block);
-    const band = mesh(new THREE.BoxGeometry(0.5, 0.24, 0.5), bandM); band.position.y = 0.52; head.add(band);   // the painted centre where the socket sits
+    const tc = document.createElement('canvas'); tc.width = 64; tc.height = 64; const x = tc.getContext('2d');
+    x.fillStyle = '#e2c26a'; x.fillRect(0, 0, 64, 64);
+    for (let i = 0; i < 40; i++) { x.strokeStyle = ['#c9a24a', '#f0d888', '#b8903c'][i % 3]; x.lineWidth = 1 + Math.random(); x.beginPath(); const px = Math.random() * 64; x.moveTo(px, 0); x.lineTo(px + (Math.random() - 0.5) * 6, 64); x.stroke(); }
+    const btex = new THREE.CanvasTexture(tc); btex.colorSpace = THREE.SRGBColorSpace;
+    const bristM = std({ map: btex, roughness: 0.85 }), handM = std({ color: '#b07a44', roughness: 0.55 }), bandM = std({ color: '#c0392b', roughness: 0.45 });
+    // levels 1-3: an ordinary sweep broom, a fan of bristles bound to the handle
+    const bg = new THREE.BoxGeometry(2.0, 1.1, 0.4, 1, 1, 1), pa = bg.attributes.position;
+    for (let i = 0; i < pa.count; i++) if (pa.getY(i) > 0) { pa.setX(i, pa.getX(i) * 0.45); pa.setZ(i, pa.getZ(i) * 0.7); }
+    bg.translate(0, 0.55, 0); bg.computeVertexNormals();
+    const head = new THREE.Group(); broIn.add(head);
+    head.add(mesh(bg, bristM));
+    const band = mesh(new THREE.BoxGeometry(0.98, 0.2, 0.32), bandM); band.position.y = 1.08; head.add(band);
+    const band2 = mesh(new THREE.BoxGeometry(1.45, 0.09, 0.42), bandM); band2.position.y = 0.72; head.add(band2);
     const hg = cyl(0.08, 0.09, 1, 10); hg.translate(0, 0.5, 0);
-    const handle = mesh(hg, handM); handle.position.y = 0.6; broIn.add(handle);
+    const handle = mesh(hg, handM); handle.position.y = 1.15; broIn.add(handle);
     const capk = mesh(sph(0.13, 10, 8), handM); broIn.add(capk);
-    const sock = mesh(cyl(0.13, 0.1, 0.4, 12), bandM); sock.position.y = 0.72; broIn.add(sock);   // socket bracket into the block
-    const ferr = mesh(cyl(0.11, 0.11, 0.35, 12), TM.gold); ferr.position.y = 1.05; broIn.add(ferr);
-    const o = { root: g, bro, head, handle, capk, rim, pips: pips(g), hBase: 0.6 };
+    const ferr = mesh(cyl(0.11, 0.11, 0.35, 12), TM.gold); ferr.position.y = 1.35; broIn.add(ferr);
+    // the perk: a real push broom, a wide flat block with dense short bristles and the handle socketed into the middle; kept level with the floor
+    const ptc = document.createElement('canvas'); ptc.width = 128; ptc.height = 32; const px2 = ptc.getContext('2d');
+    px2.fillStyle = '#d9b45c'; px2.fillRect(0, 0, 128, 32);
+    for (let i = 0; i < 160; i++) { px2.strokeStyle = ['#b8903c', '#f0d888', '#a07a30', '#e6c56e'][i % 4]; px2.lineWidth = 0.8 + Math.random() * 0.8; px2.beginPath(); const q = Math.random() * 128; px2.moveTo(q, 0); px2.lineTo(q + (Math.random() - 0.5) * 2, 32); px2.stroke(); }
+    const ptex = new THREE.CanvasTexture(ptc); ptex.colorSpace = THREE.SRGBColorSpace; ptex.wrapS = ptex.wrapT = THREE.RepeatWrapping; ptex.repeat.set(3, 1);
+    const pbristM = std({ map: ptex, roughness: 0.9 }), woodM = std({ color: '#2e1a0c', roughness: 0.35 });
+    const phead = new THREE.Group(); phead.scale.set(1.25 * 1.45, 1.25, 1.25); phead.visible = false; bro.add(phead);
+    const brist = mesh(new THREE.BoxGeometry(1.9, 0.42, 0.36), pbristM); brist.position.y = 0.21; phead.add(brist);
+    const fringe = mesh(new THREE.BoxGeometry(1.94, 0.12, 0.42), pbristM, false); fringe.position.y = 0.06; phead.add(fringe);
+    const block = mesh(new THREE.BoxGeometry(2.0, 0.2, 0.44), woodM); block.position.y = 0.52; phead.add(block);
+    const pband = mesh(new THREE.BoxGeometry(0.5, 0.24, 0.5), bandM); pband.position.y = 0.52; phead.add(pband);
+    const sock = mesh(cyl(0.13, 0.1, 0.4, 12), bandM); sock.position.y = 0.72; sock.visible = false; broIn.add(sock);
+    const o = { root: g, bro, head, handle, capk, rim, pips: pips(g) };
     o.setLevel = lv => {
       rimLevel(o, lv);
-      head.scale.set(1.25 * [1, 1.2, 1.45][lv - 1], 1.25, 1.25);
+      head.scale.set([1, 1.2, 1.45][lv - 1], [1, 1.08, 1.15][lv - 1], 1);
       bandM.color.set(['#c0392b', '#2b6cd4', '#f3c24a'][lv - 1]); bandM.metalness = lv >= 3 ? 1 : 0; bandM.roughness = lv >= 3 ? 0.25 : 0.45;
       handM.color.set(['#b07a44', '#6b4425', '#f3c24a'][lv - 1]); handM.metalness = lv >= 3 ? 0.9 : 0; handM.roughness = lv >= 3 ? 0.25 : 0.55;
-      woodM.color.set(['#9a6a3c', '#5e3b1e', '#2e1a0c'][lv - 1]); woodM.roughness = lv >= 3 ? 0.35 : 0.6;   /* level 3: dark polished block under the gold fittings, so the gold still reads as trim */
-      ferr.visible = lv >= 2;
+      ferr.visible = lv >= 2 && !o.hBase;
     };
+    o.setPerk = () => { head.visible = false; ferr.visible = false; phead.visible = true; sock.visible = true; handle.position.y = 0.6; o.phead = phead; o.hBase = 0.6; };
     return o;
   },
   frog() {   // a pet frog on a lily pad: turns to face bugs and flicks its tongue
@@ -5080,7 +5092,7 @@ function poseBroom(tw, a, t) {
   bX.set(sz, 0, -sx).normalize(); bZ.crossVectors(bX, bU).normalize(); bX.crossVectors(bU, bZ);
   bM.makeBasis(bX, bU, bZ); o.bro.quaternion.setFromRotationMatrix(bM); o.bro.position.copy(bH);
   if (o.hBase !== undefined) {   // push broom: the block stays flat on the floor whatever the handle's lean
-    bZ.crossVectors(bX, UPV).normalize(); bM.makeBasis(bX, UPV, bZ); o.head.quaternion.setFromRotationMatrix(bM).premultiply(tmpQ.copy(o.bro.quaternion).invert());
+    bZ.crossVectors(bX, UPV).normalize(); bM.makeBasis(bX, UPV, bZ); o.phead.quaternion.setFromRotationMatrix(bM).premultiply(tmpQ.copy(o.bro.quaternion).invert());
     const hl = Math.max(0.5, len / 1.25 - o.hBase); o.handle.scale.y = hl; o.capk.position.y = o.hBase + hl; return;
   }
   const hl = Math.max(0.5, len / 1.25 - 1.15); o.handle.scale.y = hl; o.capk.position.y = 1.15 + hl;
