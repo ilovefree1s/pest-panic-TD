@@ -410,7 +410,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 .tc .ht{margin-block:1px}
 .tc em{font-style:normal;font-family:var(--body);font-weight:900;font-size:11px;color:var(--goo)}
 .st-lic b{color:var(--goo)}
-#shop{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:8px;min-width:0;grid-auto-rows:minmax(126px,auto)}   /* same height on every tab so the screen doesn't jump */
+#shop{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:8px;min-width:0;grid-auto-rows:minmax(134px,auto)}   /* same height on every tab so the screen doesn't jump (tool cards with two tags are the tallest: 132px) */
 .tc{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px 7px;border-radius:14px;min-width:0;
   background:rgba(20,26,32,.92);box-shadow:inset 0 0 0 2px rgba(255,255,255,.08);border:0;color:var(--text);cursor:pointer;font:inherit;transition:transform .12s,box-shadow .12s}
 .tc svg{width:40px;height:40px;flex:none}
@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="301">v1.0</div>
+    <div id="ver" data-b="302">v1.1</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2204,7 +2204,12 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
   bx.fillStyle = '#2a2d33'; bx.font = '900 54px system-ui, sans-serif'; bx.textAlign = 'center'; bx.textBaseline = 'middle'; bx.fillText('Here kitty kitty!', 256, 66);
   const bubble = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthTest: false }));
   bubble.scale.set(4, 1.25, 1); bubble.position.set(0, 3.1, 0); bubble.renderOrder = 25; bubble.visible = false; root.add(bubble);
-  root.userData = { body, legs, arms, head, hammer, wand, tip, trim, trimM, tankM, tankBase: tankM.color.clone(), halo, bubble, candleSay };
+  // spray meter over his head while the ability runs: a dark pill with a blue fill (not green, so it doesn't read as a health bar) that empties as he sprays
+  const meterBg = new THREE.Sprite(new THREE.SpriteMaterial({ color: '#0d1114', transparent: true, opacity: 0.8, depthTest: false }));
+  meterBg.scale.set(2.5, 0.42, 1); meterBg.position.set(0, 3.0, 0); meterBg.renderOrder = 26; meterBg.visible = false; root.add(meterBg);
+  const meterFill = new THREE.Sprite(new THREE.SpriteMaterial({ color: '#46c8ff', depthTest: false }));
+  meterFill.position.set(0, 3.0, 0); meterFill.renderOrder = 27; meterFill.visible = false; root.add(meterFill);
+  root.userData = { body, legs, arms, head, hammer, wand, tip, trim, trimM, tankM, tankBase: tankM.color.clone(), halo, bubble, candleSay, meterBg, meterFill };
   root.traverse(o => { if (o.isMesh) o.castShadow = true; });
   root.scale.setScalar(1.55);
   root.visible = false;
@@ -2466,7 +2471,7 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 6.65 }, widow: { url: 'assets/boss_widow.glb', len: 6.03, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 5.6, wings: true, pitch: 1.05 }, herc: { url: 'assets/boss_herc.glb', len: 5.2 } };
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 6.65 }, widow: { url: 'assets/boss_widow.glb', len: 6.03, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 5.6, wings: true, pitch: 0.55 }, herc: { url: 'assets/boss_herc.glb', len: 5.2 } };
 function insectRig(geo, per = 3) {
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
@@ -2984,6 +2989,11 @@ function drawOneExt(dt, EXTM, e, show) {
   const walk = e.state === 'walk', work = e.state === 'work', spray = e.state === 'spray' && !!e.abil, pet = e.state === 'pet', place = e.state === 'place';
   if (u.bubble) u.bubble.visible = pet;
   if (e.sayT > 0) e.sayT -= dt; if (u.candleSay) u.candleSay.visible = !pet && e.sayT > 0;
+  if (u.meterBg) {   // how much spray is left
+    const r = e.abil && e.abil.phase !== 'go' ? clamp(1 - (e.abil.t || 0) / ABIL.dur, 0, 1) : e.abil ? 1 : -1;
+    u.meterBg.visible = u.meterFill.visible = r >= 0 && !pet;
+    if (r > 0.001) { const W = 2.25; u.meterFill.scale.set(W * r, 0.24, 1); u.meterFill.center.set(0.5 / r, 0.5); u.meterFill.material.color.set(r < 0.25 ? '#ff6a3a' : '#46c8ff'); } else u.meterFill.visible = false;
+  }
   if (u.mdl) poseExtModel(u, e, dt, { walk, work, spray, pet: pet || place, place });
   else u.legs.forEach((l, i) => l.rotation.x = walk ? Math.sin(e.phase + i * Math.PI) * 0.75 : e.held ? Math.sin(e.phase + i * Math.PI) * 0.45 : 0);
   u.arms[0].rotation.x = spray ? -0.9 : walk ? Math.sin(e.phase) * 0.6 : work ? -0.5 : e.held ? -2.6 + Math.sin(e.phase) * 0.3 : 0;
