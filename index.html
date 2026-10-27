@@ -608,7 +608,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="324">v1.23</div>
+    <div id="ver" data-b="325">v1.24</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3674,7 +3674,7 @@ const BUILD = {
       head.scale.set(1.25 * [1, 1.2, 1.45][lv - 1], 1.25, 1.25);
       bandM.color.set(['#c0392b', '#2b6cd4', '#f3c24a'][lv - 1]); bandM.metalness = lv >= 3 ? 1 : 0; bandM.roughness = lv >= 3 ? 0.25 : 0.45;
       handM.color.set(['#b07a44', '#6b4425', '#f3c24a'][lv - 1]); handM.metalness = lv >= 3 ? 0.9 : 0; handM.roughness = lv >= 3 ? 0.25 : 0.55;
-      woodM.color.set(['#9a6a3c', '#5e3b1e', '#d4a84a'][lv - 1]);
+      woodM.color.set(['#9a6a3c', '#5e3b1e', '#2e1a0c'][lv - 1]); woodM.roughness = lv >= 3 ? 0.35 : 0.6;   /* level 3: dark polished block under the gold fittings, so the gold still reads as trim */
       ferr.visible = lv >= 2;
     };
     return o;
