@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v300</div>
+    <div id="ver" data-b="301">v1.0</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6056,7 +6056,8 @@ async function netOpen(code, onMsg) {
 }
 const MYVER = () => ($('ver').textContent || '').trim();
 /* updates: home-screen apps (iPhone especially) keep running an old copy, so the game asks the site which version is newest */
-async function latestVer() { try { const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return null; return (await r.json()).v || null; } catch (e) { return null; } }
+async function latestVer() { try { const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) return null; const j = await r.json(); return j.v ? j : null; } catch (e) { return null; } }
+const MYBUILD = () => +($('ver').dataset.b || 0) || vnum(MYVER());
 const vnum = v => +String(v || '').replace(/\D/g, '') || 0;
 async function applyUpdate(v) {
   try { if (navigator.serviceWorker) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.update().catch(() => {}))); } } catch (e) {}
@@ -6066,9 +6067,10 @@ async function applyUpdate(v) {
 }
 async function checkUpdate(manual) {
   const b = $('setUpd'); if (manual && b) b.textContent = 'Checking…';
-  const v = await latestVer(), mine = MYVER();
-  if (!v) { if (manual && b) b.textContent = 'Couldn\'t check (offline?)'; return; }
-  if (vnum(v) > vnum(mine)) {
+  const j = await latestVer(), mine = MYVER();
+  if (!j) { if (manual && b) b.textContent = 'Couldn\'t check (offline?)'; return; }
+  const v = j.label || j.v;
+  if ((j.b || vnum(j.v)) > MYBUILD()) {
     if (b) { b.textContent = 'Update to ' + v + ' now'; b.classList.remove('dark'); b.onclick = () => { b.textContent = 'Updating…'; applyUpdate(v); }; }
     if (!manual && (!S || S.mode !== 'play')) banner('Update ready: ' + v, 'Open Settings and tap Update to get it', false, 3500);
   } else if (manual && b) { b.textContent = 'You\'re up to date (' + mine + ')'; setTimeout(() => { if (b.textContent.startsWith('You')) b.textContent = 'Check for updates'; }, 3000); }
