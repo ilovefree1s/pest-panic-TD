@@ -193,7 +193,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;width:min(720px,92vw)}
 .sh{background:rgba(10,13,16,.78);border-radius:14px;padding:10px 8px;display:grid;justify-items:center;gap:4px;text-align:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .sh svg{width:52px;height:52px} .sh b{font:800 13px var(--body);color:var(--text)} .sh small{font-size:11px;color:var(--dim)}
-.sh .shimg{width:72px;height:72px;object-fit:contain} .sh.no .shimg{filter:brightness(0) opacity(.4)} .sh.yes .shimg{animation:shRain 2.4s ease-in-out infinite}
+.sh .shimg{width:72px;height:72px;object-fit:contain} .sh.no .shimg{filter:brightness(0) opacity(.4)} .sh.yes .shimg{animation:shGlow 3s linear infinite}
+@keyframes shGlow{0%{filter:drop-shadow(0 0 7px #ff4a4a)}17%{filter:drop-shadow(0 0 7px #ffb12a)}33%{filter:drop-shadow(0 0 7px #f5ff3a)}50%{filter:drop-shadow(0 0 7px #3aff7a)}67%{filter:drop-shadow(0 0 7px #3ac2ff)}83%{filter:drop-shadow(0 0 7px #b04aff)}100%{filter:drop-shadow(0 0 7px #ff4a4a)}}   /* rainbow glow around the caught bug, bug keeps its real colours */
 .sh.no svg{filter:brightness(0) opacity(.4)} .sh.no b{color:var(--dim)}
 .sh.yes{box-shadow:inset 0 0 0 2px rgba(255,216,74,.6)} .sh.yes svg{animation:shRain 2.4s ease-in-out infinite}
 @keyframes shRain{from{filter:drop-shadow(0 0 4px rgba(255,214,90,.55))}50%{filter:drop-shadow(0 0 10px rgba(255,214,90,.95))}to{filter:drop-shadow(0 0 4px rgba(255,214,90,.55))}}   /* caught bugs show in their real colours with a soft gold glow */
@@ -593,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v283</div>
+    <div id="ver">v284</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
