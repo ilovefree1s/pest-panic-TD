@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v293</div>
+    <div id="ver">v294</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -869,9 +869,9 @@ const LEVELS = [
     routes: [[[1, -0.6], [1, 1], [9, 1], [9, 5], [1, 5], [1, 8], [12, 8], [12, -0.05]]] },   // redrawn in the Trail Builder
   { name: 'Short Cut', sub: 'A short trail with few pockets', intro: 'Short trail. Every second counts.', hp: 1.064, money: 235, bossHp: 0.9, bossMulW: { 5: { '*': 0.9025 }, 10: { widow: 0.9 }, 15: { hornet: 0.5 } }, bugMulW: { 5: { dung: 0.75 } }, shift: 1,
     routes: [[[1, -0.6], [1, 5], [6, 5], [6, 8], [12, 8], [12, -0.05]]] },
-  { name: 'Zig Zag', sub: 'A new hole on the right', intro: 'They come from the right and cross the whole kitchen', hp: 1.18, money: 180, shift: 1, bossMul: { widow: 0.9 }, bossMulW: { 10: { widow: 0.76 } },
+  { name: 'Zig Zag', sub: 'A new hole on the right', intro: 'They come from the right and cross the whole kitchen', hp: 1.18, money: 180, shift: 1, bossMul: { widow: 0.9 },
     routes: [[[10, -0.6], [10, 2], [2, 2], [2, 6], [8, 6], [8, 8], [12, 8], [12, -0.05]]] },
-  { name: 'Two Holes', sub: 'Two trails that meet halfway', intro: 'Two holes now. Cover both trails.', hp: 1.25, money: 190, shift: 2,
+  { name: 'Two Holes', sub: 'Two trails that meet halfway', intro: 'Two holes now. Cover both trails.', hp: 1.25, money: 190, shift: 2, bossMulW: { 10: { widow: 0.722 } },   /* Mansion wave 10 Black Widow: -5%, -20%, then -5% (requested in that order) */
     routes: [[[1, -0.6], [1, 8], [5, 8], [5, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]],
              [[9, -0.6], [9, 2], [4, 2], [4, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]]] },   // 2nd trail redrawn in the Trail Builder
   // Team Kitchen (co-op): 21 tiles wide, bugs come in through both side walls, lanes join halfway up the middle
