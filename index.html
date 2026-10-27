@@ -607,7 +607,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="319">v1.18</div>
+    <div id="ver" data-b="320">v1.19</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2820,6 +2820,7 @@ $('locker').addEventListener('click', ev => { const b = ev.target.closest('.lk')
 $('shBack').addEventListener('click', () => { SND.play('tap'); $('shinies').hidden = true; $('title').hidden = false; });
 function makeShiny(b) {
   b.shiny = true;
+  if (S.speed > 1 && S.net !== 'guest') { S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }   /* back to 1× so there's time to catch it */
   if (BT[b.t].boss) {   // the big one: a gold flash over the whole screen
     BN_FWD++; try { banner('🏆 SHINY BOSS!', 'A golden ' + (BT[b.t].name || b.t) + '! Catch it before it gets squashed!', false, 4200); } finally { BN_FWD--; }
     const fl = $('goldFlash'); if (fl) { fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
@@ -3304,7 +3305,7 @@ function drawMdl(b, t, sh) {
     q.rotation.x = b.pitch + (b.jump > 0 ? -0.3 * Math.cos(p * Math.PI) : 0);
     u.crY = (u.crY || 0) + ((crouch ? -0.1 : 0) - (u.crY || 0)) * 0.2;
   }
-  if (u.gait) gaitLegs(u.legs, u.gait, w, sw, 0.18);
+  if (u.gait) gaitLegs(u.legs, u.gait, w * 1.5, 0.6, 0.32);
   else u.legs.forEach((g, k) => { g.rotation.y = g.userData.yaw + (hop && b.jump > 0 ? 0 : Math.sin(w + k * 1.7) * sw * g.userData.s); g.rotation.z = Math.max(0, Math.sin(w + k)) * 0.15 * g.userData.s; });
   if (u.wings) u.wings.forEach((g, k) => { g.rotation.z = (b.free && b.free.phase === 'land' ? Math.sin(t * 22 + k) * 0.35 : 0.2 + Math.sin(t * 30 + b.id + k * 0.4) * 0.75) * g.userData.s; });
   if (u.back) {   // big legs: fold in the crouch, kick out on take-off, ease back in the air
@@ -5018,9 +5019,9 @@ function drawBugs(t) {
     } else if (b.mesh) {
       const q = b.mesh, u = q.userData, fy = BT[b.t].fly; q.position.set(b.x, b.y0 + (fy ? 1.6 + Math.sin(b.walk * 0.9) * 0.2 : 0), b.z); q.rotation.set(b.pitch, b.ang, fy ? Math.sin(b.walk * 0.5) * 0.08 : 0, 'YXZ');
       if (u.wings) u.wings.forEach((w, k) => { w.rotation.z = Math.sin(t * 48 + k) * 0.55 * w.userData.s; });
-      if (u.gait) gaitLegs(u.legs, u.gait, b.walk * 0.7, 0.3, 0.16);
+      if (u.gait) gaitLegs(u.legs, u.gait, b.walk * 1.5, 0.55, 0.3);
       else u.legs.forEach((g, k) => { g.rotation.y = g.userData.yaw + Math.sin(b.walk * 0.7 + k * 1.7) * 0.25; g.rotation.z = Math.max(0, Math.sin(b.walk * 0.7 + k)) * 0.12; });
-      u.body.position.y = Math.abs(Math.sin(b.walk * 0.7)) * 0.05;
+      u.body.position.y = Math.abs(Math.sin(b.walk * 1.5)) * 0.06;
       const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : 0;
       for (const m of u.mats) { m.emissive.setRGB(f, f * (b.psnT > 0 && b.flash <= 0 ? 2 : 1), f); }
       if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, fy ? 4 : 6, 0, 0, 0, 0, fy ? 0.3 : 0.5);
