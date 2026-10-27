@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="306">v1.5</div>
+    <div id="ver" data-b="307">v1.6</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2260,40 +2260,10 @@ function extRedTexture(tex) {
 function smoothModel(g, crease = 1.05) {   /* Meshy models come in with hard edges on every low-poly face, which reads as lines/cracks: smooth the shading across edges flatter than ~60 degrees */
   g.scene.traverse(n => { if (n.isMesh && !n.geometry.userData.smooth) { try { const sg = toCreasedNormals(n.geometry, crease); sg.userData.smooth = true; n.geometry = sg; } catch (e) { console.warn('smooth', e); } } });
 }
-/* Meshy paints a model as hundreds of little patches on one sheet. The small far-away copies of the sheet (mipmaps) blur neighbouring
-   patches into each other, which shows as pale lines along every seam. Build those copies ourselves, averaging only inside the patches. */
-function uvCoverage(geo, W) {   /* which sheet pixels the model actually uses */
-  const key = 'cov' + W; if (geo.userData[key]) return geo.userData[key];
-  const cv = document.createElement('canvas'); cv.width = cv.height = W; const x = cv.getContext('2d'); x.fillStyle = '#fff';
-  const uv = geo.attributes.uv, ix = geo.index, n = ix ? ix.count : uv.count, at = i => ix ? ix.getX(i) : i;
-  x.beginPath(); for (let i = 0; i < n; i += 3) { const a = at(i), b = at(i + 1), c = at(i + 2); x.moveTo(uv.getX(a) * W, uv.getY(a) * W); x.lineTo(uv.getX(b) * W, uv.getY(b) * W); x.lineTo(uv.getX(c) * W, uv.getY(c) * W); x.closePath(); } x.fill();
-  x.lineWidth = 1.5; x.strokeStyle = '#fff'; x.stroke();
-  const d = x.getImageData(0, 0, W, W).data, m = new Uint8Array(W * W); for (let i = 0; i < m.length; i++) m[i] = d[i * 4] > 0 ? 1 : 0;
-  return (geo.userData[key] = m);
-}
-function seamSafeMips(tex, geo) {   /* give the texture hand-made mipmaps that never blend across patch borders */
-  const im = tex.image; if (!im || !geo || !geo.attributes.uv || tex.userData.seamSafe) return tex; tex.userData.seamSafe = true;
-  const W = im.width; if (im.height !== W || (W & (W - 1))) return tex;
-  const cv = document.createElement('canvas'); cv.width = cv.height = W; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
-  let data = x.getImageData(0, 0, W, W), cover = uvCoverage(geo, W);
-  if (tex.flipY) { const f = new Uint8Array(W * W); for (let y = 0; y < W; y++) f.set(cover.subarray(y * W, y * W + W), (W - 1 - y) * W); cover = f; }
-  const mips = [data]; let w = W, src = data.data, cv0 = cover;
-  while (w > 1) {
-    const h = w >> 1, out = new ImageData(h, h), o = out.data, c1 = new Uint8Array(h * h);
-    for (let y = 0; y < h; y++) for (let xx = 0; xx < h; xx++) {
-      let r = 0, g = 0, b = 0, n = 0, ra = 0, ga = 0, ba = 0;
-      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) { const p = (y * 2 + dy) * w + xx * 2 + dx, q = p * 4; ra += src[q]; ga += src[q + 1]; ba += src[q + 2]; if (cv0[p]) { r += src[q]; g += src[q + 1]; b += src[q + 2]; n++; } }
-      const k = (y * h + xx) * 4; if (n) { o[k] = r / n; o[k + 1] = g / n; o[k + 2] = b / n; c1[y * h + xx] = 1; } else { o[k] = ra / 4; o[k + 1] = ga / 4; o[k + 2] = ba / 4; } o[k + 3] = 255;
-    }
-    for (let pass = 0; pass < 2; pass++) {   /* pixels outside the patches copy their nearest patch pixel, so borders stay the patch colour */
-      const c2 = c1.slice(), o2 = o.slice();
-      for (let y = 0; y < h; y++) for (let xx = 0; xx < h; xx++) { const p = y * h + xx; if (c1[p]) continue; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = xx + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= h || Y >= h || !c1[Y * h + X]) continue; const q = (Y * h + X) * 4; o2[p * 4] = o[q]; o2[p * 4 + 1] = o[q + 1]; o2[p * 4 + 2] = o[q + 2]; c2[p] = 1; break; } }
-      o.set(o2); c1.set(c2);
-    }
-    mips.push(out); src = o; cv0 = c1; w = h;
-  }
-  tex.mipmaps = mips; tex.generateMipmaps = false; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.needsUpdate = true; return tex;
-}
+/* Meshy paints a model as hundreds of tiny patches on one sheet, each only a few pixels wide. The small far-away copies of the sheet
+   (mipmaps) can't keep patches that small apart, so they bleed into each other and show as pale lines along every edge and flecks of
+   the wrong colour. These models always sample the full-size sheet instead. */
+function seamSafeMips(tex) { if (!tex || tex.userData.seamSafe) return tex; tex.userData.seamSafe = true; tex.generateMipmaps = false; tex.mipmaps = []; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true; return tex; }
 function fitExtModel(root, gltf, red) {
   const u = root.userData, m = SkeletonUtils.clone(gltf.scene), cont = new THREE.Group();
   let tex = null; m.traverse(o => { if (o.isMesh && o.material && o.material.map) tex = o.material.map; });
