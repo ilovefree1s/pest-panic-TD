@@ -608,7 +608,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="328">v1.27</div>
+    <div id="ver" data-b="329">v1.28</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -921,7 +921,7 @@ const LEVELS = [
   // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
   { name: 'Lunch Line', bosses: [['ghop'], ['queen'], ['widow'], ['ghop', 'queen', 'hornet']], nb: [['hopper', 3, 2]], sub: 'A spiral out of a hole in the floor', intro: 'The bugs crawl up out of the floor in the middle and spiral out to the cake!', hp: 1.34, money: 190, shift: 2,
     routes: [[[6, 4], [5, 4], [5, 5], [7, 5], [7, 3], [3, 3], [3, 7], [9, 7], [9, 1], [1, 1], [1, 9], [12, 9], [12, -0.05]]] },   // redrawn in the Trail Builder
-  { name: 'Hot Delivery', bosses: [['gcenti'], ['ghop'], ['hornet'], ['gcenti', 'ghop', 'widow']], nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a front door', intro: 'A second trail comes in the front door and cuts across the first. Watch it!', hp: 1.25, money: 230, bossMulW: { 15: { hornet: 0.7 } }, bugMulW: { 1: { '*': 0.8 }, 2: { '*': 0.8, spider: 0.76 }, 3: { '*': 0.85 }, 4: { '*': 0.85 } }, shift: 2,
+  { name: 'Hot Delivery', bosses: [['gcenti'], ['ghop'], ['hornet'], ['gcenti', 'ghop', 'widow']], nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a front door', intro: 'A second trail comes in the front door and cuts across the first. Watch it!', hp: 1.25, money: 230, bossMulW: { 15: { hornet: 0.7 }, 20: { widow: 0.9 } }, bugMulW: { 1: { '*': 0.8 }, 2: { '*': 0.8, spider: 0.76 }, 3: { '*': 0.85 }, 4: { '*': 0.85 } }, shift: 2,
     routes: [[[-0.6, 2], [3, 2], [3, 8], [7, 8], [7, 4], [12, 4], [12, -0.05]],
              [[10, 10.6], [10, 9], [5, 9], [5, 1], [12, 1], [12, -0.05]]] },   // 2nd trail redrawn in the Trail Builder
   { name: 'Switchbacks', bosses: [['gstink'], ['gcenti'], ['ghop'], ['gstink', 'gcenti', 'queen']], nb: [['hopper', 3, 2], ['centi', 4, 1], ['stink', 5, 2]], sub: 'The cake is on the left this time', intro: 'The cake is on the other side. They come in from the right.', hp: 1.44, money: 200, shift: 3, cakeCol: 1, fridgeX: 6, stoveX: 15,
@@ -4383,7 +4383,7 @@ function catMischief(tw, T, L, dt) {   // now and then: hop up on the counter, s
         g.position.x += dx / d * 0.18; g.position.z += dz / d * 0.18; M.wob = 0.25; SND.play('tap');
       } else { knockProp(M.key); tw.knocks = (tw.knocks || 0) + 1; setTimeout(() => SND.play('meow'), 700); }
     }
-    if (M.n < 4 && S.bugs.some(b => !b.dead && (b.x - M.f.x) ** 2 + (b.z - M.f.z) ** 2 < 14 * 14)) { M.ph = 'down'; M.t = 0; g.rotation.z = 0; return true; }   /* a bug is coming: forget the counter, back to work */
+    if (M.n < 4 && S.bugs.some(b => !b.dead && !b.free && (b.x - M.f.x) ** 2 + (b.z - M.f.z) ** 2 < 14 * 14)) { M.ph = 'down'; M.t = 0; g.rotation.z = 0; return true; }   /* a bug is coming: forget the counter, back to work */
     if (M.wob > 0 && g.visible && !g.userData.fall) { M.wob -= dt; g.rotation.z = Math.sin(M.wob * 40) * 0.08 * (M.wob / 0.25); }
     if (M.t > 4.6) { M.ph = 'down'; M.t = 0; }
     return true;
@@ -4395,7 +4395,7 @@ function catMischief(tw, T, L, dt) {   // now and then: hop up on the counter, s
 }
 function catHunt(tw) {   /* head for the nearest bug on the floor, wherever it is */
   let best = null, bd = 1e9;
-  for (const b of S.bugs) { if (b.dead || b.y0 > 0.5 && !BT[b.t].fly) continue; const d = (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2; if (d < bd) { bd = d; best = b; } }
+  for (const b of S.bugs) { if (b.dead || b.y0 > 0.5 && !BT[b.t].fly || b.free) continue; const d = (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2; if (d < bd) { bd = d; best = b; } }   /* b.free: a fly on its way to the flytrap is the plant's, the cat leaves it */
   if (best) { tw.goal = { x: best.x, z: best.z }; tw.rest = 0; }
 }
 function catPlanMischief(tw) {
@@ -4411,9 +4411,9 @@ function catAct(tw, T, L, R, dt) {
   if (tw.cx === undefined) { tw.cx = tw.x; tw.cz = tw.z; tw.cyaw = 0; }
   tw.x = tw.cx; tw.z = tw.cz;   // its range ring follows it around
   if (tw.misAt === undefined) tw.misAt = (S.gt || 0) + 25 + Math.random() * 25;
-  if (tw.mis && (tw.mis.ph !== 'go' || !S.bugs.some(b => !b.dead && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < R * R))) { if (catMischief(tw, T, L, dt)) return; }
+  if (tw.mis && (tw.mis.ph !== 'go' || !S.bugs.some(b => !b.dead && !b.free && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < R * R))) { if (catMischief(tw, T, L, dt)) return; }
   else if (tw.mis) tw.mis = null;   // a bug showed up on the way: hunting comes first
-  if (!tw.mis && !tw.pounce && (S.gt || 0) > tw.misAt && !S.bugs.some(b => !b.dead && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < Math.max(R * R * 6, 14 * 14))) { catPlanMischief(tw); tw.misAt = (S.gt || 0) + 20; if (tw.mis) return; }
+  if (!tw.mis && !tw.pounce && (S.gt || 0) > tw.misAt && !S.bugs.some(b => !b.dead && !b.free && (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2 < Math.max(R * R * 6, 14 * 14))) { catPlanMischief(tw); tw.misAt = (S.gt || 0) + 20; if (tw.mis) return; }
   const P = tw.pounce;
   if (P) {
     const b = S.bugs.find(o => o.id === P.id);
@@ -4430,7 +4430,7 @@ function catAct(tw, T, L, R, dt) {
   }
   if (tw.cd <= 0) {   // anything close enough to pounce on?
     let best = null, bd = 1e9;
-    for (const b of S.bugs) { if (b.dead || b.y0 > 0.5 && !BT[b.t].fly) continue; const d = (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2; if (d < bd) { bd = d; best = b; } }
+    for (const b of S.bugs) { if (b.dead || b.y0 > 0.5 && !BT[b.t].fly || b.free) continue; const d = (b.x - tw.cx) ** 2 + (b.z - tw.cz) ** 2; if (d < bd) { bd = d; best = b; } }   /* b.free: a fly on its way to the flytrap is the plant's, the cat leaves it */
     if (best && bd < R * R) { tw.pounce = { id: best.id, t: 0 }; return; }
     if (best && bd < 18 * 18 && Math.random() < dt * 4) { tw.goal = { x: best.x, z: best.z }; tw.rest = 0; }   // notices a bug across the room: stalks toward it
   }
@@ -5203,15 +5203,17 @@ function venusHeads(tw) { return tw.perk ? 3 : Math.min(2, tw.lv); }   /* 1 head
 function venusSpot() {   /* a random free spot on the left or right counter, clear of the clutter, the cat bed and the cake */
   const team = !!(LEVELS[LV] && LEVELS[LV].team), cands = [];
   for (let z = -9; z <= 7; z += 0.5) cands.push(...(team ? [CL2(z), CR2(z)] : [CL(z), CR(z)]));
-  const busy = []; if (KIT.props) for (const k in KIT.props) { const g = KIT.props[k]; if (g.visible && !g.userData.knocked) busy.push([g.position.x, g.position.z, k.startsWith('sm_') ? 1.5 : 2.4]); }
-  const bed = catBedSpot(); if (bed) busy.push([bed[0], bed[1], 2.8]);
-  for (const g of TROPHIES) busy.push([g.position.x, g.position.z, 1.4]);
-  /* pick a side first so it doesn't always land on whichever counter happens to be emptier; a crowded side may squeeze in a little closer to the clutter */
-  const clear = (c, k) => busy.every(([x, z, r]) => Math.hypot(c[0] - x, c[1] - z) > r * k);
-  const sides = [cands.filter(c => c[0] < 0), cands.filter(c => c[0] >= 0)].map(list => list.filter(c => clear(c, 1)).length ? list.filter(c => clear(c, 1)) : list.filter(c => clear(c, 0.65))).filter(l => l.length);
-  const pool = sides.length ? sides[Math.floor(Math.random() * sides.length)] : cands;
-  const c = pool[Math.floor(Math.random() * pool.length)];
-  return { x: c[0], z: c[1] };
+  const PR = 0.9;   /* the pot's own footprint */
+  const boxes = [], circles = [];
+  if (KIT.props) for (const k in KIT.props) { const g = KIT.props[k]; if (!g.visible || g.userData.knocked) continue; const bb = new THREE.Box3().setFromObject(g); if (bb.isEmpty()) continue; boxes.push([bb.min.x - PR, bb.max.x + PR, bb.min.z - PR, bb.max.z + PR]); }   /* the real size of each thing on the counter, not a guess */
+  if (CATBED.g && CATBED.g.visible) circles.push([CATBED.g.position.x, CATBED.g.position.z, 3.0 + PR]); else { const bed = catBedSpot(); if (bed) circles.push([bed[0], bed[1], 3.0 + PR]); }   /* the cat bed (where it actually is) */
+  for (const g of TROPHIES) circles.push([g.position.x, g.position.z, 1.4]);
+  const room = c => { let m = 1e9; for (const [x0, x1, z0, z1] of boxes) { const dx = Math.max(x0 - c[0], 0, c[0] - x1), dz = Math.max(z0 - c[1], 0, c[1] - z1); m = Math.min(m, dx || dz ? Math.hypot(dx, dz) : -Math.min(c[0] - x0, x1 - c[0], c[1] - z0, z1 - c[1])); } for (const [x, z, r] of circles) m = Math.min(m, Math.hypot(c[0] - x, c[1] - z) - r); return m; };   /* how far the pot would sit from the nearest thing (negative: inside it) */
+  /* pick a side first so it doesn't always land on whichever counter happens to be emptier; a side with no room is skipped */
+  const sides = [cands.filter(c => c[0] < 0), cands.filter(c => c[0] >= 0)].map(l => l.filter(c => room(c) > 0)).filter(l => l.length);
+  if (sides.length) { const pool = sides[Math.floor(Math.random() * sides.length)], c = pool[Math.floor(Math.random() * pool.length)]; return { x: c[0], z: c[1] }; }
+  let best = cands[0], br = -1e9; for (const c of cands) { const r = room(c); if (r > br) { br = r; best = c; } }   /* nowhere is fully clear: take the spot with the most room */
+  return { x: best[0], z: best[1] };
 }
 function catWakeSpot() {
   const at = catBedSpot(); if (!at) return { x: 0, z: 0 };
