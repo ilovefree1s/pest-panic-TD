@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v291</div>
+    <div id="ver">v292</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2466,7 +2466,7 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 7.4 }, widow: { url: 'assets/boss_widow.glb', len: 6.7, legs: 4 } };
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 6.65 }, widow: { url: 'assets/boss_widow.glb', len: 6.7, legs: 4 } };
 function insectRig(geo, per = 3) {
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
