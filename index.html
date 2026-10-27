@@ -594,7 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver">v299</div>
+    <div id="ver">v300</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2620,7 +2620,7 @@ function buildMantisModel() {
   u.legs = legs; u.arms = arms; u.mats = [mat]; u.shadow = 2.0; return root;
 }
 { let n = 0; const done = () => { if (++n < 2) return; const old = MODEL_BUILD.centi; MODEL_BUILD.centi = () => { try { return buildCentiModel(); } catch (e) { console.warn('centipede model', e); return old(); } }; };
-  if (false) /* off until the new centipede body model comes in */ try { new GLTFLoader().load('assets/centi_head.glb', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
+  try { new GLTFLoader().load('assets/centi_head.glb', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
 for (const [t, fn] of [['stink', () => buildStinkModel()], ['moth', () => buildMothModel()]]) try { new GLTFLoader().load(BUG_MODELS[t].url, g => { BUG_MODELS[t].gltf = g; const old = MODEL_BUILD[t]; MODEL_BUILD[t] = () => { try { return fn(); } catch (e) { console.warn(t + ' model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.hopper.url, g => { BUG_MODELS.hopper.gltf = g; const old = MODEL_BUILD.hopper; MODEL_BUILD.hopper = () => { try { return buildHopperModel(); } catch (e) { console.warn('hopper model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.mantis.url, g => { BUG_MODELS.mantis.gltf = g; const old = MODEL_BUILD.mantis; MODEL_BUILD.mantis = () => { try { return buildMantisModel(); } catch (e) { console.warn('mantis model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
