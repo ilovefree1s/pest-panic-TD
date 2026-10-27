@@ -608,7 +608,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="327">v1.26</div>
+    <div id="ver" data-b="328">v1.27</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3373,7 +3373,7 @@ function specialMove(b, sp, dt) {
   const bt = BT[b.t], base = bt.base || b.t, giant = !!bt.boss;
   if (base === 'centi') {
     if (b.lead && b.lead.dead) { if (giant) b.lead = null; else { let q = b.lead; while (q && q.dead) q = q.lead; b.lead = q; } }   // giant: the bit in front got squashed, this segment is a new head. regular: the chain closes up behind the gap
-    if (b.lead) { const want = b.lead.s - (bt.gap || 0.62); sp = b.s < want - 0.05 ? sp * 1.35 : b.s > want ? 0 : sp; }
+    if (b.lead) { const want = b.lead.s - (bt.gap || 0.62), gap = want - b.s; sp = gap > 0.05 ? sp * Math.min(4, 1.35 + gap * 4) : gap < 0 ? 0 : sp; }   /* the further behind, the faster it hurries up: a hole left by a squashed segment closes in well under a second */
     if (giant) b.armor = b.lead ? 0 : 4;   // the giant's head is armored
   } else if (base === 'hopper' && S.net !== 'guest') {
     const JT = giant ? 0.6 : 0.5, JL = giant ? 3 : 6, CR = giant ? 0.45 : 0.3;   // the giant only hops one tile, now and then
@@ -6838,7 +6838,7 @@ function aiSpecial(b, sp, dt) {
   const A = S.vs.bot, bt = BT[b.t], base = bt.base || b.t, giant = !!bt.boss;
   if (base === 'centi') {
     if (b.lead && b.lead.hp <= 0) b.lead = null;
-    if (b.lead) { const want = b.lead.s - (bt.gap || 0.62); sp = b.s < want - 0.05 ? sp * 1.35 : b.s > want ? 0 : sp; }
+    if (b.lead) { const want = b.lead.s - (bt.gap || 0.62), gap = want - b.s; sp = gap > 0.05 ? sp * Math.min(4, 1.35 + gap * 4) : gap < 0 ? 0 : sp; }   /* the further behind, the faster it hurries up: a hole left by a squashed segment closes in well under a second */
     if (giant) b.armor = b.lead ? 0 : 4;
   } else if (base === 'hopper') {
     const JT = giant ? 0.6 : 0.5, JL = giant ? 3 : 6;
