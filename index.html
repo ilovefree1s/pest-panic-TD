@@ -626,7 +626,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="372">v1.71</div>
+    <div id="ver" data-b="373">v1.72</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1496,7 +1496,7 @@ function glueTexture() {
 }
 // the sugar trail the bugs follow, painted to match the board 1:1
 function trailTexture() {
-  const PX = 24, W = COLS * CS, [c, x] = cnv(W * PX, 30 * PX), r = rng(5);
+  const PX = 48, K = PX / 24, W = COLS * CS, [c, x] = cnv(W * PX, 30 * PX), r = rng(5);   /* twice the old detail, so the crumbs stay crisp zoomed in */
   const lines = ROUTES.map(R => { const pts = R.floor.map(([px, pz]) => [(px - X0) * PX, (pz - Z0) * PX]);
     const c0 = R.wp[0][0], r0 = R.wp[0][1]; if (c0 >= 0 && c0 <= COLS - 1 && r0 >= 0 && r0 <= ROWS - 1) {} else if (c0 < 0) pts[0][0] = -20; else if (c0 > COLS - 1) pts[0][0] = W * PX + 20; else if (r0 > ROWS - 1) pts[0][1] = 30 * PX + 20; else pts[0][1] = -20;
     if (!(BLD_ON && BLD_PART && BLD_PART.has(ROUTES.indexOf(R)))) pts[pts.length - 1][1] = -10; return pts; }).filter(() => !(BLD_ON && BLD_EMPTY));
@@ -1507,10 +1507,12 @@ function trailTexture() {
   else { stroke(1.76 * PX, 'rgba(40,26,12,.3)'); stroke(1.5 * PX, 'rgba(192,180,151,.58)'); stroke(0.96 * PX, 'rgba(207,201,182,.44)'); }   // narrower and darker than the original
   for (const pts of lines) for (let i = 0; i < pts.length - 1; i++) {
     const [ax, ay] = pts[i], [bx, by] = pts[i + 1], len = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / len, ny = (bx - ax) / len;
-    for (let k = 0; k < len * 1.6; k++) {
-      const t = r(), o = (r() - 0.5) * 1.47 * PX * (0.4 + 0.6 * r()), s = 1 + r() * 2.5;
+    for (let k = 0; k < len * 1.6 / K; k++) {   // little crumbs and grit: rounded pebbles with a light top and a soft dark edge
+      const t = r(), o = (r() - 0.5) * 1.47 * PX * (0.4 + 0.6 * r()), s = (1 + r() * 2.5) * K, px = ax + (bx - ax) * t + nx * o, py = ay + (by - ay) * t + ny * o;
       x.fillStyle = r() < 0.12 ? 'rgba(128,85,43,.7)' : BLD_ON && lines.length > 1 && lines.indexOf(pts) === 1 ? (r() < 0.5 ? 'rgba(120,96,64,.85)' : 'rgba(170,146,110,.8)') : r() < 0.5 ? 'rgba(217,217,217,.85)' : 'rgba(213,201,170,.8)';
-      x.fillRect(ax + (bx - ax) * t + nx * o, ay + (by - ay) * t + ny * o, s, s);
+      const rx = s * (0.45 + r() * 0.2), ry = s * (0.35 + r() * 0.2), rot = r() * Math.PI;
+      x.beginPath(); x.ellipse(px, py, rx, ry, rot, 0, TAU); x.fill();
+      if (s > 2 * K) { x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.ellipse(px - rx * 0.25, py - ry * 0.3, rx * 0.45, ry * 0.4, rot, 0, TAU); x.fill(); }
     }
   }
   return tex(c);
