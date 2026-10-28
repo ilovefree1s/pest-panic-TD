@@ -619,7 +619,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="343">v1.42</div>
+    <div id="ver" data-b="344">v1.43</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5624,6 +5624,29 @@ canvas.addEventListener('pointerdown', e => {
   }
   if (tw) pick(tw); else unpick();
 });
+/* the phone's Back button: step back out of whatever menu is open (or pause the game) instead of closing the whole app.
+   A spare history entry sits on top while there's something to back out of; Back pops it, we handle it, and put it back. */
+function backStep() {
+  const vis = id => $(id) && !$(id).hidden, tap = id => { const b = $(id); if (b) b.click(); return true; };
+  if (vis('backup')) return tap('bakBack');
+  if (vis('settings')) { closeSettings(); return true; }
+  if (vis('nameBox')) { $('nameBox').hidden = true; if (S.mode !== 'play') $('title').hidden = false; return true; }
+  if (vis('achs')) return tap('achBack');
+  if (vis('guide')) { closeGuide(); return true; }
+  if (vis('shinies')) return tap('shBack');
+  if (vis('lobby')) return tap('lbBack');
+  if (vis('online')) return tap('onlineBack');
+  if (vis('solo')) return tap('soloBack');
+  if (vis('bld')) return tap('bldExit');
+  if (S && S.mode === 'play') { if (S.pick || S.placing) { S.placing = null; unpick(); syncTray(); return true; } if (!S.paused) { setPaused(true); return true; } setPaused(false); return true; }   /* in a game: drop the selection, else pause; Back again resumes */
+  return false;   // the title screen with nothing open: let Back leave the app as usual
+}
+function backWanted() { return !!(S && S.mode === 'play') || ['backup', 'settings', 'nameBox', 'achs', 'guide', 'shinies', 'lobby', 'online', 'solo', 'bld'].some(id => $(id) && !$(id).hidden); }
+let BACK_GUARD = false;
+function syncBackGuard() { if (!BACK_GUARD && backWanted()) { try { history.pushState({ ppdBack: 1 }, ''); BACK_GUARD = true; } catch (e) {} } }
+addEventListener('popstate', () => { BACK_GUARD = false; let did = false; try { did = backStep(); } catch (e) {} if (did) { SND.play('tap'); syncBackGuard(); } else try { history.back(); } catch (e) {} });   /* nothing to step out of: carry on with the Back (leaves the app) */
+addEventListener('click', () => setTimeout(syncBackGuard, 0), true);
+setInterval(syncBackGuard, 500);
 addEventListener('keydown', e => {
   if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
   SND.init();
