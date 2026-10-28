@@ -621,7 +621,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="349">v1.48</div>
+    <div id="ver" data-b="350">v1.49</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3649,26 +3649,46 @@ const BUILD = {
   lens() {
     const g = new THREE.Group(), rim = coaster(g);
     const turn = new THREE.Group(); g.add(turn);
-    const brass = std({ color: '#c9a24a', metalness: 0.9, roughness: 0.28, envMapIntensity: 1.2 });
-    const post = mesh(cyl(0.08, 0.1, 1.7, 10), brass); post.position.set(0, 0.95, -0.45); turn.add(post);
-    const head = new THREE.Group(); head.position.set(0, 2.25, 0.35); head.rotation.x = 0.55; turn.add(head);
-    const ring = mesh(new THREE.TorusGeometry(0.72, 0.09, 12, 36), brass); ring.rotation.x = Math.PI / 2; head.add(ring);
-    head.add(mesh(cyl(0.68, 0.68, 0.06, 36), new THREE.MeshStandardMaterial({ color: '#cfeaff', transparent: true, opacity: 0.3, roughness: 0.02, metalness: 0.1, envMapIntensity: 2.2, depthWrite: false }), false));
-    const handle = mesh(cyl(0.11, 0.13, 1.0, 10), std({ color: '#7a4a24', roughness: 0.55 })); handle.rotation.x = Math.PI / 2; handle.position.z = -1.15; head.add(handle);
-    // level 2: a second lens stacked above; level 3: gold rims and a ruby on the handle
-    const lens2 = new THREE.Group(); lens2.position.y = 0.32; lens2.scale.setScalar(0.72); head.add(lens2);
-    const ring2 = mesh(new THREE.TorusGeometry(0.72, 0.08, 12, 36), brass); ring2.rotation.x = Math.PI / 2; lens2.add(ring2);
-    lens2.add(mesh(cyl(0.68, 0.68, 0.05, 36), new THREE.MeshStandardMaterial({ color: '#dff4ff', transparent: true, opacity: 0.3, roughness: 0.02, envMapIntensity: 2.2, depthWrite: false }), false));
-    const ruby = mesh(sph(0.14, 12, 10), std({ color: '#ff3048', emissive: '#ff1030', emissiveIntensity: 0.9, roughness: 0.1 }), false); ruby.position.z = -1.7; head.add(ruby);
+    const brass = std({ color: '#c9a24a', metalness: 0.95, roughness: 0.22, envMapIntensity: 1.4 }), dark = std({ color: '#5a4320', metalness: 0.8, roughness: 0.4 }), wood = std({ color: '#6e3f1e', roughness: 0.45 });
+    // a desk stand: weighted foot, a post with a knuckle joint, and a clamp holding the glass by its handle
+    const lathe = (pts, mat, seg = 24) => mesh(new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), seg), mat);
+    const foot = lathe([[0, 0.12], [0.62, 0.12], [0.66, 0.17], [0.5, 0.24], [0.2, 0.3], [0, 0.3]], brass); foot.position.set(0, 0, 0); turn.add(foot);
+    const sock = lathe([[0, 0], [0.2, 0], [0.18, 0.3], [0.16, 0.42], [0, 0.42]], dark, 16); sock.position.set(0, 0.28, 0); turn.add(sock);
+    
+    
+    const head = new THREE.Group(); head.position.set(0, 2.62, -0.75); head.rotation.set(1.2, Math.PI, 0); turn.add(head);   /* standing on its handle, glass up, tipped toward the trail */
+    // the lens: a thick bevelled rim with a dark inner bezel, glass with a bright curved highlight
+    const rimG = new THREE.Group(); head.add(rimG);
+    const outer = mesh(new THREE.TorusGeometry(0.74, 0.1, 16, 48), brass); outer.rotation.x = Math.PI / 2; rimG.add(outer);
+    const lip = mesh(new THREE.TorusGeometry(0.66, 0.035, 10, 48), dark); lip.rotation.x = Math.PI / 2; lip.position.y = 0.05; rimG.add(lip);
+    const lip2 = lip.clone(); lip2.position.y = -0.05; rimG.add(lip2);
+    const glassM = new THREE.MeshPhysicalMaterial({ color: '#d8f2ff', transparent: true, opacity: 0.32, roughness: 0.02, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 2.6, depthWrite: false });
+    const lensGeo = new THREE.SphereGeometry(1.9, 40, 12, 0, Math.PI * 2, 0, 0.36); lensGeo.translate(0, -1.9 * Math.cos(0.36) - 0.0, 0);   // a shallow dome: the glass bulges like a real lens
+    const lensTop = mesh(lensGeo, glassM, false); lensTop.scale.set(1, 0.9, 1); rimG.add(lensTop);
+    const lensBot = mesh(lensGeo, glassM, false); lensBot.rotation.x = Math.PI; lensBot.scale.set(1, 0.9, 1); rimG.add(lensBot);
+    const hc = document.createElement('canvas'); hc.width = hc.height = 128; const hx = hc.getContext('2d');
+    const gr = hx.createRadialGradient(46, 42, 2, 46, 42, 46); gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.35, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); hx.fillStyle = gr; hx.beginPath(); hx.ellipse(46, 42, 40, 22, -0.6, 0, Math.PI * 2); hx.fill();
+    hx.strokeStyle = 'rgba(255,255,255,0.55)'; hx.lineWidth = 5; hx.beginPath(); hx.arc(64, 64, 52, 3.5, 4.6); hx.stroke();
+    const shine = new THREE.Mesh(new THREE.CircleGeometry(0.66, 32), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); shine.rotation.x = -Math.PI / 2; shine.position.y = 0.075; shine.renderOrder = 6; rimG.add(shine);
+    // a turned wooden handle with grip rings, a brass collar and an end cap
+    const hand = new THREE.Group(); hand.position.z = -0.84; hand.rotation.x = -Math.PI / 2; head.add(hand);
+    const collar = lathe([[0.15, 0], [0.15, 0.16], [0.11, 0.22], [0, 0.22]], brass, 16); hand.add(collar);
+    const grip = lathe([[0.11, 0.2], [0.12, 0.3], [0.1, 0.38], [0.13, 0.48], [0.1, 0.58], [0.13, 0.68], [0.1, 0.78], [0.13, 0.88], [0.12, 1.0], [0.0, 1.02]], wood, 16); hand.add(grip);
+    const cap = mesh(sph(0.13, 14, 10), brass); cap.position.y = 1.02; hand.add(cap);
+    // level 2: a second, smaller lens swung in above; level 3: gold fittings and a ruby set in the cap
+    const lens2 = new THREE.Group(); lens2.position.set(0.25, 0.34, 0.1); lens2.scale.setScalar(0.66); head.add(lens2);
+    const ring2 = outer.clone(); lens2.add(ring2); const l2a = lensTop.clone(), l2b = lensBot.clone(); lens2.add(l2a, l2b); const sh2 = shine.clone(); lens2.add(sh2);
+    const ruby = mesh(sph(0.11, 14, 10), new THREE.MeshPhysicalMaterial({ color: '#ff2a44', emissive: '#ff1030', emissiveIntensity: 0.7, roughness: 0.05, clearcoat: 1 }), false); ruby.position.set(0, 0, 0.88); head.add(ruby);   /* level 3: a ruby set in the top of the rim */
     const bgeo = new THREE.CylinderGeometry(1, 0.1, 1, 24, 1, true); bgeo.translate(0, -0.5, 0);
     const beam = new THREE.Mesh(bgeo, new THREE.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
     beam.renderOrder = 16; beam.visible = false; beam.frustumCulled = false; scene.add(beam);
-    const o = { root: g, turn, tip: beam, rim, pips: pips(g), beamW: 0.62 };
+    const o = { root: g, turn, tip: beam, rim, pips: pips(g), beamW: 0.62, lensC: rimG };
     o.setLevel = lv => {
       rimLevel(o, lv);
-      lens2.visible = lv >= 2; ruby.visible = lv >= 3;
-      brass.color.set(lv >= 3 ? '#ffd24a' : '#c9a24a'); brass.emissive.set(lv >= 3 ? '#3a2400' : '#000000'); brass.emissiveIntensity = lv >= 3 ? 0.35 : 0;
-      head.scale.setScalar([1, 1.15, 1.3][lv - 1]); o.beamW = [0.62, 0.72, 0.85][lv - 1];
+      lens2.visible = lv >= 2; ruby.visible = lv >= 3; cap.visible = lv < 3;
+      brass.color.set(lv >= 3 ? '#ffd24a' : lv === 2 ? '#d9b25a' : '#c9a24a'); brass.emissive.set(lv >= 3 ? '#3a2400' : '#000000'); brass.emissiveIntensity = lv >= 3 ? 0.3 : 0;
+      wood.color.set(['#6e3f1e', '#4a2410', '#2a140a'][lv - 1]);
+      head.scale.setScalar([1, 1.07, 1.14][lv - 1]); o.beamW = [0.62, 0.72, 0.85][lv - 1];
     };
     return o;
   },
@@ -5382,7 +5402,7 @@ function drawTowers(dt, t) {
     } else if (tw.t === 'lens') {
       const lk = tw.lock, bm = o.tip;
       if (lk && !lk.dead && tw.heat > 0 && S.mode !== 'over') {
-        const k = tw.heat / T.ramp, lx = tw.x + Math.sin(tw.yaw) * 0.35, lz = tw.z + Math.cos(tw.yaw) * 0.35, ly = 2.25;
+        const k = tw.heat / T.ramp, lc = tw.o.lensC ? tw.o.lensC.getWorldPosition(tmpV) : null, lx = lc ? lc.x : tw.x + Math.sin(tw.yaw) * 0.35, lz = lc ? lc.z : tw.z + Math.cos(tw.yaw) * 0.35, ly = lc ? lc.y : 2.25;   /* the sunbeam starts at the glass, wherever it is */
         const tv = tmpV.set(lk.x - lx, bugY(lk) + 0.3 - ly, lk.z - lz), len = tv.length();
         bm.visible = true; bm.position.set(lx, ly, lz); bm.quaternion.setFromUnitVectors(DOWN, tv.normalize()); bm.scale.set(o.beamW, len, o.beamW);
         bm.material.opacity = 0.1 + 0.28 * k; bm.material.color.setRGB(1, 0.95 - 0.35 * k, 0.75 - 0.6 * k);
