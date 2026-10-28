@@ -567,6 +567,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #title.v2 .tArt{position:absolute;inset:0;background:url(assets/title_tall.jpg) center top/cover no-repeat}
 #title.v2 .logo,#title.v2 .sub{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #title.v2 .rotTip{display:none}
+#updPill{align-self:center;display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 18px;border-radius:999px;border:2px solid var(--gold);background:rgba(14,18,22,.88);color:#fff;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.45);animation:updPulse 2s ease-in-out infinite} #updPill[hidden]{display:none} #updPill b{font:900 15px var(--body);color:var(--gold)} #updPill small{font:800 12px var(--body);opacity:.85} @keyframes updPulse{50%{transform:scale(1.04)}} @media (prefers-reduced-motion:reduce){#updPill{animation:none}}
 #title.v2 .tCol{position:relative;z-index:1;display:flex;flex-direction:column;gap:12px;width:min(520px,100%)}
 #title.v2 .tmain{display:flex;flex-direction:column;gap:12px;width:100%}
 #title.v2 #resumeT,#title.v2 .tmain .btn{width:100%;display:flex;align-items:center;gap:16px;text-align:left;padding:10px 22px;border-radius:26px;border:3px solid rgba(0,0,0,.45);font-family:var(--display);font-size:clamp(26px,4.4vh,38px);line-height:1;min-height:clamp(64px,10.5vh,90px);letter-spacing:.02em}
@@ -619,7 +620,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="344">v1.43</div>
+    <div id="ver" data-b="345">v1.44</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -651,6 +652,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       <h1 class="logo">Pest<span>Panic Defense</span></h1>
       <p class="sub">The bugs found the birthday cake. It's on the counter. Set out swatters, sprays and zappers along the sugar trail and save every slice you can.</p>
       <div class="tCol">
+        <button type="button" id="updPill" hidden><b>Update ready</b><small>Tap to get it</small></button>
       <button class="btn" id="resumeT" type="button" hidden><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="#0b3d06" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span class="tt">Resume<small id="resumeS"></small></span></button>
       <div class="tmain">
         <button class="btn soloBtn" id="soloT" type="button"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z" fill="currentColor"/></svg></span><span class="tt">Solo <small>10 houses · 25 waves each</small></span></button>
@@ -6224,7 +6226,7 @@ async function checkUpdate(manual) {
   const v = j.label || j.v;
   if ((j.b || vnum(j.v)) > MYBUILD()) {
     if (b) { b.textContent = 'Update to ' + v + ' now'; b.classList.remove('dark'); b.onclick = () => { b.textContent = 'Updating…'; applyUpdate(v); }; }
-    if (!manual && (!S || S.mode !== 'play')) banner('Update ready: ' + v, 'Open Settings and tap Update to get it', false, 3500);
+    if (!manual) { const pill = $('updPill'); if (pill) { pill.querySelector('b').textContent = 'Update ready: ' + v; pill.hidden = false; } }   /* a tappable note on the title screen: it opens Settings, where the Update button is waiting */
   } else if (manual && b) { b.textContent = 'You\'re up to date (' + mine + ')'; setTimeout(() => { if (b.textContent.startsWith('You')) b.textContent = 'Check for updates'; }, 3000); }
 }
 function netSend(m) {
@@ -7100,6 +7102,7 @@ function renderTeamMaps() {
 }
 $('tmaps').addEventListener('click', e => { const b = e.target.closest('.tmap'); if (!b || b.disabled) return; if (HOUSE_MODE()) VS_LV = +b.dataset.lv; else TEAM_LV = +b.dataset.lv; renderTeamMaps(); SND.play('tap'); if (NET.role === 'host') { lobbyAd(true); if (ROSTER_MODE()) v22Broadcast(); } });
 $('setUpd').addEventListener('click', () => { if (!$('setUpd').onclick) checkUpdate(true); });
+$('updPill').addEventListener('click', () => { SND.init(); SND.play('tap'); $('updPill').hidden = true; openSettings(); });
 /* ask the phone to keep this site's storage even when space is tight (otherwise Android may evict it) */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(ok => { if (!ok) console.log('storage not persistent'); }); } catch (e) {}
 /* backup: every saved thing lives in localStorage under ppd-; the code is just all of it, packed */
