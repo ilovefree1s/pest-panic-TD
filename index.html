@@ -52,6 +52,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #tcard .tch b{font:400 22px var(--display);letter-spacing:.03em;color:var(--gold)}
 #tcard .tct{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
 #tcard .tag{font:900 10px var(--body);letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--dim)}
+#shop .tc em.buyTag{display:inline-block;margin-top:3px;padding:2px 12px;border-radius:999px;background:var(--gold);color:#3a2400;font:900 11px/1.3 var(--body);letter-spacing:.08em;text-transform:uppercase;font-style:normal}
 #tcard #tcBuy{display:block;width:100%;margin:10px 0 4px;padding:11px;border:0;border-radius:12px;background:var(--gold);color:#3a2400;font:400 18px var(--display);letter-spacing:.04em;cursor:pointer;box-shadow:0 3px 0 #a87a10}
 #tcard #tcBuy:disabled{background:#4a4d55;color:#aab;box-shadow:none;cursor:default}
 #tcard .tag.ok{color:#9be37a} #tcard .tag.no{color:#ff9a8a} #tcard .tag.cost{color:var(--gold)}
@@ -628,7 +629,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="378">v1.77</div>
+    <div id="ver" data-b="379">v1.78</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5128,7 +5129,7 @@ function choose(t) {
   if (itemUsed(t)) { S.placing = null; SND.play('err'); banner(TT[t].name, 'Already used this wave', true, 1200); syncTray(); return; }
   if (t === 'license') { S.placing = null; buyLicense(); return; }
   if (t === 'pack') { S.placing = null; buyPack(); return; }
-  if (TT[t].roam) { S.placing = null; if (ownsUnique(t)) { buyPet(t); syncTray(); return; } showToolCard(t, true); return; }   /* show what it does with a Buy button, instead of buying on the first tap */
+  if (TT[t].roam) { S.placing = null; buyPet(t); syncTray(); return; }   /* pets that walk in on their own: the tile says Buy, one tap buys */
   S.placing = S.placing === t ? null : t;
   if (S.placing && S.money < costOf(t) && !ghostable(t)) SND.play('err');
   syncTray();
@@ -5919,7 +5920,7 @@ function renderShop() {
     const c = S ? costOf(t) : TT[t].cost || TT[t].costs?.[0];
     const used = itemUsed(t) || ownsUnique(t) || (t === 'pack' && S && S.proPack);
     let isNew = false; if (t === 'fogger') { try { isNew = !localStorage.getItem('ppd-fogger-used'); } catch (e) {} }
-    const extra = ownsUnique(t) ? `<em class="used">${t === 'fogger' ? 'One per kitchen · tap yours to move it' : 'One per kitchen'}</em>` : t === 'pack' && S && S.proPack ? `<em class="used">Owned</em>` : used ? `<em class="used">Used this wave</em>` : isNew ? `<em class="newtag">NEW</em>` : t === 'license' && S && S.lic ? `<em>Owned ${S.lic}/3 · +${S.lic * 5}%</em>` : '';
+    const extra = ownsUnique(t) ? `<em class="used">${t === 'fogger' ? 'One per kitchen · tap yours to move it' : 'One per kitchen'}</em>` : TT[t].roam ? `<em class="buyTag">Buy</em>` : t === 'pack' && S && S.proPack ? `<em class="used">Owned</em>` : used ? `<em class="used">Used this wave</em>` : isNew ? `<em class="newtag">NEW</em>` : t === 'license' && S && S.lic ? `<em>Owned ${S.lic}/3 · +${S.lic * 5}%</em>` : '';
     if (TT[t].roam && ownsUnique(t)) return `<button class="tc owned1" type="button" data-t="${t}"><span><b>1 per house</b><em class="used">Tap yours to upgrade</em></span></button>`;   /* the cat: once you have him, his tile just says so */
     const reach = TT[t].fliesOnly ? '<i class="ht reach air">Air only</i>' : TT[t].air === false ? '<i class="ht reach gnd">Ground</i>' : '';
     return `<button class="tc${used ? ' spent' : ''}" type="button" data-t="${t}">${i + off <= 10 ? `<kbd>${(i + off) % 10}</kbd>` : ''}<i class="ic">${ICON[t]}<small class="pr">${c === Infinity ? 'Max' : c}</small></i><span><b>${TT[t].abbr ? `<u class="full">${TT[t].short || TT[t].name}</u><u class="abbr">${TT[t].abbr}</u>` : TT[t].short || TT[t].name}</b><span class="tags">${TT[t].fliesOnly ? '' : hitTag(t, true)}${reach}</span>${extra}</span></button>`;   /* the price sits under the picture on phones */
