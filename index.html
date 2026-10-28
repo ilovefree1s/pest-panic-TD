@@ -626,7 +626,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="370">v1.69</div>
+    <div id="ver" data-b="371">v1.70</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5133,7 +5133,8 @@ function moodAt(p) {
 }
 function syncMood(dt) {
   const play = S && (S.mode === 'play' || S.mode === 'over') && !(S.vs && S.vs.v22) && S.mode !== 'build';
-  const p = play ? clamp(((S.wave || 1) - 1 + (S.active ? 0.6 : 0)) / (MAXW - 1), 0, 1) : 0.35;   /* title screen and builder: plain daylight */
+  const DARK_MAX = 19.6 / (MAXW - 1);   /* the darkest it gets is how wave 20 used to look, reached at wave 25 */
+  const p = play ? clamp(((S.wave || 1) - 1 + (S.active ? 0.6 : 0)) / (MAXW - 0.4), 0, 1) * DARK_MAX : 0.35;   /* title screen and builder: plain daylight */
   const tg = moodAt(p), k = MOOD.cur ? Math.min(1, dt * 0.6) : 1;
   if (!MOOD.cur) MOOD.cur = tg; else for (const key in tg) { const c = MOOD.cur[key], v = tg[key]; if (Array.isArray(v)) for (let i = 0; i < v.length; i++) c[i] += (v[i] - c[i]) * k; else MOOD.cur[key] = c + (v - c) * k; }
   const m = MOOD.cur;
