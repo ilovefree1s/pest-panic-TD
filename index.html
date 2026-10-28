@@ -624,7 +624,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="363">v1.62</div>
+    <div id="ver" data-b="364">v1.63</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4230,6 +4230,7 @@ const LATE_RAMP = 1.05;   // after wave 5, regular bugs and bosses get 5% toughe
 const lateRamp = w => w > 5 ? LATE_RAMP ** (Math.min(w, MAXW) - 5) : 1;   // (endless keeps its own climb past wave 25)
 // bug toughness by wave: climbs fast to wave 20, then +7% a wave through the last five
 function hpCurve(w) { const a = Math.min(w, 20) - 1; return (1 + 0.17 * a + 0.011 * a * a) * (w > 20 ? 1 + 0.07 * (Math.min(w, MAXW) - 20) : 1); }
+const FLY_K = { 8: 0.55, 0: 0.62, 1: 0.88 };   // share of flies kept on Levels 1-3, so flyers grow level by level up to ~40% at the Retro Diner (Level 4)
 function makeWave(n, sh = 0) {
   const team = LEVELS[LV] && LEVELS[LV].team, r = rng(n * 131 + 7 + sh * 977), q = [], cnt = Math.round((8 + Math.floor(n * 2.2)) * (team ? 1.6 : 1)), pool = ['ant'], u = n + sh;
   if (u >= 2) pool.push('fly'); if (u >= 4) pool.push('spider'); if (u >= 8) pool.push('fly', 'spider'); if (u >= 6) pool.push('dung'); if (u >= 12) pool.push('dung');
@@ -4240,6 +4241,8 @@ function makeWave(n, sh = 0) {
   while (q.length < cnt) { const t = pool[Math.floor(r() * pool.length)], gr = GRP[t] || [3, 4], g = gr[0] + Math.floor(r() * gr[1]); for (let i = 0; i < g && q.length < cnt; i++) q.push(t); }
   // bed bug swarms from wave 7: each 'bed' entry is a cloud of a dozen
   if (u >= 7) for (let i = 0; i < Math.floor((u - 4) / 3); i++) q.splice(Math.floor(r() * q.length), 0, 'bed');
+  { const fk = !team && n <= MAXW ? FLY_K[LV] : null;   /* the first houses ease you into flies: some become ants */
+    if (fk) { const r2 = rng(n * 53 + 11); for (let i = 0; i < q.length; i++) if (q[i] === 'fly' && r2() > fk) q[i] = 'ant'; } }
   q.push(...bossesFor(n)); if (team) q.push(...bossesFor(n));
   return q;
 }
@@ -4890,7 +4893,7 @@ function itemsAct(dt) {
     }
   }
 }
-const UNLOCK_AT = { venus: 1, cat: 2, fogger: 3, fan: 4 };   /* solo story: frog from level 1, fly trap at 2, cat at 3, fogger at 4, desk fan at 5 */
+const UNLOCK_AT = { venus: 1, cat: 2, fogger: 3, fan: 3 };   /* solo story: frog from level 1, fly trap at 2, cat at 3, fogger and desk fan at 4 (the Retro Diner, the first level full of flies) */
 function toolLocked(t) { return !!UNLOCK_AT[t] && !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < UNLOCK_AT[t]; }
 function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (TT[t].oneKitchen || (o.owner || 0) === (S.cur || 0)))); }   /* cat and flytrap: one in the whole kitchen, whoever bought it */
 /* ghost tools: tap a spot when you're short on coins and a see-through tool waits there; the moment you can afford it, it gets bought and built */
@@ -6352,8 +6355,8 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
   if (!LEVELS[LV].team && !S.vs) {   /* the first time a newly unlocked tool or pet shows up, introduce it */
     const NEWS = { venus: ['New pet: Venus Flytrap!', 'She snaps flies right out of the air. One per house. Find her in the Pets tab.'], cat: ['New pet: House Cat!', 'He pounces on bugs and pins them down. One per house. Find him in the Pets tab.'], fan: ['New tool: Desk Fan!', 'Its breeze slows flies down, and every few seconds a gust blows them back up the trail. Flies only.'], fogger: ['New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.'] };
-    const t = Object.keys(UNLOCK_AT).find(k => !toolLocked(k) && SOLO.indexOf(LV) >= 0 && (() => { try { return !localStorage.getItem('ppd-' + k + '-new'); } catch (e) { return false; } })());
-    if (t) { try { localStorage.setItem('ppd-' + t + '-new', '1'); } catch (e) {} setTimeout(() => { if (S.mode === 'play') { banner(NEWS[t][0], NEWS[t][1], false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard(t); }, 3100); } }, 3500); }
+    const fresh = Object.keys(UNLOCK_AT).filter(k => !toolLocked(k) && SOLO.indexOf(LV) >= 0 && (() => { try { return !localStorage.getItem('ppd-' + k + '-new'); } catch (e) { return false; } })());
+    fresh.forEach((t, i) => { try { localStorage.setItem('ppd-' + t + '-new', '1'); } catch (e) {} setTimeout(() => { if (S.mode === 'play') { banner(NEWS[t][0], NEWS[t][1], false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard(t); }, 3100); } }, 3500 + i * 7000); });   /* two unlocks on one level: one after the other */
   }
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
   requestAnimationFrame(resize);
