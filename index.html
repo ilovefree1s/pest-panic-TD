@@ -619,7 +619,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="338">v1.37</div>
+    <div id="ver" data-b="339">v1.38</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2444,8 +2444,8 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
   const cv = $('lkPrev'); if (!cv) return;
   const M = EXT.userData.mdl; if (!EXT_GLTF || !M) { cv.hidden = true; return; } cv.hidden = false;
   if (!LKP) {
-    const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight('#ffffff', '#556070', 1.5)); const d = new THREE.DirectionalLight('#fff4e0', 2.2); d.position.set(3, 5, 6); sc.add(d); const d2 = new THREE.DirectionalLight('#9fd0ff', 1); d2.position.set(-5, 2, -3); sc.add(d2);
-    const m = SkeletonUtils.clone(EXT_GLTF.scene), mat = new THREE.MeshStandardMaterial({ map: M.mat.map, color: new THREE.Color(0.75, 0.75, 0.75), roughness: 0.8, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0 });
+    const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight('#ffffff', '#4a5260', 1.3)); const d = new THREE.DirectionalLight('#fff1dc', 2.4); d.position.set(3, 5, 6); sc.add(d); const d2 = new THREE.DirectionalLight('#9fd0ff', 1.1); d2.position.set(-5, 3, -4); sc.add(d2);
+    const m = SkeletonUtils.clone(EXT_GLTF.scene), mat = new THREE.MeshStandardMaterial({ map: M.mat.map, color: new THREE.Color(0.8, 0.8, 0.8), roughness: 0.7, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0 });
     m.traverse(o => { if (o.isMesh) { o.material = mat; o.frustumCulled = false; } }); sc.add(m);
     const mx = new THREE.AnimationMixer(m), cl = EXT_GLTF.animations.find(a => a.name === 'Walking'); if (cl) { mx.clipAction(cl).play(); mx.setTime(0.35); }
     m.updateMatrixWorld(true); const box = new THREE.Box3(); m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox(); box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
@@ -2456,15 +2456,17 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
       crown = M.crown.clone(); const ws = M.crown.getWorldScale(new V3()).x / (EXT.userData.mdl.m.getWorldScale(new V3()).x || 1);   // crown size relative to the model
       crown.scale.setScalar(ws * m.getWorldScale(new V3()).x); const hp = hb.getWorldPosition(new V3()); crown.position.set(hp.x, top - h * 0.055, hp.z - h * 0.01); crown.rotation.set(-0.12, 0, 0); sc.add(crown); if (hb) hb.attach(crown);
     }
-    const rt = new THREE.WebGLRenderTarget(cv.width, cv.height); rt.texture.colorSpace = THREE.SRGBColorSpace;
-    LKP = { sc, m, mat, cam, rt, crown, buf: new Uint8Array(cv.width * cv.height * 4) };
+    /* its own little renderer, sharp on any screen: antialiased, at the phone's real pixel density, with the game's colour grading (the shared one drew it washed out and jagged) */
+    const r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
+    r.setPixelRatio(Math.min(3, window.devicePixelRatio || 1)); r.setSize(cv.clientWidth || 180, cv.clientHeight || 210, false);
+    r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setClearColor(0x000000, 0);
+    cam.aspect = (cv.clientWidth || 180) / (cv.clientHeight || 210); cam.updateProjectionMatrix();
+    LKP = { sc, m, mat, cam, crown, r };
   }
   const look = myLook(), T = outfitTextures(M, look.suit, false, look.tank === 'toxic');
   LKP.mat.map = T.map; LKP.mat.emissiveMap = T.glow; LKP.mat.emissiveIntensity = T.glow ? 0.8 : 0; LKP.mat.needsUpdate = true; if (LKP.crown) LKP.crown.visible = !!look.crown;
-  const prevT = renderer.getRenderTarget(); renderer.setRenderTarget(LKP.rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(LKP.sc, LKP.cam); renderer.readRenderTargetPixels(LKP.rt, 0, 0, cv.width, cv.height, LKP.buf); renderer.setRenderTarget(prevT);
-  const x = cv.getContext('2d'), id = x.createImageData(cv.width, cv.height), W = cv.width * 4;
-  for (let y = 0; y < cv.height; y++) id.data.set(LKP.buf.subarray((cv.height - 1 - y) * W, (cv.height - y) * W), y * W);   // flip: GL reads bottom-up
-  x.putImageData(id, 0, 0);
+  { const w = cv.clientWidth || 180, h = cv.clientHeight || 210, sz = LKP.r.getSize(new THREE.Vector2()); if (sz.x !== w || sz.y !== h) { LKP.r.setSize(w, h, false); LKP.cam.aspect = w / h; LKP.cam.updateProjectionMatrix(); } }
+  LKP.r.render(LKP.sc, LKP.cam);
 }
 function extModelLoad() {
   try { new GLTFLoader().load('assets/exterminator.glb', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
