@@ -624,7 +624,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="361">v1.60</div>
+    <div id="ver" data-b="362">v1.61</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4841,7 +4841,8 @@ function itemsAct(dt) {
     }
   }
 }
-function toolLocked(t) { return t === 'fogger' && S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < 2; }
+const UNLOCK_AT = { venus: 1, cat: 2, fogger: 3 };   /* solo story: frog from level 1, fly trap at 2, cat at 3, fogger at 4 */
+function toolLocked(t) { return !!UNLOCK_AT[t] && !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < UNLOCK_AT[t]; }
 function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (TT[t].oneKitchen || (o.owner || 0) === (S.cur || 0)))); }   /* cat and flytrap: one in the whole kitchen, whoever bought it */
 /* ghost tools: tap a spot when you're short on coins and a see-through tool waits there; the moment you can afford it, it gets bought and built */
 const GHOST_MAX = 3, GHOST_MESH = new Map();
@@ -4995,6 +4996,7 @@ function unpick() { S.pick = null; syncTray(); }
 // roaming pets: bought straight from the tray, they walk in through a bug door and need no tile
 function buyPet(t) {
   const T = TT[t];
+  if (toolLocked(t)) { SND.play('err'); return false; }
   if (ownsUnique(t)) { SND.play('err'); banner('Only one ' + T.name, 'There\'s already one in this kitchen. Tap it to upgrade or sell it', false, 1600); return false; }
   if (S.money < T.cost) { SND.play('err'); return false; }
   if (S.net === 'guest') { netSend({ k: 'pet', t }); SND.play('tap'); return true; }
@@ -5801,7 +5803,7 @@ const shop = $('shop');
 let shopTab = 'tools';
 function renderShop() {
   if (shopTab === 'send' && S && S.vs) { renderSend(); return; }
-  const list = shopTab === 'tools' ? SHOP.filter(t => !toolLocked(t)) : shopTab === 'pets' ? PETS : ITEMS, off = shopTab === 'tools' ? 1 : shopTab === 'pets' ? 99 : SHOP.length + 1;
+  const list = shopTab === 'tools' ? SHOP.filter(t => !toolLocked(t)) : shopTab === 'pets' ? PETS.filter(t => !toolLocked(t)) : ITEMS, off = shopTab === 'tools' ? 1 : shopTab === 'pets' ? 99 : SHOP.length + 1;
   shop.style.setProperty('--n', list.length);
   shop.innerHTML = list.map((t, i) => {
     const c = S ? costOf(t) : TT[t].cost || TT[t].costs?.[0];
@@ -6292,7 +6294,11 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   syncTrophies();
   if (S.net === 'host' || S.net === 'guest') { const sendLook = () => { if (S && (S.net === 'host' || S.net === 'guest')) netSend({ k: 'look', l: myLook() }); }; setTimeout(sendLook, 1500); setTimeout(sendLook, 6000); }   /* your partner sees your outfit */
   clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
-  if (!toolLocked('fogger') && !LEVELS[LV].team && !S.vs) { let seen = 1; try { seen = +localStorage.getItem('ppd-fogger-new') || 0; localStorage.setItem('ppd-fogger-new', '1'); } catch (e) {} if (!seen) setTimeout(() => { if (S.mode === 'play') { banner('New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.', false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard('fogger'); }, 3100); } }, 3500); }
+  if (!LEVELS[LV].team && !S.vs) {   /* the first time a newly unlocked tool or pet shows up, introduce it */
+    const NEWS = { venus: ['New pet: Venus Flytrap!', 'She snaps flies right out of the air. One per house. Find her in the Pets tab.'], cat: ['New pet: House Cat!', 'He pounces on bugs and pins them down. One per house. Find him in the Pets tab.'], fogger: ['New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.'] };
+    const t = Object.keys(UNLOCK_AT).find(k => !toolLocked(k) && SOLO.indexOf(LV) >= 0 && (() => { try { return !localStorage.getItem('ppd-' + k + '-new'); } catch (e) { return false; } })());
+    if (t) { try { localStorage.setItem('ppd-' + t + '-new', '1'); } catch (e) {} setTimeout(() => { if (S.mode === 'play') { banner(NEWS[t][0], NEWS[t][1], false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard(t); }, 3100); } }, 3500); }
+  }
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
   requestAnimationFrame(resize);
   try { syncCatch(); } catch (e) {}   /* a fresh run starts with an empty jar: hide the Sell button right away */
