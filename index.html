@@ -624,7 +624,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="364">v1.63</div>
+    <div id="ver" data-b="365">v1.64</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4893,7 +4893,7 @@ function itemsAct(dt) {
     }
   }
 }
-const UNLOCK_AT = { venus: 1, cat: 2, fogger: 3, fan: 3 };   /* solo story: frog from level 1, fly trap at 2, cat at 3, fogger and desk fan at 4 (the Retro Diner, the first level full of flies) */
+const UNLOCK_AT = { frog: 1, venus: 1, fan: 2, cat: 2, fogger: 3 };   /* solo story: frog and fly trap at level 2, desk fan and cat at 3, fogger at 4 */
 function toolLocked(t) { return !!UNLOCK_AT[t] && !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < UNLOCK_AT[t]; }
 function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (TT[t].oneKitchen || (o.owner || 0) === (S.cur || 0)))); }   /* cat and flytrap: one in the whole kitchen, whoever bought it */
 /* ghost tools: tap a spot when you're short on coins and a see-through tool waits there; the moment you can afford it, it gets bought and built */
@@ -6335,6 +6335,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
     } else S.money = 260;   // practice: one player holds both lanes
   }
   if (net === 'vs' || net === 'vsbot') { S.net = 'vs'; vsInit(); if (net === 'vsbot') aiInit(aiDiff); }
+  document.querySelector('.stabs [data-tab="pets"]').hidden = PETS.every(t => toolLocked(t));   /* Level 1 has no pets yet */
   document.querySelector('.stabs [data-tab="send"]').hidden = !S.vs; $('foe').hidden = !S.vs; $('peek').hidden = true; $('foe').innerHTML = '';
   renderShop();
   setCake(20);
@@ -6354,7 +6355,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   if (S.net === 'host' || S.net === 'guest') { const sendLook = () => { if (S && (S.net === 'host' || S.net === 'guest')) netSend({ k: 'look', l: myLook() }); }; setTimeout(sendLook, 1500); setTimeout(sendLook, 6000); }   /* your partner sees your outfit */
   clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
   if (!LEVELS[LV].team && !S.vs) {   /* the first time a newly unlocked tool or pet shows up, introduce it */
-    const NEWS = { venus: ['New pet: Venus Flytrap!', 'She snaps flies right out of the air. One per house. Find her in the Pets tab.'], cat: ['New pet: House Cat!', 'He pounces on bugs and pins them down. One per house. Find him in the Pets tab.'], fan: ['New tool: Desk Fan!', 'Its breeze slows flies down, and every few seconds a gust blows them back up the trail. Flies only.'], fogger: ['New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.'] };
+    const NEWS = { frog: ['New pet: Pet Frog!', 'A frog on a lily pad that snaps its tongue at bugs, flies first. Find it in the Pets tab.'], venus: ['New pet: Venus Flytrap!', 'She snaps flies right out of the air. One per house. Find her in the Pets tab.'], cat: ['New pet: House Cat!', 'He pounces on bugs and pins them down. One per house. Find him in the Pets tab.'], fan: ['New tool: Desk Fan!', 'Its breeze slows flies down, and every few seconds a gust blows them back up the trail. Flies only.'], fogger: ['New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.'] };
     const fresh = Object.keys(UNLOCK_AT).filter(k => !toolLocked(k) && SOLO.indexOf(LV) >= 0 && (() => { try { return !localStorage.getItem('ppd-' + k + '-new'); } catch (e) { return false; } })());
     fresh.forEach((t, i) => { try { localStorage.setItem('ppd-' + t + '-new', '1'); } catch (e) {} setTimeout(() => { if (S.mode === 'play') { banner(NEWS[t][0], NEWS[t][1], false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard(t); }, 3100); } }, 3500 + i * 7000); });   /* two unlocks on one level: one after the other */
   }
