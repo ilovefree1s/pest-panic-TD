@@ -621,7 +621,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="351">v1.50</div>
+    <div id="ver" data-b="352">v1.51</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3662,14 +3662,14 @@ const BUILD = {
     const outer = mesh(new THREE.TorusGeometry(0.74, 0.1, 16, 48), brass); outer.rotation.x = Math.PI / 2; rimG.add(outer);
     const lip = mesh(new THREE.TorusGeometry(0.66, 0.035, 10, 48), dark); lip.rotation.x = Math.PI / 2; lip.position.y = 0.05; rimG.add(lip);
     const lip2 = lip.clone(); lip2.position.y = -0.05; rimG.add(lip2);
-    const glassM = new THREE.MeshPhysicalMaterial({ color: '#d8f2ff', transparent: true, opacity: 0.32, roughness: 0.02, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 2.6, depthWrite: false });
+    const glassM = new THREE.MeshPhysicalMaterial({ color: '#9fd8f0', transparent: true, opacity: 0.12, roughness: 0.02, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 0.9, depthWrite: false });   /* mostly see-through, a faint blue tint: you see the floor through it */
     const lensGeo = new THREE.SphereGeometry(1.9, 40, 12, 0, Math.PI * 2, 0, 0.36); lensGeo.translate(0, -1.9 * Math.cos(0.36) - 0.0, 0);   // a shallow dome: the glass bulges like a real lens
     const lensTop = mesh(lensGeo, glassM, false); lensTop.scale.set(1, 0.9, 1); rimG.add(lensTop);
     const lensBot = mesh(lensGeo, glassM, false); lensBot.rotation.x = Math.PI; lensBot.scale.set(1, 0.9, 1); rimG.add(lensBot);
     const hc = document.createElement('canvas'); hc.width = hc.height = 128; const hx = hc.getContext('2d');
     const gr = hx.createRadialGradient(46, 42, 2, 46, 42, 46); gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.35, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); hx.fillStyle = gr; hx.beginPath(); hx.ellipse(46, 42, 40, 22, -0.6, 0, Math.PI * 2); hx.fill();
     hx.strokeStyle = 'rgba(255,255,255,0.55)'; hx.lineWidth = 5; hx.beginPath(); hx.arc(64, 64, 52, 3.5, 4.6); hx.stroke();
-    const shine = new THREE.Mesh(new THREE.CircleGeometry(0.66, 32), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); shine.rotation.x = -Math.PI / 2; shine.position.y = 0.075; shine.renderOrder = 6; rimG.add(shine);
+    const shine = new THREE.Mesh(new THREE.CircleGeometry(0.66, 32), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending })); shine.rotation.x = -Math.PI / 2; shine.position.y = 0.075; shine.renderOrder = 6; rimG.add(shine);
     // a turned wooden handle with grip rings, a brass collar and an end cap
     const hand = new THREE.Group(); hand.position.z = -0.84; hand.rotation.x = -Math.PI / 2; head.add(hand);
     const collar = lathe([[0.15, 0], [0.15, 0.16], [0.11, 0.22], [0, 0.22]], brass, 16); hand.add(collar);
