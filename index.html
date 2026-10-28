@@ -621,7 +621,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="350">v1.49</div>
+    <div id="ver" data-b="351">v1.50</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3679,10 +3679,16 @@ const BUILD = {
     const lens2 = new THREE.Group(); lens2.position.set(0.25, 0.34, 0.1); lens2.scale.setScalar(0.66); head.add(lens2);
     const ring2 = outer.clone(); lens2.add(ring2); const l2a = lensTop.clone(), l2b = lensBot.clone(); lens2.add(l2a, l2b); const sh2 = shine.clone(); lens2.add(sh2);
     const ruby = mesh(sph(0.11, 14, 10), new THREE.MeshPhysicalMaterial({ color: '#ff2a44', emissive: '#ff1030', emissiveIntensity: 0.7, roughness: 0.05, clearcoat: 1 }), false); ruby.position.set(0, 0, 0.88); head.add(ruby);   /* level 3: a ruby set in the top of the rim */
-    const bgeo = new THREE.CylinderGeometry(1, 0.1, 1, 24, 1, true); bgeo.translate(0, -0.5, 0);
-    const beam = new THREE.Mesh(bgeo, new THREE.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-    beam.renderOrder = 16; beam.visible = false; beam.frustumCulled = false; scene.add(beam);
-    const o = { root: g, turn, tip: beam, rim, pips: pips(g), beamW: 0.62, lensC: rimG };
+    /* the sunbeam: a cone that focuses from the glass down to a hot point, brighter toward the point; a thin white core; a blazing spot on the bug */
+    const beamMat = () => new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uCol: { value: new THREE.Color('#fff3c4') }, uA: { value: 0.3 }, uT: { value: 0 } },
+      vertexShader: 'varying float vY; varying vec2 vUv; void main(){ vY = -position.y; vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      fragmentShader: 'uniform vec3 uCol; uniform float uA; uniform float uT; varying float vY; varying vec2 vUv; void main(){ float f = pow(vY, 2.2); float edge = 1.0 - abs(vUv.x * 2.0 - 1.0); float shim = 0.85 + 0.15 * sin(vUv.x * 40.0 + uT * 6.0 + vY * 9.0); gl_FragColor = vec4(uCol * (0.35 + 1.4 * f) * shim, uA * (0.25 + 0.75 * f)); }' });
+    const bgeo = new THREE.CylinderGeometry(1, 0.06, 1, 32, 8, true); bgeo.translate(0, -0.5, 0);
+    const beam = new THREE.Mesh(bgeo, beamMat()); beam.renderOrder = 16; beam.visible = false; beam.frustumCulled = false; scene.add(beam);
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.02, 1, 16, 4, true).translate(0, -0.5, 0), beamMat()); core.renderOrder = 17; core.frustumCulled = false; beam.add(core);
+    const sc2 = document.createElement('canvas'); sc2.width = sc2.height = 128; const hx2 = sc2.getContext('2d'); const hg = hx2.createRadialGradient(64, 64, 0, 64, 64, 64); hg.addColorStop(0, 'rgba(255,255,255,1)'); hg.addColorStop(0.18, 'rgba(255,240,180,0.95)'); hg.addColorStop(0.45, 'rgba(255,170,60,0.45)'); hg.addColorStop(1, 'rgba(255,120,20,0)'); hx2.fillStyle = hg; hx2.fillRect(0, 0, 128, 128);
+    const spot = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(sc2), transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })); spot.renderOrder = 18; spot.visible = false; scene.add(spot);
+    const o = { root: g, turn, tip: beam, core, spot, rim, pips: pips(g), beamW: 0.62, lensC: rimG };
     o.setLevel = lv => {
       rimLevel(o, lv);
       lens2.visible = lv >= 2; ruby.visible = lv >= 3; cap.visible = lv < 3;
@@ -5405,8 +5411,15 @@ function drawTowers(dt, t) {
         const k = tw.heat / T.ramp, lc = tw.o.lensC ? tw.o.lensC.getWorldPosition(tmpV) : null, lx = lc ? lc.x : tw.x + Math.sin(tw.yaw) * 0.35, lz = lc ? lc.z : tw.z + Math.cos(tw.yaw) * 0.35, ly = lc ? lc.y : 2.25;   /* the sunbeam starts at the glass, wherever it is */
         const tv = tmpV.set(lk.x - lx, bugY(lk) + 0.3 - ly, lk.z - lz), len = tv.length();
         bm.visible = true; bm.position.set(lx, ly, lz); bm.quaternion.setFromUnitVectors(DOWN, tv.normalize()); bm.scale.set(o.beamW, len, o.beamW);
-        bm.material.opacity = 0.1 + 0.28 * k; bm.material.color.setRGB(1, 0.95 - 0.35 * k, 0.75 - 0.6 * k);
-      } else bm.visible = false;
+        const gold = tw.lv >= 3, U = bm.material.uniforms, C = o.core.material.uniforms;   /* heat builds: soft yellow, then orange, then white-hot */
+        U.uCol.value.setRGB(1, 0.92 - 0.3 * k + (gold ? 0.05 : 0), 0.62 - 0.45 * k - (gold ? 0.15 : 0)); const gl = tw.perk ? 1 : [0.4, 0.6, 0.8][tw.lv - 1];   /* glow grows with upgrades: the perk gets the full blaze */
+        U.uA.value = (0.18 + 0.32 * k) * gl; U.uT.value = t;
+        C.uCol.value.setRGB(1, 1 - 0.15 * k, 0.9 - 0.3 * k); C.uA.value = (0.15 + 0.55 * k) * gl; C.uT.value = t;
+        const sx = lk.x, sy = bugY(lk) + 0.3, sz = lk.z, ss = (0.7 + 1.6 * k) * (1 + Math.sin(t * 23 + tw.id) * 0.08) * [1, 1.15, 1.3][tw.lv - 1];
+        o.spot.visible = true; o.spot.position.set(sx, sy, sz); o.spot.scale.setScalar(ss * (0.55 + 0.45 * gl)); o.spot.material.opacity = 0.35 + 0.65 * gl;
+        if (k > 0.25 && Math.random() < k * 0.5) FX.smoke.spawn({ x: sx + (Math.random() - 0.5) * 0.3, y: sy + 0.1, z: sz + (Math.random() - 0.5) * 0.3, vy: 1.2, life: 0.8, s0: 0.15, s1: 0.6, c: [0.45, 0.42, 0.4], a0: 0.45 });   /* the bug starts to cook */
+        if (k > 0.55 && Math.random() < k * 0.6) FX.glow.spawn({ x: sx, y: sy, z: sz, vx: (Math.random() - 0.5) * 2, vy: 1.5 + Math.random() * 2, vz: (Math.random() - 0.5) * 2, grav: 4, life: 0.45, s0: 0.18, s1: 0.04, c: [1, 0.6, 0.2], a0: 1 });   /* embers */
+      } else { bm.visible = false; if (o.spot) o.spot.visible = false; }
     } else if (tw.t === 'zap') {
       if (o.coil.visible) o.coil.rotation.y = t * 4;
       o.glow.material.emissiveIntensity = 2 + Math.sin(t * 9 + tw.id) * 0.5 + (a < 0.15 ? 3 : 0);
