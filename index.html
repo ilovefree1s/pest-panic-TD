@@ -630,7 +630,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="383">v1.82</div>
+    <div id="ver" data-b="385">v1.84</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5977,6 +5977,7 @@ function renderShop() {
     return `<button class="tc${used ? ' spent' : ''}" type="button" data-t="${t}">${i + off <= 10 ? `<kbd>${(i + off) % 10}</kbd>` : ''}<i class="ic">${ICON[t]}<small class="pr">${c === Infinity ? 'Max' : c}</small></i><span><b>${TT[t].abbr ? `<u class="full">${TT[t].short || TT[t].name}</u><u class="abbr">${TT[t].abbr}</u>` : TT[t].short || TT[t].name}</b><span class="tags">${TT[t].fliesOnly ? '' : hitTag(t, true)}${reach}</span>${extra}</span></button>`;   /* the price sits under the picture on phones */
   }).join('');
   for (const b of document.querySelectorAll('.stabs button')) b.classList.toggle('on', b.dataset.tab === shopTab);
+  if (S) for (const el of shop.children) if (el.dataset.t) el.classList.toggle('poor', S.money < elCost(el));   /* freshly drawn tiles: grey out what you can't afford right away, not only when your coins change */
   requestAnimationFrame(syncMore);
 }
 function setTab(t) { if (shopTab === t) return; shopTab = t; if (S && S.mode === 'play') { S.placing = null; S.prev = null; if (S.pick) unpick(); }   /* switching tabs drops whatever tool was picked */ shop.scrollTop = 0; shop.scrollLeft = 0; renderShop(); if (S) syncTray(); }
@@ -6100,7 +6101,7 @@ let quitArm = 0;
 function syncPauseMenu() {
   quitArm = 0; const on = S && S.net && S.net !== 'bot' && !(S.vs && S.vs.bot);
   const teamNet = on && !S.vs && LEVELS[LV].team;
-  $('restart').hidden = !!on && !teamNet; $('restart').textContent = performance.now() - restartArm < 20000 ? 'Waiting for your partner…' : 'Restart'; $('quit').textContent = 'Quit to main menu';
+  $('restart').hidden = !!on && !teamNet; if (!teamNet) restartArm = 0; $('restart').textContent = teamNet && performance.now() - restartArm < 20000 ? 'Waiting for your partner…' : 'Restart'; $('restart').classList.remove('warn');   /* a solo game never waits on a partner (a leftover online restart request showed it) */ $('quit').textContent = 'Quit to main menu';
   $('quitNote').textContent = S && S.vs && !S.vs.bot ? 'Quitting a Bug Battle counts as a loss.' : on ? 'Your partner keeps playing without you.' : '';
 }
 $('quit').addEventListener('click', () => {
