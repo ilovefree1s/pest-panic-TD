@@ -621,7 +621,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="353">v1.52</div>
+    <div id="ver" data-b="354">v1.53</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -916,7 +916,7 @@ const LEVELS = [
     routes: [[[1, -0.6], [1, 1], [9, 1], [9, 5], [1, 5], [1, 8], [12, 8], [12, -0.05]]] },   // redrawn in the Trail Builder
   { name: 'Short Cut', sub: 'A short trail with few pockets', intro: 'Short trail. Every second counts.', hp: 1.064, money: 235, bossHp: 0.9, bossMulW: { 5: { '*': 0.9025 }, 10: { widow: 0.9 }, 15: { hornet: 0.5 } }, bugMulW: { 5: { dung: 0.75 } }, shift: 1,
     routes: [[[1, -0.6], [1, 5], [6, 5], [6, 8], [12, 8], [12, -0.05]]] },
-  { name: 'Zig Zag', sub: 'A new hole on the right', intro: 'They come from the right and cross the whole kitchen', hp: 1.18, money: 180, shift: 1, bossMul: { widow: 0.9 },
+  { name: 'Zig Zag', sub: 'A new hole on the right', intro: 'They come from the right and cross the whole kitchen', hp: 1.18, money: 180, shift: 1, bossMul: { widow: 0.9 }, bossMulW: { 15: { hornet: 0.92 } },
     routes: [[[10, -0.6], [10, 2], [2, 2], [2, 6], [8, 6], [8, 8], [12, 8], [12, -0.05]]] },
   { name: 'Two Holes', sub: 'Two trails that meet halfway', intro: 'Two holes now. Cover both trails.', hp: 1.25, money: 190, shift: 2, bossMulW: { 10: { widow: 0.722 }, 15: { hornet: 0.65 }, 25: { '*': 0.56 } },   /* Mansion wave 10 Black Widow: -5%, -20%, then -5% (requested in that order) */
     routes: [[[1, -0.6], [1, 8], [5, 8], [5, 5], [9, 5], [9, 8], [12, 8], [12, -0.05]],
