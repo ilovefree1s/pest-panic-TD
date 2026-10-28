@@ -619,7 +619,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="340">v1.39</div>
+    <div id="ver" data-b="341">v1.40</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5075,7 +5075,10 @@ function drawBugs(t) {
       }
     } else if (b.mesh) {
       const q = b.mesh, u = q.userData, fy = BT[b.t].fly; q.position.set(b.x, b.y0 + (fy ? 1.6 + Math.sin(b.walk * 0.9) * 0.2 : 0), b.z); q.rotation.set(b.pitch, b.ang, fy ? Math.sin(b.walk * 0.5) * 0.08 : 0, 'YXZ');
-      if (u.wings) u.wings.forEach((w, k) => { w.rotation.z = Math.sin(t * 48 + k) * 0.55 * w.userData.s; });
+      if (u.wings) {
+        if (BT[b.t].base === 'moth') { const landed = b.free && b.free.phase === 'land'; u.wings.forEach((w, k) => { w.rotation.z = (landed ? 0.5 + Math.sin(t * 3 + k) * 0.12 : 0.15 + Math.sin(t * 13 + b.id + k * 0.3) * 0.7) * w.userData.s; }); }   /* giant moth: big slow wingbeats in the air; on a candle the wings settle up and just twitch */
+        else u.wings.forEach((w, k) => { w.rotation.z = Math.sin(t * 48 + k) * 0.55 * w.userData.s; });
+      }
       if (u.gait) gaitLegs(u.legs, u.gait, b.walk * 1.5, 0.55, 0.18);
       else u.legs.forEach((g, k) => { g.rotation.y = g.userData.yaw + Math.sin(b.walk * 0.7 + k * 1.7) * 0.25; g.rotation.z = Math.max(0, Math.sin(b.walk * 0.7 + k)) * 0.12; });
       u.body.position.y = Math.abs(Math.sin(b.walk * 1.5)) * 0.06;
