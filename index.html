@@ -626,7 +626,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="376">v1.75</div>
+    <div id="ver" data-b="377">v1.76</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1601,9 +1601,30 @@ function buildKitchen() {
   const stove = new THREE.Group();
   const sBody = new THREE.Mesh(new THREE.BoxGeometry(8, H + 0.4, D + 0.4), KIT.stoveMat = std({ color: '#6c7074', metalness: 0.5, roughness: 0.5, envMapIntensity: 0.4 }));
   sBody.position.set(0, (H + 0.4) / 2, -D / 2); sBody.castShadow = true; stove.add(sBody);
-  const win = new THREE.Mesh(new THREE.PlaneGeometry(5, 1.6), std({ color: '#5a2a12', emissive: '#ff6a1a', emissiveIntensity: 0.35, roughness: 0.4 }));
-  win.position.set(0, 1.9, 0.22); stove.add(win);
-  for (const dx of [-2, 2]) for (const dz of [-1, 1]) { const b = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.12, 8, 24), std({ color: '#222', roughness: 0.5 })); b.rotation.x = Math.PI / 2; b.position.set(dx, H + 0.45, -D / 2 + dz * 0.8); stove.add(b); }
+  {   // a real range: oven door with a dark glass window and a bar handle, a drawer, a black cooktop with grates, and a control panel with knobs and a clock
+    const TOP = H + 0.4, FZ = 0.2, iron = std({ color: '#1b1c20', roughness: 0.55, metalness: 0.4 });
+    const door = new THREE.Mesh(new THREE.BoxGeometry(7.2, 2.7, 0.16), KIT.stoveMat); door.position.set(0, 2.15, FZ + 0.08); door.castShadow = true; stove.add(door);
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.75, 0.04), iron); rim.position.set(0, 2.0, FZ + 0.17); stove.add(rim);
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(5.3, 1.5), std({ color: '#0a0909', emissive: '#ff8a3a', emissiveIntensity: 0.025, roughness: 0.06, metalness: 0.5, envMapIntensity: 1.4 }));
+    glass.position.set(0, 2.0, FZ + 0.195); stove.add(glass);
+    const rack = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.05, 0.02), std({ color: '#5a4a3c', roughness: 0.6 })); rack.position.set(0, 1.75, FZ + 0.2); stove.add(rack);   // the oven rack seen through the glass
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 6.2, 12), KIT.handleMat); bar.rotation.z = Math.PI / 2; bar.position.set(0, 3.25, FZ + 0.55); stove.add(bar);
+    for (const sx of [-2.9, 2.9]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.4, 8), KIT.handleMat); st.rotation.x = Math.PI / 2; st.position.set(sx, 3.25, FZ + 0.36); stove.add(st); }
+    const drawer = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.8, 0.12), KIT.stoveMat); drawer.position.set(0, 0.5, FZ + 0.06); stove.add(drawer);
+    const dh = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 0.1), KIT.handleMat); dh.position.set(0, 0.62, FZ + 0.17); stove.add(dh);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(7.7, 0.08, D - 0.3), std({ color: '#111216', roughness: 0.15, metalness: 0.2, envMapIntensity: 0.8 })); top.position.set(0, TOP + 0.04, -D / 2 + 0.1); stove.add(top);
+    for (const dx of [-1.95, 1.95]) for (const dz of [-1, 1]) {   // cast-iron grate over each burner
+      const cz = -D / 2 + 0.1 + dz * 0.85, big = dx < 0 === dz < 0;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(big ? 0.78 : 0.62, 0.07, 6, 22), iron); ring.rotation.x = Math.PI / 2; ring.position.set(dx, TOP + 0.2, cz); stove.add(ring);
+      for (const r of [0, Math.PI / 2]) { const g2 = new THREE.Mesh(new THREE.BoxGeometry(big ? 1.9 : 1.6, 0.09, 0.1), iron); g2.rotation.y = r; g2.position.set(dx, TOP + 0.22, cz); stove.add(g2); }
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(big ? 0.34 : 0.26, big ? 0.38 : 0.3, 0.12, 16), std({ color: '#2a2b30', roughness: 0.4, metalness: 0.6 })); cap.position.set(dx, TOP + 0.12, cz); stove.add(cap);
+    }
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(8, 1.0, 0.5), KIT.stoveMat); panel.position.set(0, TOP + 0.5, -D - 0.05); panel.castShadow = true; stove.add(panel);
+    for (const kx of [-3.1, -2.2, 2.2, 3.1]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.18, 14), iron); k.rotation.x = Math.PI / 2; k.position.set(kx, TOP + 0.5, -D + 0.28); stove.add(k);
+      const tick = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.02), KIT.handleMat); tick.position.set(kx, TOP + 0.58, -D + 0.38); stove.add(tick); }
+    const [cc, cx2] = cnv(128, 48); cx2.fillStyle = '#0a0c0e'; cx2.fillRect(0, 0, 128, 48); cx2.fillStyle = '#5fe8ff'; cx2.font = '700 30px monospace'; cx2.textAlign = 'center'; cx2.textBaseline = 'middle'; cx2.fillText('12:00', 64, 26);
+    const clock = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.56), new THREE.MeshBasicMaterial({ map: tex(cc) })); clock.position.set(0, TOP + 0.5, -D + 0.21); stove.add(clock);
+  }
   stove.position.set(BOARD.stoveX, 0, -EZ); g.add(stove);
   // sugar the bugs track up the cabinet and across the counter
   const sugar = (() => { const [c, x] = cnv(96, 256), r = rng(12); for (let i = 0; i < 900; i++) { x.fillStyle = r() < 0.12 ? 'rgba(150,100,50,.7)' : r() < 0.5 ? 'rgba(255,255,255,.85)' : 'rgba(250,236,200,.8)'; const u = 48 + (r() - 0.5) * 80 * (0.4 + 0.6 * r()); x.fillRect(u, r() * 256, 1 + r() * 2.5, 1 + r() * 2.5); } return tex(c); })();
