@@ -626,7 +626,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="368">v1.67</div>
+    <div id="ver" data-b="369">v1.68</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -861,8 +861,8 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const stage = $('stage'), canvas = $('gl');
 // phones get a lighter setup (less graphics memory) so the browser doesn't drop the 3D view
 let LITE = IS_TOUCH;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: !LITE, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LITE ? 1.25 : 2));
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });   /* smoothing happens in the composer's offscreen image (below), which is what reaches the screen */
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LITE ? 1.75 : 2));   /* phones: sharp enough for their dense screens (was 1.25, which looked out of focus zoomed in) */
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = LITE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -890,17 +890,17 @@ scene.add(sun, sun.target);
 // if the phone's browser drops the 3D view, say so and offer a reload instead of leaving a black screen
 canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); const el = $('glLost'); if (el) el.hidden = false; });
 canvas.addEventListener('webglcontextrestored', () => { const el = $('glLost'); if (el) el.hidden = true; });
-const composer = new EffectComposer(renderer);
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { samples: 4, type: THREE.HalfFloatType }));   /* the glow pass draws to an offscreen image first; give it edge smoothing (MSAA) so outlines aren't jagged */
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.3, 0.4, 1.15); bloom.enabled = !LITE; composer.addPass(bloom);
 // if the computer is struggling (slow frames), drop to the lighter graphics automatically
-const PERF = { t: 0, n: 0, done: LITE };
+const PERF = { t: 0, n: 0, done: false };   /* phones get checked too: if frames are slow, drop the smoothing and resolution */
 function perfCheck(dt) {
   if (PERF.done) return;
   PERF.t += dt; PERF.n++;
   if (PERF.t >= 4) {
     PERF.done = true;
-    if (PERF.n / PERF.t < 32) { LITE = true; bloom.enabled = false; renderer.setPixelRatio(1); requestAnimationFrame(resize); }
+    if (PERF.n / PERF.t < 32) { LITE = true; bloom.enabled = false; renderer.setPixelRatio(1); for (const rt of [composer.renderTarget1, composer.renderTarget2]) { rt.samples = 0; rt.dispose(); } requestAnimationFrame(resize); }
   }
 }
 composer.addPass(new OutputPass());
@@ -5167,8 +5167,8 @@ function fit() {
   }
   ZM.baseD = view.dist; ZM.baseT.copy(view.target); applyZoom();
 }
-// ---- pinch (or mouse wheel) to zoom in up to 75% and look around; pinch all the way out to see everything again
-const ZMAX = 1.75, ZM = { z: 1, px: 0, pz: 0, baseD: 50, baseT: new V3(), ptrs: new Map(), pinch: null };
+// ---- pinch (or mouse wheel) to zoom in up to 3x and look around; pinch all the way out to see everything again
+const ZMAX = 3, ZM = { z: 1, px: 0, pz: 0, baseD: 50, baseT: new V3(), ptrs: new Map(), pinch: null };
 function applyZoom() {
   const lim = 1 - 1 / ZM.z, ex = (BOARD.ex + 0.4) * lim, ez = 15.4 * lim;
   ZM.px = clamp(ZM.px, -ex, ex); ZM.pz = clamp(ZM.pz, -ez, ez);
@@ -5181,7 +5181,7 @@ function zoomAbout(z, cx, cy) {   // zoom, keeping the floor spot under (cx, cy)
 function resetZoom() { ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null; ZM.ptrs.clear(); applyZoom(); }
 function resize() {
   const r = stage.getBoundingClientRect(), w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
-  view.w = w; view.h = h; renderer.setSize(w, h, false); composer.setSize(w, h);
+  view.w = w; view.h = h; renderer.setSize(w, h, false); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h);
   camera.aspect = w / h; camera.updateProjectionMatrix(); fit();
 }
 new ResizeObserver(resize).observe(stage);
