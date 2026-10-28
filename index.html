@@ -191,6 +191,17 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .achl small{display:block;margin-top:3px;font-weight:900;font-size:11px;color:var(--gold)}
 .shc{margin:0;font:400 22px var(--display);color:var(--gold)} .shnote{margin:-6px 0 0;font-size:13px;color:var(--dim)}
 #shinies{overflow-y:auto;justify-content:flex-start;padding-top:24px;padding-bottom:24px;gap:12px}
+#shinies{background:radial-gradient(ellipse at 50% 0%,#1d2530 0%,#0b0e12 70%)}
+#shinies .sh.yes{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a2028,#0e1216);box-shadow:inset 0 0 0 2px #c9d2dc,0 6px 16px rgba(0,0,0,.45)}
+#shinies .sh.yes.boss{box-shadow:inset 0 0 0 2px #ffd34a,0 0 18px rgba(255,200,60,.25),0 6px 16px rgba(0,0,0,.45)}
+.sh.yes .shimg{animation:none!important;filter:grayscale(1) brightness(1.25) contrast(1.15) sepia(1) hue-rotate(calc(var(--hue) - 40deg)) saturate(3.2) drop-shadow(0 0 8px hsl(var(--hue) 100% 60% / .7))}
+.sh.yes.boss .shimg{filter:grayscale(1) contrast(1.35) brightness(1.2) sepia(1) hue-rotate(var(--bh)) saturate(4) drop-shadow(0 0 3px #fff) drop-shadow(0 0 12px hsl(calc(var(--bh) + 40deg) 100% 60% / .8))}   /* bosses: each its own deep jewel colour */
+.sh.yes::after{content:'';position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.28) 48%,rgba(255,255,255,.05) 52%,transparent 60%);transform:translateX(-60%);animation:shSheen 4.5s ease-in-out infinite;animation-delay:calc(var(--hue) / 360deg * -4.5s);pointer-events:none}
+.sh.yes.boss::after{background:linear-gradient(115deg,transparent 40%,rgba(255,236,170,.4) 48%,rgba(255,220,120,.06) 52%,transparent 60%)}
+@keyframes shSheen{0%,55%{transform:translateX(-60%)}85%,100%{transform:translateX(60%)}}
+.sh.yes b{color:#fff} .sh.yes small{color:#aeb8c4} .sh.yes.boss small{color:#e7c873}
+.sh.no{background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+@media (prefers-reduced-motion:reduce){.sh.yes::after{animation:none;opacity:0}}
 .shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;width:min(720px,92vw)}
 .sh{background:rgba(10,13,16,.78);border-radius:14px;padding:10px 8px;display:grid;justify-items:center;gap:4px;text-align:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .sh svg{width:52px;height:52px} .sh b{font:800 13px var(--body);color:var(--text)} .sh small{font-size:11px;color:var(--dim)}
@@ -608,7 +619,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="336">v1.35</div>
+    <div id="ver" data-b="337">v1.36</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2836,7 +2847,8 @@ function renderLocker() {
 function renderDex() {
   const d = dexGet(), n = dexTypes();
   $('shCount').textContent = n + ' / ' + DEX_REG.length + ' caught';
-  const slot = t => { const e = d[t]; return `<div class="sh ${e ? 'yes' : 'no'}">${dexIcon(t)}<b>${e ? dexName(t) : '?'}</b><small>${e ? '×' + e.n + ' · first ' + e.d : 'not caught yet'}</small></div>`; };
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], when = x => { const m = /^(\d+)-(\d+)-(\d+)/.exec(x || ''); return m ? MON[+m[2] - 1] + ' ' + (+m[3]) : x; };
+  const slot = (t, i) => { const e = d[t], boss = DEX_BOSS.includes(t); return `<div class="sh ${e ? 'yes' : 'no'}${boss ? ' boss' : ''}" style="--hue:${(i * 47 + 190) % 360}deg;--bh:${[300, 200, 100, 0, 250][i % 5] - 40}deg">${dexIcon(t)}<b>${e ? dexName(t) : '?'}</b><small>${e ? 'Caught ' + e.n + ' · ' + when(e.d) : 'not caught yet'}</small></div>`; };
   $('shGrid').innerHTML = DEX_REG.map(slot).join('');
   $('shBoss').innerHTML = DEX_BOSS.map(slot).join('');
   renderLocker();
