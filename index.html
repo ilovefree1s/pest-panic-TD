@@ -622,7 +622,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="357">v1.56</div>
+    <div id="ver" data-b="358">v1.57</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3165,11 +3165,11 @@ TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique:
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
   d: 'A support tool. Its flame gently scorches every bug in its glow, flies too (4, then 7, then 11 a second; two candles don\'t double it). Every tool standing inside its glow hits harder (+10%, then +15%, then +20% when upgraded) and reaches a little further (+3%, +5%, +8%). Boosted tools get a little flame. Two candles stack: a tool inside two glows gets both boosts and shows two flames. A third candle adds nothing.' };
 // pets: living helpers, in their own tab
-TT.frog = { name: 'Pet Frog', short: 'Frog', cost: 85, air: true, pet: true, range: [5.2, 5.8, 6.4], dmg: [17, 29, 43], rate: [0.85, 0.75, 0.65],
+TT.frog = { name: 'Pet Frog', short: 'Frog', cost: 65, air: true, pet: true, range: [5.2, 5.8, 6.4], dmg: [17, 29, 43], rate: [0.85, 0.75, 0.65],
   d: 'A frog on a lily pad. It snaps its tongue at flying bugs first (then the bug closest to the cake). Flies and moths take double, and little bugs (ants, bed bugs, baby spiders, flies) with low health get gulped whole.' };
 TT.cat = { name: 'House Cat', short: 'Cat', cost: 80, air: true, pet: true, unique: true, oneKitchen: true, roam: true, range: [4.5, 5.2, 6], dmg: [44, 72, 110], pin: [1.0, 1.3, 1.7], rate: [2.4, 2.1, 1.8], spd: [3.2, 3.6, 4],
   d: 'Not a tool you place: buy it and the cat wanders in and roams the whole kitchen on its own. It stalks any bug it notices and pounces: a big swipe, and the bug is pinned in place for a second (bosses for half as long). One per kitchen. Tap the cat to upgrade or sell it.' };
-TT.venus = { name: 'Venus Flytrap', short: 'Flytrap', cost: 90, air: true, pet: true, fliesOnly: true, unique: true, oneKitchen: true, roam: true, counter: true, range: [4.4, 4.8, 5.2], dmg: [90, 140, 200], chew: [3.2, 2.8, 2.4],
+TT.venus = { name: 'Venus Flytrap', short: 'Flytrap', cost: 75, air: true, pet: true, fliesOnly: true, unique: true, oneKitchen: true, roam: true, counter: true, range: [4.4, 4.8, 5.2], dmg: [90, 140, 200], chew: [3.2, 2.8, 2.4],
   d: 'A hungry plant in a pot that only eats flying bugs. It sits on the counter and lures flies from anywhere in the kitchen, one per head at a time: each fly buzzes over, gets snapped up whole, then the head chews for a few seconds before calling the next. One per kitchen. Flying bosses just take a big bite. The first upgrade grows a second head so it can eat two at once; the next makes it chew faster and reach further.' };
 const PETS = ['frog', 'venus', 'cat'];
 const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger'];
