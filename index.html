@@ -626,7 +626,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="369">v1.68</div>
+    <div id="ver" data-b="370">v1.69</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3207,7 +3207,7 @@ Object.assign(TT, {
   pack:    { name: 'Pro Spray Upgrade', abbr: 'Pro Spray', item: true, instant: true, air: true, cost: 150, range: [0, 0, 0],
              d: 'Loads your exterminator\'s backpack sprayer with pro-strength spray for the rest of the game: 60% more damage, stronger poison, a wider and longer reach, sprays for 4 seconds and takes 16% off a boss. Each spray then costs 20 coins and takes 75 seconds to recharge (instead of free and 60).' },
   license: { name: 'Exterminator License', abbr: 'License', item: true, instant: true, air: true, costs: [120, 200, 300], range: [0, 0, 0],
-             d: 'Every tool you own deals 5% more damage for the rest of the game. Buy it up to 3 times for +15%.' },
+             d: 'All your damage goes up 5% for the rest of the game: tools, pets, poison, items and your Backpack Spray. Buy it up to 3 times for +15%.' },
 });
 const ITEMS = ['crumbs', 'sticky', 'bomb', 'license', 'pack'];
 // how many bugs each tool hits
@@ -4873,7 +4873,7 @@ function buyLicense() {
   const c = costOf('license');
   if (S.lic >= 3 || S.money < c || itemUsed('license')) { SND.play('err'); return; }
   S.money -= c; S.lic++; markUsed('license'); S.dmgMul = 1 + 0.05 * S.lic; if (S.lic >= 3) ACH.unlock('license');
-  banner('Exterminator License', 'All tools +' + S.lic * 5 + '% damage', false, 1500);
+  banner('Exterminator License', 'All your damage +' + S.lic * 5 + '%', false, 1500);
   for (const tw of S.towers) for (let i = 0; i < 5; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.6, y: 0.5 + Math.random() * 2, z: tw.z + (Math.random() - 0.5) * 1.6, vy: 2, life: 0.6, s0: 0.5, s1: 0.1, c: [1, 0.85, 0.4], a0: 1 });
   SND.play('up'); bumpStat('stCoins'); renderShop(); syncTray();
 }
@@ -6162,16 +6162,18 @@ function statsHtml0(tw) {
   if (tw.amp) return statsBase(tw) + `<li class="boost">${tw.lit >= 2 ? '🔥🔥 2 candles' : '🔥 Candle'} boost <b>+${Math.round(tw.amp * 100)}%</b> damage, <b>+${Math.round((tw.rmul || 0) * 100)}%</b> range</li>`;
   return statsBase(tw);
 }
-function statsBase0(tw) { const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10; return fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's'); }
+// damage with the perk's bonus counted in; at level 3 without the perk, the 'next' value previews it
+function dmgPair(tw, arr) { const L = tw.lv - 1, f = v => Math.round(v * 10) / 10, pa = (PERK[tw.t] && PERK[tw.t].amp) || 0; if (tw.lv < 3) return [f(arr[L]), f(arr[L + 1])]; return tw.perk ? [f(arr[L] * (1 + pa)), null] : [f(arr[L]), pa ? f(arr[L] * (1 + pa)) : null]; }
+function statsBase0(tw) { const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10; return fmtStat('Damage', ...dmgPair(tw, T.dmg)) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's'); }
 function statsBase(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'broom') return fmtStat('Sweeps back', f(T.push[L]), N != null ? f(T.push[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + '<li>Can\'t reach flies</li>';
   if (tw.t === 'fan') return fmtStat('Blows back', f(T.push[L]), N != null ? f(T.push[N]) : null) + fmtStat('Slows flies to', Math.round(T.slow[L] * 100), N != null ? Math.round(T.slow[N] * 100) : null, '%') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Gust every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + '<li>Flies only</li>';
   if (tw.t === 'venus') { const f2 = v => Math.round(v * 10) / 10; return fmtStat('Heads', venusHeads(tw), tw.lv < 2 ? 2 : null) + fmtStat('Chews for', f2(T.chew[L] * (tw.perk ? 1.4 : 1)), N != null ? f2(T.chew[N]) : null, 's') + '<li>Lures flies from the <b>whole kitchen</b></li>' + fmtStat('Boss bite', T.dmg[L], N != null ? T.dmg[N] : null) + '<li>Eats flies and moths whole</li>'; }
-  if (tw.t === 'cat') return fmtStat('Swipe', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Pins for', f(T.pin[L]), N != null ? f(T.pin[N]) : null, 's') + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Pounce reach', f(T.range[L]), N != null ? f(T.range[N]) : null) + '<li>Roams the whole kitchen</li>';
+  if (tw.t === 'cat') return fmtStat('Swipe', ...dmgPair(tw, T.dmg)) + fmtStat('Pins for', f(T.pin[L]), N != null ? f(T.pin[N]) : null, 's') + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Pounce reach', f(T.range[L]), N != null ? f(T.range[N]) : null) + '<li>Roams the whole kitchen</li>';
   if (tw.t === 'frog') return statsBase0(tw) + '<li>Flies take double · gulps little bugs</li>';
   if (tw.t === 'lens') return fmtStat('Burn', f(T.dps[L]), N != null ? f(T.dps[N]) : null, '/s') + `<li>grows to <b>${f(T.dps[L] * T.mult)}/s</b>${N != null ? ` → <b class="up">${f(T.dps[N] * T.mult)}/s</b>` : ''}</li>` + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null);
-  let s = fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's');
+  let s = fmtStat('Damage', ...dmgPair(tw, T.dmg)) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's');
   if (T.dot) s += fmtStat('Poison', f(T.dot[L]), N != null ? f(T.dot[N]) : null, '/s');
   if (T.chain) s += fmtStat('Jumps', T.chain[L], N != null ? T.chain[N] : null);
   if (!T.air) s += '<li>Can\'t reach flies</li>';
