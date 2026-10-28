@@ -620,7 +620,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="345">v1.44</div>
+    <div id="ver" data-b="346">v1.45</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5912,8 +5912,15 @@ const FULL = {
 function syncFull() { const on = FULL.on(); $('fullT').querySelector('span').textContent = on ? 'Exit' : 'Full'; $('fsIn').style.display = on ? 'none' : ''; $('fsOut').toggleAttribute('hidden', !on); $('fsOut').style.display = on ? '' : 'none';   /* (svg paths ignore .hidden) */ $('bFull').classList.toggle('on', on); $('bFull').setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); }
 $('bFull').hidden = !FULL.can();
 $('fullT').hidden = !FULL.can();
-$('fullT').addEventListener('click', () => { FULL.toggle(); setTimeout(syncFull, 350); });
-$('bFull').addEventListener('click', () => { FULL.toggle(); setTimeout(syncFull, 350); });
+$('fullT').addEventListener('click', () => { FULL.noAuto = FULL.on(); FULL.toggle(); setTimeout(syncFull, 350); });
+$('bFull').addEventListener('click', () => { FULL.noAuto = FULL.on(); FULL.toggle(); setTimeout(syncFull, 350); });
+/* phone held upright in a game: go full screen on the first tap so the phone's navigation bar gets out of the way (it comes back with a swipe from the edge).
+   Browsers only allow this from a tap. If the player turns full screen off with the Full button, leave it off. */
+addEventListener('pointerup', e => {
+  if (FULL.noAuto || FULL.on() || !FULL.can() || e.pointerType === 'mouse') return;
+  if (!S || S.mode !== 'play' || !matchMedia('(orientation:portrait)').matches) return;
+  FULL.toggle(); setTimeout(syncFull, 350);
+}, true);
 for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => { syncFull(); requestAnimationFrame(resize); });
 $('guideBack').addEventListener('click', closeGuide);
 function toggleSpeed() { if (S.net === 'guest') { netSend({ k: 'speed', v: S.speed > 1 ? 1 : 2 }); return; } S.speed = S.speed > 1 ? 1 : 2; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
