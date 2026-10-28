@@ -624,7 +624,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="359">v1.58</div>
+    <div id="ver" data-b="360">v1.59</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2274,7 +2274,7 @@ function buildPlayer(suitHex = '#3a86bd', capHex = '#d43a2b') {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthTest: false }));
     sp.scale.set(4, 1.25, 1); sp.position.set(0, 3.1, 0); sp.renderOrder = 25; sp.visible = false; root.add(sp); return sp;
   };
-  const candleSay = speech('YOU NO TAKE CAKE!'); const winSay = speech('NOT TOUCHING MY CAKE!');
+  const candleSay = speech('YOU NO TAKE CAKE!'); const winSay = speech('NOT EATING MY CAKE!');
   const bc = document.createElement('canvas'); bc.width = 512; bc.height = 160; const bx = bc.getContext('2d');
   bx.fillStyle = '#fff'; bx.strokeStyle = '#2a2d33'; bx.lineWidth = 8; bx.beginPath(); bx.roundRect(8, 8, 496, 112, 48); bx.fill(); bx.stroke();
   bx.beginPath(); bx.moveTo(220, 116); bx.lineTo(256, 154); bx.lineTo(292, 116); bx.fill(); bx.beginPath(); bx.moveTo(220, 120); bx.lineTo(256, 154); bx.lineTo(292, 120); bx.stroke();
