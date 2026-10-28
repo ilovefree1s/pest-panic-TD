@@ -624,7 +624,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="360">v1.59</div>
+    <div id="ver" data-b="361">v1.60</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3575,6 +3575,18 @@ const BUILD = {
         mouth.position.set(0, Math.sin(0.12) * L, L + 0.05); mouth.material = m;
       });
       tankM.color.set(lv >= 3 ? '#2b2f36' : '#c8342a');
+    };
+    o.setPerk = () => {   /* Industrial Fogger: a bigger rig that looks like a real chemical sprayer */
+      o.perk = true; o.baseScale = 1.12;
+      const glowG = std({ color: '#39e64e', emissive: new THREE.Color('#14a02a'), emissiveIntensity: 0.9, roughness: 0.3 });
+      {   // hazard stripes on the tank and a toxic gauge
+        const c = document.createElement('canvas'); c.width = 256; c.height = 64; const x = c.getContext('2d'); x.fillStyle = '#f2c53d'; x.fillRect(0, 0, 256, 64); x.fillStyle = '#18191d'; for (let i = -64; i < 256; i += 32) { x.beginPath(); x.moveTo(i, 64); x.lineTo(i + 16, 64); x.lineTo(i + 80, 0); x.lineTo(i + 64, 0); x.fill(); }
+        const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = THREE.RepeatWrapping; tx.repeat.set(3, 1);
+        band.material = std({ map: tx, roughness: 0.45 }); band.scale.set(1, 2.6, 1);
+        gauge.material = glowG; tankM.color.set('#1e2126'); tankM.metalness = 0.6; tankM.roughness = 0.28;
+      }
+      barrels.forEach(({ barrel, mouth }) => { barrel.material = TM.gold; mouth.material = glowG; });
+      g.scale.setScalar(o.baseScale);
     };
     return o;
   },
