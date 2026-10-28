@@ -626,7 +626,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="375">v1.74</div>
+    <div id="ver" data-b="376">v1.75</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1274,16 +1274,21 @@ function floorTextures(F = { style: 'tile', a: [64, 76, 84], b: [54, 64, 72], gr
   const [c, x] = cnv(N, N), r = rng(F.seed || 7), hgt = new Float32Array(N * N);
   if (F.style === 'plank') {
     const PH = 128;
-    for (let row = 0; row < N / PH; row++) {
-      let px = -((row * 389) % 512);
-      while (px < N) {
-        const len = 300 + r() * 360, col = (r() < 0.5 ? F.a : F.b).map(v => v + (r() - 0.5) * 18);
-        x.fillStyle = `rgb(${col.map(Math.round).join(',')})`; x.fillRect(px, row * PH, len, PH);
-        for (let k = 0; k < 26; k++) { x.strokeStyle = `rgba(${r() < 0.5 ? '60,40,20' : '255,240,220'},${0.05 + r() * 0.08})`; x.lineWidth = 1 + r() * 2; const yy = row * PH + 6 + r() * (PH - 12); x.beginPath(); x.moveTo(px, yy); x.bezierCurveTo(px + len * 0.3, yy + (r() - 0.5) * 10, px + len * 0.7, yy + (r() - 0.5) * 10, px + len, yy + (r() - 0.5) * 6); x.stroke(); }
-        x.fillStyle = F.grout; x.fillRect(px - 2, row * PH, 4, PH);
-        for (let y = row * PH; y < (row + 1) * PH; y++) for (let xx = Math.max(0, Math.floor(px)); xx < Math.min(N, px + len); xx++) {
+    for (let row = 0; row < N / PH; row++) {   /* boards wrap around the image's edges, so repeated copies line up with no seam */
+      const lens = []; let tot = 0; while (tot < N) { const l = 300 + r() * 360; lens.push(l); tot += l; }
+      const fit = N / tot; let px = (row * 389) % N;
+      for (const l0 of lens) {
+        const len = l0 * fit, col = (r() < 0.5 ? F.a : F.b).map(v => v + (r() - 0.5) * 18), grain = [];
+        for (let k = 0; k < 26; k++) grain.push([r() < 0.5 ? '60,40,20' : '255,240,220', 0.05 + r() * 0.08, 1 + r() * 2, row * PH + 6 + r() * (PH - 12), (r() - 0.5) * 10, (r() - 0.5) * 10, (r() - 0.5) * 6]);
+        for (const ox of [0, -N]) {   // drawn twice: the part past the right edge shows up on the left
+          const bx = px + ox; if (bx >= N || bx + len <= 0) continue;
+          x.fillStyle = `rgb(${col.map(Math.round).join(',')})`; x.fillRect(bx, row * PH, len, PH);
+          for (const [gc, ga, gw, yy, d1, d2, d3] of grain) { x.strokeStyle = `rgba(${gc},${ga})`; x.lineWidth = gw; x.beginPath(); x.moveTo(bx, yy); x.bezierCurveTo(bx + len * 0.3, yy + d1, bx + len * 0.7, yy + d2, bx + len, yy + d3); x.stroke(); }
+          x.fillStyle = F.grout; x.fillRect(bx - 2, row * PH, 4, PH);
+        }
+        for (let y = row * PH; y < (row + 1) * PH; y++) for (let xx = Math.floor(px); xx < px + len; xx++) {
           const e = Math.min(xx - px, y - row * PH, px + len - 1 - xx, (row + 1) * PH - 1 - y);
-          hgt[y * N + xx] = e < 2 ? 0 : Math.min(1, (e - 2) / 4);
+          hgt[y * N + (xx % N)] = e < 2 ? 0 : Math.min(1, (e - 2) / 4);
         }
         px += len;
       }
