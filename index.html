@@ -52,6 +52,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #tcard .tch b{font:400 22px var(--display);letter-spacing:.03em;color:var(--gold)}
 #tcard .tct{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
 #tcard .tag{font:900 10px var(--body);letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--dim)}
+#tcard #tcBuy{display:block;width:100%;margin:10px 0 4px;padding:11px;border:0;border-radius:12px;background:var(--gold);color:#3a2400;font:400 18px var(--display);letter-spacing:.04em;cursor:pointer;box-shadow:0 3px 0 #a87a10}
+#tcard #tcBuy:disabled{background:#4a4d55;color:#aab;box-shadow:none;cursor:default}
 #tcard .tag.ok{color:#9be37a} #tcard .tag.no{color:#ff9a8a} #tcard .tag.cost{color:var(--gold)}
 #tcard p{margin:10px 0 6px;font-weight:700;font-size:14px;line-height:1.45;color:var(--text)}
 #tcard ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;font-weight:700;color:var(--dim)}
@@ -626,7 +628,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="377">v1.76</div>
+    <div id="ver" data-b="378">v1.77</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5126,7 +5128,7 @@ function choose(t) {
   if (itemUsed(t)) { S.placing = null; SND.play('err'); banner(TT[t].name, 'Already used this wave', true, 1200); syncTray(); return; }
   if (t === 'license') { S.placing = null; buyLicense(); return; }
   if (t === 'pack') { S.placing = null; buyPack(); return; }
-  if (TT[t].roam) { S.placing = null; buyPet(t); syncTray(); return; }
+  if (TT[t].roam) { S.placing = null; if (ownsUnique(t)) { buyPet(t); syncTray(); return; } showToolCard(t, true); return; }   /* show what it does with a Buy button, instead of buying on the first tap */
   S.placing = S.placing === t ? null : t;
   if (S.placing && S.money < costOf(t) && !ghostable(t)) SND.play('err');
   syncTray();
@@ -5948,7 +5950,7 @@ for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) shop.addEventLi
 shop.addEventListener('pointermove', e => { if (holdXY && Math.hypot(e.clientX - holdXY[0], e.clientY - holdXY[1]) > 10) clearTimeout(holdT); });
 shop.addEventListener('contextmenu', e => e.preventDefault());
 shop.addEventListener('click', e => { const b = e.target.closest('.tc'); if (!b) return; if (holdFired) { holdFired = false; return; } SND.init(); if (b.dataset.send != null) { vsSend(+b.dataset.send); return; } choose(b.dataset.t); });
-function showToolCard(t) {
+function showToolCard(t, buy) {
   const T = TT[t], el = $('tcard');
   const cost = T.costs ? T.costs.join(' / ') : T.cost;
   let stats = '';
@@ -5958,10 +5960,11 @@ function showToolCard(t) {
       : statsBase(fake).replace(/ → <b class="up">[^<]*<\/b>/g, '');
   }
   el.innerHTML = `<div class="tch">${ICON[t]}<div><b>${T.name}</b><div class="tct">${hitTag(t)}${T.item ? '' : `<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies only' : T.air ? 'Hits flies' : 'Ground only'}</span>`}<span class="tag cost">${cost} coins</span></div></div></div>
-    <p>${T.d}</p>${stats ? `<ul>${stats}</ul>` : ''}<small>Tap anywhere to close</small>`;
+    <p>${T.d}</p>${stats ? `<ul>${stats}</ul>` : ''}${buy ? `<button type="button" id="tcBuy"${S && S.money < T.cost ? ' disabled' : ''}>${S && S.money < T.cost ? 'Need ' + T.cost + ' coins' : 'Buy for ' + T.cost + ' coins'}</button>` : ''}<small>Tap anywhere to close</small>`;
   el.hidden = false; SND.play('tap');
+  if (buy) $('tcBuy').addEventListener('click', ev => { ev.stopPropagation(); el.hidden = true; buyPet(t); syncTray(); });   /* pets that just walk in (cat, flytrap): you confirm the buy here */
 }
-addEventListener('pointerdown', e => { const el = $('tcard'); if (!el.hidden && !e.target.closest('#shop')) el.hidden = true; }, true);
+addEventListener('pointerdown', e => { const el = $('tcard'); if (!el.hidden && !e.target.closest('#shop') && !e.target.closest('#tcBuy')) el.hidden = true; }, true);
 shop.addEventListener('pointerdown', () => { const el = $('tcard'); if (!el.hidden) el.hidden = true; }, true);
 let RUSHARM = -1e9;
 $('go').addEventListener('click', () => {
