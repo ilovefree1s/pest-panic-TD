@@ -422,7 +422,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 .tc .ht{margin-block:1px}
 .tc em{font-style:normal;font-family:var(--body);font-weight:900;font-size:11px;color:var(--goo)}
 .st-lic b{color:var(--goo)}
-#shop{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:8px;min-width:0;grid-auto-rows:minmax(134px,auto)}   /* same height on every tab so the screen doesn't jump (tool cards with two tags are the tallest: 132px) */
+#shop{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:8px;min-width:0;grid-auto-rows:minmax(137px,auto)}   /* same height on every tab so the screen doesn't jump (tool cards with two tags are the tallest: 135px) */
 .tc{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px 7px;border-radius:14px;min-width:0;
   background:rgba(20,26,32,.92);box-shadow:inset 0 0 0 2px rgba(255,255,255,.08);border:0;color:var(--text);cursor:pointer;font:inherit;transition:transform .12s,box-shadow .12s}
 .tc svg{width:40px;height:40px;flex:none} .tc .ic{display:contents;font-style:normal} .tc .pr{order:9}   /* PC: price stays at the bottom of the card */
@@ -515,7 +515,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   /* two tidy lines per card: the name with its price, then the tags in one row (the Ground/Air tag made them spill over) */
   .tc > span{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:auto;column-gap:4px;row-gap:2px;align-items:center;flex:1;min-width:0}
   .tc b{font-size:12px;text-align:left;line-height:1.05;grid-column:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .tc b .full{display:none} .tc b .abbr{display:inline}
-  .tc .ic{display:flex;flex-direction:column;align-items:center;gap:0;flex:none} .tc .pr{order:0;font-size:11.5px;line-height:1}
+  .tc .ic{display:contents} .tc .pr{order:0;font-size:12px;position:absolute;right:8px;top:4px}   /* sideways: the price stays top right, beside the name */
   .tc .tags{grid-column:1 / -1;flex-direction:row;flex-wrap:nowrap;justify-content:flex-start;gap:3px;overflow:hidden}
   .tc .tags:empty{display:none}
   .tc .ht{font-size:8px;padding:0 4px;letter-spacing:.02em;line-height:1.6;margin:0}
@@ -621,7 +621,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="347">v1.46</div>
+    <div id="ver" data-b="348">v1.47</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
