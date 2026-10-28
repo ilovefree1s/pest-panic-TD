@@ -541,7 +541,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   .screen{justify-content:flex-start;overflow-y:auto;padding-top:14px}
   .logo{font-size:clamp(40px,10vh,72px)}
   /* pause menu on a sideways phone: Resume on top, the rest two per row, so nothing scrolls */
-  #paused{display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:center;align-content:center;gap:10px 12px;padding:10px 16px}
+  #paused #restart.warn{background:linear-gradient(#ff7a5a,#e0482a)!important;color:#fff!important;box-shadow:0 5px 0 #8a2412!important}
+#paused{display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:center;align-content:center;gap:10px 12px;padding:10px 16px}
   #paused .t{grid-column:1 / -1;font-size:clamp(28px,7vh,40px);margin-bottom:2px}
   #paused #resume{grid-column:1 / -1;justify-self:center;min-width:60%}
   #paused .btn{font-size:clamp(16px,3.6vh,22px);padding:10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -621,7 +622,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="355">v1.54</div>
+    <div id="ver" data-b="356">v1.55</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1424,6 +1425,13 @@ function sparkTex() {
   }
   return tex(c, false);
 }
+function fireBadgeTex() {   /* a little flame badge, same style as the candle's */
+  const H = 84, W = 56, [c, x] = cnv(H, H); x.translate((H - W) / 2, 0);
+  const flame = (w, h, ox, oy, stops, stroke) => { x.save(); x.translate(ox, oy); const g = x.createLinearGradient(0, h, 0, 0); stops.forEach(([k, col]) => g.addColorStop(k, col)); x.beginPath(); x.moveTo(w / 2, 2); x.bezierCurveTo(w * 0.62, h * 0.22, w * 0.95, h * 0.45, w * 0.9, h * 0.68); x.bezierCurveTo(w * 0.85, h * 0.92, w * 0.66, h - 2, w / 2, h - 2); x.bezierCurveTo(w * 0.34, h - 2, w * 0.15, h * 0.92, w * 0.1, h * 0.68); x.bezierCurveTo(w * 0.05, h * 0.45, w * 0.38, h * 0.22, w / 2, 2); x.closePath(); x.fillStyle = g; x.fill(); if (stroke) { x.strokeStyle = stroke; x.lineWidth = 3.5; x.stroke(); } x.restore(); };
+  flame(W, 82, 0, 1, [[0, '#ff7a1a'], [0.45, '#ff5a10'], [0.8, '#ff3a08'], [1, '#e02a04']], 'rgba(110,25,0,.85)');
+  flame(W * 0.56, 50, W * 0.22, 30, [[0, '#fffbe0'], [0.5, '#ffe27a'], [1, '#ffb52e']], null);
+  return tex(c, true);
+}
 function psnDropTex() {   /* a green poison drop badge: pointed top, round bottom, white shine, dark outline */
   const W = 64, H = 84, [c, x] = cnv(H, H); x.translate((H - W) / 2, 0);   /* square canvas (the badge quad is square), drop centred */
   const path = () => { x.beginPath(); x.moveTo(W / 2, 4); x.bezierCurveTo(W * 0.62, H * 0.3, W - 6, H * 0.5, W - 6, H * 0.64); x.arc(W / 2, H * 0.64, W / 2 - 6, 0, Math.PI); x.bezierCurveTo(6, H * 0.5, W * 0.38, H * 0.3, W / 2, 4); x.closePath(); };
@@ -2189,6 +2197,7 @@ const B = {
   smoke: new Batch(TEX.puff, 700, { order: 12 }),
   goo: new Batch(TEX.drop, 700, { order: 13 }),
   psnDrop: new Batch(psnDropTex(), 300, { order: 24 }),
+  fireBadge: new Batch(fireBadgeTex(), 300, { order: 24 }),
   glow: new Batch(TEX.spark, 700, { add: true, order: 14 }),
 };
 const FX = { smoke: new Pool(B.smoke, 700), goo: new Pool(B.goo, 700), glow: new Pool(B.glow, 700) };
@@ -4558,8 +4567,9 @@ function towerAct(tw, dt) {
     if (!tg) { tw.heat = 0; return; }
     tw.heat = Math.min(T.ramp, (tw.heat || 0) + dt);
     tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
-    hit(tg, T.dps[L] * (1 + (T.mult - 1) * tw.heat / T.ramp) * dt, true);
+    hit(tg, T.dps[L] * (1 + (T.mult - 1) * tw.heat / T.ramp) * dt, true); if (tw.heat > T.ramp * 0.4) tg.fireT = 0.3;   /* on fire: shows a flame badge */
     if (tw.perk) for (const b of S.bugs) if (b !== tg && !b.dead && (b.x - tg.x) ** 2 + (b.z - tg.z) ** 2 < 2.4 * 2.4) {   // wildfire spreads to bugs right next to it
+      b.fireT = 0.3;
       hit(b, T.dps[L] * (1 + (T.mult - 1) * tw.heat / T.ramp) * 0.5 * dt, true);
       if (Math.random() < dt * 4) FX.glow.spawn({ x: b.x, y: bugY(b) + 0.4, z: b.z, vy: 2, life: 0.4, s0: 0.6, s1: 0.1, c: [1, 0.5, 0.1], a0: 1 });
     }
@@ -4690,7 +4700,7 @@ function update(dt) {
     } else b.psnD = 0;
     if (b.dead) continue;
     let sp = bt.spd * (b.stuck > 0 && !bt.heavy ? b.slowF : 1) * (b.glueT > 0 && !bt.heavy ? b.glueF : 1) * (b.psnT > 0 && !bt.heavy ? 0.75 : 1) * (b.angry ? 1.45 : 1);
-    if (b.glueT > 0) b.glueT -= dt;
+    if (b.glueT > 0) b.glueT -= dt; if (b.fireT > 0) b.fireT -= dt;
     if (b.ball) b.ball.flash -= dt;
     if (b.eatT > 0) { b.eatT -= dt; sp = 0; b.walk += dt * 6; if (Math.random() < dt * 5) FX.goo.spawn({ x: b.x, y: b.y0 + 0.5, z: b.z, vx: (Math.random() - 0.5) * 2, vy: 2.5, vz: (Math.random() - 0.5) * 2, grav: 14, life: 0.4, s0: 0.14, s1: 0.08, c: [0.75, 0.5, 0.28], a0: 1, a1: 1 }); }
     b.stuck -= dt; if (b.stuck <= 0) b.slowF = 1; if (b.stunImm > 0) b.stunImm -= dt;
@@ -5543,6 +5553,9 @@ function drawFx(dt, t) {
   { const cr = tmpV.setFromMatrixColumn(camera.matrixWorld, 0); for (const b of S.bugs) if (b.psnT > 0 && !b.dead && !b.free) {   /* a green drop beside a poisoned bug's health bar */
     const boss = BT[b.t].boss && b.mesh, y = boss ? (BT[b.t].fly ? b.y0 + 7.0 : b.y0 + (b.t === 'widow' ? 5.6 : 4.6)) : bugY(b) + (BAR_Y[b.t] || 1.3), W = boss ? 4.2 : b.t === 'bed' ? 1.1 : b.t === 'baby' || b.t === 'centi' ? 1.2 : 1.9, d = W / 2 + (boss ? 0.55 : 0.32), sz = boss ? 0.95 : 0.55;
     B.psnDrop.add(b.x - cr.x * d, y + Math.sin(clock * 4 + b.id) * 0.05, b.z - cr.z * d, sz, 0, 1, 1, 1, Math.min(1, b.psnT * 2)); } }
+  { const cr = tmpV.setFromMatrixColumn(camera.matrixWorld, 0); for (const b of S.bugs) if (b.fireT > 0 && !b.dead && !b.free) {   /* a flame badge at the other end of the bar while a magnifier is burning it */
+    const boss = BT[b.t].boss && b.mesh, y = boss ? (BT[b.t].fly ? b.y0 + 7.0 : b.y0 + (b.t === 'widow' ? 5.6 : 4.6)) : bugY(b) + (BAR_Y[b.t] || 1.3), W = boss ? 4.2 : b.t === 'bed' ? 1.1 : b.t === 'baby' || b.t === 'centi' ? 1.2 : 1.9, d = W / 2 + (boss ? 0.55 : 0.32), sz = (boss ? 1.0 : 0.6) * (1 + Math.sin(clock * 9 + b.id) * 0.06);
+    B.fireBadge.add(b.x + cr.x * d, y + 0.05, b.z + cr.z * d, sz, Math.sin(clock * 5 + b.id) * 0.1, 1, 1, 1, Math.min(1, b.fireT * 5)); } }
   for (const b of S.bugs) if (b.shiny && !b.dead) { const c = shinyCol(b, clock, 0.6), boss = BT[b.t].boss; B.glow.add(b.x, bugY(b) + 0.5, b.z, (boss ? 5 : 2.4) + Math.sin(clock * 6) * 0.3, clock * 2, c.r, c.g, c.b, 0.6); }   // a coloured halo on shiny bugs (gold and big on a boss)
   for (const tw of S.towers) if (tw.t === 'lens' && tw.o.tip.visible && tw.lock) { const k = tw.heat / TT.lens.ramp, l = tw.lock; B.glow.add(l.x, bugY(l) + 0.35, l.z, 0.8 + 1.6 * k, clock * 3, 1, 0.8 - 0.3 * k, 0.4 - 0.3 * k, 0.6 + 0.4 * k); }
   let ci = 0;
@@ -5884,8 +5897,15 @@ function teamRestart(byPartner) {
   netSend({ k: 'start', lv: LV, restart: 1 }); rsAsk(false); restartArm = 0; startGame(LV, 'host');
   setTimeout(() => banner('Map restarted', '', false, 1600), 300);
 }
+let RESTART_ASK = 0;
 $('restart').addEventListener('click', () => {
-  SND.init(); if (S.vs && S.vs.bot) { startGame(LV, 'vsbot', S.vs.bot.diff); return; }
+  SND.init();
+  if (!(S.net === 'host' || S.net === 'guest') && performance.now() - RESTART_ASK > 3000) {   /* first tap asks; a second tap within 3 seconds restarts */
+    RESTART_ASK = performance.now(); SND.play('tap'); const b = $('restart'); b.textContent = 'Are you sure? Tap again'; b.classList.add('warn');
+    setTimeout(() => { if (performance.now() - RESTART_ASK >= 2900) { b.textContent = 'Restart'; b.classList.remove('warn'); } }, 3000); return;
+  }
+  RESTART_ASK = 0; $('restart').classList.remove('warn');
+  if (S.vs && S.vs.bot) { startGame(LV, 'vsbot', S.vs.bot.diff); return; }
   if (S.net === 'host' || S.net === 'guest') {   // online Team Kitchen: ask the partner, both have to agree
     if (S.vs || !LEVELS[LV].team) return;
     if (performance.now() - restartArm < 20000) return;   // already asked
