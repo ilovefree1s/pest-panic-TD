@@ -626,7 +626,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="374">v1.73</div>
+    <div id="ver" data-b="375">v1.74</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1509,9 +1509,9 @@ function trailTexture() {
     const [ax, ay] = pts[i], [bx, by] = pts[i + 1], len = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / len, ny = (bx - ax) / len;
     for (let k = 0; k < len * 1.6 / K; k++) {   // little crumbs and grit: rounded pebbles with a light top and a soft dark edge
       const t = r(), o = (r() - 0.5) * 1.47 * PX * (0.4 + 0.6 * r()), s = (1 + r() * 2.5) * K, px = ax + (bx - ax) * t + nx * o, py = ay + (by - ay) * t + ny * o;
-      const col = r() < 0.12 ? 'rgba(128,85,43,.7)' : BLD_ON && lines.length > 1 && lines.indexOf(pts) === 1 ? (r() < 0.5 ? 'rgba(120,96,64,.85)' : 'rgba(170,146,110,.8)') : r() < 0.5 ? 'white' : 'rgba(213,201,170,.8)';
-      if (col === 'white' && r() < 0.7) continue;   /* 70% fewer white crumbs */
-      x.fillStyle = col === 'white' ? 'rgba(217,217,217,.85)' : col;
+      const col = r() < 0.12 ? 'rgba(128,85,43,.7)' : BLD_ON && lines.length > 1 && lines.indexOf(pts) === 1 ? (r() < 0.5 ? 'rgba(120,96,64,.85)' : 'rgba(170,146,110,.8)') : r() < 0.5 ? 'white' : 'cream';
+      if ((col === 'white' || col === 'cream') && r() < 0.7) continue;   /* 70% fewer light crumbs (the cream ones read as white too) */
+      x.fillStyle = col === 'white' ? 'rgba(217,217,217,.85)' : col === 'cream' ? 'rgba(213,201,170,.8)' : col;
       const rx = s * (0.45 + r() * 0.2), ry = s * (0.35 + r() * 0.2), rot = r() * Math.PI;
       x.beginPath(); x.ellipse(px, py, rx, ry, rot, 0, TAU); x.fill();
       if (s > 2 * K) { x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.ellipse(px - rx * 0.25, py - ry * 0.3, rx * 0.45, ry * 0.4, rot, 0, TAU); x.fill(); }
