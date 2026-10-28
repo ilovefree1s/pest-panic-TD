@@ -619,7 +619,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="341">v1.40</div>
+    <div id="ver" data-b="342">v1.41</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3442,8 +3442,9 @@ function specialMove(b, sp, dt) {
     if (b.free) return 0;
   } else if (base === 'moth' && S.net !== 'guest') {
     if (giant) for (const z of S.towers) if (z.t === 'zap' && !z.pending && !(z.mothT > 0) && (z.x - b.x) ** 2 + (z.z - b.z) ** 2 < 25) { z.stunT = 2.5; z.mothT = 8; }   // zappers flicker out as it passes
+    if (giant) for (const c of S.towers) if (c.t === 'candle' && !c.pending && !c.snuff && (c.x - b.x) ** 2 + (c.z - b.z) ** 2 < 25) { c.snuff = true; SND.play('sizzle'); for (let i = 0; i < 8; i++) FX.smoke.spawn({ x: c.x + (Math.random() - 0.5) * 0.6, y: 2.2, z: c.z + (Math.random() - 0.5) * 0.6, vy: 1.4, life: 0.8, s0: 0.3, s1: 0.9, c: [0.5, 0.5, 0.5], a0: 0.5 }); }   // the giant stays on the trail: its wind puts out candles it flies past
     for (const z of S.towers) if (z.mothT > 0) z.mothT -= dt;
-    if (!b.free && !b.didCandle && b.s > 1) {
+    if (!giant && !b.free && !b.didCandle && b.s > 1) {
       let best = null, bd = 1e9;
       for (const c of S.towers) { if (c.t !== 'candle' || c.pending || c.snuff) continue; const n = S.bugs.filter(o => o.free && o.free.tw === c).length; if (n >= 2) continue; const d = (c.x - b.x) ** 2 + (c.z - b.z) ** 2; if (d < bd) { bd = d; best = c; } }
       if (best) b.free = { tw: best, phase: 'go', land: 0 };
@@ -4091,7 +4092,7 @@ const BT = {
   ghop:   { hp: 770, spd: 1.6, gold: 110, lives: 5, boss: true, base: 'hopper', size: 2.59, name: 'Giant Grasshopper', sub: 'Now and then it hops a tile and stuns tools where it lands', goo: [0.45, 0.72, 0.2] },
   gcenti: { hp: 125, spd: 2.3, gold: 10, lives: 0.4, boss: true, base: 'centi', size: 1.94, segs: 14, gap: 1.1, name: 'Giant Centipede', sub: 'Fourteen segments, and an armored head', goo: [0.5, 0.24, 0.12] },
   gstink: { hp: 1500, spd: 1.2, gold: 140, lives: 5, armor: 3, boss: true, base: 'stink', size: 2.59, name: 'Giant Stink Bug', sub: 'It leaves stink clouds behind as it walks', goo: [0.45, 0.4, 0.22] },
-  gmoth:  { hp: 1300, spd: 1.5, gold: 130, lives: 5, fly: true, boss: true, base: 'moth', size: 2.43, name: 'Giant Moth', sub: 'It puts out every candle near where it lands', goo: [0.62, 0.56, 0.46] },
+  gmoth:  { hp: 1300, spd: 1.5, gold: 130, lives: 5, fly: true, boss: true, base: 'moth', size: 2.43, name: 'Giant Moth', sub: 'Its wingbeats blow out candles as it flies past', goo: [0.62, 0.56, 0.46] },
   gmantis:{ hp: 1900, spd: 1.3, gold: 170, lives: 6, armor: 2, boss: true, base: 'mantis', size: 2.11, noPush: true, name: 'Giant Mantis', sub: 'Eats other bugs to heal', goo: [0.42, 0.76, 0.26] },
   queen:  { hp: 1260, spd: 1.15, gold: 100, lives: 5, armor: 3, boss: true, name: 'Roach King', sub: 'He is heading for the cake', goo: [0.42, 0.24, 0.1] },
 };
@@ -5844,7 +5845,7 @@ const BUGINFO = [
   ['ghop', 'Giant Grasshopper', 'Boss, Levels 6–8 and 9', 'Every so often it hops one tile ahead. Where it lands, the shockwave stuns nearby tools for a moment.', '5 slices'],
   ['gcenti', 'Giant Centipede', 'Boss, Levels 7–10', 'Fourteen big segments. The head is heavily armored (blocks a third of every hit), so hit the body. Break the middle and it splits in two.', '⅖ slice per segment'],
   ['gstink', 'Giant Stink Bug', 'Boss, Levels 8–10', 'Very tough shell. Every few seconds it lets out a stink cloud as it walks, and when it dies the cloud is huge. Tools in the stink work 40% slower.', '5 slices'],
-  ['gmoth', 'Giant Moth', 'Boss, Levels 9–10', 'Flies to your candles and puts out every candle near where it lands. Bug Zappers it flies past flicker out for a few seconds.', '5 slices'],
+  ['gmoth', 'Giant Moth', 'Boss, Levels 9–10', 'Stays on the trail, but its huge wingbeats blow out any candle it flies past. Bug Zappers it flies past flicker out for a few seconds.', '5 slices'],
   ['gmantis', 'Giant Mantis', 'Boss, Levels 9–10', 'Eats bugs often to heal, and the Broom can\'t push it.', '6 slices'],
   ['queen', 'Roach King', 'Boss, waves 5 and 25', 'Huge health and a shell that blocks about a quarter of every hit. Every tool can take him down: stack sprays, slam him with Newspapers, zap him, smack him, or cook him with a Magnifying Glass.', '5 slices'],
   ['widow', 'Black Widow', 'Boss, waves 10 and 25', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
@@ -6889,8 +6890,9 @@ function aiSpecial(b, sp, dt) {
     }
   } else if (base === 'moth') {
     if (giant) { const p = aiBugXZ(b); for (const z of A.towers) if (z.t === 'zap' && !(z.mothT > 0) && (ccx(z.c) - p.x) ** 2 + (ccz(z.r) - p.z) ** 2 < 25) { z.stunT = 2.5; z.mothT = 8; } }
+    if (giant) { const p = aiBugXZ(b); for (const c of A.towers) if (c.t === 'candle' && !c.snuff && (ccx(c.c) - p.x) ** 2 + (ccz(c.r) - p.z) ** 2 < 25) c.snuff = true; }
     for (const z of A.towers) if (z.mothT > 0) z.mothT -= dt;
-    if (!b.free && !b.didCandle && b.s > 1) {
+    if (!giant && !b.free && !b.didCandle && b.s > 1) {
       const p = aiBugXZ(b); let best = null, bd = 1e9;
       for (const c of A.towers) { if (c.t !== 'candle' || c.snuff) continue; const d = (ccx(c.c) - p.x) ** 2 + (ccz(c.r) - p.z) ** 2; if (d < bd) { bd = d; best = c; } }
       if (best) { b.free = { tw: best, phase: 'go', land: 0 }; b.fx = p.x; b.fz = p.z; }
