@@ -630,7 +630,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="385">v1.84</div>
+    <div id="ver" data-b="387">v1.86</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -850,6 +850,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries, toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -896,6 +897,12 @@ canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); const el 
 canvas.addEventListener('webglcontextrestored', () => { const el = $('glLost'); if (el) el.hidden = true; });
 const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { samples: 4, type: THREE.HalfFloatType }));   /* the glow pass draws to an offscreen image first; give it edge smoothing (MSAA) so outlines aren't jagged */
 composer.addPass(new RenderPass(scene, camera));
+// safety net: a single broken pixel (NaN / infinity from any effect) gets smeared by the glow into a big black block over the kitchen.
+// Scrub those pixels and cap extreme brightness before the glow runs.
+const CLEAN = new ShaderPass({ uniforms: { tDiffuse: { value: null } },
+  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; void main() { vec4 c = texture2D(tDiffuse, vUv); if (any(isnan(c)) || any(isinf(c))) c = vec4(0.0, 0.0, 0.0, 1.0); gl_FragColor = vec4(clamp(c.rgb, 0.0, 32.0), clamp(c.a, 0.0, 1.0)); }' });
+composer.addPass(CLEAN);
 const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.3, 0.4, 1.15); bloom.enabled = !LITE; composer.addPass(bloom);
 // if the computer is struggling (slow frames), drop to the lighter graphics automatically
 const PERF = { t: 0, n: 0, done: false };   /* phones get checked too: if frames are slow, drop the smoothing and resolution */
@@ -2911,9 +2918,12 @@ function setAbil() {
   const can = !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= ABIL_PRO_AT, pro = can && !!S.proPack; Object.assign(ABIL, pro ? ABIL_PRO : ABIL_BASE); ABIL.pro = pro; ABIL.canPro = can;   /* from Level 5 you can buy the Pro Spray Upgrade in Items */
   const el = $('abil'); if (!el) return; el.classList.toggle('pro', pro); el.querySelector('small').textContent = pro ? ABIL.cost + 'g' : 'Free'; el.querySelector('b').textContent = pro ? 'Pro' : 'Spray';
 }
-function leadBug() {
+// the bug closest to the cake: measured as distance LEFT on its own trail, so two trails of different lengths compare fairly
+const leftOf = b => (ROUTES[b.route] ? ROUTES[b.route].len : 0) - b.s;
+function leadBug(stick) {
   let best = null;
-  for (const b of S.bugs) if (!b.dead && b.y0 < 0.5 && (!best || b.s > best.s)) best = b;
+  for (const b of S.bugs) if (!b.dead && b.y0 < 0.5 && (!best || leftOf(b) < leftOf(best))) best = b;
+  if (stick && !stick.dead && stick.y0 < 0.5 && best && leftOf(stick) - leftOf(best) < 4) return stick;   // don't flip to a bug only a little closer: he'd run back and forth
   return best;
 }
 // ---- shiny bugs: a very rare rainbow bug. Tap Catch and the exterminator runs over and grabs it before it's squashed
@@ -3076,7 +3086,7 @@ function abilUpdate(e, dt) {
     e.state = 'walk'; return;
   }
   // keep pace with the front of the pack: walk alongside the trail just ahead of the bug closest to the cake
-  const lead = leadBug();
+  const lead = a.lead = leadBug(a.lead);
   if (lead && !lead.free) {
     let st = lead.s + 1.6; const rt = lead.route;
     for (let i = 0; i < 40; i++) { pathAt(st, tmpP, rt); if (tmpP.flat && tmpP.y < 0.3) break; st -= 0.5; }
