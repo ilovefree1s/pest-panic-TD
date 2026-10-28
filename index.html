@@ -70,6 +70,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #jarAsk{position:absolute;left:88px;bottom:52px;z-index:6;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;border-radius:14px;background:rgba(14,18,22,.95);box-shadow:inset 0 0 0 2px #ffd84a,0 6px 16px rgba(0,0,0,.5)} #jarAsk span{grid-column:1/-1;font:800 12px var(--body);color:#ffd84a;text-align:center}
 #jarAsk button{border:0;border-radius:10px;padding:6px 10px;cursor:pointer;font:900 13px var(--body);color:#fff;display:grid;gap:1px} #jarAsk small{font:700 11px var(--body);opacity:.85} #jarKeep{background:#3c4652} #jarSplit{background:#3fae5a}
 #abil b{font:400 12px var(--display);letter-spacing:.05em;margin-top:-3px}
+#abil.pro{background:radial-gradient(circle at 50% 40%,#5a3a1c,#24160a);box-shadow:0 0 0 3px #ff8a2a,0 0 14px rgba(255,138,42,.55),0 6px 16px rgba(0,0,0,.5)}
+#abil.pro svg rect:first-child{fill:#ff9a3a}
 #abil small{position:absolute;right:-6px;top:-6px;background:var(--gold);color:#3a2400;font:900 11px/1 var(--body);padding:3px 6px;border-radius:999px;box-shadow:0 2px 4px rgba(0,0,0,.4)}
 #abil.poor small{background:#6a3a36;color:#ffb3a8}
 #abil.poor{box-shadow:0 0 0 3px #6a3a36,0 6px 16px rgba(0,0,0,.5);animation:none!important}
@@ -624,7 +626,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="365">v1.64</div>
+    <div id="ver" data-b="366">v1.65</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -788,7 +790,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
           <li>Pick a tool in the tray to see its range circle, then place it on any empty floor tile beside the trail.</li>
           <li>Your exterminator builds everything you order: he walks over, hammers it together, then moves on to the next job. Orders line up, so build before you send the next wave.</li>
           <li>Don't like where he's standing? Press and drag him to any open tile. He'll wait there between jobs.</li>
-          <li><b>Backpack Spray</b> (round button, bottom left, or press E): he sprints to the front of the bugs, turns around and fogs everything coming at him for 3 seconds from beside the trail. Free. Burns through shells and slows them. Recharges in 60 seconds.</li>
+          <li><b>Backpack Spray</b> (round button, bottom left, or press E): he sprints to the front of the bugs, turns around and fogs everything coming at him for 3 seconds from beside the trail. Free. Burns through shells and slows them. Recharges in 60 seconds. From Level 5 it becomes the <b>Pro Backpack Spray</b>: stronger, wider and longer (4 seconds), but 20 coins a spray and 75 seconds to recharge.</li>
           <li>Changed your mind? Anything you build or upgrade between waves sells back for the full price until the next wave starts.</li>
           <li>Sound and music volume: tap the gear button (top right) for the Settings sliders.</li>
           <li>Not sure what a tool does? Hold your finger on it in the tray for a second (or hold the mouse button) to see its full description.</li>
@@ -2819,6 +2821,12 @@ function finishJob(j) {
 function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : S.wave <= 15 ? 0.42 : 0.33; }   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
 const ABIL = { cd: 60, cost: 0, dot: 12, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
+const ABIL_BASE = { ...ABIL }, ABIL_PRO = { ...ABIL, cd: 75, cost: 20, dot: 20, dur: 4, range: 8.5, cone: 0.7, dps: 42, bossPct: 0.16 };   /* Pro Backpack Spray, from Level 5: stronger, wider and longer, but 20 coins a spray and 15 seconds more cooldown */
+const ABIL_PRO_AT = 4;
+function setAbil() {
+  const pro = !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= ABIL_PRO_AT; Object.assign(ABIL, pro ? ABIL_PRO : ABIL_BASE); ABIL.pro = pro;
+  const el = $('abil'); if (!el) return; el.classList.toggle('pro', pro); el.querySelector('small').textContent = pro ? ABIL.cost + 'g' : 'Free'; el.querySelector('b').textContent = pro ? 'Pro' : 'Spray';
+}
 function leadBug() {
   let best = null;
   for (const b of S.bugs) if (!b.dead && b.y0 < 0.5 && (!best || b.s > best.s)) best = b;
@@ -6335,7 +6343,8 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
     } else S.money = 260;   // practice: one player holds both lanes
   }
   if (net === 'vs' || net === 'vsbot') { S.net = 'vs'; vsInit(); if (net === 'vsbot') aiInit(aiDiff); }
-  document.querySelector('.stabs [data-tab="pets"]').hidden = PETS.every(t => toolLocked(t));   /* Level 1 has no pets yet */
+  document.querySelector('.stabs [data-tab="pets"]').hidden = PETS.every(t => toolLocked(t));
+  setAbil();   /* Level 1 has no pets yet */
   document.querySelector('.stabs [data-tab="send"]').hidden = !S.vs; $('foe').hidden = !S.vs; $('peek').hidden = true; $('foe').innerHTML = '';
   renderShop();
   setCake(20);
@@ -6355,9 +6364,10 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   if (S.net === 'host' || S.net === 'guest') { const sendLook = () => { if (S && (S.net === 'host' || S.net === 'guest')) netSend({ k: 'look', l: myLook() }); }; setTimeout(sendLook, 1500); setTimeout(sendLook, 6000); }   /* your partner sees your outfit */
   clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
   if (!LEVELS[LV].team && !S.vs) {   /* the first time a newly unlocked tool or pet shows up, introduce it */
-    const NEWS = { frog: ['New pet: Pet Frog!', 'A frog on a lily pad that snaps its tongue at bugs, flies first. Find it in the Pets tab.'], venus: ['New pet: Venus Flytrap!', 'She snaps flies right out of the air. One per house. Find her in the Pets tab.'], cat: ['New pet: House Cat!', 'He pounces on bugs and pins them down. One per house. Find him in the Pets tab.'], fan: ['New tool: Desk Fan!', 'Its breeze slows flies down, and every few seconds a gust blows them back up the trail. Flies only.'], fogger: ['New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.'] };
-    const fresh = Object.keys(UNLOCK_AT).filter(k => !toolLocked(k) && SOLO.indexOf(LV) >= 0 && (() => { try { return !localStorage.getItem('ppd-' + k + '-new'); } catch (e) { return false; } })());
-    fresh.forEach((t, i) => { try { localStorage.setItem('ppd-' + t + '-new', '1'); } catch (e) {} setTimeout(() => { if (S.mode === 'play') { banner(NEWS[t][0], NEWS[t][1], false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard(t); }, 3100); } }, 3500 + i * 7000); });   /* two unlocks on one level: one after the other */
+    const NEWS = { abil: ['New: Pro Backpack Spray!', 'Your exterminator\'s spray is now much stronger and reaches further, but each spray costs 20 coins and takes 15 seconds longer to recharge.'], frog: ['New pet: Pet Frog!', 'A frog on a lily pad that snaps its tongue at bugs, flies first. Find it in the Pets tab.'], venus: ['New pet: Venus Flytrap!', 'She snaps flies right out of the air. One per house. Find her in the Pets tab.'], cat: ['New pet: House Cat!', 'He pounces on bugs and pins them down. One per house. Find him in the Pets tab.'], fan: ['New tool: Desk Fan!', 'Its breeze slows flies down, and every few seconds a gust blows them back up the trail. Flies only.'], fogger: ['New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.'] };
+    const seenK = k => { try { return !!localStorage.getItem('ppd-' + k + '-new'); } catch (e) { return true; } };
+    const fresh = Object.keys(UNLOCK_AT).filter(k => !toolLocked(k) && SOLO.indexOf(LV) >= 0 && !seenK(k)); if (ABIL.pro && !seenK('abil')) fresh.push('abil');
+    fresh.forEach((t, i) => { try { localStorage.setItem('ppd-' + t + '-new', '1'); } catch (e) {} setTimeout(() => { if (S.mode === 'play') { banner(NEWS[t][0], NEWS[t][1], false, 3000); renderShop(); if (t !== 'abil') setTimeout(() => { if (S.mode === 'play') showToolCard(t); }, 3100); } }, 3500 + i * 7000); });   /* two unlocks on one level: one after the other */
   }
   if (seen < 3 && TUT.step < 0) setTimeout(() => { if (S.mode === 'play' && !S.active) banner('Tip', 'Hold a tool in the tray for a second to see what it does', false, 3200); }, 2900);
   requestAnimationFrame(resize);
