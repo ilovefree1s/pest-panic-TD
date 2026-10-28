@@ -619,7 +619,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="339">v1.38</div>
+    <div id="ver" data-b="340">v1.39</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2447,10 +2447,10 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
     const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight('#ffffff', '#4a5260', 1.3)); const d = new THREE.DirectionalLight('#fff1dc', 2.4); d.position.set(3, 5, 6); sc.add(d); const d2 = new THREE.DirectionalLight('#9fd0ff', 1.1); d2.position.set(-5, 3, -4); sc.add(d2);
     const m = SkeletonUtils.clone(EXT_GLTF.scene), mat = new THREE.MeshStandardMaterial({ map: M.mat.map, color: new THREE.Color(0.8, 0.8, 0.8), roughness: 0.7, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0 });
     m.traverse(o => { if (o.isMesh) { o.material = mat; o.frustumCulled = false; } }); sc.add(m);
-    const mx = new THREE.AnimationMixer(m), cl = EXT_GLTF.animations.find(a => a.name === 'Walking'); if (cl) { mx.clipAction(cl).play(); mx.setTime(0.35); }
+    const mx = new THREE.AnimationMixer(m), cl = EXT_GLTF.animations.find(a => a.name === 'Walking'); if (cl) { mx.clipAction(cl).play(); mx.setTime(0); }   /* standing, not mid-stride */
     m.updateMatrixWorld(true); const box = new THREE.Box3(); m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox(); box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
-    const c = box.getCenter(new V3()), h = box.max.y - box.min.y; m.rotation.y = -0.35;
-    const cam = new THREE.PerspectiveCamera(26, cv.width / cv.height, 0.01, 100); cam.position.set(c.x + h * 0.9, c.y + h * 0.3, c.z + h * 3.2); cam.lookAt(c.x, c.y, c.z);
+    const c = box.getCenter(new V3()), h = box.max.y - box.min.y; m.rotation.y = 0;   /* facing the camera, straight on */
+    const cam = new THREE.PerspectiveCamera(26, cv.width / cv.height, 0.01, 100); cam.position.set(c.x, c.y + h * 0.12, c.z + h * 3.3); cam.lookAt(c.x, c.y, c.z);
     let crown = null; if (M.crown) {
       const hb = m.getObjectByName(M.crown.parent.name); let top = -1e9; m.updateMatrixWorld(true); m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); const P = o.geometry.attributes.position; for (let i = 0; i < P.count; i++) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.y > top) top = v.y; } } });
       crown = M.crown.clone(); const ws = M.crown.getWorldScale(new V3()).x / (EXT.userData.mdl.m.getWorldScale(new V3()).x || 1);   // crown size relative to the model
