@@ -624,7 +624,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="362">v1.61</div>
+    <div id="ver" data-b="363">v1.62</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3172,6 +3172,8 @@ const TT = {
 };
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.0, 2.7, 3.4], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
+TT.fan = { name: 'Desk Fan', short: 'Fan', cost: 60, air: true, fliesOnly: true, range: [4.4, 4.8, 5.2], dmg: [3, 5, 8], push: [2.0, 2.7, 3.4], slow: [0.75, 0.7, 0.62], rate: [3.0, 2.7, 2.4],
+  d: 'A little desk fan that sweeps side to side. Its breeze slows every fly in reach, and every few seconds a strong gust blows them back up the trail so they have to fly past your other tools again. Barely hurts them. Each fly can only be gusted once every few seconds. Flying bosses just slow down a little. Can\'t reach crawling bugs.' };
 TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [58, 98, 155], dot: [19, 31, 50], rate: [2.2, 2.0, 1.7],
   d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every bug in the cone, flies too, takes a big hit and keeps choking for 2 seconds. The fog ignores shells, so it melts bosses. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
@@ -3184,7 +3186,7 @@ TT.cat = { name: 'House Cat', short: 'Cat', cost: 80, air: true, pet: true, uniq
 TT.venus = { name: 'Venus Flytrap', short: 'Flytrap', cost: 75, air: true, pet: true, fliesOnly: true, unique: true, oneKitchen: true, roam: true, counter: true, range: [4.4, 4.8, 5.2], dmg: [90, 140, 200], chew: [3.2, 2.8, 2.4],
   d: 'A hungry plant in a pot that only eats flying bugs. It sits on the counter and lures flies from anywhere in the kitchen, one per head at a time: each fly buzzes over, gets snapped up whole, then the head chews for a few seconds before calling the next. One per kitchen. Flying bosses just take a big bite. The first upgrade grows a second head so it can eat two at once; the next makes it chew faster and reach further.' };
 const PETS = ['frog', 'venus', 'cat'];
-const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'candle', 'fogger'];
+const SHOP = ['swat', 'spray', 'paper', 'lens', 'zap', 'broom', 'fan', 'candle', 'fogger'];
 SHOP.sort((a, b) => TT[a].cost - TT[b].cost);   // the tray lists tools cheapest first
 // items: one-off buys that go on the trail (or, for the license, apply right away)
 Object.assign(TT, {
@@ -3199,7 +3201,7 @@ Object.assign(TT, {
 });
 const ITEMS = ['crumbs', 'sticky', 'bomb', 'license'];
 // how many bugs each tool hits
-const HITS = { venus: 'flies', frog: 'single', cat: 'pin', fogger: 'area', swat: 'single', lens: 'single', spray: 'area', paper: 'area', zap: 'chain', broom: 'push', candle: 'support' };
+const HITS = { venus: 'flies', frog: 'single', cat: 'pin', fogger: 'area', swat: 'single', lens: 'single', spray: 'area', paper: 'area', zap: 'chain', broom: 'push', fan: 'push', candle: 'support' };
 const HIT_LABEL = { flies: 'Eats flies', pin: 'Pounce', single: 'Single target', area: 'Area', chain: 'Chain', push: 'Pushback', support: 'Support' };
 const hitTag = (t, short) => HITS[t] ? `<i class="ht ht-${HITS[t]}">${short && HITS[t] === 'single' ? 'Single' : HIT_LABEL[HITS[t]]}</i>` : '';
 // balance: every tool's base damage trimmed by 5%
@@ -3219,6 +3221,7 @@ const PERK = {
   lens:   { name: 'Wildfire', icon: '🔥', d: 'The bug it burns sets fire to bugs right next to it.' },
   zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'The bolt hops to twice as many bugs.' },
   broom:  { name: 'Push Broom', icon: '🧹', range: 1.15, d: 'A wide push broom: 15% more reach and sweeps bugs 25% further back.' },
+  fan:    { name: 'Hurricane Fan', icon: '🌀', range: 1.15, d: 'Gunmetal with icy blades: 15% more reach, gusts blow 25% further, gusted flies spin dizzy and stop for a moment, and the gust gives crawling bugs a light push too.' },
   candle: { name: 'Bonfire Candle', icon: '🕯️', range: 1.5, d: 'A big bonfire jar: 50% bigger glow, +10% more damage boost, and it scorches harder.' },
   fogger: { name: 'Industrial Fogger', icon: '🌫️', d: 'The fog settles on the floor for 3 seconds and keeps choking every bug that walks through it.' },
   frog:   { name: 'Bullfrog', icon: '👑', amp: 0.5, d: 'Grows into a huge bullfrog: 50% more damage, and it gulps much bigger bugs whole.' },
@@ -3238,6 +3241,7 @@ const ICON = {
   venus: '<svg viewBox="0 0 48 48"><path d="M14 36h20l-3 10H17z" fill="#c8693a"/><rect x="12" y="33" width="24" height="5" rx="2" fill="#b25a2e"/><path d="M24 33V22" stroke="#4a9a32" stroke-width="3"/><path d="M8 20c4-12 28-12 32 0-8-3-24-3-32 0z" fill="#58b43a"/><path d="M8 20c4 10 28 10 32 0-8 3-24 3-32 0z" fill="#58b43a"/><path d="M11 20c5-4 21-4 26 0-5 3-21 3-26 0z" fill="#e0283a"/><path d="M10 15l1 3M15 11l1 4M21 9l.5 4M27 9l-.5 4M33 11l-1 4M38 15l-1 3M10 25l1-3M15 29l1-4M21 31l.5-4M27 31l-.5-4M33 29l-1-4M38 25l-1-3" stroke="#e8f8b0" stroke-width="1.6" stroke-linecap="round"/></svg>',
   cat: '<svg viewBox="0 0 48 48"><path d="M10 40c0-9 6-15 14-15s14 6 14 15z" fill="#e8913a"/><path d="M38 38c6-2 8-8 5-13" stroke="#e8913a" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="24" cy="19" r="10" fill="#f0a24a"/><path d="M15 13l1-9 7 6zM33 13l-1-9-7 6z" fill="#f0a24a"/><path d="M17 8l1 3M31 8l-1 3" stroke="#ffd0a8" stroke-width="2"/><ellipse cx="20" cy="19" rx="2" ry="2.8" fill="#2a3a1a"/><ellipse cx="28" cy="19" rx="2" ry="2.8" fill="#2a3a1a"/><path d="M22.5 23l1.5 1.5 1.5-1.5z" fill="#ff8fa8"/><path d="M14 23h6M14 25l6-1M34 23h-6M34 25l-6-1" stroke="#5a3a1a" stroke-width="1"/><path d="M16 32h4M28 32h4" stroke="#c46a20" stroke-width="2"/></svg>',
   candle: '<svg viewBox="0 0 48 48"><circle cx="24" cy="14" r="11" fill="#ffcf4a" opacity=".22"/><path d="M24 4c3 4 4 7 0 11-4-4-3-7 0-11z" fill="#ffb02a"/><path d="M24 8c1.5 2 2 4 0 6-2-2-1.5-4 0-6z" fill="#fff3b0"/><rect x="11" y="18" width="26" height="26" rx="5" fill="#e8f2d8" opacity=".55"/><rect x="13" y="24" width="22" height="18" rx="3" fill="#e9d36a"/><rect x="11" y="27" width="26" height="6" fill="#3f8a3a"/><path d="M24 15v6" stroke="#2a2a2a" stroke-width="1.6"/></svg>',
+  fan: '<svg viewBox="0 0 48 48"><ellipse cx="24" cy="43" rx="12" ry="3.5" fill="#b82a1c"/><rect x="22.5" y="28" width="3" height="14" fill="#f0ece2"/><circle cx="24" cy="19" r="15" fill="#2a2c31" opacity=".15"/><g fill="#e8574a"><path d="M24 19c-2-7 1-12 6-11 3 4-1 9-6 11z"/><path d="M24 19c7-1 11 3 9 8-5 2-8-3-9-8z"/><path d="M24 19c-4 6-10 6-12 1 2-4 8-4 12-1z"/></g><circle cx="24" cy="19" r="15" fill="none" stroke="#f0ece2" stroke-width="2"/><path d="M9 19h30M24 4v30M13.4 8.4l21.2 21.2M34.6 8.4L13.4 29.6" stroke="#f0ece2" stroke-width="0.8" opacity=".8"/><circle cx="24" cy="19" r="3" fill="#2a2c31"/></svg>',
   broom: '<svg viewBox="0 0 48 48"><rect x="27" y="2" width="4.5" height="28" rx="2" transform="rotate(28 29 16)" fill="#b07a44"/><path d="M14 27l14 6-6 13-15-6z" fill="#e2c26a"/><path d="M12 39l-2 5M16 41l-2 5M20 42.5l-1.5 4.5M10 37l-3 4" stroke="#c9a24a" stroke-width="2" stroke-linecap="round"/><path d="M15.5 26l13 5.7-1.6 3.6-13-5.7z" fill="#c0392b"/></svg>',
   paper: '<svg viewBox="0 0 48 48"><rect x="8" y="17" width="34" height="14" rx="7" transform="rotate(-25 24 24)" fill="#e8e3d3"/><path d="M14 27l22-10M15 31l22-10" stroke="#555" stroke-width="2"/><rect x="21" y="14" width="4" height="20" transform="rotate(-25 24 24)" fill="#c0392b"/></svg>',
   lens: '<svg viewBox="0 0 48 48"><circle cx="19" cy="19" r="13" fill="#cfeaff" opacity=".55"/><circle cx="19" cy="19" r="13" fill="none" stroke="#c9a24a" stroke-width="4"/><path d="M13 12a8 8 0 0 1 8-3" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/><rect x="30" y="28" width="7" height="17" rx="3" transform="rotate(-45 33 36)" fill="#7a4a24"/><circle cx="40" cy="42" r="3" fill="#ffd36a"/><circle cx="40" cy="42" r="6" fill="#ffd36a" opacity=".35"/></svg>',
@@ -3545,6 +3549,30 @@ function candleGlowTex() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return candleGlowTex.t = t;
 }
 const BUILD = {
+  fan() {   /* Desk Fan: a little oscillating fan that blows flies back up the trail */
+    const g = new THREE.Group(), rim = coaster(g);
+    const turn = new THREE.Group(); g.add(turn);
+    const body = std({ color: '#ece6d8', roughness: 0.45 }), dark = std({ color: '#2a2c31', roughness: 0.5 }), grillM = std({ color: '#d4d8dd', metalness: 0.7, roughness: 0.3 }), bladeM = std({ color: '#7fb9e6', roughness: 0.35, side: THREE.DoubleSide });
+    const base = mesh(cyl(0.62, 0.7, 0.18, 28), body); base.position.y = 0.24; turn.add(base);
+    for (let i = 0; i < 3; i++) { const btn = mesh(new THREE.BoxGeometry(0.14, 0.06, 0.1), dark); btn.position.set(-0.2 + i * 0.2, 0.35, 0.42); turn.add(btn); }
+    const neck = mesh(cyl(0.07, 0.09, 1.0, 12), grillM); neck.position.y = 0.82; turn.add(neck);
+    const head = new THREE.Group(); head.position.set(0, 1.42, 0); turn.add(head);   // this part sweeps side to side
+    const motor = mesh(sph(0.26, 18, 14), body); motor.scale.set(1, 1, 1.3); motor.position.z = -0.32; head.add(motor);
+    const R = 0.78, cage = new THREE.Group(); cage.position.z = 0.05; head.add(cage);
+    const rimT = mesh(new THREE.TorusGeometry(R, 0.035, 8, 40), grillM, false); cage.add(rimT);
+    for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; const pts = []; for (let k = 0; k <= 8; k++) { const r = R * k / 8; pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0.22 * Math.cos(k / 8 * Math.PI / 2))); } const w = mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 8, 0.012, 4), grillM, false); cage.add(w); const back = w.clone(); back.scale.z = -1; cage.add(back); }
+    for (const r of [0.3, 0.55]) for (const z of [0.2, -0.2]) { const ring = mesh(new THREE.TorusGeometry(r, 0.012, 4, 32), grillM, false); ring.position.z = z * Math.cos(r / R * Math.PI / 2) * 0.9; cage.add(ring); }
+    const badge = mesh(cyl(0.12, 0.12, 0.04, 18), dark); badge.rotation.x = Math.PI / 2; badge.position.z = 0.24; cage.add(badge);
+    const rotor = new THREE.Group(); rotor.position.z = 0.02; head.add(rotor);
+    for (let i = 0; i < 3; i++) { const sh = new THREE.Shape(); sh.moveTo(0, 0.07); sh.bezierCurveTo(0.25, 0.3, 0.62, 0.32, 0.66, 0.1); sh.bezierCurveTo(0.64, -0.12, 0.35, -0.1, 0, -0.07); const bl = mesh(new THREE.ShapeGeometry(sh, 10), bladeM); const hold = new THREE.Group(); hold.rotation.z = i * Math.PI * 2 / 3; bl.rotation.x = 0.4; hold.add(bl); rotor.add(hold); }
+    const wind = new THREE.Group(); wind.position.z = 0.3; head.add(wind);
+    const wm = new THREE.MeshBasicMaterial({ color: '#dff4ff', transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide });
+    const streaks = []; for (let i = 0; i < 10; i++) { const st = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 1.2), wm); st.rotation.x = Math.PI / 2; const a = Math.random() * 6.28, r = Math.random() * 0.6; st.position.set(Math.cos(a) * r, Math.sin(a) * r, 0); st.userData.k = i / 10; wind.add(st); streaks.push(st); }
+    const o = { root: g, turn, head, rotor, rim, pips: pips(g), wind, streaks, wm };
+    o.setLevel = lv => { rimLevel(o, lv); body.color.set(['#b82a1c', '#2a6cc8', '#7a34c4'][lv - 1]); body.metalness = 0; body.roughness = 0.6; bladeM.color.set(['#e8574a', '#6aa8f0', '#f3c24a'][lv - 1]); bladeM.metalness = lv === 3 ? 0.7 : 0; grillM.color.set(lv === 3 ? '#e1b84a' : '#f0ece2'); grillM.metalness = lv === 3 ? 0.8 : 0.2; };   /* same colors as the fly swatter: red, blue, purple and gold */
+    o.setPerk = () => { o.perk = true; g.scale.setScalar(1.15); body.color.set('#3b3e45'); body.metalness = 0.7; body.roughness = 0.3; grillM.color.set('#8f99a6'); bladeM.color.set('#bfefff'); bladeM.emissive = new THREE.Color('#2aa6d8'); bladeM.emissiveIntensity = 0.7; wm.color.set('#a8ecff'); wm.opacity = 0.6; for (let i = 0; i < 6; i++) { const st = streaks[i].clone(); const a = Math.random() * 6.28, r = Math.random() * 0.7; st.position.set(Math.cos(a) * r, Math.sin(a) * r, 0); st.userData.k = (i + 0.5) / 6; wind.add(st); streaks.push(st); } };
+    return o;
+  },
   fogger() {
     const g = new THREE.Group(), rim = coaster(g);
     const turn = new THREE.Group(); turn.scale.setScalar(1.35); g.add(turn);
@@ -4609,6 +4637,27 @@ function towerAct(tw, dt) {
     }
     tw.pools = tw.pools.filter(pl => pl.t > 0);
   }
+  if (tw.t === 'fan') {   // a steady breeze slows the flies in reach; every few seconds a gust blows them back
+    let tg = null;
+    for (const b of S.bugs) {
+      if (b.dead || b.free || !BT[b.t].fly || !inRange(tw, b, R)) continue;
+      b.windT = 0.2; b.windF = BT[b.t].boss ? 1 - (1 - T.slow[L]) * 0.5 : T.slow[L];
+      if (!tg || b.s > tg.s) tg = b;
+    }
+    tw.blow = !!tg; if (tg) tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
+    if (tw.cd > 0 || !tg) return;
+    tw.cd = T.rate[L]; tw.anim = 0;
+    for (const b of S.bugs) {
+      const fly = BT[b.t].fly; if (b.dead || b.free || b.gustT > 0 || !inRange(tw, b, R)) continue;
+      if (!fly && !(tw.perk && !b.air && b.y0 <= 0.5)) continue;   // the perk's gust also nudges crawlers
+      hit(b, T.dmg[L]); if (b.dead) continue;
+      const boss = BT[b.t].boss; b.gustT = 3;
+      b.push = BT[b.t].noPush || boss ? 0 : T.push[L] * (fly ? (tw.perk ? 1.25 : 1) : 0.4);
+      if (tw.perk && fly && !boss) { b.stuck = Math.max(b.stuck, 0.8); b.slowF = 0; }   // dizzy
+      for (let i = 0; i < 3; i++) FX.smoke.spawn({ x: b.x, y: bugY(b) + 0.5, z: b.z, vx: (b.x - tw.x) * 0.8 + (Math.random() - 0.5) * 2, vy: 0.4, vz: (b.z - tw.z) * 0.8 + (Math.random() - 0.5) * 2, drag: 3, life: 0.45, s0: 0.35, s1: 1, c: [0.85, 0.95, 1], a0: 0.4 });
+    }
+    SND.play('sweep'); return;
+  }
   if (tw.cd > 0) return;
   const tg = tw.t === 'spray' ? sprayTarget(tw, R) : tw.t === 'frog' ? frogTarget(tw, R) : firstTarget(tw, R);
   if (!tg) return;
@@ -4728,7 +4777,7 @@ function update(dt) {
     if (b.ball) b.ball.flash -= dt;
     if (b.eatT > 0) { b.eatT -= dt; sp = 0; b.walk += dt * 6; if (Math.random() < dt * 5) FX.goo.spawn({ x: b.x, y: b.y0 + 0.5, z: b.z, vx: (Math.random() - 0.5) * 2, vy: 2.5, vz: (Math.random() - 0.5) * 2, grav: 14, life: 0.4, s0: 0.14, s1: 0.08, c: [0.75, 0.5, 0.28], a0: 1, a1: 1 }); }
     b.stuck -= dt; if (b.stuck <= 0) b.slowF = 1; if (b.stunImm > 0) b.stunImm -= dt;
-    if (b.sweptT > 0) b.sweptT -= dt;
+    if (b.sweptT > 0) b.sweptT -= dt; if (b.gustT > 0) b.gustT -= dt; if (b.windT > 0) { b.windT -= dt; sp *= b.windF || 1; }
     if ((b.dnT = (b.dnT || 0) - dt) <= 0 && (b.dn >= 1 || b.dr >= 1 || b.db >= 1)) flushDmg(b);
     if (b.mdl || b.t === 'fly') sp = specialMove(b, sp, dt);
     if (b.push > 0) { const d = Math.min(b.push, dt * 16); b.push -= d; b.s = Math.max(0, b.s - d); sp = 0; b.walk += dt * 20; }
@@ -4841,7 +4890,7 @@ function itemsAct(dt) {
     }
   }
 }
-const UNLOCK_AT = { venus: 1, cat: 2, fogger: 3 };   /* solo story: frog from level 1, fly trap at 2, cat at 3, fogger at 4 */
+const UNLOCK_AT = { venus: 1, cat: 2, fogger: 3, fan: 4 };   /* solo story: frog from level 1, fly trap at 2, cat at 3, fogger at 4, desk fan at 5 */
 function toolLocked(t) { return !!UNLOCK_AT[t] && !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < UNLOCK_AT[t]; }
 function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (TT[t].oneKitchen || (o.owner || 0) === (S.cur || 0)))); }   /* cat and flytrap: one in the whole kitchen, whoever bought it */
 /* ghost tools: tap a spot when you're short on coins and a see-through tool waits there; the moment you can afford it, it gets bought and built */
@@ -5467,6 +5516,12 @@ function drawTowers(dt, t) {
       } else { o.tongue.visible = false; o.tip.visible = false; }
     } else if (tw.t === 'spray') {
       o.can.rotation.x = a < 0.35 ? Math.sin(a / 0.35 * Math.PI) * 0.22 : 0;
+    } else if (tw.t === 'fan') {   // blades spin, the head sweeps side to side, breeze streaks stream out; a gust makes them rush
+      const gust = a < 0.4 ? 1 - a / 0.4 : 0, on = tw.blow && !tw.pending;
+      o.rotor.rotation.z -= dt * (on ? 24 + gust * 30 : 4); o.head.rotation.y = Math.sin(t * 1.3 + tw.id) * 0.5;
+      const reach = TT.fan.range[tw.lv - 1] * PR(tw) / (o.root.scale.x || 1);
+      o.wind.visible = on; o.wm.opacity = (tw.perk ? 0.5 : 0.35) + gust * 0.35;
+      if (on) o.streaks.forEach(st => { st.userData.k = (st.userData.k + dt * (0.5 + gust * 1.5)) % 1; st.position.z = 0.4 + st.userData.k * (reach - 0.8); st.scale.y = 0.6 + gust; });
     } else if (tw.t === 'fogger') {
       o.kick.position.z = 0.05 - (a < 0.3 ? (1 - a / 0.3) * 0.3 : 0);
     } else if (tw.t === 'broom') {
@@ -6089,6 +6144,7 @@ function statsBase0(tw) { const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L +
 function statsBase(tw) {
   const T = TT[tw.t], L = tw.lv - 1, N = tw.lv < 3 ? L + 1 : null, f = v => Math.round(v * 10) / 10;
   if (tw.t === 'broom') return fmtStat('Sweeps back', f(T.push[L]), N != null ? f(T.push[N]) : null) + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Damage', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + '<li>Can\'t reach flies</li>';
+  if (tw.t === 'fan') return fmtStat('Blows back', f(T.push[L]), N != null ? f(T.push[N]) : null) + fmtStat('Slows flies to', Math.round(T.slow[L] * 100), N != null ? Math.round(T.slow[N] * 100) : null, '%') + fmtStat('Range', f(T.range[L]), N != null ? f(T.range[N]) : null) + fmtStat('Gust every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + '<li>Flies only</li>';
   if (tw.t === 'venus') { const f2 = v => Math.round(v * 10) / 10; return fmtStat('Heads', venusHeads(tw), tw.lv < 2 ? 2 : null) + fmtStat('Chews for', f2(T.chew[L] * (tw.perk ? 1.4 : 1)), N != null ? f2(T.chew[N]) : null, 's') + '<li>Lures flies from the <b>whole kitchen</b></li>' + fmtStat('Boss bite', T.dmg[L], N != null ? T.dmg[N] : null) + '<li>Eats flies and moths whole</li>'; }
   if (tw.t === 'cat') return fmtStat('Swipe', f(T.dmg[L]), N != null ? f(T.dmg[N]) : null) + fmtStat('Pins for', f(T.pin[L]), N != null ? f(T.pin[N]) : null, 's') + fmtStat('Every', f(T.rate[L]), N != null ? f(T.rate[N]) : null, 's') + fmtStat('Pounce reach', f(T.range[L]), N != null ? f(T.range[N]) : null) + '<li>Roams the whole kitchen</li>';
   if (tw.t === 'frog') return statsBase0(tw) + '<li>Flies take double · gulps little bugs</li>';
@@ -6295,7 +6351,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   if (S.net === 'host' || S.net === 'guest') { const sendLook = () => { if (S && (S.net === 'host' || S.net === 'guest')) netSend({ k: 'look', l: myLook() }); }; setTimeout(sendLook, 1500); setTimeout(sendLook, 6000); }   /* your partner sees your outfit */
   clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
   if (!LEVELS[LV].team && !S.vs) {   /* the first time a newly unlocked tool or pet shows up, introduce it */
-    const NEWS = { venus: ['New pet: Venus Flytrap!', 'She snaps flies right out of the air. One per house. Find her in the Pets tab.'], cat: ['New pet: House Cat!', 'He pounces on bugs and pins them down. One per house. Find him in the Pets tab.'], fogger: ['New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.'] };
+    const NEWS = { venus: ['New pet: Venus Flytrap!', 'She snaps flies right out of the air. One per house. Find her in the Pets tab.'], cat: ['New pet: House Cat!', 'He pounces on bugs and pins them down. One per house. Find him in the Pets tab.'], fan: ['New tool: Desk Fan!', 'Its breeze slows flies down, and every few seconds a gust blows them back up the trail. Flies only.'], fogger: ['New tool: Pro Fogger!', 'A big fog machine that blasts a whole stretch of trail and melts bosses. One per kitchen, and your exterminator can move it once a wave.'] };
     const t = Object.keys(UNLOCK_AT).find(k => !toolLocked(k) && SOLO.indexOf(LV) >= 0 && (() => { try { return !localStorage.getItem('ppd-' + k + '-new'); } catch (e) { return false; } })());
     if (t) { try { localStorage.setItem('ppd-' + t + '-new', '1'); } catch (e) {} setTimeout(() => { if (S.mode === 'play') { banner(NEWS[t][0], NEWS[t][1], false, 3000); renderShop(); setTimeout(() => { if (S.mode === 'play') showToolCard(t); }, 3100); } }, 3500); }
   }
@@ -6907,7 +6963,7 @@ const AI_DIFF = [
   { name: 'Normal', dmg: 1.0, think: 1.1, send: 0.28, king: true, reserve: 100 },
   { name: 'Hard', dmg: 1.2, think: 0.8, send: 0.45, king: true, reserve: 60 },
 ];
-const AI_ORDER = ['swat', 'spray', 'swat', 'paper', 'zap', 'spray', 'candle', 'fogger', 'lens', 'zap', 'paper', 'broom', 'lens', 'candle', 'zap', 'spray', 'paper'];
+const AI_ORDER = ['swat', 'spray', 'swat', 'paper', 'zap', 'spray', 'candle', 'fogger', 'lens', 'zap', 'paper', 'broom', 'fan', 'lens', 'candle', 'zap', 'spray', 'paper'];
 let aiDiff = 1;
 $('aiDiff').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; aiDiff = +b.dataset.d; for (const x of $('aiDiff').children) x.classList.toggle('on', x === b); SND.play('tap'); });
 $('lbAi').addEventListener('click', () => { SND.init(); netLeave(); $('lobby').hidden = true; startGame(VS_LV, 'vsbot', aiDiff); });
@@ -6986,6 +7042,7 @@ function aiTowers(dt) {
     else if (tw.t === 'paper') for (const b of inR) aiHit(b, T.dmg[L] * M * (BT[b.t].boss ? 1.25 : 1));
     else if (tw.t === 'fogger') for (const b of inR.slice(0, 10)) { aiHit(b, T.dmg[L] * M, true); aiHit(b, T.dot[L] * 2 * M, true); }
     else if (tw.t === 'zap') { const o = pos.get(inR[0]); const ch = live.filter(b => b.hp > 0).sort((a, b) => Math.hypot(pos.get(a)[0] - o[0], pos.get(a)[1] - o[1]) - Math.hypot(pos.get(b)[0] - o[0], pos.get(b)[1] - o[1])).slice(0, T.chain[L]); for (const b of ch) aiHit(b, T.dmg[L] * M * (BT[b.t].fly ? 1.6 : 1)); }
+    else if (tw.t === 'fan') for (const b of inR) { if (!BT[b.t].fly) continue; aiHit(b, T.dmg[L] * M); if ((b.swept || 0) <= 0) { b.push = BT[b.t].noPush || BT[b.t].boss ? 0 : T.push[L]; b.swept = 3; } }
     else if (tw.t === 'broom') for (const b of inR) { if (BT[b.t].fly) continue; aiHit(b, T.dmg[L] * M); if ((b.swept || 0) <= 0) { b.push = BT[b.t].noPush ? 0 : T.push[L] * (BT[b.t].boss ? 0.17 : 1); b.swept = 3; } }
   }
 }
@@ -7205,7 +7262,7 @@ function specTick(dt) {
   for (const tw of SPEC.towers) {
     const T = TT[tw.t]; tw.anim += dt; if (T.support || !tw.lv) continue;
     const R = T.range[tw.lv - 1]; let tg = null;
-    for (const b of SPEC.bugs) if ((T.air || !BT[b.t].fly) && (b.x - tw.x) ** 2 + (b.z - tw.z) ** 2 <= R * R && (!tg || b.s > tg.s)) tg = b;
+    for (const b of SPEC.bugs) if ((T.fliesOnly ? BT[b.t].fly : (T.air || !BT[b.t].fly)) && (b.x - tw.x) ** 2 + (b.z - tw.z) ** 2 <= R * R && (!tg || b.s > tg.s)) tg = b;
     if (tw.t === 'lens') { tw.lock = tg; tw.heat = tg ? Math.min(T.ramp, tw.heat + dt) : 0; if (tg) tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z); continue; }
     if (!tg) continue;
     tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
