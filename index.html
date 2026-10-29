@@ -270,6 +270,10 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .tsmall button{width:66px;height:62px;border-radius:16px;border:0;cursor:pointer;background:rgba(20,26,32,.9);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:800 11px var(--body)}
 .tsmall button[hidden]{display:none}
 .tsmall svg{width:24px;height:24px}
+#daily{z-index:30;justify-content:flex-start;overflow-y:auto;padding-block:20px;background:rgba(10,12,16,.84)}
+.dRow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center} .dCard{background:rgba(255,255,255,.07);border-radius:14px;padding:8px 14px;text-align:center;font-weight:800;min-width:140px} .dCard b{display:block;font:400 22px var(--display);color:var(--gold)}
+.dName{display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;color:var(--dim);font-size:13px} .dName input{font:800 16px var(--body);padding:6px 10px;border-radius:10px;border:2px solid rgba(255,255,255,.2);background:#1a1d22;color:var(--text);text-align:center;width:200px}
+.dBoard{list-style:none;margin:0;padding:0;width:min(420px,92vw);display:flex;flex-direction:column;gap:4px} .dBoard li{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.06);border-radius:10px;padding:6px 12px;font-weight:800} .dBoard li.me{background:rgba(255,200,60,.18);box-shadow:inset 0 0 0 1px var(--gold)} .dBoard .rk{width:28px;color:var(--gold)} .dBoard .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .dBoard .wv{color:var(--text)} .dBoard .kl{color:var(--dim);font-size:12px;width:70px;text-align:right}
 #solo{z-index:30;justify-content:flex-start;overflow-y:auto;padding-block:20px}
 .btn.teamBtn{background:linear-gradient(#7fd8ff,#3a9ad8);box-shadow:0 6px 0 #1f5f8e,0 12px 24px rgba(0,0,0,.4);color:#08243a}
 .teamBtn small{display:block;font:900 11px var(--body);opacity:.75}
@@ -590,6 +594,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #title.v2 #resumeT{background:linear-gradient(#a6f75c,#3cbf22 55%,#2a9e14);box-shadow:0 7px 0 #176b0a,0 14px 26px rgba(0,0,0,.4);color:#fff;text-shadow:0 2px 0 #0b3d06,0 0 2px #0b3d06,1px 1px 0 #0b3d06,-1px -1px 0 #0b3d06}
 #title.v2 #resumeT small{color:#0b3d06;text-shadow:none;opacity:.9}
 #title.v2 .soloBtn{background:linear-gradient(#ffe866,#ffc61a 55%,#f0a500);box-shadow:0 7px 0 #8d5a00,0 14px 26px rgba(0,0,0,.4);color:#3a2200}
+#title.v2 .dailyBtn{background:linear-gradient(#f0b8ff,#c46ef0 55%,#a84ad8);box-shadow:0 7px 0 #5a1a7a,0 14px 26px rgba(0,0,0,.4);color:#2a0640}
 #title.v2 .teamBtn{background:linear-gradient(#8fe0ff,#3aa8f0 55%,#2389da);box-shadow:0 7px 0 #144b80,0 14px 26px rgba(0,0,0,.4);color:#061f3a}
 #title.v2 .tsmall{width:100%;gap:12px;margin-top:4px}
 #title.v2 .tsmall button{flex:1;height:clamp(60px,9vh,78px);border-radius:18px;background:#181b20;border:3px solid #000;box-shadow:0 5px 0 rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.12);color:#fff}
@@ -639,7 +644,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="409">v1.08</div>
+    <div id="ver" data-b="410">v1.09</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -674,7 +679,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <button type="button" id="updPill" hidden><b>Update ready</b><small>Tap to get it</small></button>
       <button class="btn" id="resumeT" type="button" hidden><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="#0b3d06" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span class="tt">Resume<small id="resumeS"></small></span></button>
       <div class="tmain">
-        <button class="btn soloBtn" id="soloT" type="button"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z" fill="currentColor"/></svg></span><span class="tt">Solo <small>10 houses · 25 waves each</small></span></button>
+        <button class="btn soloBtn" id="soloT" type="button"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z" fill="currentColor"/></svg></span><span class="tt">Solo <small>12 houses · 25 waves each</small></span></button>
+        <button class="btn dailyBtn" id="dailyT" type="button"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3" fill="currentColor"/><rect x="3" y="5" width="18" height="5" rx="2" fill="#5a1a7a" opacity=".55"/><path d="M8 3v4M16 3v4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M12 12.2l1.2 2.5 2.7.3-2 1.8.6 2.6-2.5-1.4-2.5 1.4.6-2.6-2-1.8 2.7-.3z" fill="#5a1a7a"/></svg></span><span class="tt">Daily Kitchen <small>new map every day · leaderboard</small></span></button>
         <button class="btn teamBtn" id="onlineT" type="button"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.6" fill="currentColor"/><circle cx="17" cy="9" r="3" fill="currentColor"/><path d="M2 20c0-4 3.2-6.5 7-6.5s7 2.5 7 6.5zM15 20c0-2.2-.6-4-1.8-5.4 1-.5 2.1-.8 3.3-.8 3.1 0 5.5 2.1 5.5 6.2z" fill="currentColor"/></svg></span><span class="tt">Online <small>play with real people</small></span></button>
       </div>
       <div class="tsmall">
@@ -685,6 +691,17 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
       </div>
       </div>
       <p class="rotTip">Tip: turn your phone sideways for a bigger board with your tools on the right.</p>
+    </div>
+    <div class="screen" id="daily" hidden>
+      <h2 class="t">Daily Kitchen</h2>
+      <p class="lsub" id="dSub"></p>
+      <div class="dRow"><div class="dCard" id="dMine"></div><div class="dCard" id="dStreak"></div></div>
+      <label class="dName">Your name on the board <input id="dName" maxlength="16" autocomplete="off" spellcheck="false"></label>
+      <button class="btn" id="dPlay" type="button">Play today's kitchen</button>
+      <h3 class="lhead2">Today's leaderboard</h3>
+      <ol class="dBoard" id="dBoard"></ol>
+      <p class="hint" id="dYou"></p>
+      <button class="btn dark" id="dBack" type="button">Back</button>
     </div>
     <div class="screen" id="solo" hidden>
       <h2 class="t">Solo</h2>
@@ -1228,7 +1245,59 @@ HOUSES[18] = { name: 'Castle Kitchen', bg: '#0b0a09',   // Level 12: grey stone 
   cab: { base: '#4a3424', handle: '#d4a832' }, side: '#3a2a1c', kick: '#1a120c', top: '#6e6a64', wall: '#8e877a', trim: '#2a1e14',
   fridge: { color: '#3a3c42', metal: 0.8, rough: 0.3 }, stove: { color: '#1c1d22', metal: 0.7 }, handle: '#d4a832',
   rooms: { living: '#5a4a3a', bed: '#4a3a4a', couch: '#6a2a2a', rug: '#7a1e22', blanket: '#c9a227', wood: '#3a2618', paint: '#7a7266', hall: '#4a3422' } };
-PROP_LAYOUT[18] = PROP_LAYOUT[4];   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
+PROP_LAYOUT[18] = PROP_LAYOUT[4];
+// ---------------------------------------------------------------- Daily Kitchen: a fresh random kitchen every day, the same for everyone
+const DAILY_LV = 19, DAILY_LIVES = 10;
+const dailyDay = () => new Date().toISOString().slice(0, 10);   // UTC date, so the whole world shares one board
+function dayHash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+/* a random trail: walk back from the cake on the top row in straight runs of 2-5 tiles, never touching itself, until it leaves through a wall */
+function genTrail(r, cake, taken, minLen, maxLen, joinTo) {
+  const C = 14, R = 10, k = (c, rr) => c + ',' + rr, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const cells = joinTo ? [] : [[cake, 0]], seen = new Set(cells.map(([a, b]) => k(a, b)));
+    let cur, d;
+    if (joinTo) {   // a second trail starts beside the first one, away from its ends, and heads outward
+      const j = 4 + Math.floor(r() * (joinTo.length - 8)), [jc, jr] = joinTo[j], opts = DIRS.filter(([dc, dr]) => { const c2 = jc + dc, r2 = jr + dr; return c2 >= 0 && c2 < C && r2 >= 1 && r2 < R && !taken.has(k(c2, r2)); });
+      if (!opts.length) continue; d = opts[Math.floor(r() * opts.length)]; cur = [jc + d[0], jr + d[1]];
+      if (DIRS.some(([dc, dr]) => taken.has(k(cur[0] + dc, cur[1] + dr)) && !(cur[0] + dc === jc && cur[1] + dr === jr))) continue;
+      cells.push(cur); seen.add(k(...cur)); cells.joinAt = j;
+    } else { d = [0, 1]; cur = [cake, 0]; }
+    let ok = false;
+    for (let seg = 0; seg < 40 && !ok; seg++) {
+      const len = 2 + Math.floor(r() * 4);
+      for (let i = 0; i < len; i++) {
+        const nc = cur[0] + d[0], nr = cur[1] + d[1];
+        if (nc < 0 || nc >= C || nr < 1 || nr >= R || seen.has(k(nc, nr)) || taken.has(k(nc, nr))) break;
+        if (DIRS.some(([dc, dr]) => { const q = k(nc + dc, nr + dr); return (seen.has(q) && q !== k(...cur)) || taken.has(q); })) break;   // keep a gap to every other part of the trail
+        cur = [nc, nr]; cells.push(cur); seen.add(k(nc, nr));
+        const out = (d[0] === -1 && nc === 0) || (d[0] === 1 && nc === C - 1) || (d[1] === 1 && nr === R - 1);
+        if (out && cells.length >= minLen) { ok = true; break; }
+      }
+      if (ok || cells.length > maxLen) break;
+      d = r() < 0.5 ? [d[1], d[0]] : [-d[1], -d[0]];   // turn left or right
+    }
+    if (ok && cells.length <= maxLen) { cells.exitDir = d; return cells; }
+  }
+  return null;
+}
+function trailRoute(cells, tail) {   // cells run cake -> door; the game wants door -> cake, corners only
+  const fw = cells.slice().reverse().concat(tail || []), d = cells.exitDir, [c0, r0] = fw[0];
+  const door = d[0] === -1 ? [-0.6, r0] : d[0] === 1 ? [13.6, r0] : [c0, 10.6], out = [door, fw[0]];
+  for (let i = 1; i < fw.length - 1; i++) { const a = fw[i - 1], b = fw[i], c = fw[i + 1]; if ((b[0] - a[0]) !== (c[0] - b[0]) || (b[1] - a[1]) !== (c[1] - b[1])) out.push(b); }
+  const last = fw[fw.length - 1]; out.push(last, [last[0], -0.05]); return out;
+}
+function setupDaily(day = dailyDay()) {
+  const r = rng(dayHash('ppd-daily-' + day)), CAKES = [0, 1, 9, 10, 11, 12, 13], cake = CAKES[Math.floor(r() * CAKES.length)];
+  let t1 = null; for (let i = 0; i < 20 && !t1; i++) t1 = genTrail(r, cake, new Set(), 26, 40);
+  const taken = new Set(t1.map(([a, b]) => a + ',' + b)), routes = [trailRoute(t1)];
+  if (r() < 0.45) { const t2 = genTrail(r, cake, taken, 10, 26, t1); if (t2) routes.push(trailRoute(t2, t1.slice(0, t2.joinAt + 1).reverse())); }   // some days: a second door that joins the first trail
+  const BOSSES = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'].map(t => [t, r()]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+  const early = BOSSES.slice(0, 4).sort((a, b) => BT[a].hp - BT[b].hp);
+  const look = SOLO[Math.floor(r() * SOLO.length)];
+  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.25, money: 210, cakeCol: cake, shift: 1,
+    nb: [['hopper', 4, 2], ['centi', 7, 1], ['stink', 9, 1], ['moth', 11, 2], ['mantis', 14, 1]], bosses: [...early.map(t => [t]), [BOSSES[4], BOSSES[5]]], routes, look, day };
+  HOUSES[DAILY_LV] = { ...HOUSES[look] }; PROP_LAYOUT[DAILY_LV] = PROP_LAYOUT[look]; delete houseTex[DAILY_LV];
+}   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
 const houseTex = {};
 function smallSpots(i, L) {   /* free spots on the counters for the little things: away from the big props, the fridge, the stove, the cake and the cat bed; the same every time for a given kitchen */
   let seed = 9001 + i * 7919; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -6304,7 +6373,7 @@ function rsAnswer(m) {   // messages about a restart request, on either side
 $('lvls').innerHTML = SOLO.map((lv, i) => `<button class="lvl" id="${i ? 'play' + (i + 1) : 'play'}" type="button" data-lv="${lv}"><b>Level ${i + 1}</b><span>${HOUSES[lv].name}</span><em>${LEVELS[lv].name}</em><small id="best${lv}"></small></button>`).join('');
 $('lvls').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; SND.init(); startGame(+b.dataset.lv); });
 $('nextLv').addEventListener('click', () => { SND.init(); if (S.net === 'host') { TEAM_LV = teamNext(LV); netSend({ k: 'start', lv: TEAM_LV }); startGame(TEAM_LV, 'host'); } else startGame(LEVELS[LV].team ? teamNext(LV) : soloNext(LV)); });
-$('again').addEventListener('click', () => { SND.init(); if (S.vs) { if (S.vs.bot) startGame(LV, 'vsbot', S.vs.bot.diff); else if (NET.role === 'host') { netSend({ k: 'start', lv: LV, vs: 1 }); startGame(LV, 'vs'); } return; } if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
+$('again').addEventListener('click', () => { SND.init(); if (S && S.daily) { startDaily(); return; } if (S.vs) { if (S.vs.bot) startGame(LV, 'vsbot', S.vs.bot.diff); else if (NET.role === 'host') { netSend({ k: 'start', lv: LV, vs: 1 }); startGame(LV, 'vs'); } return; } if (S.net === 'host') { netSend({ k: 'start', lv: LV }); startGame(LV, 'host'); } else startGame(); });
 // endless: pick up right where the win left off, same tools and cake, waves keep coming and keep getting harder
 $('endless').addEventListener('click', () => {
   SND.init(); if (!S || S.mode !== 'over') return;
@@ -6557,7 +6626,7 @@ function toTitle() {
 }
 /* ---- resume a solo run: saved between waves (when a wave is cleared, when the next one is sent, and when the app goes to the background between waves) */
 const RUN_KEY = 'ppd-run';
-function runSavable() { return S && S.mode === 'play' && !S.net && !S.vs && !LEVELS[LV].team && !BLD.testing && LEVELS[LV].name !== 'My Trail' && S.lives > 0; }
+function runSavable() { return S && S.mode === 'play' && LV !== DAILY_LV && !S.net && !S.vs && !LEVELS[LV].team && !BLD.testing && LEVELS[LV].name !== 'My Trail' && S.lives > 0; }
 function saveRun() {
   if (!runSavable()) return;
   const mid = S.active;
@@ -6623,7 +6692,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   if (!S.vs) tutStart();
   try { if (!localStorage.getItem('ppd-sideways') && matchMedia('(pointer:coarse) and (orientation:portrait)').matches && !net) { localStorage.setItem('ppd-sideways', '1'); $('sideways').hidden = false; S.paused = true; } } catch (e) {}   /* first game on a phone held upright: say sideways is better */
-  { const L = LEVELS[LV], el = $('stageTag'); el.textContent = S.vs && S.vs.ffa ? 'Free for All · ' + HOUSES[LV].name : S.vs ? 'Bug Battle · ' + HOUSES[LV].name : L.team ? 'Team Kitchen ' + (TEAM_MAPS.indexOf(LV) + 1) + ' · ' + L.name : 'Level ' + soloNum(LV) + ' · ' + HOUSES[LV].name; el.hidden = false; }
+  { const L = LEVELS[LV], el = $('stageTag'); el.textContent = LV === DAILY_LV ? 'Daily Kitchen · ' + LEVELS[LV].day : S.vs && S.vs.ffa ? 'Free for All · ' + HOUSES[LV].name : S.vs ? 'Bug Battle · ' + HOUSES[LV].name : L.team ? 'Team Kitchen ' + (TEAM_MAPS.indexOf(LV) + 1) + ' · ' + L.name : 'Level ' + soloNum(LV) + ' · ' + HOUSES[LV].name; el.hidden = false; }
   syncTrophies();
   if (S.net === 'host' || S.net === 'guest') { const sendLook = () => { if (S && (S.net === 'host' || S.net === 'guest')) netSend({ k: 'look', l: myLook() }); }; setTimeout(sendLook, 1500); setTimeout(sendLook, 6000); }   /* your partner sees your outfit */
   clearMySide(); if (LEVELS[lv].team && (net === 'host' || net === 'guest' || net === 'bot')) setTimeout(() => { if (S && !S.vs) showMySide(); }, 600);
@@ -7602,6 +7671,57 @@ $('bakCopy').addEventListener('click', async () => { SND.play('tap'); const t = 
 $('bakLoad').addEventListener('click', () => { SND.play('tap'); const err = loadBackup($('bakCode').value); if (err) { $('bakNote').textContent = err; return; } $('bakNote').textContent = 'Loaded! Restarting the game to use it…'; setTimeout(() => location.reload(), 900); });
 if (location.protocol.startsWith('http')) { setTimeout(() => checkUpdate(false), 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - (checkUpdate.at || 0) > 600000) { checkUpdate.at = Date.now(); checkUpdate(false); } }); }
 $('resumeT').addEventListener('click', () => { SND.init(); resumeRun(); });
+// ---- Daily Kitchen: screen, play, scores and leaderboard
+const LS = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+function myPid() { let id = LS.get('ppd-pid'); if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()); LS.set('ppd-pid', id); } return id; }
+function dailyName() { let n = myName(); if (!n) { n = 'Exterminator ' + (1000 + Math.floor(Math.random() * 9000)); LS.set('ppd-name', n); } return n; }   /* the same name you use online */
+const cleanName = n => String(n || '').replace(/[<>&"]/g, '').trim().slice(0, 16) || 'Exterminator';
+const dailyMine = day => { try { return JSON.parse(LS.get('ppd-daily-' + day) || 'null'); } catch (e) { return null; } };
+function dailyStreak() { try { const o = JSON.parse(LS.get('ppd-daily-streak') || 'null'); if (!o) return 0; const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10); return o.last === dailyDay() || o.last === y ? o.n : 0; } catch (e) { return 0; } }
+function bumpStreak(day) { let o = null; try { o = JSON.parse(LS.get('ppd-daily-streak') || 'null'); } catch (e) {} const y = new Date(Date.parse(day) - 864e5).toISOString().slice(0, 10); const n = o && o.last === y ? o.n + 1 : o && o.last === day ? o.n : 1; LS.set('ppd-daily-streak', JSON.stringify({ last: day, n })); return n; }
+const LB_URL = SB_URL + '/rest/v1/daily_scores', LB_H = { apikey: SB_KEY, 'Content-Type': 'application/json' };
+async function lbSubmit(day, waves, kills) { try { const r = await fetch(LB_URL + '?on_conflict=day,pid', { method: 'POST', headers: { ...LB_H, Prefer: 'resolution=ignore-duplicates,return=minimal' }, body: JSON.stringify({ day, pid: myPid(), name: cleanName(dailyName()), waves, kills }) }); return r.ok; } catch (e) { return false; } }
+async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills&day=eq.' + day + '&order=waves.desc,kills.desc,created_at.asc&limit=50', { headers: LB_H }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+async function lbRank(day, w, k) { try { const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',kills.gt.' + k + '))', { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
+async function renderBoard(day) {
+  const ol = $('dBoard'), you = $('dYou'), mine = dailyMine(day); ol.innerHTML = '<li><span class="nm">Loading…</span></li>'; you.textContent = '';
+  const top = await lbTop(day);
+  if (!top) { ol.innerHTML = '<li><span class="nm">The leaderboard isn\'t reachable right now.</span></li>'; return; }
+  if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
+  const me = myPid();
+  ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span><span class="wv">Wave ${t.waves}</span><span class="kl">${t.kills} bugs</span></li>`).join('');
+  if (mine && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k); if (rk) you.textContent = 'You: #' + rk + ' · wave ' + mine.w + ' · ' + mine.k + ' bugs'; }
+}
+function openDaily() {
+  setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
+  $('dSub').textContent = day + ' · ' + HOUSES[L.look].name + ' look · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · 10 slices · endless waves';
+  $('dMine').innerHTML = mine ? `Your score today<b>Wave ${mine.w}</b>` : 'Your score today<b>Not played</b>';
+  $('dStreak').innerHTML = `Daily streak<b>${dailyStreak()} 🔥</b>`;
+  $('dPlay').textContent = mine ? 'Practice (your score is in)' : 'Play today\'s kitchen';
+  $('dName').value = dailyName();
+  $('title').hidden = true; $('daily').hidden = false; renderBoard(day);
+}
+function startDaily() {
+  setupDaily(); const day = LEVELS[DAILY_LV].day;
+  startGame(DAILY_LV);
+  S.daily = { day, counts: !dailyMine(day) }; S.lives = DAILY_LIVES; setCake(DAILY_LIVES); S.endless = true; $('waveMax').textContent = ' ∞'; syncHud(); syncGo();
+  banner('Daily Kitchen', S.daily.counts ? '10 slices, endless waves. This run goes on the leaderboard!' : 'Practice run: your score for today is already in', false, 2600);
+}
+function dailyOver() {
+  const d = S.daily, waves = Math.max(0, S.wave - 1), kills = S.kills || 0;
+  $('overt').textContent = 'Daily Kitchen over'; $('ostars').hidden = true; $('nextLv').hidden = true; $('endless').hidden = true; $('again').hidden = false; $('again').textContent = 'Practice again';
+  let line = '';
+  if (d.counts) { LS.set('ppd-daily-' + d.day, JSON.stringify({ w: waves, k: kills })); const n = bumpStreak(d.day); line = `<dt>Daily streak</dt><dd>${n} 🔥</dd><dt>Today's rank</dt><dd id="oRank">Sending…</dd>`;
+    lbSubmit(d.day, waves, kills).then(ok => lbRank(d.day, waves, kills)).then(rk => { const el = $('oRank'); if (el) el.textContent = rk ? '#' + rk : 'Couldn\'t reach the leaderboard'; }); }
+  else line = '<dt>Practice run</dt><dd>Not on the leaderboard</dd>';
+  $('ores').innerHTML = `<dt>Waves survived</dt><dd>${waves}</dd><dt>Bugs squashed</dt><dd>${kills}</dd>` + line;
+  showStats(); ACH.save();
+  $('over').hidden = false; $('tip').hidden = true; $('queen').hidden = true; syncTray(); SND.play('lose');
+}
+$('dailyT').addEventListener('click', () => { SND.init(); openDaily(); });
+$('dBack').addEventListener('click', () => { $('daily').hidden = true; $('title').hidden = false; });
+$('dPlay').addEventListener('click', () => { SND.init(); LS.set('ppd-name', cleanName($('dName').value)); $('daily').hidden = true; startDaily(); });
+$('dName').addEventListener('change', () => LS.set('ppd-name', cleanName($('dName').value)));
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
 $('soloBack').addEventListener('click', () => { $('solo').hidden = true; $('title').hidden = false; });
 let LOBBY_AI = false;
@@ -8248,6 +8368,7 @@ function gameOver(won) {
   if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
   if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills, st: (S.p2 && S.p2.stats) || {} });   // the partner's own damage chart
   S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
+  if (S.daily) { dailyOver(); return; }
   const reached = won ? MAXW : S.wave, NX = LEVELS[LV].team ? teamNext(LV) : soloNext(LV), wasLocked = LEVELS[LV].team ? NX != null && !teamUnlocked(NX) : NX != null && !unlocked(NX);
   if (Math.min(reached, MAXW) > loadBest()) saveBest(Math.min(reached, MAXW));
   const ostars = $('ostars'); ostars.hidden = !won; $('endless').hidden = !won || !!S.net;
@@ -8330,6 +8451,7 @@ function step(now, draw) {
   try { syncMood(dt); } catch (e) {}
   if (draw) try { composer.render(); } catch (e) { showErr('render', e); }
 }
+try { setupDaily(); } catch (e) { console.warn('daily', e); }
 syncSnd();
 toTitle();
 resize();
