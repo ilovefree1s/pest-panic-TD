@@ -631,7 +631,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="395">v1.94</div>
+    <div id="ver" data-b="396">v1.95</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6061,7 +6061,7 @@ function renderShop() {
     const used = itemUsed(t) || ownsUnique(t) || (t === 'pack' && S && S.proPack);
     let isNew = false; if (t === 'fogger') { try { isNew = !localStorage.getItem('ppd-fogger-used'); } catch (e) {} }
     const armed = ARM.t === t && performance.now() < ARM.until;
-    const armText = t === 'license' ? '+5% all damage' : 'Spray 2× stronger';
+    const armText = t === 'license' ? '+5% all damage' : 'Spray 2× damage';
     const extra = armed ? `<em class="armTag">${armText}</em>` : ownsUnique(t) ? `<em class="used">${t === 'fogger' ? 'One per kitchen · tap yours to move it' : 'One per kitchen'}</em>` : TT[t].roam ? `<em class="buyTag">Buy</em>` : t === 'frog' ? `<em class="buyTag">Buy &amp; place</em>` : t === 'pack' && S && S.proPack ? `<em class="used">Owned</em>` : used ? `<em class="used">Used this wave</em>` : isNew ? `<em class="newtag">NEW</em>` : t === 'license' && S && S.lic ? `<em>Owned ${S.lic}/3 · +${S.lic * 5}%</em>` : '';
     if (TT[t].roam && ownsUnique(t)) return `<button class="tc owned1" type="button" data-t="${t}"><span><b>1 per house</b><em class="used">Tap yours to upgrade</em></span></button>`;   /* the cat: once you have him, his tile just says so */
     const reach = TT[t].fliesOnly ? '<i class="ht reach air">Air only</i>' : TT[t].air === false ? '<i class="ht reach gnd">Ground</i>' : '';
