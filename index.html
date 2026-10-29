@@ -639,7 +639,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="408">v1.07</div>
+    <div id="ver" data-b="409">v1.08</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8201,6 +8201,7 @@ const TUT_STEPS = [
   { txt: () => 'Welcome, exterminator! First, pick a tool from the tray. Try the <b>Fly Swatter</b>.', hi: () => document.querySelector('.tc[data-t="swat"]'), done: () => !!S.placing || S.towers.length > 0 },
   { txt: () => (ptrType === 'mouse' ? 'Click' : 'Tap') + ' a floor tile <b>right next to the sugar trail</b>. The glowing tile is a good spot.' + (ptrType === 'mouse' ? '' : ' Tap once to preview, again to place.'), ring: true, done: () => S.towers.length > 0 || S.wave >= 1 },
   { txt: () => 'Your <b>exterminator</b> walks over and builds it. Tools work once he finishes.', done: () => S.towers.some(t => !t.pending) || S.wave >= 1, min: 1.5 },
+  { txt: () => 'One tool can\'t stop a whole wave. Add a <b>Bug Spray</b> by the trail too: its poison cloud hits every bug in it.', hi: () => document.querySelector('.tc[data-t="spray"]'), ring: true, done: () => S.towers.length >= 2 || S.wave >= 1 },
   { txt: () => 'Ready? Tap <b>Send bugs</b> to start wave 1.', hi: () => $('go'), done: () => S.active || S.wave >= 1 },
   { txt: () => 'Bugs follow the trail to the cake. Your tools squash them, and every bug gives you <b>coins</b>.', done: () => !S.active && S.wave >= 1, min: 3 },
   { txt: () => 'Wave cleared! ' + (ptrType === 'mouse' ? 'Click' : 'Tap') + ' your <b>Fly Swatter</b> on the floor to see what it can do.', done: () => !!S.pick },
