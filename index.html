@@ -630,7 +630,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="393">v1.92</div>
+    <div id="ver" data-b="394">v1.93</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2151,7 +2151,7 @@ function buildHerc() {
   const legs = bossLegs(body, legM, [[0.8, 1.15, 1.2, 0.55], [0.9, 1.15, 0.2, -0.1], [0.85, 1.15, -0.8, -0.65]], legGeo);
   return finishBoss(root, body, legs, [oli, blk, legM]);
 }
-const BOSS_BUILD = { queen: buildQueen, widow: buildWidow, hornet: buildHornet, herc: buildHerc }, BOSS_POOL = {};
+const BOSS_BUILD = { queen: buildQueen, widow: buildWidow, hornet: buildHornet, herc: buildHerc, gfly: buildHornet, gant: buildQueen, gbed: buildWidow }, BOSS_POOL = {};
 function giantBuild(t) { return () => { const m = compactModel(MODEL_BUILD[BT[t].base]()); m.scale.setScalar(BT[t].size); m.userData.giant = true; if (!BT[t].segs) m.traverse(o => { if (o.isMesh) o.castShadow = true; }); m.visible = false; scene.add(m); return m; }; }
 function getBoss(t) {
   const pool = BOSS_POOL[t] ||= [];
@@ -2652,7 +2652,7 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 5.99 }, widow: { url: 'assets/boss_widow.glb', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 4.54, wings: true, pitch: 0.55 }, herc: { url: 'assets/boss_herc.glb', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 5.99 }, widow: { url: 'assets/boss_widow.glb', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 4.54, wings: true, pitch: 0.55, flat: true }, gfly: { url: 'assets/boss_fly.glb', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb', len: 4.6, legs: 4 }, herc: { url: 'assets/boss_herc.glb', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
 function insectRig(geo, per = 3) {
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
@@ -2710,8 +2710,9 @@ function cleanTexture(tex, K = 8) {
   const c2 = document.createElement('canvas'); c2.width = W * 2; c2.height = H * 2; const x2 = c2.getContext('2d'); x2.imageSmoothingEnabled = true; x2.imageSmoothingQuality = 'high'; x2.drawImage(cv, 0, 0, W * 2, H * 2);   /* twice the size, smoothed: clean colours with soft edges instead of stair steps */
   const t = new THREE.CanvasTexture(c2); t.flipY = tex.flipY; t.colorSpace = THREE.SRGBColorSpace; return seamSafeMips(t);
 }
-function wingRig(geo) {   /* a flying model standing upright: the thin parts sticking out to the sides above the waist are the wings */
+function wingRig(geo, opt) {   /* a flying model standing upright: the thin parts sticking out to the sides above the waist are the wings */
   if (geo.userData.rig) return geo.userData.rig;
+  if (opt) return wingRigAt(geo, opt);
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, Wd = Math.max(-bb.min.x, bb.max.x);
   const J = new Uint16Array(n * 4), Wt = new Float32Array(n * 4), ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
   let wy = 0, wz = 0, c = 0;
@@ -2724,6 +2725,13 @@ function wingRig(geo) {   /* a flying model standing upright: the thin parts sti
   }
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
   return (geo.userData.rig = { wings: [[-Wd * 0.4, wy, wz], [Wd * 0.4, wy, wz]], minY: bb.min.y, len: bb.max.z - bb.min.z, wid: bb.max.x - bb.min.x, h: bb.max.y - bb.min.y });
+}
+/* wings at a known place (a model whose legs stick out wider than its wings): everything above opt.y and away from the middle is wing */
+function wingRigAt(geo, opt) {
+  geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, J = new Uint16Array(n * 4), Wt = new Float32Array(n * 4), ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  for (let i = 0; i < n; i++) { const x = P.getX(i), y = P.getY(i); const w = ss(opt.y - 0.05, opt.y + 0.08, y) * ss(opt.x0, opt.x1, Math.abs(x)); J[i * 4] = w > 0 ? (x < 0 ? 1 : 2) : 0; Wt[i * 4] = w; Wt[i * 4 + 1] = 1 - w; }
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
+  return (geo.userData.rig = { wings: [[-opt.px, opt.py, opt.pz], [opt.px, opt.py, opt.pz]], minY: bb.min.y, len: bb.max.z - bb.min.z, wid: opt.wid || (bb.max.x - bb.min.x), h: bb.max.y - bb.min.y });
 }
 /* real walking for the modelled bugs. Legs come in side order (left rear→front, then right). Six legs walk as two tripods
    (front+back on one side with the middle on the other), eight legs as two alternating sets of four; a leg lifts on its forward swing. */
@@ -2741,8 +2749,8 @@ function buildModelBoss(t) {
     if (!src.geometry.userData.clean) {   // tidy the model up: smooth shading instead of hard facets, and the wings split out so they can be see-through
       const g0 = src.geometry.index ? src.geometry.toNonIndexed() : src.geometry; toCreasedNormals(g0, 1.25); g0.userData = {}; src.geometry = g0; g0.userData.clean = true;
     }
-    M.clean ||= cleanMap(src.material.map);
-    const R = wingRig(src.geometry), mat = std({ map: M.clean, roughness: 0.5, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85), side: THREE.DoubleSide });
+    M.clean ||= M.flat ? cleanMap(src.material.map) : seamSafeMips(src.material.map, src.geometry);   /* flat-coloured textures get cleaned; shaded ones are left alone */
+    const R = wingRig(src.geometry, M.wingAt), mat = std({ map: M.clean, roughness: 0.5, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85), side: THREE.DoubleSide });
     const G = src.geometry; if (!G.userData.wingSplit) {   // body triangles first, wing triangles after, as two draw groups
       const W = G.attributes.skinWeight, n = G.attributes.position.count, isW = t => W.getX(t * 3) > 0.5 && W.getX(t * 3 + 1) > 0.5 && W.getX(t * 3 + 2) > 0.5;
       const order = [], wingT = []; for (let t = 0; t < n / 3; t++) (isW(t) ? wingT : order).push(t); const nb = order.length; order.push(...wingT);
@@ -2754,7 +2762,7 @@ function buildModelBoss(t) {
     R.wings.forEach(([x, y, z], k) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { s: k ? 1 : -1 }; bones[0].add(b); bones.push(b); wings.push(b); });
     const sk = new THREE.SkinnedMesh(src.geometry, [mat, wingMat]); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.castShadow = true; sk.frustumCulled = false;
     const k = M.wid / R.wid, tilt = new THREE.Group(); tilt.rotation.x = M.pitch || 0; sk.scale.setScalar(k); tilt.add(sk); tilt.position.y = R.h * k * 0.35; body.add(tilt);
-    root.userData = { body, legs: [], wings, mats: [mat, wingMat], model: true }; root.visible = false; scene.add(root);
+    root.userData = { body, legs: [], wings, mats: [mat, wingMat], model: true, wingRest: M.wingRest || 0, wingTilt: M.wingTilt || 0 }; root.visible = false; scene.add(root);
     return root;
   }
   const R = insectRig(src.geometry, M.legs || 3), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
@@ -2870,7 +2878,7 @@ function buildMantisModel() {
 for (const [t, fn] of [['stink', () => buildStinkModel()], ['moth', () => buildMothModel()]]) try { new GLTFLoader().load(BUG_MODELS[t].url, g => { BUG_MODELS[t].gltf = g; const old = MODEL_BUILD[t]; MODEL_BUILD[t] = () => { try { return fn(); } catch (e) { console.warn(t + ' model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.hopper.url, g => { BUG_MODELS.hopper.gltf = g; const old = MODEL_BUILD.hopper; MODEL_BUILD.hopper = () => { try { return buildHopperModel(); } catch (e) { console.warn('hopper model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.mantis.url, g => { BUG_MODELS.mantis.gltf = g; const old = MODEL_BUILD.mantis; MODEL_BUILD.mantis = () => { try { return buildMantisModel(); } catch (e) { console.warn('mantis model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
-for (const t in BOSS_MODELS) try { new GLTFLoader().load(BOSS_MODELS[t].url, g => { if (BOSS_MODELS[t].wings) queueClean(g); BOSS_MODELS[t].gltf = g;   /* only the Hornet: her texture is flat colours, the cleanup bands the painted shading on the others */ const old = BOSS_BUILD[t]; BOSS_BUILD[t] = () => { try { return buildModelBoss(t); } catch (e) { console.warn('boss model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
+for (const t in BOSS_MODELS) try { new GLTFLoader().load(BOSS_MODELS[t].url, g => { if (BOSS_MODELS[t].flat) queueClean(g); BOSS_MODELS[t].gltf = g;   /* only the Hornet: her texture is flat colours, the cleanup bands the painted shading on the others */ const old = BOSS_BUILD[t]; BOSS_BUILD[t] = () => { try { return buildModelBoss(t); } catch (e) { console.warn('boss model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 function catLook(o) { return o.perk ? 'tiger' : 'l' + (o.lv || 1); }
 function attachCatModel(o) {   /* swap a cat tower's built-from-shapes body for the model */
   if (o.mdl || !CATM.gltf) return;
@@ -2967,7 +2975,7 @@ const shinyName = b => 'shiny ' + (BUG_NAME[b.t] || (BT[b.t] && BT[b.t].name) ||
 // ---- the Shiny Collection: every type you've caught, kept forever (selling from the jar doesn't take it away)
 const SHINY_BOSS = 0.0001;
 const DEX_REG = ['ant', 'fly', 'spider', 'bed', 'dung', 'baby', 'hopper', 'centi', 'stink', 'moth', 'mantis'];
-const DEX_BOSS = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis'];
+const DEX_BOSS = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'];
 /* the Locker: what you've earned, and what you're wearing. reg = regular shiny types caught, boss = boss shiny types caught */
 const LOCKER = [
   ['suit', 'Suit', [['standard', 'Standard issue'], ['black', 'Blackout suit', { reg: 3 }], ['hazmat', 'Hazmat suit', { reg: 7 }], ['camo', 'Camo suit', { reg: 9 }], ['gold', 'Gold suit', { reg: 11 }]]],
@@ -4341,6 +4349,9 @@ const BT = {
   gstink: { hp: 1500, spd: 1.2, gold: 140, lives: 5, armor: 3, boss: true, base: 'stink', size: 2.59, name: 'Giant Stink Bug', sub: 'It leaves stink clouds behind as it walks', goo: [0.45, 0.4, 0.22] },
   gmoth:  { hp: 1300, spd: 1.5, gold: 130, lives: 5, fly: true, boss: true, base: 'moth', size: 2.43, name: 'Giant Moth', sub: 'Its wingbeats blow out candles as it flies past', goo: [0.62, 0.56, 0.46] },
   gmantis:{ hp: 1900, spd: 1.3, gold: 170, lives: 6, armor: 2, boss: true, base: 'mantis', size: 2.11, noPush: true, name: 'Giant Mantis', sub: 'Eats other bugs to heal', goo: [0.42, 0.76, 0.26] },
+  gant:   { hp: 1600, spd: 1.15, gold: 150, lives: 5, armor: 2, boss: true, name: 'Ant Queen', sub: 'Her Royal Guard shields her: squash the soldier ants first', goo: [0.62, 0.16, 0.1] },
+  gfly:   { hp: 2200, spd: 1.6, gold: 150, lives: 5, fly: true, boss: true, name: 'Giant Housefly', sub: 'She zig-zags, so swats and tongues can miss', goo: [0.5, 0.82, 0.22] },
+  gbed:   { hp: 1800, spd: 1.4, gold: 150, lives: 5, armor: 1, boss: true, name: 'Bed Bug Mother', sub: 'Tools she walks past get itchy and swing wild', goo: [0.55, 0.12, 0.08] },
   queen:  { hp: 1260, spd: 1.15, gold: 100, lives: 5, armor: 3, boss: true, name: 'Roach King', sub: 'He is heading for the cake', goo: [0.42, 0.24, 0.1] },
 };
 const BOSS_AT = { 5: ['queen'], 10: ['widow'], 15: ['hornet'], 20: ['hornet', 'widow', 'queen'] };
@@ -4414,7 +4425,7 @@ function spawnBug(t, route = nextRoute()) {
   if (S.mode === 'play' && S.net !== 'guest' && Math.random() < (bt.boss ? SHINY_BOSS : SHINY_CHANCE)) makeShiny(b);
   if (bt.ball) { const h = Math.round(bt.ball * S.hpMul * wm * (S.wave === 6 || S.wave === 7 ? 0.7 / 0.9 : 1));   // beetle balls 30% weaker on waves 6-7
     b.ball = { hp: h, max: h, flash: 0 }; }
-  if (bt.boss) { b.mesh = getBoss(t); $('queen').hidden = false; if (t === 'widow') b.clutch = 2; if (bt.base) b.mdl = b.mesh; }
+  if (bt.boss) { b.mesh = getBoss(t); $('queen').hidden = false; if (t === 'widow') b.clutch = 2; if (bt.base) b.mdl = b.mesh; if (t === 'gant') b.needGuard = 1; }
   else if (MODEL_BUILD[t]) b.mdl = getModel(t);
   S.bugs.push(b);
   return b;
@@ -4505,7 +4516,9 @@ function hit(b, d, raw) {
   if (b.dead) return;
   if (b.t === 'centi' && !b.lead) { let f = null; for (const c of S.bugs) if (!c.dead && c.lead === b) { f = c; break; } if (f) { hit(f, d, raw); b.flash = f.flash; return; } }   /* a regular centipede's head passes every hit back to the segment behind it: the head goes last */
   if (S.net === 'guest') { if (!raw) { b.flash = 0.08; if (b.ball && b.ball.hp > 0) b.ball.flash = 0.08; } return; }
+  if (b.t === 'gfly' && b.darting && (CUR_SRC === 'swat' || CUR_SRC === 'frog') && Math.random() < 0.5) { if (S.mode === 'play' && Math.random() < 0.5) FX.smoke.spawn({ x: b.x, y: bugY(b) + 1, z: b.z, vy: 1, life: 0.35, s0: 0.5, s1: 1.2, c: [0.9, 0.9, 0.9], a0: 0.5 }); return; }   /* she darted: missed */
   d *= S.dmgMul * (1 + CUR_AMP);
+  if (b.t === 'gant' && b.guards && b.guards.some(g => !g.dead)) { d *= 0.3; if (Math.random() < 0.15) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 2, y: 1.2 + Math.random(), z: b.z + (Math.random() - 0.5) * 2, vy: 0.6, life: 0.4, s0: 0.6, s1: 0.1, c: [1, 0.85, 0.3], a0: 1 }); }   /* her Royal Guard shields her */
   const show = S.mode === 'play';
   if (b.ball && b.ball.hp > 0) { const bd = Math.min(d, b.ball.hp); b.ball.hp -= d; b.ball.flash = 0.08; if (show) { b.db = (b.db || 0) + bd; if (CUR_SRC) statFor(CUR_SRC).dmg += bd; credit(bd, false); } if (b.ball.hp <= 0) breakBall(b); return; }
   const dd = raw ? d : d * armorKeep(b);
@@ -4513,6 +4526,14 @@ function hit(b, d, raw) {
   b.hp -= dd; if (!raw) b.flash = 0.08;
   if (b.hp <= 0) kill(b);
   else if (b.clutch && b.hp / b.max < b.clutch / 3) { b.clutch--; layClutch(b); }
+  else if (b.t === 'gant' && !b.resummon && b.hp / b.max < 0.5) { b.resummon = 1; royalGuard(b); }
+}
+// Ant Queen: four big soldier ants march in a ring around her; while any are alive she takes 70% less damage
+function royalGuard(q) {
+  q.guards = [];
+  for (let i = 0; i < 4; i++) { const g = spawnBug('ant', q.route); g.guard = q; g.gph = i * TAU / 4; g.s = q.s; g.hp = g.max = Math.round(q.max * 0.06); q.guards.push(g); }
+  if (S.mode === 'play') banner('Royal Guard!', 'Squash her soldier ants: she takes much less damage while they guard her', false, 1800);
+  SND.play('slam');
 }
 function layClutch(b) {
   for (let i = 0; i < 6; i++) { const k = spawnBug('baby', b.route); k.s = Math.max(0, b.s - 0.6 - i * 0.45); k.off = (Math.random() - 0.5) * 1.8; }
@@ -4580,7 +4601,8 @@ function sprayTarget(tw, r) {
   return best || firstTarget(tw, r);
 }
 function frogTarget(tw, r) { let best = null; for (const b of S.bugs) if (BT[b.t].fly && canHit(tw, b) && inRange(tw, b, r) && (!best || b.s > best.s)) best = b; return best || firstTarget(tw, r); }   // flyers first
-function firstTarget(tw, r) { let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || b.s > best.s)) best = b; return best; }
+function firstTarget(tw, r) { if (tw.itchT > 0) { const c = S.bugs.filter(b => canHit(tw, b) && inRange(tw, b, r)); return c.length ? c[Math.floor(Math.random() * c.length)] : null; }   /* itchy (Bed Bug Mother): swings at any bug in reach */
+  let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || b.s > best.s)) best = b; return best; }
 
 const ZAP_JUMP = 6.5, ZAP_HOP = 0.13;
 function zapHop(z) {
@@ -4722,6 +4744,7 @@ function towerAct(tw, dt) {
   const T = TT[tw.t], L = tw.lv - 1, R = T.range[L] * (1 + (tw.rmul || 0)) * PR(tw), stinky = tw.stink > 0;
   if (stinky) { tw.stink -= dt; dt *= 0.6; }   // stink bug cloud: 40% slower
   tw.cd -= dt; tw.anim += dt;
+  if (tw.itchT > 0) { tw.itchT -= dt; if (Math.random() < dt * 5) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.2, y: 1.2 + Math.random() * 1.2, z: tw.z + (Math.random() - 0.5) * 1.2, vy: 1, life: 0.4, s0: 0.3, s1: 0.05, c: [1, 0.35, 0.35], a0: 1 }); }
   if (tw.t === 'cat') { catAct(tw, T, L, R, dt); return; }
   if (tw.t === 'venus') {   // each head bites on its own, then chews
     const hs = tw.vh ||= [{ cd: 0, t: 9 }, { cd: 0.5, t: 9 }, { cd: 1, t: 9 }], taken = new Set();
@@ -4757,7 +4780,8 @@ function towerAct(tw, dt) {
   }
   if (tw.t === 'lens') {
     let tg = tw.lock && canHit(tw, tw.lock) && inRange(tw, tw.lock, R) ? tw.lock : null;
-    if (!tg || !BT[tg.t].boss) {   // bosses first: a boss in reach takes the beam over any regular bug, even the front of the line
+    if (tw.itchT > 0 && Math.random() < dt * 1.5) tg = null;
+    if ((!tg || !BT[tg.t].boss) && !(tw.itchT > 0)) {   // bosses first: a boss in reach takes the beam over any regular bug, even the front of the line
       let boss = null; for (const b of S.bugs) if (BT[b.t].boss && canHit(tw, b) && inRange(tw, b, R) && (!boss || b.s > boss.s)) boss = b;
       if (boss) tg = boss;
     }
@@ -4765,6 +4789,7 @@ function towerAct(tw, dt) {
     if (tg !== tw.lock) { tw.heat = 0; tw.lock = tg; }
     if (!tg) { tw.heat = 0; return; }
     tw.heat = Math.min(T.ramp, (tw.heat || 0) + dt);
+    if (tg.t === 'gfly' && tg.darting) tw.heat = Math.min(tw.heat, T.ramp * 0.25);   // she darts out of the focus: the burn can't build
     tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
     hit(tg, T.dps[L] * (1 + (T.mult - 1) * tw.heat / T.ramp) * dt, true); if (tw.heat > T.ramp * 0.4) tg.fireT = 0.3;   /* on fire: shows a flame badge */
     if (tw.perk) for (const b of S.bugs) if (b !== tg && !b.dead && (b.x - tg.x) ** 2 + (b.z - tg.z) ** 2 < 2.4 * 2.4) {   // wildfire spreads to bugs right next to it
@@ -4806,7 +4831,7 @@ function towerAct(tw, dt) {
     SND.play('sweep'); return;
   }
   if (tw.cd > 0) return;
-  const tg = tw.t === 'spray' ? sprayTarget(tw, R) : tw.t === 'frog' ? frogTarget(tw, R) : firstTarget(tw, R);
+  const tg = tw.itchT > 0 ? firstTarget(tw, R) : tw.t === 'spray' ? sprayTarget(tw, R) : tw.t === 'frog' ? frogTarget(tw, R) : firstTarget(tw, R);
   if (!tg) return;
   tw.cd = T.rate[L]; tw.anim = 0; tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
   const ty = bugY(tg) + 0.4;
@@ -4928,6 +4953,16 @@ function update(dt) {
     if ((b.dnT = (b.dnT || 0) - dt) <= 0 && (b.dn >= 1 || b.dr >= 1 || b.db >= 1)) flushDmg(b);
     if (b.mdl || b.t === 'fly') sp = specialMove(b, sp, dt);
     if (b.push > 0) { const d = Math.min(b.push, dt * 16); b.push -= d; b.s = Math.max(0, b.s - d); sp = 0; b.walk += dt * 20; }
+    if (b.needGuard && S.net !== 'guest') { b.needGuard = 0; royalGuard(b); }
+    if (b.guard) { if (b.guard.dead) b.guard = null; else { b.gph += dt * 1.4; b.s = Math.max(0, b.guard.s + Math.cos(b.gph) * 3.1); b.off = Math.sin(b.gph) * 2.6; sp = 0; b.walk += dt * 9; b.push = 0; } }   // a soldier ant marching in a ring around its queen
+    if (b.t === 'gfly') {   // zig-zag: quick darts from side to side of the trail
+      if ((b.zzT = (b.zzT || 0) - dt) <= 0) { b.zzT = 0.5 + Math.random() * 0.45; b.zzTo = (b.zzTo > 0 ? -1 : 1) * (1.3 + Math.random() * 1.1); }
+      const dz = (b.zzTo || 0) - (b.off || 0), st = Math.min(Math.abs(dz), dt * 9); b.off = (b.off || 0) + Math.sign(dz) * st; b.darting = Math.abs(dz) > 0.35;
+    }
+    if (b.t === 'gbed' && (b.itchCd = (b.itchCd || 0) - dt) <= 0) {   // itch: tools she walks past swing wild for a few seconds
+      b.itchCd = 0.4;
+      for (const tw of S.towers) if (!tw.pending && !TT[tw.t].roam && !TT[tw.t].support && (tw.x - b.x) ** 2 + (tw.z - b.z) ** 2 < 3.4 * 3.4) { if (!(tw.itchT > 0)) for (let i = 0; i < 8; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.6, y: 1 + Math.random() * 1.5, z: tw.z + (Math.random() - 0.5) * 1.6, vy: 1.5, life: 0.5, s0: 0.35, s1: 0.05, c: [1, 0.3, 0.3], a0: 1 }); tw.itchT = 4; }
+    }
     b.flash -= dt; b.s += sp * dt; b.walk += (b.jump > 0 ? 0 : sp) * dt * 2.6;   // no leg-flailing mid-jump
     if (S.net === 'guest' && b.gx != null) { const k = Math.min(1, dt * 10); b.x += (b.gx - b.x) * k; b.z += (b.gz - b.z) * k; b.y0 = 0; b.hy = 1; b.walk += dt * 6; continue; }
     if (S.net === 'guest' && (BT[b.t].base || b.t) === 'hopper') { b.hy += ((b.ghy || 0) - (b.hy || 0)) * Math.min(1, dt * 12); b.air = b.hy > 0.2; }
@@ -5324,7 +5359,7 @@ new ResizeObserver(resize).observe(stage);
 const tmpM = new THREE.Matrix4(), tmpM2 = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpE = new THREE.Euler(), tmpV = new V3(), ONE = new V3(1, 1, 1);
 const posV = new V3(), sclV = new V3(), baseM = new THREE.Matrix4(), legLocal = new THREE.Matrix4();
 const angryC = new THREE.Color(2.2, 0.7, 0.6), ballC = new THREE.Color(1, 1, 1);
-const UPV = new V3(0, 1, 0), DOWN = new V3(0, -1, 0), white = new THREE.Color(1, 1, 1), flashC = new THREE.Color(5, 5, 5), stuckC = new THREE.Color(1.6, 1.4, 0.5), psnC = new THREE.Color(0.75, 1.5, 0.7), babyC = new THREE.Color(0.55, 0.45, 0.6);
+const guardC = new THREE.Color(0.32, 0.3, 0.42), UPV = new V3(0, 1, 0), DOWN = new V3(0, -1, 0), white = new THREE.Color(1, 1, 1), flashC = new THREE.Color(5, 5, 5), stuckC = new THREE.Color(1.6, 1.4, 0.5), psnC = new THREE.Color(0.75, 1.5, 0.7), babyC = new THREE.Color(0.55, 0.45, 0.6);
 function setI(m, i, x, y, z, ry, s = 1, rx = 0, rz = 0) { tmpE.set(rx, ry, rz, 'YXZ'); tmpQ.setFromEuler(tmpE); sclV.set(s, s, s); tmpM.compose(posV.set(x, y, z), tmpQ, sclV); m.setMatrixAt(i, tmpM); return tmpM; }
 const shinyC = new THREE.Color();
 function shinyCol(b, t, l) { return BT[b.t].boss ? shinyC.setHSL(0.12, 1, l + Math.sin(t * 5) * 0.08) : shinyC.setHSL(((b.id * 0.61803) % 1), 1, l + Math.sin(t * 4 + b.id) * 0.06); }   /* each shiny glows its own colour; bosses glow gold */
@@ -5335,7 +5370,7 @@ function drawBugs(t) {
     const fl = b.shiny ? shinyCol(b, t, 0.6).multiplyScalar(3.2) : b.flash > 0 ? flashC : b.stuck > 0 || b.glueT > 0 ? stuckC : b.psnT > 0 ? psnC : white;
     if (b.shiny && Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 });
     if (b.t === 'ant') {
-      const i = c.ant++, base = baseM.copy(setI(IM.ant, i, b.x, b.y0, b.z, b.ang, 1.15, b.pitch)); IM.ant.setColorAt(i, fl);
+      const i = c.ant++, base = baseM.copy(setI(IM.ant, i, b.x, b.y0, b.z, b.ang, b.guard ? 2.0 : 1.15, b.pitch)); IM.ant.setColorAt(i, b.guard && fl === white ? guardC : fl);
       for (let l = 0; l < 6; l++) {
         const L = GEO.antLegs[l >> 1], side = l & 1 ? -1 : 1, sw = Math.sin(b.walk + (l >> 1) * Math.PI + (side > 0 ? 0 : Math.PI)) * 0.4;
         tmpE.set(0, side > 0 ? L[3] + sw : Math.PI - L[3] - sw, Math.sin(b.walk * 2 + l) * 0.08); tmpQ.setFromEuler(tmpE);
@@ -5394,7 +5429,7 @@ function drawBugs(t) {
       const q = b.mesh, u = q.userData, fy = BT[b.t].fly; q.position.set(b.x, b.y0 + (fy ? 1.6 + Math.sin(b.walk * 0.9) * 0.2 : 0), b.z); q.rotation.set(b.pitch, b.ang, fy ? Math.sin(b.walk * 0.5) * 0.08 : 0, 'YXZ');
       if (u.wings) {
         if (BT[b.t].base === 'moth') { const landed = b.free && b.free.phase === 'land'; u.wings.forEach((w, k) => { w.rotation.z = (landed ? 0.5 + Math.sin(t * 3 + k) * 0.12 : 0.15 + Math.sin(t * 13 + b.id + k * 0.3) * 0.7) * w.userData.s; }); }   /* giant moth: big slow wingbeats in the air; on a candle the wings settle up and just twitch */
-        else u.wings.forEach((w, k) => { w.rotation.z = Math.sin(t * 48 + k) * 0.55 * w.userData.s; });
+        else u.wings.forEach((w, k) => { w.rotation.x = u.wingTilt || 0; w.rotation.z = ((u.wingRest || 0) + Math.sin(t * 48 + k) * 0.55) * w.userData.s; });   /* wingTilt tips raised wings back to lie over the body */   /* wingRest: a model built with wings raised folds them down flat */
       }
       if (u.gait) gaitLegs(u.legs, u.gait, b.walk * 1.5, 0.55, 0.18);
       else u.legs.forEach((g, k) => { g.rotation.y = g.userData.yaw + Math.sin(b.walk * 0.7 + k * 1.7) * 0.25; g.rotation.z = Math.max(0, Math.sin(b.walk * 0.7 + k)) * 0.12; });
@@ -6204,6 +6239,7 @@ $('endless').addEventListener('click', () => {
 });
 $('totitle').addEventListener('click', () => { netLeave(); toTitle(); });
 for (const t of ['ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis']) BUGICON[t] = BUGICON[BT[t].base];
+BUGICON.gant = BUGICON.ant; BUGICON.gfly = BUGICON.fly; BUGICON.gbed = BUGICON.bed;
 const BUGINFO = [
   ['ant', 'Ant', 'Every wave', 'Marches steadily along the trail. Weak on its own, but they come in lines.', '1 slice'],
   ['fly', 'Fly', 'From wave 2', 'Fast, and flies over the floor, so the Newspaper can\'t reach it. The Bug Zapper does 60% extra to flies.', '1 slice'],
@@ -6220,6 +6256,9 @@ const BUGINFO = [
   ['gstink', 'Giant Stink Bug', 'Boss, Levels 8–10', 'Very tough shell. Every few seconds it lets out a stink cloud as it walks, and when it dies the cloud is huge. Tools in the stink work 40% slower.', '5 slices'],
   ['gmoth', 'Giant Moth', 'Boss, Levels 9–10', 'Stays on the trail, but its huge wingbeats blow out any candle it flies past. Bug Zappers it flies past flicker out for a few seconds.', '5 slices'],
   ['gmantis', 'Giant Mantis', 'Boss, Levels 9–10', 'Eats bugs often to heal, and the Broom can\'t push it.', '6 slices'],
+  ['gant', 'Ant Queen', 'Boss', 'A crowned queen surrounded by her Royal Guard: four big soldier ants marching in a ring around her. While any guard is alive she takes 70% less damage, so squash the guards first. At half health a new guard marches in.', '5 slices'],
+  ['gfly', 'Giant Housefly', 'Boss', 'Flies, and zig-zags from side to side of the trail. While she darts, the Fly Swatter and Frog miss half the time and the Magnifying Glass can\'t build up its burn. Bug Spray, the Zapper and the Fan don\'t care.', '5 slices'],
+  ['gbed', 'Bed Bug Mother', 'Boss', 'Every tool she walks close to gets itchy for 4 seconds and swings at random bugs in reach instead of the front of the line. Keep some tools away from her trail.', '5 slices'],
   ['queen', 'Roach King', 'Boss, waves 5 and 25', 'Huge health and a shell that blocks about a quarter of every hit. Every tool can take him down: stack sprays, slam him with Newspapers, zap him, smack him, or cook him with a Magnifying Glass.', '5 slices'],
   ['widow', 'Black Widow', 'Boss, waves 10 and 25', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 25', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
