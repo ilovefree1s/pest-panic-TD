@@ -631,7 +631,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="396">v1.95</div>
+    <div id="ver" data-b="397">v1.96</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1224,6 +1224,7 @@ function applyHouse(i) {
   for (const k in KIT.props) {
     const g = KIT.props[k], at = k.startsWith('sm_') ? smallAt[k] : L[k];
     g.visible = !!at; if (!at) continue;
+    if (!k.startsWith('sm_') && Math.abs(at[1] + 16.9) < 1 && Math.abs(at[0] - ccx(LEVELS[i] && LEVELS[i].cakeCol != null ? LEVELS[i].cakeCol : 12)) < 3.4) { g.visible = false; continue; }   /* the cake sits here on this level */
     g.position.set(at[0], TOP_Y, at[1]); g.rotation.set(0, at[2], 0); g.scale.setScalar(k.startsWith('sm_') ? 1.75 : 1.35); g.userData.fall = null; g.userData.knocked = false; g.userData.pHid = false;
   }
   syncRightProps();
@@ -7803,7 +7804,7 @@ const BLD_COLORS = ['#ffd24a', '#7fd8ff', '#ff8fb8'];
 function bldCols() { return BLD.mode === 'team' ? 21 : 14; }
 function bldCake() { return BLD.mode === 'team' ? 10 : BLD.cake; }
 function bldSave() { try { localStorage.setItem('ppd-bld', JSON.stringify({ mode: BLD.mode, base: BLD.base, edit: BLD.edit, cake: BLD.cake, trails: BLD.trails })); } catch (e) {} }
-function bldLoadSaved() { try { const o = JSON.parse(localStorage.getItem('ppd-bld') || 'null'); if (o && o.trails) Object.assign(BLD, { mode: o.mode === 'team' ? 'team' : 'solo', base: o.base | 0, edit: o.edit ?? null, cake: o.cake === 1 ? 1 : 12, trails: o.trails }); } catch (e) {} }
+function bldLoadSaved() { try { const o = JSON.parse(localStorage.getItem('ppd-bld') || 'null'); if (o && o.trails) Object.assign(BLD, { mode: o.mode === 'team' ? 'team' : 'solo', base: o.base | 0, edit: o.edit ?? null, cake: Number.isInteger(o.cake) ? o.cake : 12, trails: o.trails }); } catch (e) {} }
 const bldOnTrail = (t, c, r) => { const P = t.pts; for (let i = 0; i < P.length - 1; i++) { const [a, b] = P[i], [x, y] = P[i + 1]; if (Math.min(a, x) <= c && c <= Math.max(a, x) && Math.min(b, y) <= r && r <= Math.max(b, y)) return i; } return P.length === 1 && P[0][0] === c && P[0][1] === r ? 0 : -1; };
 function bldDoor(c, r) {   // which wall the door goes in for a trail starting on edge tile (c, r)
   const C = bldCols();
@@ -7929,7 +7930,7 @@ function bldUi() {
   const opts = BLD.mode === 'team' ? TEAM_MAPS.map((lv, i) => [lv, 'Team map ' + (i + 1) + ': ' + LEVELS[lv].name]) : SOLO.map((lv, i) => [lv, 'Level ' + (i + 1) + ': ' + HOUSES[lv].name]);
   if (!opts.some(o => o[0] === BLD.base)) BLD.base = opts[0][0];
   $('bldBase').innerHTML = opts.map(([v, n]) => `<option value="${v}"${v === BLD.base ? ' selected' : ''}>${n}</option>`).join('');
-  $('bldCake').hidden = BLD.mode === 'team'; $('bldCake').textContent = 'Cake: ' + (BLD.cake === 1 ? 'left' : 'right');
+  $('bldCake').hidden = BLD.mode === 'team'; $('bldCake').textContent = BLD.movingCake ? '🎂 Tap the top row…' : '🎂 Move cake'; $('bldCake').classList.toggle('on', !!BLD.movingCake);
   bldDraw();
 }
 function openBuilder() {
@@ -7977,7 +7978,7 @@ function bldFromLevel(lv) {
   }
   BLD.base = lv; BLD.edit = lv;
 }
-canvas.addEventListener('pointerdown', e => { if (!S || S.mode !== 'build' || $('bld').hidden) return; const cell = cellAt(e); if (!cell) return; SND.init(); SND.play('tap'); if (BLD.erasing) bldErase(cell.c, cell.r); else bldTap(cell.c, cell.r); });
+canvas.addEventListener('pointerdown', e => { if (!S || S.mode !== 'build' || $('bld').hidden) return; const cell = cellAt(e); if (!cell) return; SND.init(); SND.play('tap'); if (BLD.movingCake) bldMoveCake(cell.c, cell.r); else if (BLD.erasing) bldErase(cell.c, cell.r); else bldTap(cell.c, cell.r); });
 $('bldSwitch').addEventListener('click', () => {
   const open = BLD.trails.map((t, k) => t.done ? -1 : k).filter(k => k >= 0);
   if (!open.length) return bldMsg('Every trail is finished. Use the Eraser on one to change it, or + Door for a new one.');
@@ -7990,7 +7991,19 @@ document.querySelectorAll('#bld [data-bm]').forEach(b => b.addEventListener('cli
 function confirmClear() {}
 $('bldBase').addEventListener('change', e => { BLD.base = +e.target.value; bldSave(); bldDraw(); });
 $('bldEdit').addEventListener('click', () => { if (BLD.trails.length && !confirmClear.armE) { confirmClear.armE = 1; setTimeout(() => confirmClear.armE = 0, 2500); return bldMsg('That replaces what you drew. Tap again to load it.'); } confirmClear.armE = 0; bldFromLevel(BLD.base); bldUi(); bldSave(); bldMsg('Loaded ' + (LEVELS[BLD.base].team ? LEVELS[BLD.base].name : HOUSES[BLD.base].name) + '. Undo steps back from the cake end. Copy the code when you\'re done.'); });
-$('bldCake').addEventListener('click', () => { if (BLD.trails.some(t => t.done && t.join == null)) return bldMsg('Undo the trail into the cake before moving the cake.'); BLD.cake = BLD.cake === 1 ? 12 : 1; bldUi(); bldSave(); });
+$('bldCake').addEventListener('click', () => {
+  if (BLD.trails.some(t => t.done && t.join == null)) return bldMsg('Undo the trail into the cake before moving the cake.');
+  BLD.movingCake = !BLD.movingCake; BLD.erasing = false; $('bldErase').classList.remove('on');
+  bldMsg(BLD.movingCake ? 'Tap a tile on the top row (along the back counter) to put the cake there. It can\'t go in front of the fridge or the oven.' : 'Cake stays where it is.'); bldUi();
+});
+// the cake can sit anywhere along the back counter, except where the fridge or the oven stand
+function bldCakeOk(c) { const B = LEVELS[BLD.base] || {}, fx = B.fridgeX ?? -9, sx = B.stoveX ?? 2, x = ccx(c); return Math.abs(x - fx) >= 5 && Math.abs(x - sx) >= 5.5; }
+function bldMoveCake(c, r) {
+  if (r !== 0) return bldMsg('The cake goes on the back counter: tap a tile on the top row.');
+  if (BLD.trails.some(t => bldOnTrail(t, c, r) >= 0)) return bldMsg('That tile is trail. Pick an empty one on the top row.');
+  if (!bldCakeOk(c)) return bldMsg('The fridge or the oven is there. Pick another spot on the top row.');
+  BLD.cake = c; BLD.movingCake = false; bldMsg('Cake moved. Now finish a trail on the cake tile.'); bldUi(); bldSave();
+}
 $('bldUndo').addEventListener('click', bldUndo);
 // start a brand-new level: empty kitchen, keeps Solo/Team and the house you picked
 $('bldFresh').addEventListener('click', () => {
@@ -8004,7 +8017,7 @@ $('bldTest').addEventListener('click', () => { SND.init(); bldTest(); });
 $('bldCopy').addEventListener('click', () => { const c = bldCode(); $('bldCode').hidden = false; $('bldCode').value = c; $('bldCode').select(); try { navigator.clipboard.writeText(c).then(() => bldMsg('Code copied. Paste it to Claude.'), () => bldMsg('Code is in the box below: copy it from there.')); } catch (e) { bldMsg('Code is in the box below: copy it from there.'); } });
 $('bldLoad').addEventListener('click', () => {
   if ($('bldCode').hidden || !$('bldCode').value.trim()) { $('bldCode').hidden = false; $('bldCode').value = ''; $('bldCode').focus(); return bldMsg('Paste the code in the box, then tap Load code again.'); }
-  try { const o = JSON.parse(atob($('bldCode').value.trim().replace(/^PPT1\./, ''))); Object.assign(BLD, { mode: o.mode === 'team' ? 'team' : 'solo', base: o.base | 0, edit: o.edit ?? null, cake: o.cake === 1 ? 1 : 12, trails: o.trails || [] }); bldUi(); bldSave(); bldMsg('Loaded!'); }
+  try { const o = JSON.parse(atob($('bldCode').value.trim().replace(/^PPT1\./, ''))); Object.assign(BLD, { mode: o.mode === 'team' ? 'team' : 'solo', base: o.base | 0, edit: o.edit ?? null, cake: Number.isInteger(o.cake) ? o.cake : 12, trails: o.trails || [] }); bldUi(); bldSave(); bldMsg('Loaded!'); }
   catch (e) { bldMsg('That code didn\'t work. Paste the whole thing, starting with PPT1.'); }
 });
 $('bldExit').addEventListener('click', () => { bldLeave(); toTitle(); });
