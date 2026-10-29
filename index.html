@@ -353,6 +353,7 @@ h2.t{font-family:var(--display);font-weight:400;font-size:clamp(34px,8vw,56px);m
 .glist .gh{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
 .glist .gh b{font-family:var(--display);font-weight:400;font-size:19px;letter-spacing:.03em}
 .glist .gh small{font-family:var(--display);font-size:14px;letter-spacing:.05em;color:var(--gold)}
+.glist .tag.coin{color:var(--gold);background:rgba(255,200,60,.14)}
 .glist .tag{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:#232c34;color:var(--dim)}
 .glist .tag.ok{background:rgba(134,227,75,.15);color:var(--goo)} .glist .tag.no{background:rgba(255,82,72,.14);color:#ff8a7a}
 .glist p{margin:0;font-weight:700;font-size:14px;line-height:1.45;color:#d9d3c6}
@@ -631,7 +632,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="399">v1.98</div>
+    <div id="ver" data-b="400">v1.99</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -789,7 +790,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
         <h3>Your tools</h3><ul class="glist" id="gTools"></ul>
         <h3>Perks</h3><p class="hint">Once a tool or pet is level 3, tap it: the Upgrade button turns into its perk. One special power per tool.</p><ul class="glist" id="gPerks"></ul>
         <h3>Items</h3><ul class="glist" id="gItems"></ul>
-        <h3>The bugs</h3><ul class="glist" id="gBugs"></ul>
+        <h3>The bugs</h3><p class="hint">🪙 is what each squash pays in the early waves. From wave 6 the pay drops (about a third by wave 16), so spend your coins early.</p><ul class="glist" id="gBugs"></ul>
         <h3>Good to know</h3>
         <ul class="gtips">
           <li>Pick a tool in the tray to see its range circle, then place it on any empty floor tile beside the trail.</li>
@@ -6313,7 +6314,7 @@ $('gTools').innerHTML = [...SHOP, ...PETS].map(t => { const T = TT[t]; return `<
 $('gPerks').innerHTML = [...SHOP, ...PETS].filter(t => PERK[t]).map(t => { const P = PERK[t]; return `<li>${ICON[t]}<div class="gh"><b>${P.icon} ${P.name}</b><small>${TT[t].short || TT[t].name} · ${Math.round(TT[t].cost * 1.6)} coins</small></div><p>${P.d}</p></li>`; }).join('');
 $('gItems').innerHTML = ITEMS.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.costs ? T.costs.join(' / ') : T.cost} coins</small><span class="tag">${T.instant ? 'Instant' : T.t === 'crumbs' || t === 'crumbs' ? 'Until eaten' : 'One wave'}</span></div><p>${T.d}</p></li>`; }).join('');
 const finaleOf = k => { const i = SOLO.findIndex(lv => { const B = LEVELS[lv].bosses; return B && B[B.length - 1][0] === k; }); return i < 0 ? null : 'Final boss, Level ' + (i + 1); };
-$('gBugs').innerHTML = BUGINFO.map(([k, n, when, d, eats]) => [k, n, BT[k] && BT[k].boss ? finaleOf(k) || 'Boss' : when, d, eats]).map(([k, n, when, d, eats]) => `<li>${BUGICON[k]}<div class="gh"><b>${n}</b><span class="tag">${when}</span><span class="tag no">Eats ${eats}</span></div><p>${d}</p></li>`).join('');
+$('gBugs').innerHTML = BUGINFO.map(([k, n, when, d, eats]) => [k, n, BT[k] && BT[k].boss ? finaleOf(k) || 'Boss' : when, d, eats]).map(([k, n, when, d, eats]) => `<li>${BUGICON[k]}<div class="gh"><b>${n}</b><span class="tag">${when}</span><span class="tag no">Eats ${eats}</span><span class="tag coin">🪙 ${BT[k].gold}${k === 'centi' || k === 'gcenti' ? ' each segment' : k === 'bed' ? ' each' : ''}</span></div><p>${d}</p></li>`).join('');
 let guideFrom = null;
 function openGuide(from) {
   guideFrom = from;
