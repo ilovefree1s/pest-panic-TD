@@ -150,6 +150,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #belt .ch{display:flex;align-items:center;gap:3px;padding:2px 8px 2px 4px;border-radius:9px;background:rgba(255,255,255,.08);flex:none}
 #belt .ch svg{width:28px;height:28px}
 #belt .ch b{font:400 15px var(--display);color:var(--text)}
+#belt .ch .pay{font:900 11px var(--body);font-style:normal;color:var(--gold);margin-left:2px;opacity:.9}
 #belt .ch.boss{background:rgba(214,60,50,.32);box-shadow:inset 0 0 0 1px rgba(255,120,100,.55)}
 #belt .ch.boss b{color:#ffb3a8}
 @media (max-width:700px){#belt{top:58px;height:34px} #belt .ch svg{width:22px;height:22px} #belt .ch b{font-size:13px} #belt .bh{padding:0 8px 0 10px;gap:6px} #belt .bh b{font-size:14px} #belt .bh em{font-size:17px}}
@@ -632,7 +633,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="400">v1.99</div>
+    <div id="ver" data-b="401">v2.00</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2991,7 +2992,8 @@ function finishJob(j) {
   if (S.pick === o) syncTray();
 }
 // full gold for the opening 5 waves, then the 15% cut kicks in
-function goldMul() { return S.wave <= 5 ? 1 : S.wave <= 10 ? 0.85 : S.wave <= 15 ? 0.42 : 0.33; }   // late waves pay less so gold doesn't pile up unspent
+function goldMul(w = S.wave) { return w <= 5 ? 1 : w <= 10 ? 0.85 : w <= 15 ? 0.42 : 0.33; }
+const payAt = (t, w) => Math.max(1, Math.round((BT[t].gold + Math.floor(w / 3)) * goldMul(w)));   // what one squash of t pays on wave w   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
 const ABIL = { cd: 60, cost: 0, dot: 12, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
 const ABIL_BASE = { ...ABIL }, ABIL_PRO = { ...ABIL, cd: 75, cost: 20, dot: 20, dur: 4, range: 8.5, cone: 0.7, dps: 42, bossPct: 0.16 };   /* Pro Backpack Spray, from Level 5: stronger, wider and longer, but 20 coins a spray and 15 seconds more cooldown */
@@ -4522,7 +4524,7 @@ function showBelt() {
   const order = Object.keys(cnt).sort((a, b) => (BT[a].boss ? 1 : 0) - (BT[b].boss ? 1 : 0));
   $('beltW').textContent = 'Wave ' + n;
   // the wave's bugs ride the whole belt: in at the right edge, out at the left edge, over and over
-  const trk = $('beltRow'); trk.innerHTML = order.map(t => `<span class="ch${BT[t].boss ? ' boss' : ''}" title="${BELT_NAME[t] || t}">${BUGICON[t] || ''}<b>×${cnt[t]}</b></span>`).join('');
+  const trk = $('beltRow'); trk.innerHTML = order.map(t => `<span class="ch${BT[t].boss ? ' boss' : ''}" title="${BELT_NAME[t] || t}">${BUGICON[t] || ''}<b>×${cnt[t]}</b><i class="pay">🪙${payAt(t, n)}</i></span>`).join('');   /* each chip also shows what one squash pays */
   $('belt').classList.remove('off'); $('stage').classList.add('belted');
   requestAnimationFrame(() => {
     const rw = trk.parentElement.clientWidth || 700, tw = trk.scrollWidth || 100;
