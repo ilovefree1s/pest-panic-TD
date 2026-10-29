@@ -634,7 +634,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="405">v1.04</div>
+    <div id="ver" data-b="406">v1.05</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8098,8 +8098,15 @@ const ACH_LIST = [
   ['gstink', 'Hold Your Nose', 'Squash a Giant Stink Bug.'],
   ['gmoth', 'Lights Out', 'Squash a Giant Moth.'],
   ['gmantis', 'Amen', 'Squash a Giant Mantis.'],
+  ['herc', 'Shell Shocked', 'Squash a Hercules Beetle.'],
+  ['gant', 'Off With Her Crown', 'Squash an Ant Queen.'],
+  ['gfly', 'Lord of the Flies', 'Squash a Giant Housefly.'],
+  ['gbed', 'Sleep Tight', 'Squash a Bed Bug Mother.'],
+  ['bosses', 'Big Game Hunter', 'Squash every one of the 12 bosses.'],
   ['win', 'Cake Saver', 'Beat any level.'],
-  ['allwin', 'House Calls', 'Beat all ten houses.'],
+  ['lv11', 'Farm Fresh', 'Beat Level 11 (Farmhouse).'],
+  ['lv12', 'Last Stand', 'Beat Level 12 (Castle Kitchen), the final kitchen.'],
+  ['allwin', 'House Calls', 'Beat all twelve houses.'],
   ['star3', 'Perfect Party', 'Get 3 stars on any level.'],
   ['allstar', 'Gold Standard', 'Get 3 stars on every house.'],
   ['flawless', 'Not a Crumb', 'Beat a level without losing a single slice.'],
@@ -8140,7 +8147,7 @@ const ACH = (() => {
       if (life.kills === 1) this.unlock('first');
       if (life.kills >= 1000) this.unlock('k1000');
       if (life.kills >= 10000) this.unlock('k10000');
-      if (t === 'queen' || t === 'widow' || t === 'hornet' || (BT[t] && BT[t].base && BT[t].boss)) this.unlock(t);
+      if (BT[t] && BT[t].boss) { this.unlock(t); if (DEX_BOSS.every(k => got[k])) this.unlock('bosses'); }   /* every boss has its own; all 12 earns Big Game Hunter */
       if (life.kills % 50 === 0) save();
     },
     save,
@@ -8156,6 +8163,7 @@ function achWin() {
   if (!used.has('lens')) ACH.unlock('nolens');
   if (used.size && [...used].every(t => t === 'swat')) ACH.unlock('swatonly');
   if ((S.built || 0) <= 6) ACH.unlock('thrifty');
+  if (SOLO.indexOf(LV) === 10) ACH.unlock('lv11'); if (SOLO.indexOf(LV) === 11) ACH.unlock('lv12');
   if (SOLO.every(i => i === LV || loadBest(i) >= MAXW)) ACH.unlock('allwin');
   if (SOLO.every(i => (i === LV ? starsFor(S.lives) : loadNum(starKey(i))) >= 3)) ACH.unlock('allstar');
 }
