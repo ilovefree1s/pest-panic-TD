@@ -609,6 +609,11 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   #title.v2 .tsmall button{height:50px;border-radius:14px}
 }
 
+/* the Undo pill and the level name swap places: Undo on the right under the top bar, the level name centered at the top */
+#undo{left:auto;right:14px;transform:none;top:102px} .tstats #undo{top:56px}
+#stageTag{right:auto;left:50%;transform:translateX(-50%);top:104px} .tstats #stageTag{top:60px}
+@media (max-width:700px){#undo{top:102px} #stageTag{top:98px}}
+@media (orientation:landscape) and (max-height:560px){#undo{top:80px} #stageTag{top:16px;left:auto;right:226px;transform:none}}   /* phones sideways: just left of the round buttons, clear of the wave counter */
 </style>
 </head>
 <body>
@@ -634,7 +639,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="406">v1.05</div>
+    <div id="ver" data-b="408">v1.07</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8217,7 +8222,7 @@ function tutShow() {
     TUT.ring.rotation.x = -Math.PI / 2; TUT.ring.renderOrder = 12; scene.add(TUT.ring);
   }
   TUT.ring.visible = !!st.ring;
-  if (st.ring) { let c = 2, r = 3, ok = false; for (const [cc, rr] of [[2, 3], [2, 4], [0, 3], [2, 2]]) if (cellOk('swat', cc, rr)) { c = cc; r = rr; ok = true; break; }
+  if (st.ring) { let c = 2, r = 3, ok = false; for (const [cc, rr] of [[4, 4], [2, 3], [2, 4], [0, 3], [2, 2]]) if (cellOk('swat', cc, rr))   /* (4, 4): inside the spiral by the hole, where the swatter covers the most trail */ { c = cc; r = rr; ok = true; break; }
     if (!ok) { const R0 = LEVELS[LV].routes[0]; let bd = 1e9; for (let cc = 0; cc < COLS; cc++) for (let rr = 0; rr < ROWS; rr++) { if (!cellOk('swat', cc, rr) || ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => PATH.has(key(cc + a, rr + b)))) continue; const d = Math.hypot(cc - R0[0][0], rr - R0[0][1]); if (d < bd) { bd = d; c = cc; r = rr; } } }   /* next to the trail, close to where the bugs come in */ TUT.ring.position.set(ccx(c), 0.1, ccz(r)); }
 }
 function tutTick(dt) {
