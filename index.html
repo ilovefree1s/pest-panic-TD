@@ -633,7 +633,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="403">v1.02</div>
+    <div id="ver" data-b="404">v1.03</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4576,7 +4576,7 @@ function hit(b, d, raw) {
 function skitter(b) {
   const L = X0 - 1.2, R = X0 + COLS * CS + 1.2, T = Z0 - 1.2, opts = [[L, b.z, b.x - X0], [R, b.z, X0 + COLS * CS - b.x], [b.x, T, b.z - Z0]].sort((p, q) => p[2] - q[2]);
   b.sk = { ph: 'out', t: 0, tx: opts[0][0], tz: opts[0][1], rx: b.x, rz: b.z };
-  if (S.mode === 'play' && !S.skMsg) { S.skMsg = 1; banner('Skitter!', 'The Roach King ran under the counter. He\'s back in 2 seconds', false, 1500); }
+  if (S.mode === 'play' && !S.skMsg) { S.skMsg = 1; banner('Skitter!', 'The Roach King ran under the counter. He\'ll pop back out a little further along', false, 1500); }
 }
 // Ant Queen: four big soldier ants march in a ring around her; while any are alive she takes 70% less damage
 function royalGuard(q) {
@@ -5019,7 +5019,7 @@ function update(dt) {
     if (S.net === 'guest' && (BT[b.t].base || b.t) === 'hopper') { b.hy += ((b.ghy || 0) - (b.hy || 0)) * Math.min(1, dt * 12); b.air = b.hy > 0.2; }
     if (b.sk) {   // the skitter: dash out to the counter, hide under it, dash back to the same spot on the trail
       const k = b.sk; k.t += dt; b.walk += dt * 16;
-      if (k.ph === 'hide') { if (k.t >= 2) { k.ph = 'back'; b.hid = false; for (let i = 0; i < 6; i++) FX.smoke.spawn({ x: b.x, y: 0.3, z: b.z, vx: (Math.random() - 0.5) * 3, vy: 0.5, vz: (Math.random() - 0.5) * 3, drag: 3, life: 0.5, s0: 0.5, s1: 1.4, c: [0.8, 0.75, 0.65], a0: 0.4 }); } continue; }
+      if (k.ph === 'hide') { if (k.t >= 2) { k.ph = 'back'; b.hid = false; { const L = ROUTES[b.route].len; b.s = Math.min(b.s + CS * (1 + Math.random()), L - 4); pathAt(b.s, tmpP, b.route); k.rx = tmpP.x + tmpP.px * (b.off || 0); k.rz = tmpP.z + tmpP.pz * (b.off || 0); }   /* he pops back out a tile or two further along */ for (let i = 0; i < 6; i++) FX.smoke.spawn({ x: b.x, y: 0.3, z: b.z, vx: (Math.random() - 0.5) * 3, vy: 0.5, vz: (Math.random() - 0.5) * 3, drag: 3, life: 0.5, s0: 0.5, s1: 1.4, c: [0.8, 0.75, 0.65], a0: 0.4 }); } continue; }
       const tx = k.ph === 'out' ? k.tx : k.rx, tz = k.ph === 'out' ? k.tz : k.rz, mx = tx - b.x, mz = tz - b.z, md = Math.hypot(mx, mz), st = 13 * dt;
       b.ang = Math.atan2(mx, mz); b.y0 = 0; b.pitch = 0;
       if (md <= st) { b.x = tx; b.z = tz; if (k.ph === 'out') { k.ph = 'hide'; k.t = 0; b.hid = true; } else b.sk = null; }
@@ -6327,7 +6327,7 @@ const BUGINFO = [
   ['gant', 'Ant Queen', 'Boss', 'A crowned queen surrounded by her Royal Guard: four big soldier ants marching in a ring around her. While any guard is alive she takes 70% less damage, so squash the guards first. At half health a new guard marches in.', '5 slices'],
   ['gfly', 'Giant Housefly', 'Boss', 'Flies, and zig-zags from side to side of the trail. While she darts, the Fly Swatter and Frog miss half the time and the Magnifying Glass can\'t build up its burn. Bug Spray, the Zapper and the Fan don\'t care.', '5 slices'],
   ['gbed', 'Bed Bug Mother', 'Boss', 'Every tool she walks close to gets itchy for 4 seconds and swings at random bugs in reach instead of the front of the line. Keep some tools away from her trail.', '5 slices'],
-  ['queen', 'Roach King', 'Boss', 'Huge health and a shell that blocks about a quarter of every hit. At three-quarters, half and a quarter health he panics like a real roach: he dashes under the nearest counter, hides for 2 seconds where nothing can hit him, then runs back to the trail.', '5 slices'],
+  ['queen', 'Roach King', 'Boss', 'Huge health and a shell that blocks about a quarter of every hit. At three-quarters, half and a quarter health he panics like a real roach: he dashes under the nearest counter, hides for 2 seconds where nothing can hit him, then comes back out a tile or two further down the trail.', '5 slices'],
   ['widow', 'Black Widow', 'Boss, waves 10 and 25', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 25', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
   ['herc', 'Hercules Beetle', 'Boss, wave 20 on some houses', 'A huge horned beetle with the thickest shell in the house (it blocks 40% of every hit), and nothing slows it down: no sticky traps, no stuns. Poison, fog and the Magnifying Glass burn right through the shell.', '5 slices'],
