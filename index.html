@@ -630,7 +630,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="392">v1.91</div>
+    <div id="ver" data-b="393">v1.92</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2689,6 +2689,11 @@ function insectRig(geo, per = 3) {
 }
 /* clean a flat-coloured model's texture: snap every pixel to the model's handful of real colours (JPEG leaves in-between smudges
    along every patch edge, which show as light specks and lines on the model), then clear out stray single specks */
+/* clean every model's texture ahead of time, one at a time, while nobody is mid-wave, so a boss showing up never stutters */
+const CLEANQ = [];
+function queueClean(g) { g.scene.traverse(n => { if (n.isMesh && n.material && n.material.map) CLEANQ.push(n.material.map); }); if (CLEANQ.length && !queueClean.on) { queueClean.on = true; setTimeout(cleanStep, 400); } }
+function cleanStep() { if (!CLEANQ.length) { queueClean.on = false; return; } if (S && S.mode === 'play' && S.active) { setTimeout(cleanStep, 1500); return; } try { cleanMap(CLEANQ.shift()); } catch (e) {} setTimeout(cleanStep, 150); }
+function cleanMap(tex) { if (!tex) return tex; if (!tex.image || !tex.image.width) return seamSafeMips(tex); return tex.userData.cleaned ||= cleanTexture(tex, 12); }   /* a flat-coloured model's texture, cleaned once and shared */
 function cleanTexture(tex, K = 8) {
   const im = tex.image, W = im.width, H = im.height, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d', { willReadFrequently: true }); cx.drawImage(im, 0, 0);
   const img = cx.getImageData(0, 0, W, H), D = img.data, N = W * H, bk = new Map();
@@ -2736,7 +2741,7 @@ function buildModelBoss(t) {
     if (!src.geometry.userData.clean) {   // tidy the model up: smooth shading instead of hard facets, and the wings split out so they can be see-through
       const g0 = src.geometry.index ? src.geometry.toNonIndexed() : src.geometry; toCreasedNormals(g0, 1.25); g0.userData = {}; src.geometry = g0; g0.userData.clean = true;
     }
-    M.clean ||= (src.material.map && src.material.map.image ? cleanTexture(src.material.map) : seamSafeMips(src.material.map, src.geometry));
+    M.clean ||= cleanMap(src.material.map);
     const R = wingRig(src.geometry), mat = std({ map: M.clean, roughness: 0.5, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85), side: THREE.DoubleSide });
     const G = src.geometry; if (!G.userData.wingSplit) {   // body triangles first, wing triangles after, as two draw groups
       const W = G.attributes.skinWeight, n = G.attributes.position.count, isW = t => W.getX(t * 3) > 0.5 && W.getX(t * 3 + 1) > 0.5 && W.getX(t * 3 + 2) > 0.5;
@@ -2865,7 +2870,7 @@ function buildMantisModel() {
 for (const [t, fn] of [['stink', () => buildStinkModel()], ['moth', () => buildMothModel()]]) try { new GLTFLoader().load(BUG_MODELS[t].url, g => { BUG_MODELS[t].gltf = g; const old = MODEL_BUILD[t]; MODEL_BUILD[t] = () => { try { return fn(); } catch (e) { console.warn(t + ' model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.hopper.url, g => { BUG_MODELS.hopper.gltf = g; const old = MODEL_BUILD.hopper; MODEL_BUILD.hopper = () => { try { return buildHopperModel(); } catch (e) { console.warn('hopper model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.mantis.url, g => { BUG_MODELS.mantis.gltf = g; const old = MODEL_BUILD.mantis; MODEL_BUILD.mantis = () => { try { return buildMantisModel(); } catch (e) { console.warn('mantis model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
-for (const t in BOSS_MODELS) try { new GLTFLoader().load(BOSS_MODELS[t].url, g => { BOSS_MODELS[t].gltf = g; const old = BOSS_BUILD[t]; BOSS_BUILD[t] = () => { try { return buildModelBoss(t); } catch (e) { console.warn('boss model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
+for (const t in BOSS_MODELS) try { new GLTFLoader().load(BOSS_MODELS[t].url, g => { if (BOSS_MODELS[t].wings) queueClean(g); BOSS_MODELS[t].gltf = g;   /* only the Hornet: her texture is flat colours, the cleanup bands the painted shading on the others */ const old = BOSS_BUILD[t]; BOSS_BUILD[t] = () => { try { return buildModelBoss(t); } catch (e) { console.warn('boss model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 function catLook(o) { return o.perk ? 'tiger' : 'l' + (o.lv || 1); }
 function attachCatModel(o) {   /* swap a cat tower's built-from-shapes body for the model */
   if (o.mdl || !CATM.gltf) return;
