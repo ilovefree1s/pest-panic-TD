@@ -631,7 +631,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="398">v1.97</div>
+    <div id="ver" data-b="399">v1.98</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -991,6 +991,22 @@ LEVELS[18] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugM
   bosses: [['gbed'], ['gfly'], ['gant'], ['gstink'], ['gmantis', 'herc']],
   routes: [[[2, 10.6], [2, 9], [2, 4], [6, 4], [9, 4], [11, 4], [11, 0], [13, 0], [13, -0.05]],
            [[-0.6, 7], [0, 7], [1, 7], [4, 7], [5, 7], [5, 2], [5, 1], [9, 1], [9, 6], [13, 6], [13, 0], [13, -0.05]]] };
+// the solo boss lineup: waves 5, 10, 15 and 20 each bring a different boss, and every level's finale is led by its own
+// signature boss (12 bosses, 12 levels), with escorts that haven't shown up earlier in that level
+{ const LINEUP = {
+    8:  [['ghop'], ['widow'], ['gant'], ['hornet'], ['queen', 'herc']],             // Level 1  Cafeteria: Roach King
+    0:  [['queen'], ['widow'], ['herc'], ['hornet'], ['gant', 'gbed']],             // Level 2  Grandma's: Ant Queen
+    1:  [['queen'], ['gant'], ['hornet'], ['herc'], ['widow', 'gfly']],             // Level 3  Suburban: Black Widow
+    2:  [['queen'], ['widow'], ['gant'], ['herc'], ['hornet', 'gfly']],             // Level 4  Retro Diner: Hornet Queen
+    3:  [['queen'], ['widow'], ['hornet'], ['gant'], ['gfly', 'herc']],             // Level 5  Beach House: Giant Housefly
+    4:  [['queen'], ['widow'], ['hornet'], ['herc'], ['gbed', 'gant', 'gfly']],     // Level 6  Mansion: Bed Bug Mother
+    9:  [['gcenti'], ['gant'], ['hornet'], ['widow'], ['ghop', 'gbed', 'queen']],   // Level 7  Pizza Parlor: Giant Grasshopper
+    10: [['gstink'], ['gbed'], ['ghop'], ['queen'], ['gcenti', 'gfly', 'herc']],    // Level 8  Cabin: Giant Centipede
+    11: [['gmoth'], ['gant'], ['gcenti'], ['gmantis'], ['gstink', 'gfly', 'ghop']], // Level 9  Bakery: Giant Stink Bug
+    12: [['gmantis'], ['gbed'], ['gcenti'], ['gstink'], ['gmoth', 'ghop', 'herc']], // Level 10 Haunted House: Giant Moth
+  };
+  for (const k in LINEUP) LEVELS[k].bosses = LINEUP[k];
+}
 const CAMPAIGN = 5, TEAM0 = 5, TEAM_MAPS = [5, 6, 7, 13, 14, 15, 16], TEAMN = TEAM_MAPS.length;
 const teamNext = lv => { const k = TEAM_MAPS.indexOf(lv); return k >= 0 && k < TEAM_MAPS.length - 1 ? TEAM_MAPS[k + 1] : null; };
 // the solo houses in play order (the last five come after the team maps in the list)
@@ -6296,7 +6312,8 @@ const BUGINFO = [
 $('gTools').innerHTML = [...SHOP, ...PETS].map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.cost} coins</small>${hitTag(t)}<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies only' : T.air ? 'Hits flies' : 'Ground only'}</span></div><p>${T.d}</p></li>`; }).join('');
 $('gPerks').innerHTML = [...SHOP, ...PETS].filter(t => PERK[t]).map(t => { const P = PERK[t]; return `<li>${ICON[t]}<div class="gh"><b>${P.icon} ${P.name}</b><small>${TT[t].short || TT[t].name} · ${Math.round(TT[t].cost * 1.6)} coins</small></div><p>${P.d}</p></li>`; }).join('');
 $('gItems').innerHTML = ITEMS.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.costs ? T.costs.join(' / ') : T.cost} coins</small><span class="tag">${T.instant ? 'Instant' : T.t === 'crumbs' || t === 'crumbs' ? 'Until eaten' : 'One wave'}</span></div><p>${T.d}</p></li>`; }).join('');
-$('gBugs').innerHTML = BUGINFO.map(([k, n, when, d, eats]) => `<li>${BUGICON[k]}<div class="gh"><b>${n}</b><span class="tag">${when}</span><span class="tag no">Eats ${eats}</span></div><p>${d}</p></li>`).join('');
+const finaleOf = k => { const i = SOLO.findIndex(lv => { const B = LEVELS[lv].bosses; return B && B[B.length - 1][0] === k; }); return i < 0 ? null : 'Final boss, Level ' + (i + 1); };
+$('gBugs').innerHTML = BUGINFO.map(([k, n, when, d, eats]) => [k, n, BT[k] && BT[k].boss ? finaleOf(k) || 'Boss' : when, d, eats]).map(([k, n, when, d, eats]) => `<li>${BUGICON[k]}<div class="gh"><b>${n}</b><span class="tag">${when}</span><span class="tag no">Eats ${eats}</span></div><p>${d}</p></li>`).join('');
 let guideFrom = null;
 function openGuide(from) {
   guideFrom = from;
