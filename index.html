@@ -631,7 +631,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="397">v1.96</div>
+    <div id="ver" data-b="398">v1.97</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -982,10 +982,19 @@ LEVELS[15] = { ...LEVELS[6], bossMul: null, bugMulAfter: [5, 1.2], bossMulW: { 2
 LEVELS[16] = { ...LEVELS[6], bossMul: null, name: 'Snake Pit', sub: 'Medium', intro: 'Both trails twist through their halves, then the right one climbs the middle to join the left. Guard the middle!',
   routes: [[[2, 10.6], [2, 9], [0, 9], [0, 0], [4, 0], [4, 5], [3, 5], [3, 7], [8, 7], [8, 3], [10, 3], [10, -0.05]],
            [[20.6, 7], [20, 7], [20, 9], [17, 9], [17, 7], [15, 7], [15, 4], [18, 4], [18, 1], [12, 1], [12, 6], [10, 6], [10, -0.05]]] };
+// Levels 11 and 12: drawn in the Trail Builder, the cake moved to the back corners
+LEVELS[17] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Crossroads', sub: 'Two long trails that cross', intro: 'Two doors, two long trails that cross in the middle, and the cake in the back-left corner.', hp: 1.7, money: 225, cakeCol: 1,
+  bosses: [['gant'], ['gbed'], ['gfly'], ['gmoth'], ['herc', 'gcenti']],
+  routes: [[[-0.6, 8], [0, 8], [11, 8], [11, 5], [11, 4], [11, 3], [7, 3], [1, 3], [1, 0], [1, -0.05]],
+           [[13.6, 7], [13, 7], [2, 7], [2, 4], [7, 4], [8, 4], [8, 0], [1, 0], [1, -0.05]]] };
+LEVELS[18] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Last Stand', sub: 'The final kitchen', intro: 'A short sprint from the front door and a long winding trail, both racing for the cake in the back-right corner. Good luck.', hp: 1.8, money: 235, cakeCol: 13,
+  bosses: [['gbed'], ['gfly'], ['gant'], ['gstink'], ['gmantis', 'herc']],
+  routes: [[[2, 10.6], [2, 9], [2, 4], [6, 4], [9, 4], [11, 4], [11, 0], [13, 0], [13, -0.05]],
+           [[-0.6, 7], [0, 7], [1, 7], [4, 7], [5, 7], [5, 2], [5, 1], [9, 1], [9, 6], [13, 6], [13, 0], [13, -0.05]]] };
 const CAMPAIGN = 5, TEAM0 = 5, TEAM_MAPS = [5, 6, 7, 13, 14, 15, 16], TEAMN = TEAM_MAPS.length;
 const teamNext = lv => { const k = TEAM_MAPS.indexOf(lv); return k >= 0 && k < TEAM_MAPS.length - 1 ? TEAM_MAPS[k + 1] : null; };
 // the solo houses in play order (the last five come after the team maps in the list)
-const SOLO = [8, 0, 1, 2, 3, 4, 9, 10, 11, 12];   /* School Cafeteria opens the game; Grandma's Kitchen is Level 2 */
+const SOLO = [8, 0, 1, 2, 3, 4, 9, 10, 11, 12, 17, 18];   /* School Cafeteria opens the game; Grandma's Kitchen is Level 2 */
 const soloNum = lv => SOLO.indexOf(lv) + 1, soloNext = lv => { const i = SOLO.indexOf(lv); return i >= 0 && i < SOLO.length - 1 ? SOLO[i + 1] : null; };
 let TEAM_LV = TEAM0;
 const TEAM_ALL_OPEN = true;   // testing: every Team Kitchen map is open (set to false to bring back the unlock order)
@@ -1182,7 +1191,19 @@ function buildCounterProps() {
 HOUSES[13] = { ...HOUSES[2], name: 'Retro Diner' }; PROP_LAYOUT[13] = PROP_LAYOUT[6]; LEVELS[13].hp = (LEVELS[13].hp || 1) * 1.1;   // Retro Diner bugs +10%
 HOUSES[14] = { ...HOUSES[9] }; PROP_LAYOUT[14] = PROP_LAYOUT[6];
 HOUSES[15] = { ...HOUSES[10] }; PROP_LAYOUT[15] = PROP_LAYOUT[6];   // The Pretzel: cabin look
-HOUSES[16] = { ...HOUSES[11] }; PROP_LAYOUT[16] = PROP_LAYOUT[6];   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
+HOUSES[16] = { ...HOUSES[11] }; PROP_LAYOUT[16] = PROP_LAYOUT[6];
+HOUSES[17] = { name: 'Farmhouse', bg: '#120e0a',   // Level 11: barn-red cabinets, wide oak boards, butcher-block counters
+  floor: { style: 'plank', a: [156, 110, 66], b: [134, 92, 54], grout: '#3a2614', seed: 47 },
+  cab: { base: '#b0402c', handle: '#2a2420' }, side: '#8a3222', kick: '#3a1a12', top: '#c89a62', wall: '#efe4c8', trim: '#5a3a22',
+  fridge: { color: '#f2ead6', metal: 0.1, rough: 0.35 }, stove: { color: '#1c1d22', metal: 0.6 }, handle: '#2a2420',
+  rooms: { living: '#a07a5a', bed: '#8a9a6a', couch: '#6a7a4a', rug: '#a8422e', blanket: '#e8d2a0', wood: '#6a4426', paint: '#e8dcc0', hall: '#9a6a42' } };
+PROP_LAYOUT[17] = PROP_LAYOUT[1];
+HOUSES[18] = { name: 'Castle Kitchen', bg: '#0b0a09',   // Level 12: grey stone floor, dark oak, gold fittings
+  floor: { style: 'marble', a: [104, 100, 94], b: [88, 84, 78], grout: '#2a2622', vein: 'rgba(220,214,200,.28)', seed: 53 },
+  cab: { base: '#4a3424', handle: '#d4a832' }, side: '#3a2a1c', kick: '#1a120c', top: '#6e6a64', wall: '#8e877a', trim: '#2a1e14',
+  fridge: { color: '#3a3c42', metal: 0.8, rough: 0.3 }, stove: { color: '#1c1d22', metal: 0.7 }, handle: '#d4a832',
+  rooms: { living: '#5a4a3a', bed: '#4a3a4a', couch: '#6a2a2a', rug: '#7a1e22', blanket: '#c9a227', wood: '#3a2618', paint: '#7a7266', hall: '#4a3422' } };
+PROP_LAYOUT[18] = PROP_LAYOUT[4];   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
 const houseTex = {};
 function smallSpots(i, L) {   /* free spots on the counters for the little things: away from the big props, the fridge, the stove, the cake and the cat bed; the same every time for a given kitchen */
   let seed = 9001 + i * 7919; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
