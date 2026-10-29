@@ -633,7 +633,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="402">v1.01</div>
+    <div id="ver" data-b="403">v1.02</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4394,7 +4394,7 @@ const BT = {
   gant:   { hp: 1600, spd: 1.15, gold: 150, lives: 5, armor: 2, boss: true, name: 'Ant Queen', sub: 'Her Royal Guard shields her: squash the soldier ants first', goo: [0.62, 0.16, 0.1] },
   gfly:   { hp: 2200, spd: 1.6, gold: 150, lives: 5, fly: true, boss: true, name: 'Giant Housefly', sub: 'She zig-zags, so swats and tongues can miss', goo: [0.5, 0.82, 0.22] },
   gbed:   { hp: 1800, spd: 1.4, gold: 150, lives: 5, armor: 1, boss: true, name: 'Bed Bug Mother', sub: 'Tools she walks past get itchy and swing wild', goo: [0.55, 0.12, 0.08] },
-  queen:  { hp: 1260, spd: 1.15, gold: 100, lives: 5, armor: 3, boss: true, name: 'Roach King', sub: 'He is heading for the cake', goo: [0.42, 0.24, 0.1] },
+  queen:  { hp: 1260, spd: 1.15, gold: 100, lives: 5, armor: 3, boss: true, name: 'Roach King', sub: 'Hit him hard and he skitters under the counter', goo: [0.42, 0.24, 0.1] },
 };
 const BOSS_AT = { 5: ['queen'], 10: ['widow'], 15: ['hornet'], 20: ['hornet', 'widow', 'queen'] };
 // the finale (wave 25) brings them all, each a bit lighter so the total stays fair
@@ -4558,6 +4558,7 @@ function hit(b, d, raw) {
   if (b.dead) return;
   if (b.t === 'centi' && !b.lead) { let f = null; for (const c of S.bugs) if (!c.dead && c.lead === b) { f = c; break; } if (f) { hit(f, d, raw); b.flash = f.flash; return; } }   /* a regular centipede's head passes every hit back to the segment behind it: the head goes last */
   if (S.net === 'guest') { if (!raw) { b.flash = 0.08; if (b.ball && b.ball.hp > 0) b.ball.flash = 0.08; } return; }
+  if (b.hid) return;   // under the counter: out of reach
   if (b.t === 'gfly' && b.darting && (CUR_SRC === 'swat' || CUR_SRC === 'frog') && Math.random() < 0.5) { if (S.mode === 'play' && Math.random() < 0.5) FX.smoke.spawn({ x: b.x, y: bugY(b) + 1, z: b.z, vy: 1, life: 0.35, s0: 0.5, s1: 1.2, c: [0.9, 0.9, 0.9], a0: 0.5 }); return; }   /* she darted: missed */
   d *= S.dmgMul * (1 + CUR_AMP);
   if (b.t === 'gant' && b.guards && b.guards.some(g => !g.dead)) { d *= 0.3; if (Math.random() < 0.15) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 2, y: 1.2 + Math.random(), z: b.z + (Math.random() - 0.5) * 2, vy: 0.6, life: 0.4, s0: 0.6, s1: 0.1, c: [1, 0.85, 0.3], a0: 1 }); }   /* her Royal Guard shields her */
@@ -4569,6 +4570,13 @@ function hit(b, d, raw) {
   if (b.hp <= 0) kill(b);
   else if (b.clutch && b.hp / b.max < b.clutch / 3) { b.clutch--; layClutch(b); }
   else if (b.t === 'gant' && !b.resummon && b.hp / b.max < 0.5) { b.resummon = 1; royalGuard(b); }
+  else if (b.t === 'queen' && !b.sk && S.net !== 'guest' && (b.skN || 0) < 3 && b.hp / b.max < [0.75, 0.5, 0.25][b.skN || 0]) { b.skN = (b.skN || 0) + 1; skitter(b); }
+}
+// Roach King: at 75%, 50% and 25% health he panics like a real roach, dashes under the nearest counter, hides for 2 seconds, then comes back
+function skitter(b) {
+  const L = X0 - 1.2, R = X0 + COLS * CS + 1.2, T = Z0 - 1.2, opts = [[L, b.z, b.x - X0], [R, b.z, X0 + COLS * CS - b.x], [b.x, T, b.z - Z0]].sort((p, q) => p[2] - q[2]);
+  b.sk = { ph: 'out', t: 0, tx: opts[0][0], tz: opts[0][1], rx: b.x, rz: b.z };
+  if (S.mode === 'play' && !S.skMsg) { S.skMsg = 1; banner('Skitter!', 'The Roach King ran under the counter. He\'s back in 2 seconds', false, 1500); }
 }
 // Ant Queen: four big soldier ants march in a ring around her; while any are alive she takes 70% less damage
 function royalGuard(q) {
@@ -4630,7 +4638,7 @@ function biteCake(n) {
   SND.play('bite');
 }
 function inRange(tw, b, r) { const dx = b.x - tw.x, dz = b.z - tw.z; return dx * dx + dz * dz <= r * r; }
-function canHit(tw, b) { return !b.dead && (TT[tw.t].air || !(BT[b.t].fly || b.air)); }
+function canHit(tw, b) { return !b.dead && !b.hid && (TT[tw.t].air || !(BT[b.t].fly || b.air)); }
 // Bug Spray aims at the lead bug that isn't poisoned yet (on a boss: one this spray hasn't dosed), so nothing slips by unsprayed
 const SPRAY_SPLASH = 1.4;
 function sprayTarget(tw, r) {
@@ -4994,6 +5002,7 @@ function update(dt) {
     if (b.sweptT > 0) b.sweptT -= dt; if (b.gustT > 0) b.gustT -= dt; if (b.windT > 0) { b.windT -= dt; sp *= b.windF || 1; }
     if ((b.dnT = (b.dnT || 0) - dt) <= 0 && (b.dn >= 1 || b.dr >= 1 || b.db >= 1)) flushDmg(b);
     if (b.mdl || b.t === 'fly') sp = specialMove(b, sp, dt);
+    if (b.sk) sp = 0;   // skittering: he doesn't move along the trail
     if (b.push > 0) { const d = Math.min(b.push, dt * 16); b.push -= d; b.s = Math.max(0, b.s - d); sp = 0; b.walk += dt * 20; }
     if (b.needGuard && S.net !== 'guest') { b.needGuard = 0; royalGuard(b); }
     if (b.guard) { if (b.guard.dead) b.guard = null; else { b.gph += dt * 1.4; b.s = Math.max(0, b.guard.s + Math.cos(b.gph) * 3.1); b.off = Math.sin(b.gph) * 2.6; sp = 0; b.walk += dt * 9; b.push = 0; } }   // a soldier ant marching in a ring around its queen
@@ -5008,6 +5017,15 @@ function update(dt) {
     b.flash -= dt; b.s += sp * dt; b.walk += (b.jump > 0 ? 0 : sp) * dt * 2.6;   // no leg-flailing mid-jump
     if (S.net === 'guest' && b.gx != null) { const k = Math.min(1, dt * 10); b.x += (b.gx - b.x) * k; b.z += (b.gz - b.z) * k; b.y0 = 0; b.hy = 1; b.walk += dt * 6; continue; }
     if (S.net === 'guest' && (BT[b.t].base || b.t) === 'hopper') { b.hy += ((b.ghy || 0) - (b.hy || 0)) * Math.min(1, dt * 12); b.air = b.hy > 0.2; }
+    if (b.sk) {   // the skitter: dash out to the counter, hide under it, dash back to the same spot on the trail
+      const k = b.sk; k.t += dt; b.walk += dt * 16;
+      if (k.ph === 'hide') { if (k.t >= 2) { k.ph = 'back'; b.hid = false; for (let i = 0; i < 6; i++) FX.smoke.spawn({ x: b.x, y: 0.3, z: b.z, vx: (Math.random() - 0.5) * 3, vy: 0.5, vz: (Math.random() - 0.5) * 3, drag: 3, life: 0.5, s0: 0.5, s1: 1.4, c: [0.8, 0.75, 0.65], a0: 0.4 }); } continue; }
+      const tx = k.ph === 'out' ? k.tx : k.rx, tz = k.ph === 'out' ? k.tz : k.rz, mx = tx - b.x, mz = tz - b.z, md = Math.hypot(mx, mz), st = 13 * dt;
+      b.ang = Math.atan2(mx, mz); b.y0 = 0; b.pitch = 0;
+      if (md <= st) { b.x = tx; b.z = tz; if (k.ph === 'out') { k.ph = 'hide'; k.t = 0; b.hid = true; } else b.sk = null; }
+      else { b.x += mx / md * st; b.z += mz / md * st; }
+      continue;
+    }
     if (b.free) { if (b.fx === undefined) { b.fx = b.x; b.fz = b.z; } mothFree(b, dt); if (b.free) continue; b.fx = undefined; }
     pathAt(b.s, tmpP, b.route);
     b.x = tmpP.x + tmpP.px * b.off; b.z = tmpP.z + tmpP.pz * b.off; b.y0 = tmpP.y;
@@ -5471,6 +5489,7 @@ function drawBugs(t) {
         if (Math.abs(b.pitch) < 0.3) sh.add(tmpB.x, b.y0 + 0.02, tmpB.z, 1.6, 0, 0, 0, 0, 0.45);
       }
     } else if (b.mesh) {
+      if (b.hid) { b.mesh.visible = false; continue; } b.mesh.visible = true;
       const q = b.mesh, u = q.userData, fy = BT[b.t].fly; q.position.set(b.x, b.y0 + (fy ? 1.6 + Math.sin(b.walk * 0.9) * 0.2 : 0), b.z); q.rotation.set(b.pitch, b.ang, fy ? Math.sin(b.walk * 0.5) * 0.08 : 0, 'YXZ');
       if (u.wings) {
         if (BT[b.t].base === 'moth') { const landed = b.free && b.free.phase === 'land'; u.wings.forEach((w, k) => { w.rotation.z = (landed ? 0.5 + Math.sin(t * 3 + k) * 0.12 : 0.15 + Math.sin(t * 13 + b.id + k * 0.3) * 0.7) * w.userData.s; }); }   /* giant moth: big slow wingbeats in the air; on a candle the wings settle up and just twitch */
@@ -5838,6 +5857,7 @@ function drawBars() {
   BARS.begin();
   if (S.mode === 'play' || S.mode === 'over') for (const b of S.bugs) {
     if (b.dead) continue;
+    if (b.hid) continue;
     if (BT[b.t].boss && !BT[b.t].segs) {   // bosses: a wider bar that always shows
       const k = Math.max(0, b.hp / b.max), y = BT[b.t].fly ? b.y0 + 7.0 : b.y0 + (b.t === 'widow' ? 5.6 : 4.6);
       BARS.bar(b.x, y, b.z, 4.2, 0.42, k, 0.78, 0.06, 0.05);
@@ -6307,7 +6327,7 @@ const BUGINFO = [
   ['gant', 'Ant Queen', 'Boss', 'A crowned queen surrounded by her Royal Guard: four big soldier ants marching in a ring around her. While any guard is alive she takes 70% less damage, so squash the guards first. At half health a new guard marches in.', '5 slices'],
   ['gfly', 'Giant Housefly', 'Boss', 'Flies, and zig-zags from side to side of the trail. While she darts, the Fly Swatter and Frog miss half the time and the Magnifying Glass can\'t build up its burn. Bug Spray, the Zapper and the Fan don\'t care.', '5 slices'],
   ['gbed', 'Bed Bug Mother', 'Boss', 'Every tool she walks close to gets itchy for 4 seconds and swings at random bugs in reach instead of the front of the line. Keep some tools away from her trail.', '5 slices'],
-  ['queen', 'Roach King', 'Boss, waves 5 and 25', 'Huge health and a shell that blocks about a quarter of every hit. Every tool can take him down: stack sprays, slam him with Newspapers, zap him, smack him, or cook him with a Magnifying Glass.', '5 slices'],
+  ['queen', 'Roach King', 'Boss', 'Huge health and a shell that blocks about a quarter of every hit. At three-quarters, half and a quarter health he panics like a real roach: he dashes under the nearest counter, hides for 2 seconds where nothing can hit him, then runs back to the trail.', '5 slices'],
   ['widow', 'Black Widow', 'Boss, waves 10 and 25', 'Big and tough, with a shell that blocks a little of every hit. At two-thirds and one-third health she lays a clutch of 6 fast little spiderlings behind her, so keep some area damage around.', '5 slices'],
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 25', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
   ['herc', 'Hercules Beetle', 'Boss, wave 20 on some houses', 'A huge horned beetle with the thickest shell in the house (it blocks 40% of every hit), and nothing slows it down: no sticky traps, no stuns. Poison, fog and the Magnifying Glass burn right through the shell.', '5 slices'],
