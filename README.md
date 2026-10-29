@@ -4,9 +4,13 @@ A 3D kitchen tower defense game. Bugs march along a sugar trail toward the birth
 
 **Play:** https://ilovefree1s.github.io/pest-panic-td/
 
-- 5 houses, 20 waves each, with bosses every 5th wave (Roach Queen, Black Widow, Hornet Queen)
+- 12 houses, 25 waves each, with a boss every 5th wave and a different final boss on every level
 - Endless mode, star ratings and achievements
 - Works on phones (portrait or landscape) and can be installed: in Chrome, open the menu and choose **Install app** / **Add to Home screen**
 - Plays offline once it has loaded
 
-Current version: v1.03 (build 404). Built with [three.js](https://threejs.org).
+Current version: v1.04 (build 405). Built with [three.js](https://threejs.org).
+
+## Copyright
+
+© 2026 Pest Panic Defense. All rights reserved. The game's code, art, 3D models, sounds, levels and design may not be copied, reused, modified or redistributed without written permission. See [LICENSE](LICENSE).

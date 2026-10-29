@@ -1,0 +1,16 @@
+Copyright (c) 2026 Pest Panic Defense. All rights reserved.
+
+This repository and everything in it (the game's source code, artwork, 3D models,
+textures, sounds, level designs, text and overall design) are the property of
+Pest Panic Defense.
+
+No permission is granted to copy, reproduce, modify, merge, publish, distribute,
+sublicense, sell, host, or create derivative works from any part of this
+repository, in whole or in part, without prior written permission from the owner.
+
+You may play the game at its official address for personal, non-commercial
+enjoyment. Viewing the code because it is publicly visible does not grant any
+license to use it.
+
+Third-party components keep their own licenses: three.js is used under the
+MIT License (https://github.com/mrdoob/three.js/blob/dev/LICENSE).
