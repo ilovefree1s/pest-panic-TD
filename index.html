@@ -620,7 +620,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 @media (max-width:700px){#undo{top:102px} #stageTag{top:98px}}
 @media (orientation:landscape) and (max-height:560px){#undo{top:60px} #stageTag{top:16px;left:auto;right:226px;transform:none}}   /* phones sideways: just left of the round buttons, clear of the wave counter */
 /* menus opened mid-game (Settings, backup, field guide) cover the whole screen: hide the tool tray behind them */
-body:has(#settings:not([hidden])) #tray,body:has(#backup:not([hidden])) #tray,body:has(#guide:not([hidden])) #tray{visibility:hidden}
+body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,body:has(#backup:not([hidden])) #tray,body:has(#guide:not([hidden])) #tray{visibility:hidden}
 </style>
 </head>
 <body>
@@ -646,7 +646,7 @@ body:has(#settings:not([hidden])) #tray,body:has(#backup:not([hidden])) #tray,bo
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="415">v1.14</div>
+    <div id="ver" data-b="418">v1.17</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -806,6 +806,7 @@ body:has(#settings:not([hidden])) #tray,body:has(#backup:not([hidden])) #tray,bo
       <button class="btn" id="resume" type="button">Resume</button>
       <button class="btn dark" id="setP" type="button">Settings</button>
       <button class="btn dark" id="guideP" type="button">Field guide</button>
+      <button class="btn dark" id="shinyP" type="button">✨ Shiny collection</button>
       <button class="btn dark" id="restart" type="button">Restart level</button>
       <button class="btn dark" id="quit" type="button">Quit to main menu</button>
       <p class="lstat" id="quitNote"></p>
@@ -3153,9 +3154,12 @@ function renderDex() {
   $('shBoss').innerHTML = DEX_BOSS.map(slot).join('');
   renderLocker();
 }
-$('shinyT').addEventListener('click', () => { SND.init(); SND.play('tap'); renderDex(); setTimeout(lockerPreview, 30); $('title').hidden = true; $('shinies').hidden = false; $('shinies').scrollTop = 0; });
+let shinyFrom = 'title';
+function openShinies(from) { SND.init(); SND.play('tap'); shinyFrom = from; renderDex(); setTimeout(lockerPreview, 30); $(from).hidden = true; $('shinies').hidden = false; $('shinies').scrollTop = 0; }
+$('shinyT').addEventListener('click', () => openShinies('title'));
+$('shinyP').addEventListener('click', () => openShinies('paused'));   /* mid-game, from the pause menu: just caught one? go look */
 $('locker').addEventListener('click', ev => { const b = ev.target.closest('.lk'); if (!b || b.disabled) return; SND.play('tap'); setLook(b.dataset.slot, b.dataset.v); });
-$('shBack').addEventListener('click', () => { SND.play('tap'); $('shinies').hidden = true; $('title').hidden = false; });
+$('shBack').addEventListener('click', () => { SND.play('tap'); $('shinies').hidden = true; $(shinyFrom).hidden = false; });
 function makeShiny(b) {
   b.shiny = true;
   if (S.speed > 1 && S.net !== 'guest') { S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }   /* back to 1× so there's time to catch it */
@@ -4328,7 +4332,7 @@ const SND = (() => {
     sprayStart: () => {   /* a steady psssssht held while he sprays */
       if (SPRAY_SRC) return; const t = ac.currentTime, src = ac.createBufferSource(), f = ac.createBiquadFilter(), f2 = ac.createBiquadFilter(), g = ac.createGain();
       src.buffer = noise; src.loop = true; f.type = 'highpass'; f.frequency.value = 3800; f.Q.value = 0.5; f2.type = 'lowpass'; f2.frequency.value = 9000;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.2, t + 0.06); src.connect(f).connect(f2).connect(g).connect(out); src.start(t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.11, t + 0.06); src.connect(f).connect(f2).connect(g).connect(out); src.start(t);
       SPRAY_SRC = { src, g }; setTimeout(() => { if (SPRAY_SRC && SPRAY_SRC.src === src) P.sprayStop(); }, 8000);   // never left hissing
     },
     sprayStop: () => { if (!SPRAY_SRC) return; const { src, g } = SPRAY_SRC, t = ac.currentTime; SPRAY_SRC = null; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(Math.max(0.0001, g.gain.value), t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25); src.stop(t + 0.3); },
@@ -8459,7 +8463,11 @@ try { setupDaily(); } catch (e) { console.warn('daily', e); }
 const MQ_SIDE = matchMedia('(orientation:landscape) and (max-height:560px)');
 function placeStageTag() {
   const el = $('stageTag'); if (!el) return;
-  if (!MQ_SIDE.matches || $('hud').hidden) { el.style.left = el.style.right = el.style.transform = el.style.top = ''; el.style.visibility = ''; return; }
+  if (!MQ_SIDE.matches || $('hud').hidden) {
+    el.style.left = el.style.right = el.style.transform = el.style.top = ''; el.style.visibility = '';
+    const q = $('queen'); if (q && !q.hidden && !el.hidden) { const a = el.getBoundingClientRect(), b = q.getBoundingClientRect(), sg = stage.getBoundingClientRect(); if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) el.style.top = Math.round(b.bottom - sg.top + 6) + 'px'; }   /* a boss health bar is up there: step below it */
+    return;
+  }
   const st = document.querySelector('#hud .stats').getBoundingClientRect(), ctl = document.querySelector('#hud .ctl').getBoundingClientRect(), sg = stage.getBoundingClientRect(), w = el.offsetWidth, gap = ctl.left - st.right - 16;
   el.style.visibility = $('undo').hidden === false && w > gap ? 'hidden' : '';   /* when it has to drop down, the Undo pill gets that spot while it shows */
   if (w > gap) { el.style.left = 'auto'; el.style.right = Math.round(sg.right - ctl.right) + 'px'; el.style.transform = 'none'; const bl = $('belt'), bb = bl && !bl.classList.contains('off') ? bl.getBoundingClientRect() : null; el.style.top = Math.round(Math.max(ctl.bottom, bb && bb.height ? bb.bottom : 0) - sg.top + 6) + 'px'; return; }   // no room up top: tuck it under the round buttons
