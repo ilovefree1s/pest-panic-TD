@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="422">v1.21</div>
+    <div id="ver" data-b="424">v1.23</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3440,7 +3440,7 @@ const TT = {
 };
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.0, 2.7, 3.4], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
-TT.fan = { name: 'Desk Fan', short: 'Fan', cost: 60, air: true, fliesOnly: true, range: [4.4, 4.8, 5.2], dmg: [3, 5, 8], push: [2.0, 2.7, 3.4], slow: [0.75, 0.7, 0.62], rate: [3.0, 2.7, 2.4],
+TT.fan = { name: 'Desk Fan', short: 'Fan', cost: 60, air: true, fliesOnly: true, range: [4.6, 5.0, 5.4], dmg: [5, 8, 12], push: [2.2, 3.0, 3.75], slow: [0.75, 0.7, 0.62], rate: [3.0, 2.7, 2.4],
   d: 'A little desk fan that sweeps side to side. Its breeze slows every fly in reach, and every few seconds a strong gust blows them back up the trail so they have to fly past your other tools again. Barely hurts them. Each fly can only be gusted once every few seconds. Flying bosses just slow down a little. Can\'t reach crawling bugs.' };
 TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [58, 98, 155], dot: [19, 31, 50], rate: [2.2, 2.0, 1.7],
   d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every bug in the cone, flies too, takes a big hit and keeps choking for 2 seconds. The fog ignores shells, so it melts bosses. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
@@ -4585,9 +4585,10 @@ function startWave0() {
   if (rush) S.qTotal = S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0) + S.bugs.filter(b => b.mesh && !b.dead).reduce((a, b) => a + b.max, 0);
   // one of each boss = the final trio; two of the same one (Team Kitchen doubles them) get a pair name
   const trio = new Set(bq).size > 1, pair = !trio && bq.length > 1, six = trio && bq.length > 3 && !!(LEVELS[LV] && LEVELS[LV].team);
-  const PAIR = { herc: 'Beetle Brothers', queen: 'Roach Twins', widow: 'Widow Sisters', hornet: 'Hornet Sisters', ghop: 'Grasshopper Twins', gcenti: 'Centipede Twins', gstink: 'Stink Twins', gmoth: 'Moth Sisters', gmantis: 'Mantis Twins' };
+  const PAIR = { gant: 'Ant Queens', gfly: 'Housefly Sisters', gbed: 'Bed Bug Mothers', herc: 'Beetle Brothers', queen: 'Roach Twins', widow: 'Widow Sisters', hornet: 'Hornet Sisters', ghop: 'Grasshopper Twins', gcenti: 'Centipede Twins', gstink: 'Stink Twins', gmoth: 'Moth Sisters', gmantis: 'Mantis Twins' };
   const kinds = [...new Set(bq)], NUM = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
-  const bname = bb ? (trio ? (six ? 'All six bosses' : 'All ' + NUM[kinds.length] + ' bosses') : pair ? PAIR[bq[0]] || bb.name : bb.name) : '';
+  const andList = a => a.length < 3 ? a.join(' & ') : a.slice(0, -1).join(', ') + ' & ' + a[a.length - 1];
+  const bname = bb ? (trio ? (six ? 'All six bosses' : andList(kinds.map(t => BT[t].name))) : pair ? PAIR[bq[0]] || bb.name : bb.name) : '';   /* a boss team: name them (Hornet Queen & Giant Housefly) */
   const finalSub = kinds.map(t => BT[t].name).join(', ').replace(/, ([^,]*)$/, ' and $1') + '. Final wave!';
   if (bb) $('qname').textContent = bname.toUpperCase();
   renderShop();
@@ -5227,7 +5228,8 @@ function itemsAct(dt) {
   }
 }
 const UNLOCK_AT = { frog: 1, venus: 1, fan: 2, cat: 2, fogger: 3 };   /* solo story: frog and fly trap at level 2, desk fan and cat at 3, fogger at 4 */
-function toolLocked(t) { return !!UNLOCK_AT[t] && !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < UNLOCK_AT[t]; }
+function toolLocked(t) { if (t === 'fogger' && S && LV === DAILY_LV && LEVELS[DAILY_LV] && LEVELS[DAILY_LV].day > '2026-10-30') return true;   /* the Fogger is too strong for the Daily Kitchen (from 31 Oct) */
+  return !!UNLOCK_AT[t] && !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < UNLOCK_AT[t]; }
 function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (TT[t].oneKitchen || (o.owner || 0) === (S.cur || 0)))); }   /* cat and flytrap: one in the whole kitchen, whoever bought it */
 /* ghost tools: tap a spot when you're short on coins and a see-through tool waits there; the moment you can afford it, it gets bought and built */
 const GHOST_MAX = 3, GHOST_MESH = new Map();
