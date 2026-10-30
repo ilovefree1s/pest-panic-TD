@@ -646,7 +646,7 @@ body:has(#settings:not([hidden])) #tray,body:has(#backup:not([hidden])) #tray,bo
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="414">v1.13</div>
+    <div id="ver" data-b="415">v1.14</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8454,6 +8454,18 @@ function step(now, draw) {
   if (draw) try { composer.render(); } catch (e) { showErr('render', e); }
 }
 try { setupDaily(); } catch (e) { console.warn('daily', e); }
+/* phones held sideways: the level name sits in the gap between the stat pills and the round buttons; the pills grow (license bonus, big coin counts),
+   so measure the gap and center the name in it, or hide it when it doesn't fit */
+const MQ_SIDE = matchMedia('(orientation:landscape) and (max-height:560px)');
+function placeStageTag() {
+  const el = $('stageTag'); if (!el) return;
+  if (!MQ_SIDE.matches || $('hud').hidden) { el.style.left = el.style.right = el.style.transform = el.style.top = ''; el.style.visibility = ''; return; }
+  const st = document.querySelector('#hud .stats').getBoundingClientRect(), ctl = document.querySelector('#hud .ctl').getBoundingClientRect(), sg = stage.getBoundingClientRect(), w = el.offsetWidth, gap = ctl.left - st.right - 16;
+  el.style.visibility = $('undo').hidden === false && w > gap ? 'hidden' : '';   /* when it has to drop down, the Undo pill gets that spot while it shows */
+  if (w > gap) { el.style.left = 'auto'; el.style.right = Math.round(sg.right - ctl.right) + 'px'; el.style.transform = 'none'; const bl = $('belt'), bb = bl && !bl.classList.contains('off') ? bl.getBoundingClientRect() : null; el.style.top = Math.round(Math.max(ctl.bottom, bb && bb.height ? bb.bottom : 0) - sg.top + 6) + 'px'; return; }   // no room up top: tuck it under the round buttons
+  el.style.top = ''; el.style.right = 'auto'; el.style.transform = 'none'; el.style.left = Math.round(st.right - sg.left + 8 + (gap - w) / 2) + 'px';
+}
+setInterval(placeStageTag, 400); addEventListener('resize', placeStageTag);
 syncSnd();
 toTitle();
 resize();
