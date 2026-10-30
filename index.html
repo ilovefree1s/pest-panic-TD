@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="426">v1.25</div>
+    <div id="ver" data-b="427">v1.26</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -923,8 +923,9 @@ sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
 scene.add(sun, sun.target);
 
 // if the phone's browser drops the 3D view, say so and offer a reload instead of leaving a black screen
-canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); const el = $('glLost'); if (el) el.hidden = false; });
-canvas.addEventListener('webglcontextrestored', () => { const el = $('glLost'); if (el) el.hidden = true; });
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); try { saveRun(); } catch (er) {} const el = $('glLost'); if (el) el.hidden = false; });
+/* phones also wipe the painted floor, trail and cabinet pictures while the game sits in the background, so a "restored" view comes back black: restart into the saved run instead */
+canvas.addEventListener('webglcontextrestored', () => { try { saveRun(); } catch (er) {} location.reload(); });
 const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { samples: 4, type: THREE.HalfFloatType }));   /* the glow pass draws to an offscreen image first; give it edge smoothing (MSAA) so outlines aren't jagged */
 composer.addPass(new RenderPass(scene, camera));
 // safety net: a single broken pixel (NaN / infinity from any effect) gets smeared by the glow into a big black block over the kitchen.
@@ -8478,7 +8479,8 @@ function placeStageTag() {
   const el = $('stageTag'); if (!el) return;
   if (!MQ_SIDE.matches || $('hud').hidden) {
     el.style.left = el.style.right = el.style.transform = el.style.top = ''; el.style.visibility = '';
-    const q = $('queen'); if (q && !q.hidden && !el.hidden) { const a = el.getBoundingClientRect(), b = q.getBoundingClientRect(), sg = stage.getBoundingClientRect(); if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) el.style.top = Math.round(b.bottom - sg.top + 6) + 'px'; }   /* a boss health bar is up there: step below it */
+    const sg = stage.getBoundingClientRect(); if (el.hidden) return;
+    for (const id of ['belt', 'queen']) { const q = $(id); if (!q || q.hidden || q.classList.contains('off')) continue; const a = el.getBoundingClientRect(), b = q.getBoundingClientRect(); if (b.height && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) el.style.top = Math.round(b.bottom - sg.top + 6) + 'px'; }   /* the next-bugs belt or a boss bar is up there: step below it */
     return;
   }
   const st = document.querySelector('#hud .stats').getBoundingClientRect(), ctl = document.querySelector('#hud .ctl').getBoundingClientRect(), sg = stage.getBoundingClientRect(), w = el.offsetWidth, gap = ctl.left - st.right - 16;
