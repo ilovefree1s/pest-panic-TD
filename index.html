@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="425">v1.24</div>
+    <div id="ver" data-b="426">v1.25</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1251,7 +1251,8 @@ HOUSES[18] = { name: 'Castle Kitchen', bg: '#0b0a09',   // Level 12: grey stone 
 PROP_LAYOUT[18] = PROP_LAYOUT[4];
 // ---------------------------------------------------------------- Daily Kitchen: a fresh random kitchen every day, the same for everyone
 const DAILY_LV = 19, DAILY_LIVES = 10;
-const dailyDay = () => new Date().toISOString().slice(0, 10);   // UTC date, so the whole world shares one board
+const etDate = t => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(t);   // YYYY-MM-DD in US Eastern time
+const dailyDay = () => etDate(new Date());   // one board for everyone, and the new kitchen arrives at midnight Eastern
 function dayHash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
 /* a random trail: walk back from the cake on the top row in straight runs of 2-5 tiles, never touching itself, until it leaves through a wall */
 function genTrail(r, cake, taken, minLen, maxLen, joinTo) {
@@ -7690,7 +7691,7 @@ function myPid() { let id = LS.get('ppd-pid'); if (!id) { id = (crypto.randomUUI
 function dailyName() { let n = myName(); if (!n) { n = 'Exterminator ' + (1000 + Math.floor(Math.random() * 9000)); LS.set('ppd-name', n); } return n; }   /* the same name you use online */
 const cleanName = n => String(n || '').replace(/[<>&"]/g, '').trim().slice(0, 16) || 'Exterminator';
 const dailyMine = day => { try { return JSON.parse(LS.get('ppd-daily-' + day) || 'null'); } catch (e) { return null; } };
-function dailyStreak() { try { const o = JSON.parse(LS.get('ppd-daily-streak') || 'null'); if (!o) return 0; const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10); return o.last === dailyDay() || o.last === y ? o.n : 0; } catch (e) { return 0; } }
+function dailyStreak() { try { const o = JSON.parse(LS.get('ppd-daily-streak') || 'null'); if (!o) return 0; const y = new Date(Date.parse(dailyDay()) - 864e5).toISOString().slice(0, 10); return o.last === dailyDay() || o.last === y ? o.n : 0; } catch (e) { return 0; } }
 function bumpStreak(day) { let o = null; try { o = JSON.parse(LS.get('ppd-daily-streak') || 'null'); } catch (e) {} const y = new Date(Date.parse(day) - 864e5).toISOString().slice(0, 10); const n = o && o.last === y ? o.n + 1 : o && o.last === day ? o.n : 1; LS.set('ppd-daily-streak', JSON.stringify({ last: day, n })); return n; }
 const LB_URL = SB_URL + '/rest/v1/daily_scores', LB_H = { apikey: SB_KEY, 'Content-Type': 'application/json' };
 let LB_ERR = '';
