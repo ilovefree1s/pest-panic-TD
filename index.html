@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="428">v1.27</div>
+    <div id="ver" data-b="429">v1.28</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8483,7 +8483,8 @@ function placeStageTag() {
     for (const id of ['belt', 'queen']) { const q = $(id); if (!q || q.hidden || q.classList.contains('off')) continue; const a = el.getBoundingClientRect(), b = q.getBoundingClientRect(); if (b.height && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) el.style.top = Math.round(b.bottom - sg.top + 6) + 'px'; }   /* the next-bugs belt or a boss bar is up there: step below it */
     return;
   }
-  const st = document.querySelector('#hud .stats').getBoundingClientRect(), ctl = document.querySelector('#hud .ctl').getBoundingClientRect(), sg = stage.getBoundingClientRect(), w = el.offsetWidth, gap = ctl.left - st.right - 16;
+  const stE = document.querySelector('#hud .stats'), ctE = document.querySelector('#hud .ctl'); if (!stE || !ctE) return;   /* mid-rotate the stats row can still be on the tray: try again next tick */
+  const st = stE.getBoundingClientRect(), ctl = ctE.getBoundingClientRect(), sg = stage.getBoundingClientRect(), w = el.offsetWidth, gap = ctl.left - st.right - 16;
   el.style.visibility = $('undo').hidden === false && w > gap ? 'hidden' : '';   /* when it has to drop down, the Undo pill gets that spot while it shows */
   if (w > gap) { el.style.left = 'auto'; el.style.right = Math.round(sg.right - ctl.right) + 'px'; el.style.transform = 'none'; const bl = $('belt'), bb = bl && !bl.classList.contains('off') ? bl.getBoundingClientRect() : null; el.style.top = Math.round(Math.max(ctl.bottom, bb && bb.height ? bb.bottom : 0) - sg.top + 6) + 'px'; return; }   // no room up top: tuck it under the round buttons
   el.style.top = ''; el.style.right = 'auto'; el.style.transform = 'none'; el.style.left = Math.round(st.right - sg.left + 8 + (gap - w) / 2) + 'px';
