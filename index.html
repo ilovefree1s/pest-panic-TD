@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="427">v1.26</div>
+    <div id="ver" data-b="428">v1.27</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -959,10 +959,10 @@ const TOP_Y = 4.545, CLIMB_Z = ccz(-0.05);
 const CAKE_POS = new V3(ccx(BOARD.cakeCol), TOP_Y, -16.9);
 // each level is one or more trails (cell waypoints) that all end climbing up to the cake
 const LEVELS = [
-  { name: 'The Long Way', sub: 'A winding trail with three U-bends', intro: 'Pick a tool below and place it by the trail', hp: 1, money: 160, shift: 0,
+  { name: 'The Long Way', sub: 'A winding trail with three U-bends', intro: 'Pick a tool below and place it by the trail', hp: 0.9, money: 160, shift: 0,
     bosses: [['queen'], ['widow'], ['herc'], ['hornet', 'widow', 'queen']], bossMulW: { 20: { hornet: 0.6 }, 25: { hornet: 0.7 } },   // Hercules Beetle at 15, Hornet Queen 40% lighter at 20 and 30% lighter in the finale
     routes: [[[1, -0.6], [1, 8], [4, 8], [4, 2], [7, 2], [7, 8], [10, 8], [10, 4], [12, 4], [12, -0.05]]] },
-  { name: 'Kitchen Trail', sub: 'A long snake, tougher bugs', intro: 'The trail snakes back and forth, and the bugs are tougher', hp: 1.1, money: 165, bossMul: { widow: 0.95 }, bossMulW: { 10: { widow: 0.45 } }, shift: 0,
+  { name: 'Kitchen Trail', sub: 'A long snake, tougher bugs', intro: 'The trail snakes back and forth, and the bugs are tougher', hp: 0.99, money: 165, bossMul: { widow: 0.95 }, bossMulW: { 10: { widow: 0.45 } }, shift: 0,
     routes: [[[1, -0.6], [1, 1], [9, 1], [9, 5], [1, 5], [1, 8], [12, 8], [12, -0.05]]] },   // redrawn in the Trail Builder
   { name: 'Short Cut', sub: 'A short trail with few pockets', intro: 'Short trail. Every second counts.', hp: 1.064, money: 235, bossHp: 0.9, bossMulW: { 5: { '*': 0.9025 }, 10: { widow: 0.9 }, 15: { hornet: 0.5 } }, bugMulW: { 5: { dung: 0.75 } }, shift: 1,
     routes: [[[1, -0.6], [1, 5], [6, 5], [6, 8], [12, 8], [12, -0.05]]] },
@@ -983,7 +983,7 @@ const LEVELS = [
     routes: [[[1, 10.6], [1, 6], [4, 6], [4, 8], [8, 8], [8, 3], [20, 3], [20, 0], [10, 0], [10, -0.05]],
              [[19, 10.6], [19, 6], [16, 6], [16, 8], [12, 8], [12, 4], [0, 4], [0, 0], [10, 0], [10, -0.05]]] },   // redrawn in the Trail Builder: the lanes swap sides and cross
   // solo levels 6-10 (kept after the team maps so everyone's saved progress stays put)
-  { name: 'Lunch Line', bosses: [['ghop'], ['queen'], ['widow'], ['ghop', 'queen', 'hornet']], nb: [['hopper', 3, 2]], sub: 'A spiral out of a hole in the floor', intro: 'The bugs crawl up out of the floor in the middle and spiral out to the cake!', hp: 1.34, money: 190, bossMulW: { 20: { hornet: 0.7 }, 25: { '*': 0.7 } }, shift: 2,
+  { name: 'Lunch Line', bosses: [['ghop'], ['queen'], ['widow'], ['ghop', 'queen', 'hornet']], nb: [['hopper', 3, 2]], sub: 'A spiral out of a hole in the floor', intro: 'The bugs crawl up out of the floor in the middle and spiral out to the cake!', hp: 1.206, money: 190, bossMulW: { 20: { hornet: 0.7 }, 25: { '*': 0.7 } }, shift: 2,
     routes: [[[6, 4], [5, 4], [5, 5], [7, 5], [7, 3], [3, 3], [3, 7], [9, 7], [9, 1], [1, 1], [1, 9], [12, 9], [12, -0.05]]] },   // redrawn in the Trail Builder
   { name: 'Hot Delivery', bosses: [['gcenti'], ['ghop'], ['hornet'], ['gcenti', 'ghop', 'widow']], nb: [['hopper', 3, 2], ['centi', 4, 1]], sub: 'A side door and a front door', intro: 'A second trail comes in the front door and cuts across the first. Watch it!', hp: 1.25, money: 230, bossMulW: { 15: { hornet: 0.7 }, 20: { widow: 0.9 } }, bugMulW: { 1: { '*': 0.8 }, 2: { '*': 0.8, spider: 0.76 }, 3: { '*': 0.85 }, 4: { '*': 0.85 } }, shift: 2,
     routes: [[[-0.6, 2], [3, 2], [3, 8], [7, 8], [7, 4], [12, 4], [12, -0.05]],
