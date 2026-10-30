@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="421">v1.20</div>
+    <div id="ver" data-b="422">v1.21</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3078,7 +3078,7 @@ const ABIL = { cd: 60, cost: 0, dot: 12, dur: 3.2, range: 7.5, cone: 0.78, dps: 
 const ABIL_BASE = { ...ABIL }, ABIL_PRO = { ...ABIL, cd: 75, cost: 20, dot: 20, dur: 4, range: 8.5, cone: 0.7, dps: 42, bossPct: 0.16 };   /* Pro Backpack Spray, from Level 5: stronger, wider and longer, but 20 coins a spray and 15 seconds more cooldown */
 const ABIL_PRO_AT = 4;
 function setAbil() {
-  const can = !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= ABIL_PRO_AT, pro = can && !!S.proPack; Object.assign(ABIL, pro ? ABIL_PRO : ABIL_BASE); ABIL.pro = pro; ABIL.canPro = can;   /* from Level 5 you can buy the Pro Spray Upgrade in Items */
+  const can = !!S && !LEVELS[LV].team && !S.vs && (SOLO.indexOf(LV) >= ABIL_PRO_AT || LV === DAILY_LV), pro = can && !!S.proPack; Object.assign(ABIL, pro ? ABIL_PRO : ABIL_BASE); ABIL.pro = pro; ABIL.canPro = can;   /* from Level 5 you can buy the Pro Spray Upgrade in Items */
   const el = $('abil'); if (!el) return; el.classList.toggle('pro', pro); el.querySelector('small').textContent = pro ? ABIL.cost + 'g' : 'Free'; el.querySelector('b').textContent = pro ? 'Pro' : 'Spray';
 }
 // the bug closest to the cake: measured as distance LEFT on its own trail, so two trails of different lengths compare fairly
@@ -3785,7 +3785,7 @@ function mothFree(b, dt) {
     if (Math.random() < dt * 6) FX.smoke.spawn({ x: c.x, y: 2.4, z: c.z, vy: 1.2, life: 0.6, s0: 0.25, s1: 0.7, c: [0.5, 0.5, 0.5], a0: 0.4 });
     if (f.land >= (BT[b.t].boss ? 1.5 : 3)) { c.snuff = true; if (BT[b.t].boss) for (const o of S.towers) if (o.t === 'candle' && (o.x - c.x) ** 2 + (o.z - c.z) ** 2 < 64) o.snuff = true; b.didCandle = true; f.phase = 'back'; SND.play('sizzle'); for (let i = 0; i < 10; i++) FX.smoke.spawn({ x: c.x, y: 2.2, z: c.z, vy: 1.6, life: 1, s0: 0.4, s1: 1.2, c: [0.35, 0.35, 0.35], a0: 0.5 }); if (S.mode === 'play') banner('Candle snuffed!', 'A moth put it out. Tap the candle to relight it (15 coins)', false, 1600); }
   } else if (d < 0.35) { if (f.phase === 'go') { f.phase = 'land'; f.land = 0; } else { b.free = null; b.hy = 0; return; } }
-  else { const v = Math.min(d, 4.5 * dt); b.fx += dx / d * v; b.fz += dz / d * v; b.ang = Math.atan2(dx, dz); b.walk += dt * 6; b.hy += ((f.phase === 'go' ? 1.2 + (c.ctrY || 0) : 0) - b.hy) * Math.min(1, dt * 3); }
+  else { const v = Math.min(d, 4.5 * dt * (b.windT > 0 ? b.windF || 1 : 1)); b.fx += dx / d * v; b.fz += dz / d * v; b.ang = Math.atan2(dx, dz); b.walk += dt * 6; b.hy += ((f.phase === 'go' ? 1.2 + (c.ctrY || 0) : 0) - b.hy) * Math.min(1, dt * 3); }
   b.x = b.fx; b.z = b.fz; b.y0 = 0;
 }
 function relight(tw = S.pick) {
@@ -4944,7 +4944,7 @@ function towerAct(tw, dt) {
   if (tw.t === 'fan') {   // a steady breeze slows the flies in reach; every few seconds a gust blows them back
     let tg = null;
     for (const b of S.bugs) {
-      if (b.dead || b.free || !BT[b.t].fly || !inRange(tw, b, R)) continue;
+      if (b.dead || !BT[b.t].fly || !inRange(tw, b, R)) continue;
       b.windT = 0.2; b.windF = BT[b.t].boss ? 1 - (1 - T.slow[L]) * 0.5 : T.slow[L];
       if (!tg || b.s > tg.s) tg = b;
     }
@@ -4952,10 +4952,15 @@ function towerAct(tw, dt) {
     if (tw.cd > 0 || !tg) return;
     tw.cd = T.rate[L]; tw.anim = 0;
     for (const b of S.bugs) {
-      const fly = BT[b.t].fly; if (b.dead || b.free || b.gustT > 0 || !inRange(tw, b, R)) continue;
+      const fly = BT[b.t].fly; if (b.dead || b.gustT > 0 || !inRange(tw, b, R)) continue;
       if (!fly && !(tw.perk && !b.air && b.y0 <= 0.5)) continue;   // the perk's gust also nudges crawlers
       hit(b, T.dmg[L]); if (b.dead) continue;
       const boss = BT[b.t].boss; b.gustT = 3;
+      if (b.free) {   // a moth off the trail (heading for a candle): the gust blows it away from the fan and knocks it off the flame
+        if (!boss) { const dx = b.fx - tw.x, dz = b.fz - tw.z, d = Math.hypot(dx, dz) || 1, k = T.push[L] * (tw.perk ? 1.25 : 1) * 1.6; b.fx += dx / d * k; b.fz += dz / d * k; b.x = b.fx; b.z = b.fz; }
+        if (b.free.phase === 'land') { b.free.phase = 'go'; b.free.land = 0; }
+        continue;
+      }
       b.push = BT[b.t].noPush || boss ? 0 : T.push[L] * (fly ? (tw.perk ? 1.25 : 1) : 0.4);
       if (tw.perk && fly && !boss) { b.stuck = Math.max(b.stuck, 0.8); b.slowF = 0; }   // dizzy
       for (let i = 0; i < 3; i++) FX.smoke.spawn({ x: b.x, y: bugY(b) + 0.5, z: b.z, vx: (b.x - tw.x) * 0.8 + (Math.random() - 0.5) * 2, vy: 0.4, vz: (b.z - tw.z) * 0.8 + (Math.random() - 0.5) * 2, drag: 3, life: 0.45, s0: 0.35, s1: 1, c: [0.85, 0.95, 1], a0: 0.4 });
@@ -7485,7 +7490,7 @@ function aiSpecial(b, sp, dt) {
       const dx = tx - b.fx, dz = tz - b.fz, d = Math.hypot(dx, dz);
       if (f.phase === 'land') { b.hy = 0.75; if ((f.land += dt) >= (giant ? 1.5 : 3)) { c.snuff = true; if (giant) for (const o of A.towers) if (o.t === 'candle' && (o.c - c.c) ** 2 + (o.r - c.r) ** 2 < 8) o.snuff = true; b.didCandle = true; f.phase = 'back'; } }
       else if (d < 0.35) { if (f.phase === 'go') { f.phase = 'land'; f.land = 0; } else { b.free = null; b.hy = 0; } }
-      else { const v = Math.min(d, 4.5 * dt); b.fx += dx / d * v; b.fz += dz / d * v; b.hy = f.phase === 'go' ? 1.2 : 0.4; }
+      else { const v = Math.min(d, 4.5 * dt * (b.windT > 0 ? b.windF || 1 : 1)); b.fx += dx / d * v; b.fz += dz / d * v; b.hy = f.phase === 'go' ? 1.2 : 0.4; }
       return 0;
     }
   }
