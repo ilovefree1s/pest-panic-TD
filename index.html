@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="433">v1.32</div>
+    <div id="ver" data-b="434">v1.33</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1012,6 +1012,7 @@ LEVELS[15] = { ...LEVELS[6], bossMul: null, bugMulAfter: [5, 1.2], bossMulW: { 2
 LEVELS[16] = { ...LEVELS[6], bossMul: null, name: 'Snake Pit', sub: 'Medium', intro: 'Both trails twist through their halves, then the right one climbs the middle to join the left. Guard the middle!',
   routes: [[[2, 10.6], [2, 9], [0, 9], [0, 0], [4, 0], [4, 5], [3, 5], [3, 7], [8, 7], [8, 3], [10, 3], [10, -0.05]],
            [[20.6, 7], [20, 7], [20, 9], [17, 9], [17, 7], [15, 7], [15, 4], [18, 4], [18, 1], [12, 1], [12, 6], [10, 6], [10, -0.05]]] };
+LEVELS[16].bossHp = (LEVELS[16].bossHp || 1) * 0.6;   // Team Kitchen 7 bosses: -40%
 // Levels 11 and 12: drawn in the Trail Builder, the cake moved to the back corners
 LEVELS[17] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Crossroads', sub: 'Two long trails that cross', intro: 'Two doors, two long trails that cross in the middle, and the cake in the back-left corner.', hp: 1.7, money: 225, cakeCol: 1,
   bosses: [['gant'], ['gbed'], ['gfly'], ['gmoth'], ['herc', 'gcenti']],
@@ -5313,7 +5314,7 @@ function removeTower(tw, usedUp) {
 function upgrade(tw = S.pick) {
   if (tw && tw.snuff) { relight(tw); return; }
   if (!tw || (tw.lv >= 3 && (tw.perk || !PERK[tw.t]))) return;
-  if (S.p2 && (tw.owner || 0) !== S.cur) return;
+  if (S.p2 && (tw.owner || 0) !== S.cur && !TT[tw.t].oneKitchen) return;
   if (S.net === 'guest') { if (S.money < upCost(tw) || tw.upPending || tw.pending) { SND.play('err'); return; } netSend({ k: 'up', id: tw.id }); SND.play('tap'); return; }
   const c = upCost(tw); if (S.money < c) { SND.play('err'); return; }
   if (tw.upPending || tw.pending) return;
@@ -6533,12 +6534,13 @@ function syncTray() {
     const T = TT[tw.t], max = tw.lv >= 3 && (tw.perk || !PERK[tw.t]), perkUp = tw.lv >= 3 && !max, c = max ? 0 : upCost(tw);
     $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
     $('iStats').innerHTML = statsHtml(tw); $('iDesc').textContent = T.d; $('iDmg').innerHTML = dmgHtml(tw);
-    const busy = tw.pending || tw.upPending, theirs = S.p2 && (tw.owner || 0) !== S.cur;
+    const busy = tw.pending || tw.upPending, theirs = S.p2 && (tw.owner || 0) !== S.cur, shared = !!TT[tw.t].oneKitchen, noUp = theirs && !shared;   // the cat and the flytrap belong to the whole kitchen: either player can upgrade them
+    $('bUp').hidden = !!noUp;
     if (theirs) $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t) + ` <span class="partner">${S.net === 'bot' ? 'AI teammate\'s' : 'Partner\'s'} tool</span>`;
     $('bSell').disabled = !!theirs;
     $('bMove').hidden = tw.t !== 'fogger';
     if (tw.t === 'fogger') { const used = tw.movedWave === moveWave(); $('bMove').disabled = !!theirs || used || tw.pending || tw.moving; $('bMoveC').textContent = tw.moving ? 'On the way' : used ? 'Moved this wave' : 'once per wave'; }
-    $('bUp').disabled = theirs || max || busy || S.money < c; $('bUpC').textContent = max ? 'Maxed' : tw.pending ? 'Being built' : tw.upPending ? 'On the way' : c + ' coins';
+    $('bUp').disabled = noUp || max || busy || S.money < c; $('bUpC').textContent = max ? 'Maxed' : tw.pending ? 'Being built' : tw.upPending ? 'On the way' : c + ' coins';
     $('bUp').firstChild.nodeValue = tw.snuff ? 'Relight' : perkUp ? PERK[tw.t].icon + ' ' + PERK[tw.t].name : 'Upgrade';
     $('bUp').classList.toggle('perkBtn', perkUp && !tw.snuff);
     if (tw.perk) $('iLv').innerHTML += ` <span class="perkTag">${PERK[tw.t].icon} ${PERK[tw.t].name}</span>`;
@@ -6913,7 +6915,7 @@ function netHostCmd(m) {
   withPlayer(1, () => {
     if (m.k === 'place') placeTower(m.t, m.c, m.r);
     else if (m.k === 'pet') buyPet(m.t);
-    else if (m.k === 'up' && tw && tw.owner === 1) upgrade(tw);
+    else if (m.k === 'up' && tw && (tw.owner === 1 || TT[tw.t].oneKitchen)) upgrade(tw);
     else if (m.k === 'relight' && tw) relight(tw);
     else if (m.k === 'move' && tw && tw.owner === 1) moveFogger(tw, m.c, m.r);
     else if (m.k === 'undo') undoSell();
