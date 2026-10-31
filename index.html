@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="434">v1.33</div>
+    <div id="ver" data-b="435">v1.34</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3163,17 +3163,28 @@ $('shinyT').addEventListener('click', () => openShinies('title'));
 $('shinyP').addEventListener('click', () => openShinies('paused'));   /* mid-game, from the pause menu: just caught one? go look */
 $('locker').addEventListener('click', ev => { const b = ev.target.closest('.lk'); if (!b || b.disabled) return; SND.play('tap'); setLook(b.dataset.slot, b.dataset.v); });
 $('shBack').addEventListener('click', () => { SND.play('tap'); $('shinies').hidden = true; $(shinyFrom).hidden = false; });
+/* Team Kitchen: a shiny belongs to the player whose door it came in by. Only they hear about it and only they can catch it */
+const SHP = { x: 0, z: 0, dx: 0, dz: 0 };
+function shinyOwner(b) { if (!S || !S.p2 || !LEVELS[LV].team || (S.net !== 'host' && S.net !== 'guest') || !ROUTES[b.route]) return -1; pathAt(0, SHP, b.route); return SHP.x < ccx(BOARD.cakeCol) ? 0 : 1; }   // (playing with the AI teammate, you can still catch them all)
+const shinyMine = b => { const o = shinyOwner(b); return o < 0 || o === (S.cur || 0); };
+function shinyBanner(b, txt, sub, red, ms) {   // the alert goes to the shiny's owner only
+  const o = shinyOwner(b);
+  if (o < 0) { BN_FWD++; try { banner(txt, sub, red, ms); } finally { BN_FWD--; } return; }
+  if (o === (S.me || 0)) { const f = BN_FWD; BN_FWD = 0; try { banner(txt, sub, red, ms); } finally { BN_FWD = f; } }
+  else if (S.net === 'host') netSend({ k: 'bn', a: txt, b: sub || '', r: red ? 1 : 0, ms });
+}
 function makeShiny(b) {
   b.shiny = true;
   if (S.speed > 1 && S.net !== 'guest') { S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }   /* back to 1× so there's time to catch it */
   if (BT[b.t].boss) {   // the big one: a gold flash over the whole screen
-    BN_FWD++; try { banner('🏆 SHINY BOSS!', 'A golden ' + (BT[b.t].name || b.t) + '! Catch it before it gets squashed!', false, 4200); } finally { BN_FWD--; }
-    const fl = $('goldFlash'); if (fl) { fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
-    SND.play('boss'); setTimeout(() => SND.play('up'), 250); setTimeout(() => SND.play('clear'), 600);
-    if (S.net === 'host') netSend({ k: 'flash' });
+    shinyBanner(b, '🏆 SHINY BOSS!', 'A golden ' + (BT[b.t].name || b.t) + '! Catch it before it gets squashed!', false, 4200);
+    const o = shinyOwner(b);
+    if (o < 0 || o === (S.me || 0)) { const fl = $('goldFlash'); if (fl) { fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
+    SND.play('boss'); setTimeout(() => SND.play('up'), 250); setTimeout(() => SND.play('clear'), 600); }
+    if (S.net === 'host' && o !== (S.me || 0)) netSend({ k: 'flash' });
     return;
   }
-  BN_FWD++; try { banner('✨ A ' + shinyName(b) + '!', 'Tap Catch before it gets squashed!', false, 2400); } finally { BN_FWD--; } SND.play('up');
+  shinyBanner(b, '✨ A ' + shinyName(b) + '!', 'Tap Catch before it gets squashed!', false, 2400); if (shinyOwner(b) < 0 || shinyOwner(b) === (S.me || 0)) SND.play('up');
 }
 /* the jar lives in the run: a shiny you catch can be sold until that game ends, and if you don't it just stays in your collection */
 function jarCount() { return (S && S.jar) || 0; }
@@ -3182,7 +3193,7 @@ try { localStorage.removeItem('ppd-shiny'); } catch (e) {}   /* the old everlast
 function startCatch() {
   if (S.mode !== 'play' || S.paused) return;
   if (S.net === 'guest') { netSend({ k: 'catch' }); SND.play('tap'); $('catch').classList.add('busy'); return; }
-  const e = S.ext, sh = S.bugs.filter(b => b.shiny && !b.dead);
+  const e = S.ext, sh = S.bugs.filter(b => b.shiny && !b.dead && shinyMine(b));
   if (!sh.length) return;
   const b = sh.reduce((m, o) => !m || Math.hypot(o.x - e.x, o.z - e.z) < Math.hypot(m.x - e.x, m.z - e.z) ? o : m, null);
   e.held = false; e.abil = null; e.catch = { id: b.id }; SND.play('wave');
@@ -3209,7 +3220,7 @@ function sellShiny(split) {
 }
 function syncCatch() {
   if (!S) return;
-  const play = S.mode === 'play', alive = play && S.bugs.some(b => b.shiny && !b.dead), el = $('catch');
+  const play = S.mode === 'play', alive = play && S.bugs.some(b => b.shiny && !b.dead && shinyMine(b)), el = $('catch');
   if (el.hidden === alive) el.hidden = !alive;
   if (!alive) el.classList.remove('busy'); else el.classList.toggle('busy', !!(S.ext && S.ext.catch));
   const n = jarCount(), j = $('jar'); j.hidden = !play || n <= 0; if (j.hidden) $('jarAsk').hidden = true; if ($('jarN').textContent !== String(n)) $('jarN').textContent = n;
@@ -4697,7 +4708,7 @@ function kill(b) {
   if (S.mode === 'play') { b.dn = Math.ceil(b.dn || 0); b.dr = Math.ceil(b.dr || 0); b.db = Math.ceil(b.db || 0); flushDmg(b); }
   b.dead = true; const bt = BT[b.t], y = bugY(b) + 0.4;
   if (b.mdl) { b.mdl.visible = false; b.mdl = null; }
-  if (b.shiny && S.mode === 'play') banner('The ' + shinyName(b) + ' got squashed!', 'Catch the next one before your tools get it', true, 1800);
+  if (b.shiny && S.mode === 'play') shinyBanner(b, 'The ' + shinyName(b) + ' got squashed!', 'Catch the next one before your tools get it', true, 1800);
   if (b.t === 'stink') stinkCloud(b.x, b.z); else if (b.t === 'gstink') stinkCloud(b.x, b.z, 7, 6);
   const g = Math.max(1, Math.round((bt.gold + Math.floor(S.wave / 3)) * goldMul() * (b.sent ? 0.5 : 1)));
   if (S.mode === 'play' && S.net === 'guest') ACH.kill(b.t);
