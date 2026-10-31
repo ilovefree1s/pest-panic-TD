@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="441">v1.40</div>
+    <div id="ver" data-b="442">v1.41</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1215,11 +1215,13 @@ function buildCounterProps() {
   add(g, cyl(0.3, 0.28, 0.45, 16), std({ color: '#ff6fa8', roughness: 0.4 }), 0, 0.85, 0);
   add(g, cyl(0.44, 0.44, 0.12, 16), dark, 0, 1.95, 0);
   // cookie jars
-  g = P.jars = new THREE.Group();
+  g = P.jars = new THREE.Group(); g.userData.pieces = [];   // three separate jars: the cat knocks them off one at a time
   for (const [x, h, c] of [[-0.55, 1.0, '#c8945a'], [0, 1.3, '#f4efe4'], [0.55, 0.85, '#ffd447']]) {
-    add(g, cyl(0.26, 0.26, h, 16), glass, x, h / 2, 0);
-    add(g, cyl(0.22, 0.22, h * 0.6, 14), std({ color: c, roughness: 0.8 }), x, h * 0.3, 0);
-    add(g, cyl(0.28, 0.28, 0.1, 16), wood, x, h + 0.05, 0);
+    const j = new THREE.Group(); j.position.x = x; g.add(j); g.userData.pieces.push(j);
+    add(j, cyl(0.26, 0.26, h, 16), glass, 0, h / 2, 0);
+    add(j, cyl(0.22, 0.22, h * 0.6, 14), std({ color: c, roughness: 0.8 }), 0, h * 0.3, 0);
+    add(j, cyl(0.28, 0.28, 0.1, 16), wood, 0, h + 0.05, 0);
+    j.userData.home = j.position.clone();
   }
   // little things the cat can knock off: spoons, forks, mugs, a glass, shakers, a bowl, a sauce bottle (keys start with sm_; placed on free counter spots per kitchen)
   const silver = std({ color: '#d4d9df', metalness: 0.95, roughness: 0.2, envMapIntensity: 1.2 }), china = std({ color: '#f6f2ea', roughness: 0.35 });
@@ -1342,6 +1344,7 @@ function applyHouse(i) {
   const L = PROP_LAYOUT[i];
   KIT.accentMat.color.set(L.accent);
   const smallAt = smallSpots(i, L);
+  for (const k of Object.keys(KIT.props)) if (k.includes('#')) { const pc = KIT.props[k]; delete KIT.props[k]; const par = pc.userData.parent; if (par) { par.add(pc); pc.position.copy(pc.userData.home); pc.rotation.set(0, 0, 0); pc.scale.setScalar(1); pc.visible = true; pc.userData.gone = false; pc.userData.fall = null; } }   /* jars knocked off last level go back on their shelf */
   for (const k in KIT.props) {
     const g = KIT.props[k], at = k.startsWith('sm_') ? smallAt[k] : L[k];
     g.visible = !!at; if (!at) continue;
@@ -4839,7 +4842,7 @@ function catHunt(tw) {   /* head for the nearest bug on the floor, wherever it i
 }
 function catPlanMischief(tw) {
   if ((tw.knocks || 0) >= CAT_KNOCKS || !KIT.props) return;
-  const keys = Object.keys(KIT.props).filter(k => KIT.props[k].visible && !KIT.props[k].userData.knocked && k !== 'sink');
+  const keys = Object.keys(KIT.props).filter(k => !k.includes('#') && KIT.props[k].visible && !KIT.props[k].userData.knocked && k !== 'sink');
   if (!keys.length) return;
   let best = null, bd = 1e9;
   for (const k of keys) { const g = KIT.props[k], d = (g.position.x - tw.cx) ** 2 + (g.position.z - tw.cz) ** 2 + Math.random() * 60; if (d < bd) { bd = d; best = k; } }
@@ -5696,11 +5699,18 @@ function catBedSpot() {
 }
 function floorBelow(x, z) { const W = CS * COLS, H = CS * ROWS; return { x: Math.max(X0 + 1.2, Math.min(X0 + W - 1.2, x)), z: Math.max(Z0 + 1.2, Math.min(Z0 + H - 1.2, z)) }; }
 function knockProp(key) {   // a counter thing gets swatted off the edge and tumbles onto the kitchen floor
-  const g = KIT.props && KIT.props[key]; if (!g || !g.visible || g.userData.knocked) return;
+  let g = KIT.props && KIT.props[key]; if (!g || !g.visible || g.userData.knocked) return;
+  if (g.userData.pieces) {   // a set (the jars): just the next one goes over the edge
+    const P = g.userData.pieces, i = P.findIndex(p => !p.userData.gone); if (i < 0) return;
+    const pc = P[i]; pc.userData.gone = true; pc.userData.parent = g; scene.attach(pc); KIT.props[key + '#' + i] = pc;
+    if (!P.some(p => !p.userData.gone)) g.userData.knocked = true;
+    if (S && S.net === 'host') netSend({ k: 'knock', p: key });
+    g = pc; key = null;
+  }
   const f = floorBelow(g.position.x, g.position.z), dx = f.x - g.position.x, dz = f.z - g.position.z, d = Math.hypot(dx, dz) || 1;
   g.userData.knocked = true; g.userData.fall = { t: 0, vx: dx / d * 5, vz: dz / d * 5, vy: 3, spin: (Math.random() < 0.5 ? -1 : 1) * (5 + Math.random() * 3), ax: Math.abs(dz) > Math.abs(dx) ? 'x' : 'z' };
   SND.play('slam');
-  if (S && S.net === 'host') netSend({ k: 'knock', p: key });
+  if (key && S && S.net === 'host') netSend({ k: 'knock', p: key });
 }
 function propFalls(dt) {
   if (!KIT.props) return;
