@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="438">v1.37</div>
+    <div id="ver" data-b="439">v1.38</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3096,7 +3096,7 @@ function leadBug(stick) {
 const SHINY_CHANCE = 0.0005;
 const BUG_NAME = { ant: 'Ant', fly: 'Fly', spider: 'Spider', bed: 'Bed Bug', dung: 'Dung Beetle', baby: 'Baby Spider', hopper: 'Grasshopper', centi: 'Centipede', stink: 'Stink Bug', moth: 'Moth', mantis: 'Praying Mantis' };
 const shinyName = b => 'shiny ' + (BUG_NAME[b.t] || (BT[b.t] && BT[b.t].name) || 'bug');
-// ---- the Shiny Collection: every type you've caught, kept forever (selling from the jar doesn't take it away)
+// ---- the Shiny Collection: every type you've caught and kept to the end of a game (one sold from the jar doesn't count)
 const SHINY_BOSS = 0.0001;
 const DEX_REG = ['ant', 'fly', 'spider', 'bed', 'dung', 'baby', 'hopper', 'centi', 'stink', 'moth', 'mantis'];
 const DEX_BOSS = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'];
@@ -3186,9 +3186,12 @@ function makeShiny(b) {
   }
   shinyBanner(b, '✨ A ' + shinyName(b) + '!', 'Tap Catch before it gets squashed!', false, 2400); if (shinyOwner(b) < 0 || shinyOwner(b) === (S.me || 0)) SND.play('up');
 }
-/* the jar lives in the run: a shiny you catch can be sold until that game ends, and if you don't it just stays in your collection */
-function jarCount() { return (S && S.jar) || 0; }
-function jarSet(n) { if (S) S.jar = Math.max(0, n); syncCatch(); }
+/* the jar lives in the run: a shiny you catch can be sold until that game ends. Only the ones you KEEP go into your collection, when the run is over */
+function jarCount() { return (S && S.jarT && S.jarT.length) || 0; }
+function jarAdd(t) { if (!S) return; (S.jarT ||= []).push(t); S.jar = S.jarT.length; syncCatch(); }
+function jarSell() {   // sell one you already have in your collection first, so a new one isn't sold by accident
+  const J = S.jarT || [], d = dexGet(); let i = J.findIndex(t => !t || d[t]); if (i < 0) i = J.length - 1; if (i >= 0) J.splice(i, 1); S.jar = J.length; syncCatch(); }
+function bankLive() { const J = S && S.jarT; if (J) for (let i = 0; i < J.length; i++) if (J[i]) { dexAdd(J[i]); J[i] = null; } }   // the run is over: whatever is still in the jar joins the collection (null = already counted; it can still be sold in Endless)
 try { localStorage.removeItem('ppd-shiny'); } catch (e) {}   /* the old everlasting jar */
 function startCatch() {
   if (S.mode !== 'play' || S.paused) return;
@@ -3207,13 +3210,13 @@ function catchUpdate(e, dt) {
   b.dead = true; hideBug(b); e.catch = null; e.state = e.job ? 'walk' : 'idle'; e.rest = null;
   for (let i = 0; i < 24; i++) { const a = Math.random() * TAU, v = 2 + Math.random() * 4; FX.glow.spawn({ x: b.x, y: 1, z: b.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 4, vz: Math.sin(a) * v, grav: 8, life: 0.8, s0: 0.6, s1: 0.1, c: [Math.random(), Math.random(), 1], a0: 1 }); }
   SND.play('clear');
-  banner('Caught a ' + shinyName(b) + '!', 'It\'s in your Shiny Collection for good. Sell it from the jar any time for 100 coins.', false, 2600);
-  if (S.p2 && (S.cur || 0) !== (S.me || 0)) netSend({ k: 'caught', t: b.t }); else { jarSet(jarCount() + 1); dexAdd(b.t); }
+  banner('Caught a ' + shinyName(b) + '!', 'Keep it to the end of the game to add it to your collection, or sell it for 100 coins.', false, 3000);
+  if (S.p2 && (S.cur || 0) !== (S.me || 0)) netSend({ k: 'caught', t: b.t }); else jarAdd(b.t);
 }
 function sellShiny(split) {
   if (S.mode !== 'play' || jarCount() <= 0) return;
   if (split === undefined && S.p2 && (S.net === 'host' || S.net === 'guest')) { $('jarAsk').hidden = !$('jarAsk').hidden; SND.play('tap'); return; }   // Team Kitchen: ask first
-  $('jarAsk').hidden = true; jarSet(jarCount() - 1); SND.play('sell');
+  $('jarAsk').hidden = true; jarSell(); SND.play('sell');
   if (S.net === 'guest') netSend({ k: 'sellShiny', split: split ? 1 : 0 }); else if (split) { S.money += 50; S.p2.money += 50; } else S.money += 100;
   banner('Sold a shiny bug', split ? '+50 coins each for you and your teammate' : '+100 coins', false, 1400);
   if (split && S.net === 'host' && !(S.vs && S.vs.v22)) netSend({ k: 'bn', a: 'Your teammate shared a shiny bug!', b: '+50 coins', r: 0, ms: 1600 });
@@ -4551,7 +4554,7 @@ function unlocked(lv) { const i = SOLO.indexOf(lv); return SOLO_ALL_OPEN || i <=
 let S = null;
 function newState(mode) {
   return { me: 0, cur: 0, p2: null, net: null, mode, lives: 20, money: LEVELS[LV].money, wave: 0, active: false, queue: [], spawnT: 0, gap: 0.8, hpMul: 1, bugs: [], towers: [], decals: [], zaps: [], coins: [], rings: [],
-    kills: 0, earlyCalls: 0, items: [], ghosts: [], lic: 0, dmgMul: 1, speed: 1, paused: false, nid: 1, shake: 0, placing: null, pick: null, prev: null, demoT: 0, jobs: [], ext: { x: 0, z: 12, yaw: Math.PI, state: 'idle', t: 0, job: null, phase: 0 } };
+    rid: Math.random().toString(36).slice(2), jarT: [], kills: 0, earlyCalls: 0, items: [], ghosts: [], lic: 0, dmgMul: 1, speed: 1, paused: false, nid: 1, shake: 0, placing: null, pick: null, prev: null, demoT: 0, jobs: [], ext: { x: 0, z: 12, yaw: Math.PI, state: 'idle', t: 0, job: null, phase: 0 } };
 }
 
 // ---------------------------------------------------------------- simulation
@@ -6639,6 +6642,7 @@ addEventListener('resize', () => requestAnimationFrame(syncBeltPos));
 try { MQ_TRAY.addEventListener('change', placeStats); } catch (e) { MQ_TRAY.addListener(placeStats); }
 placeStats();
 function toTitle() {
+  if (S && (S.mode === 'over' || (S.mode === 'play' && !runSavable()))) bankLive();   // a run you can resume keeps its jar in the save
   if (BLD.testing) { BLD.testing = false; setTimeout(openBuilder, 0); }
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
   clearBoard(); loadLevel(0); S = newState('title'); shown = {}; $('stageTag').hidden = true; syncTrophies();
@@ -6659,7 +6663,7 @@ function runSavable() { return S && S.mode === 'play' && LV !== DAILY_LV && !S.n
 function saveRun() {
   if (!runSavable()) return;
   const mid = S.active;
-  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: S.jar || 0, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(),
+  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(),
     towers: S.towers.map(t => [t.t, t.c, t.r, Math.min(3, t.lv + (t.upPending && t.lv < 3 ? 1 : 0)), t.perk || (t.upPending && t.lv >= 3) ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
   try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
 }
@@ -6668,7 +6672,7 @@ function runLives() {   /* cake eaten during a wave stays eaten: leaving mid-wav
   d.lives = S.lives; try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
 }
 function loadRun() { try { const d = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); return d && d.v === 1 && LEVELS[d.lv] && HOUSES[d.lv] ? d : null; } catch (e) { return null; } }
-function clearRun() { try { localStorage.removeItem(RUN_KEY); } catch (e) {} syncResume(); }
+function clearRun() { const d = loadRun(); if (d && d.jarT && !(S && S.rid && S.rid === d.rid)) for (const t of d.jarT) if (t) dexAdd(t); try { localStorage.removeItem(RUN_KEY); } catch (e) {} syncResume(); }   /* a saved run being thrown away still counts as over: keep its shinies */
 function syncResume() { const d = loadRun(), b = $('resumeT'); if (!b) return; b.hidden = !d; if (d) $('resumeS').textContent = 'Level ' + soloNum(d.lv) + ' · ' + HOUSES[d.lv].name + ' · ' + (d.wave ? 'wave ' + d.wave + ' cleared' : 'start') + ' · ' + d.lives + ' slices'; }
 function resumeRun() {
   const d = loadRun(); if (!d) return;
@@ -6686,12 +6690,13 @@ function resumeRun() {
   }
   S.mode = m0; S.undo = null; syncUndo(); S.jobs = []; S.ext.job = null; S.ext.state = 'idle';
   S.money = d.money; S.withhold = S.owed0 = d.owed || 0; S.resumeWave = S.withhold > 0; S.lives = d.lives; S.wave = d.wave; S.kills = d.kills; S.earlyCalls = d.early; S.endless = d.endless; S.stats = d.stats || {};
-  S.lic = 0; for (let i = 0; i < d.lic; i++) { S.lic++; } S.dmgMul = 1 + 0.05 * S.lic; S.proPack = !!d.pack; setAbil(); S.jar = d.jar || 0;
+  S.lic = 0; for (let i = 0; i < d.lic; i++) { S.lic++; } S.dmgMul = 1 + 0.05 * S.lic; S.proPack = !!d.pack; setAbil(); S.jarT = d.jarT || Array(d.jar || 0).fill(null); S.jar = S.jarT.length; if (d.rid) S.rid = d.rid;   /* (older saves: those shinies were already added when caught) */
   setCake(S.lives); S.nextT = 0; tutEnd(); syncHud(); syncTray(); showBelt(); renderShop();
   banner('Welcome back!', 'Level ' + soloNum(d.lv) + ', picking up after wave ' + d.wave, false, 2200);
 }
 let RESUMING = false, BN_QUIET = false;
 function startGame(lv = LV, net = null, aiDiff = 1) {
+  if (!RESUMING && S && (S.mode === 'play' || S.mode === 'over')) bankLive();
   if (!RESUMING) clearRun();
   $('rsAsk').hidden = true;
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
@@ -6872,7 +6877,7 @@ function netOnMsg(m) {
     if (m.k === 'flash') { const fl = $('goldFlash'); if (fl) { fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); } SND.play('boss'); return; }
     if (m.k === 'look') { if (S.p2) S.p2look = sanitizeLook(m.l); return; }
     if (m.k === 'ghosts') { setPartnerGhosts(m.g, 0); return; }
-    if (m.k === 'caught') { jarSet(jarCount() + 1); if (m.t) dexAdd(m.t); return; }
+    if (m.k === 'caught') { jarAdd(m.t || null); return; }
     if (m.k === 's') { NET.lastSnap = performance.now(); netApply(m); }
     else if (m.k === 'vsOver') { if (S.vs) vsEnd(m.res, m.why); }
     else if (m.k === 'over') { S.lives = m.l; S.wave = m.w; S.kills = m.kills; if (m.st) S.stats = m.st; gameOver(m.won); }
@@ -7317,7 +7322,7 @@ function vsEnd(res, why) {
   if (S.mode !== 'play') return;
   if (SPEC.on) exitSpec();
   const v = S.vs, f = v.foe || { l: '?', w: '?', ks: '?', sn: 0 };
-  S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt(); unpick();
+  bankLive(); S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt(); unpick();
   if (v.v22) { if (!v.remote) { vsNet(vsStatus()); netSend({ k: 'vsOver', res, why }); } } else netSend(vsStatus());
   $('overt').textContent = v.ffa ? (res === 'win' ? 'You win!' : 'You\'re out') : FW(res === 'win' ? 'You win!' : res === 'lose' ? 'Your friend wins' : 'It\'s a tie!');
   $('ostars').hidden = true; $('endless').hidden = true; $('nextLv').hidden = true;
@@ -7897,14 +7902,14 @@ function rules22(team, mate, battle) {
     'From <b>wave 6</b>, open the <b>Send</b> tab to send bugs into the other team\'s kitchen. Either of you can send, paid from your own coins.',
     '<b>Last cake standing wins.</b> If both teams survive all ' + MAXW + ' waves, the team with more cake left wins.',
     'Every coin from every kill is <b>split 50/50</b> with your teammate.',
-    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed, then sell it from your jar: <b>keep all 100 coins</b> or <b>split it 50/50</b> with your teammate.'
+    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar: <b>keep all 100 coins</b> or <b>split it 50/50</b> with your teammate.'
   ] : [
     'Both teams play the <b>same map and the same waves</b>, each in their own kitchen.',
     '<b>First team to clear all ' + MAXW + ' waves wins!</b>',
     'A wave only goes early when <b>both of you tap Send bugs</b>. Sending early is how you get ahead.',
     'If a cake gets eaten, the team that <b>cleared more waves</b> wins. Same number of waves? The cake that lasted longer wins.',
     'Every coin from every kill is <b>split 50/50</b> with your teammate.',
-    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed, then sell it from your jar: <b>keep all 100 coins</b> or <b>split it 50/50</b> with your teammate.'
+    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar: <b>keep all 100 coins</b> or <b>split it 50/50</b> with your teammate.'
   ];
   $('r22L').innerHTML = L.map(t => '<li>' + t + '</li>').join('');
   $('r22Ok').disabled = false; $('r22Ok').textContent = 'Got it!'; $('rules22').hidden = false;
@@ -8002,7 +8007,7 @@ function rulesFfa(n) {
     '<b>First to clear all ' + MAXW + ' waves wins!</b>',
     'Your cake has <b>' + FFA_LIVES + ' slices</b>. If it gets eaten, you\'re out. If everyone else is out, the <b>last cake standing wins</b> right away.',
     'Tap the <b>VS</b> bar at the top to watch anyone else\'s kitchen.',
-    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed, then sell it from your jar for <b>100 coins</b>.'
+    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar for <b>100 coins</b> (then it doesn\'t count).'
   ].map(t => '<li>' + t + '</li>').join('');
   $('r22Ok').disabled = false; $('r22Ok').textContent = 'Got it!'; $('rules22').hidden = false;
 }
@@ -8404,7 +8409,7 @@ function gameOver(won) {
   if (S.vs && S.vs.race && !won) { raceDie(); return; }
   if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
   if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills, st: (S.p2 && S.p2.stats) || {} });   // the partner's own damage chart
-  S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
+  bankLive(); S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
   if (S.daily) { dailyOver(); return; }
   const reached = won ? MAXW : S.wave, NX = LEVELS[LV].team ? teamNext(LV) : soloNext(LV), wasLocked = LEVELS[LV].team ? NX != null && !teamUnlocked(NX) : NX != null && !unlocked(NX);
   if (Math.min(reached, MAXW) > loadBest()) saveBest(Math.min(reached, MAXW));
