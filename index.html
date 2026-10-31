@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="430">v1.29</div>
+    <div id="ver" data-b="431">v1.30</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -7696,15 +7696,18 @@ function dailyStreak() { try { const o = JSON.parse(LS.get('ppd-daily-streak') |
 function bumpStreak(day) { let o = null; try { o = JSON.parse(LS.get('ppd-daily-streak') || 'null'); } catch (e) {} const y = new Date(Date.parse(day) - 864e5).toISOString().slice(0, 10); const n = o && o.last === y ? o.n + 1 : o && o.last === day ? o.n : 1; LS.set('ppd-daily-streak', JSON.stringify({ last: day, n })); return n; }
 const LB_URL = SB_URL + '/rest/v1/daily_scores', LB_H = { apikey: SB_KEY, 'Content-Type': 'application/json' };
 let LB_ERR = '';
-async function lbSubmit(day, waves, kills) {   /* plain insert; a second copy of the same day+player is refused by the table (409), which counts as already sent */
+async function lbSubmit(day, waves, kills) {   /* insert; if the table already has this player today (409), raise it to this run when this run is better */
   try { const r = await fetch(LB_URL, { method: 'POST', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ day, pid: myPid(), name: cleanName(dailyName()), waves, kills }) });
-    if (r.ok || r.status === 409) { const m = dailyMine(day); if (m) { m.sent = 1; LS.set('ppd-daily-' + day, JSON.stringify(m)); } return true; }
+    if (r.status === 409) {   /* this player already has a score today (another device with the same backup): keep the better one */
+      const u = await fetch(LB_URL + '?day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()) + '&or=(waves.lt.' + waves + ',and(waves.eq.' + waves + ',kills.lt.' + kills + '))', { method: 'PATCH', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ waves, kills, name: cleanName(dailyName()) }) });
+      if (!u.ok) { LB_ERR = u.status + ' ' + (await u.text()).slice(0, 160); return false; } }
+    if (r.ok || r.status === 409) { const m = dailyMine(day); if (m) { m.sent = 2; LS.set('ppd-daily-' + day, JSON.stringify(m)); } return true; }
     LB_ERR = r.status + ' ' + (await r.text()).slice(0, 160); return false; } catch (e) { LB_ERR = String(e && e.message || e); return false; } }
 async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills&day=eq.' + day + '&order=waves.desc,kills.desc,created_at.asc&limit=50', { headers: LB_H }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 async function lbRank(day, w, k) { try { const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',kills.gt.' + k + '))', { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
 async function renderBoard(day) {
   const ol = $('dBoard'), you = $('dYou'), mine = dailyMine(day); ol.innerHTML = '<li><span class="nm">Loading…</span></li>'; you.textContent = '';
-  if (mine && !mine.sent && !(await lbSubmit(day, mine.w, mine.k))) you.textContent = 'Your score hasn\'t reached the board yet (' + LB_ERR + '). It will try again next time.';   /* a run that couldn't be sent gets another go */
+  if (mine && mine.sent !== 2 && !(await lbSubmit(day, mine.w, mine.k))) you.textContent = 'Your score hasn\'t reached the board yet (' + LB_ERR + '). It will try again next time.';   /* a run that couldn't be sent gets another go */
   const top = await lbTop(day);
   if (!top) { ol.innerHTML = '<li><span class="nm">The leaderboard isn\'t reachable right now.</span></li>'; return; }
   if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
