@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="444">v1.43</div>
+    <div id="ver" data-b="445">v1.44</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2778,7 +2778,7 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 5.99 }, widow: { url: 'assets/boss_widow.glb', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 4.54, wings: true, pitch: 0.55, flat: true }, gfly: { url: 'assets/boss_fly.glb', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb', len: 4.6, legs: 4 }, herc: { url: 'assets/boss_herc.glb', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 5.99 }, widow: { url: 'assets/boss_widow.glb', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb', len: 4.6, legs: 4 }, herc: { url: 'assets/boss_herc.glb', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
 function insectRig(geo, per = 3) {
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
