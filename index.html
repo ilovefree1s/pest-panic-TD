@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="440">v1.39</div>
+    <div id="ver" data-b="441">v1.40</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -833,7 +833,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
           <li>Every cleared wave pays a coin bonus. Squashed bugs drop coins too.</li>
           <li>At the end of the trail the bugs climb the cabinet to reach the cake. Tools in the back right corner can still hit them there.</li>
           <li>On a phone, play upright with the tools along the bottom, or turn it sideways for a bigger board with the tools on the right.</li>
-          <li>Coins don't have to go into tools. The Items tab has one-off buys: crumbs and traps for the trail, and a license that boosts every tool. Each item can be used once per wave.</li>
+          <li>Coins don't have to go into tools. The Items tab has one-off buys: crumbs and traps for the trail, and a license that boosts every tool. Each trail item can be used once per wave; the license can be bought up to 3 times, whenever you can afford it.</li>
           <li>Keys: 1–5 pick a tool, 6–9 pick an item, Space sends the next wave, F toggles 2× speed, P pauses, U upgrades, S sells, Esc cancels.</li>
         </ul>
       </div>
@@ -3377,6 +3377,7 @@ function extLook(EXTM, look) {   /* put an outfit on a modelled exterminator (re
   if (M.crown) M.crown.visible = !!look.crown;
   if (M.tank) M.tank.visible = false;
 }
+const FROG_V = new THREE.Vector3(), FROG_S = new THREE.Vector3();
 const EXT_SEL = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.6, 48), new THREE.MeshBasicMaterial({ color: '#ffd23a', transparent: true, opacity: 0.95, depthWrite: false }));
 EXT_SEL.rotation.x = -Math.PI / 2; EXT_SEL.renderOrder = 7; EXT_SEL.visible = false; scene.add(EXT_SEL);
 function drawExt(dt) {
@@ -5211,8 +5212,8 @@ function buyPack() {
 function buyLicense() {
   if (S.net === 'guest') { netSend({ k: 'lic' }); return; }
   const c = costOf('license');
-  if (S.lic >= 3 || S.money < c || itemUsed('license')) { SND.play('err'); return; }
-  S.money -= c; S.lic++; markUsed('license'); S.dmgMul = 1 + 0.05 * S.lic; if (S.lic >= 3) ACH.unlock('license');
+  if (S.lic >= 3 || S.money < c) { SND.play('err'); return; }   // no once-per-wave limit: buy all 3 at once if you can afford them
+  S.money -= c; S.lic++; S.dmgMul = 1 + 0.05 * S.lic; if (S.lic >= 3) ACH.unlock('license');
   banner('Exterminator License', 'All your damage +' + S.lic * 5 + '%', false, 1500);
   for (const tw of S.towers) for (let i = 0; i < 5; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.6, y: 0.5 + Math.random() * 2, z: tw.z + (Math.random() - 0.5) * 1.6, vy: 2, life: 0.6, s0: 0.5, s1: 0.1, c: [1, 0.85, 0.4], a0: 1 });
   SND.play('up'); bumpStat('stCoins'); renderShop(); syncTray();
@@ -5877,9 +5878,10 @@ function drawTowers(dt, t) {
       o.body.scale.y = 1 + Math.sin(t * 3 + tw.id) * 0.03;
       const lk = tw.lick;
       if (lk && lk.t > 0) {
-        lk.t -= dt; const mx = tw.x + Math.sin(tw.yaw) * 0.8, mz = tw.z + Math.cos(tw.yaw) * 0.8, my = 0.85;
+        lk.t -= dt; o.tongue.updateWorldMatrix(true, false); const wp = o.tongue.getWorldPosition(FROG_V), ws = o.turn.getWorldScale(FROG_S).z || 1;   // measured from the real mouth, in world units: a bigger (upgraded or perk) frog doesn't overshoot
+        const mx = wp.x, my = wp.y, mz = wp.z;
         const hd = Math.hypot(lk.x - mx, lk.z - mz), dy = lk.y - my, len = Math.hypot(hd, dy), ext = Math.sin(clamp(1 - lk.t / 0.16, 0, 1) * Math.PI);
-        o.tongue.visible = true; o.tongue.scale.set(1, 1, Math.max(0.01, len * ext)); o.tongue.rotation.x = -Math.atan2(dy, hd);
+        o.tongue.visible = true; o.tongue.scale.set(1, 1, Math.max(0.01, len * ext / ws)); o.tongue.rotation.x = -Math.atan2(dy, hd);
         o.tip.visible = true; o.tip.position.set(lerp(mx, lk.x, ext), lerp(my, lk.y, ext), lerp(mz, lk.z, ext));
       } else { o.tongue.visible = false; o.tip.visible = false; }
     } else if (tw.t === 'spray') {
