@@ -106,7 +106,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #goldFlash{position:absolute;inset:0;pointer-events:none;z-index:30;opacity:0;background:radial-gradient(circle,rgba(255,214,90,.0) 20%,rgba(255,190,40,.55) 100%)} #goldFlash.go{animation:gflash 1.8s ease-out}
 @keyframes gflash{0%{opacity:0}10%{opacity:1}35%{opacity:.4}50%{opacity:.9}100%{opacity:0}}
 #stageTag{position:absolute;right:14px;top:102px;z-index:3;pointer-events:none;font:700 11px/1.2 system-ui,sans-serif;color:#fff;opacity:.85;text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.6);letter-spacing:.03em;white-space:nowrap} .tstats #stageTag{top:56px} @media (orientation:landscape) and (max-height:560px){#stageTag{top:80px}}
-#ver{position:fixed;right:calc(4px + env(safe-area-inset-right));bottom:calc(2px + env(safe-area-inset-bottom));z-index:9999;font:600 10px/1 system-ui,sans-serif;color:#fff;opacity:.55;text-shadow:0 1px 2px #000;pointer-events:none;letter-spacing:.03em}
+#ver{position:fixed;right:max(22px, calc(6px + env(safe-area-inset-right)));bottom:max(8px, calc(2px + env(safe-area-inset-bottom)));z-index:9999;font:600 10px/1 system-ui,sans-serif;color:#fff;opacity:.55;text-shadow:0 1px 2px #000;pointer-events:none;letter-spacing:.03em}
 #vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 58%,rgba(0,0,0,.42) 100%)}
 #hurt{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(255,0,0,0) 45%,rgba(200,0,0,.55) 100%);transition:opacity .25s}
 
@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="446">v1.45</div>
+    <div id="ver" data-b="447">v1.46</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
