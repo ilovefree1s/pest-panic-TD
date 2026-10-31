@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="437">v1.36</div>
+    <div id="ver" data-b="438">v1.37</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3451,7 +3451,7 @@ const TT = {
   paper: { name: 'Newspaper',   cost: 100, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Does 25% extra to bosses and makes them stagger. Can\'t reach flies.' },
   lens:  { name: 'Magnifying Glass', abbr: 'Magnifier', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 15, 26], mult: 4, ramp: 3,
            d: 'Focuses a sunbeam on one bug, always a boss first if one is in reach. The burn grows the longer it stays on that bug, up to 4× after 3 seconds, then holds there. Switching to a new bug starts the burn over. Burns through shells and hits flies.' },
-  zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [16, 26, 40], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). Flies take 60% extra, bosses 25% extra.' },
+  zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [18, 30, 46], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). Flies take 60% extra, bosses 25% extra.' },
 };
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.0, 2.7, 3.4], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
