@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="431">v1.30</div>
+    <div id="ver" data-b="432">v1.31</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4558,7 +4558,7 @@ function spawnBug(t, route = nextRoute()) {
 }
 const RUSH_BONUS = 20;
 const vsPaced = () => !!(S && S.vs && !S.vs.race);
-function canRush() { return S.mode === 'play' && S.active && !vsPaced() && (S.endless || S.wave < MAXW); }
+function canRush() { return S.mode === 'play' && S.active && !vsPaced() && LV !== DAILY_LV && (S.endless || S.wave < MAXW); }   // Daily Kitchen: no sending early, so a losing run can't pad its score
 function startWave(...a) { BN_FWD++; try { return startWave0(...a); } finally { BN_FWD--; } }
 function startWave0() {
   if (S.mode !== 'play' || S.over || (S.vs && S.vs.dead)) return;
