@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="445">v1.44</div>
+    <div id="ver" data-b="446">v1.45</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4564,7 +4564,11 @@ function newState(mode) {
 
 // ---------------------------------------------------------------- simulation
 const tmpP = { x: 0, z: 0, dx: 0, dz: 0 };
-function nextRoute() { S.routeN = ((S.routeN || 0) + 1) % ROUTES.length; return S.routeN; }
+function doorsOpen() {   // solo kitchens with 3+ doors open them up over time: 1 door for waves 1-5, a 2nd from wave 6, the rest from wave 11
+  const n = S.wave <= 5 ? 1 : S.wave <= 10 ? 2 : ROUTES.length, order = [LONG_R]; for (let i = 0; i < ROUTES.length; i++) if (i !== LONG_R) order.push(i); return order.slice(0, n); }
+function nextRoute() {
+  if (S && LEVELS[LV] && !LEVELS[LV].team && !S.vs && ROUTES.length > 2) { const open = doorsOpen(); S.routeK = ((S.routeK || 0) + 1) % open.length; return (S.routeN = open[S.routeK]); }
+  S.routeN = ((S.routeN || 0) + 1) % ROUTES.length; return S.routeN; }
 function spawnBug(t, route = nextRoute()) {
   const bt = BT[t], LL = LEVELS[LV], wm = ((S.mode === 'play' && LL.bugMulW && LL.bugMulW[S.wave] && (LL.bugMulW[S.wave][t] || LL.bugMulW[S.wave]['*'])) || 1) * (S.mode === 'play' && LL.bugMulAfter && S.wave > LL.bugMulAfter[0] ? LL.bugMulAfter[1] : 1), hp = bt.boss ? bossHp(t) : Math.round(bt.hp * S.hpMul * wm * (S.mode === 'play' && S.wave >= 10 ? 1.2 : 1) * (S.mode === 'play' && S.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(S.mode === 'play' ? S.wave : 0)), b = { id: S.nid++, t, s: 0, off: (Math.random() - 0.5) * (bt.boss ? 0.2 : 1.3), hp, max: hp,
     x: 0, y0: 0, z: 0, ang: 0, pitch: 0, flash: 0, psnT: 0, psnD: 0, pacc: 0, stuck: 0, slowF: 1, walk: Math.random() * 6, glued: 0 };
