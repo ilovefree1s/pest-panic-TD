@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="442">v1.41</div>
+    <div id="ver" data-b="443">v1.42</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4993,6 +4993,7 @@ function towerAct(tw, dt) {
   if (tw.cd > 0) return;
   const tg = tw.itchT > 0 ? firstTarget(tw, R) : tw.t === 'spray' ? sprayTarget(tw, R) : tw.t === 'frog' ? frogTarget(tw, R) : firstTarget(tw, R);
   if (!tg) return;
+  const anim0 = tw.anim, yaw0 = tw.yawT;
   tw.cd = T.rate[L]; tw.anim = 0; tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
   const ty = bugY(tg) + 0.4;
   if (tw.t === 'swat') {
@@ -5072,7 +5073,7 @@ function towerAct(tw, dt) {
       b.push = BT[b.t].noPush ? 0 : T.push[L] * (tw.perk ? 1.25 : 1) * (BT[b.t].boss ? 0.1 * 4 / 2.4 : 1); b.sweptT = 3; n++;
       for (let i = 0; i < 3; i++) FX.smoke.spawn({ x: b.x, y: 0.25, z: b.z, vx: (Math.random() - 0.5) * 3, vy: 0.6, vz: (Math.random() - 0.5) * 3, drag: 3, life: 0.45, s0: 0.4, s1: 1.1, c: [0.85, 0.8, 0.7], a0: 0.4 });
     }
-    if (!n) { tw.cd = 0.15; return; }
+    if (!n) { tw.cd = 0.15; tw.anim = anim0; tw.yawT = yaw0; return; }   // nothing sweepable yet: don't restart the swing (that made the broom jump back and forth)
     pathAt(tg.s, tmpP, tg.route);
     const fl = Math.hypot(tmpP.dx, tmpP.dz) || 1, fx = tmpP.dx / fl, fz = tmpP.dz / fl, back = Math.min(T.push[L] * (tw.perk ? 1.6 : 1), 6.5);
     tw.sw = { x0: tg.x + fx * 1.4 - tw.x, z0: tg.z + fz * 1.4 - tw.z, x1: tg.x - fx * back - tw.x, z1: tg.z - fz * back - tw.z, fx, fz };
