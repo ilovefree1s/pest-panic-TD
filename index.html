@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="443">v1.42</div>
+    <div id="ver" data-b="444">v1.43</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3194,6 +3194,7 @@ function jarCount() { return (S && S.jarT && S.jarT.length) || 0; }
 function jarAdd(t) { if (!S) return; (S.jarT ||= []).push(t); S.jar = S.jarT.length; syncCatch(); }
 function jarSell() {   // sell one you already have in your collection first, so a new one isn't sold by accident
   const J = S.jarT || [], d = dexGet(); let i = J.findIndex(t => !t || d[t]); if (i < 0) i = J.length - 1; if (i >= 0) J.splice(i, 1); S.jar = J.length; syncCatch(); }
+function stopSpray() { try { SND.play('sprayStop'); for (const e of [S && S.ext, S && S.p2 && S.p2.ext]) if (e && e.abil) { e.abil.sndOn = false; e.abil = null; e.state = 'idle'; } } catch (err) {} }   // the game is over: no hiss on the results screen
 function bankLive() { const J = S && S.jarT; if (J) for (let i = 0; i < J.length; i++) if (J[i]) { dexAdd(J[i]); J[i] = null; } }   // the run is over: whatever is still in the jar joins the collection (null = already counted; it can still be sold in Endless)
 try { localStorage.removeItem('ppd-shiny'); } catch (e) {}   /* the old everlasting jar */
 function startCatch() {
@@ -6661,7 +6662,7 @@ addEventListener('resize', () => requestAnimationFrame(syncBeltPos));
 try { MQ_TRAY.addEventListener('change', placeStats); } catch (e) { MQ_TRAY.addListener(placeStats); }
 placeStats();
 function toTitle() {
-  if (S && (S.mode === 'over' || (S.mode === 'play' && !runSavable()))) bankLive();   // a run you can resume keeps its jar in the save
+  if (S && (S.mode === 'over' || (S.mode === 'play' && !runSavable()))) bankLive(); stopSpray();   // a run you can resume keeps its jar in the save
   if (BLD.testing) { BLD.testing = false; setTimeout(openBuilder, 0); }
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
   clearBoard(); loadLevel(0); S = newState('title'); shown = {}; $('stageTag').hidden = true; syncTrophies();
@@ -7341,7 +7342,7 @@ function vsEnd(res, why) {
   if (S.mode !== 'play') return;
   if (SPEC.on) exitSpec();
   const v = S.vs, f = v.foe || { l: '?', w: '?', ks: '?', sn: 0 };
-  bankLive(); S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt(); unpick();
+  bankLive(); stopSpray(); S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt(); unpick();
   if (v.v22) { if (!v.remote) { vsNet(vsStatus()); netSend({ k: 'vsOver', res, why }); } } else netSend(vsStatus());
   $('overt').textContent = v.ffa ? (res === 'win' ? 'You win!' : 'You\'re out') : FW(res === 'win' ? 'You win!' : res === 'lose' ? 'Your friend wins' : 'It\'s a tie!');
   $('ostars').hidden = true; $('endless').hidden = true; $('nextLv').hidden = true;
@@ -8428,7 +8429,7 @@ function gameOver(won) {
   if (S.vs && S.vs.race && !won) { raceDie(); return; }
   if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
   if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills, st: (S.p2 && S.p2.stats) || {} });   // the partner's own damage chart
-  bankLive(); S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
+  bankLive(); stopSpray(); S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
   if (S.daily) { dailyOver(); return; }
   const reached = won ? MAXW : S.wave, NX = LEVELS[LV].team ? teamNext(LV) : soloNext(LV), wasLocked = LEVELS[LV].team ? NX != null && !teamUnlocked(NX) : NX != null && !unlocked(NX);
   if (Math.min(reached, MAXW) > loadBest()) saveBest(Math.min(reached, MAXW));
