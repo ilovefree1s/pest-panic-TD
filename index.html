@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="447">v1.46</div>
+    <div id="ver" data-b="448">v1.47</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1012,7 +1012,8 @@ LEVELS[15] = { ...LEVELS[6], bossMul: null, bugMulAfter: [5, 1.2], bossMulW: { 2
 LEVELS[16] = { ...LEVELS[6], bossMul: null, name: 'Snake Pit', sub: 'Medium', intro: 'Both trails twist through their halves, then the right one climbs the middle to join the left. Guard the middle!',
   routes: [[[2, 10.6], [2, 9], [0, 9], [0, 0], [4, 0], [4, 5], [3, 5], [3, 7], [8, 7], [8, 3], [10, 3], [10, -0.05]],
            [[20.6, 7], [20, 7], [20, 9], [17, 9], [17, 7], [15, 7], [15, 4], [18, 4], [18, 1], [12, 1], [12, 6], [10, 6], [10, -0.05]]] };
-LEVELS[16].bossHp = (LEVELS[16].bossHp || 1) * 0.6;   // Team Kitchen 7 bosses: -40%
+LEVELS[16].bossHp = (LEVELS[16].bossHp || 1) * 0.6;
+LEVELS[11].bugMulAfter = [15, 0.9]; LEVELS[11].bossMulW = { ...(LEVELS[11].bossMulW || {}), 20: { '*': 0.9 }, 25: { '*': 0.9 } };   // Level 9 Corner Bakery: everything from wave 16 on is 10% weaker   // Team Kitchen 7 bosses: -40%
 // Levels 11 and 12: drawn in the Trail Builder, the cake moved to the back corners
 LEVELS[17] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Crossroads', sub: 'Two long trails that cross', intro: 'Two doors, two long trails that cross in the middle, and the cake in the back-left corner.', hp: 1.7, money: 225, cakeCol: 1,
   bosses: [['gant'], ['gbed'], ['gfly'], ['gmoth'], ['herc', 'gcenti']],
@@ -3288,7 +3289,8 @@ function abilUpdate(e, dt) {
     }
   }
   // aim at the bug closest to the cake that he can reach, else the nearest one
-  let tgt = lead && !lead.dead && (lead.x - e.x) ** 2 + (lead.z - e.z) ** 2 < ABIL.range * ABIL.range ? lead : null, td = ABIL.range * ABIL.range;
+  const reach = b => ABIL.range * (bugY(b) > 0.3 ? 1.45 : 1);   // a bug climbing the counter is up and away from the floor: he sprays up at it from a bit further
+  let tgt = lead && !lead.dead && Math.hypot(lead.x - e.x, lead.z - e.z) < reach(lead) ? lead : null, td = ABIL.range * ABIL.range;
   if (!tgt) for (const b of S.bugs) { if (b.dead) continue; const d = (b.x - e.x) ** 2 + (b.z - e.z) ** 2; if (d < td) { td = d; tgt = b; } }
   // only spray when there's a bug to spray: otherwise he's just running, and the spray time is saved for later
   if (!tgt || a.far) {
@@ -3302,7 +3304,7 @@ function abilUpdate(e, dt) {
   for (const b of S.bugs) {
     if (b.dead) continue;
     const bx = b.x - e.x, bz = b.z - e.z, d = Math.hypot(bx, bz);
-    if (d > ABIL.range || (d > 1 && (bx * fx + bz * fz) / d < ABIL.cone)) continue;
+    if (d > reach(b) || (d > 1 && (bx * fx + bz * fz) / d < ABIL.cone)) continue;
     CUR_SRC = 'abil'; hit(b, BT[b.t].boss ? b.max * ABIL.bossPct / ABIL.dur * dt : ABIL.dps * S.hpMul * dt, true); CUR_SRC = null;
     b.stuck = 0.15; b.slowF = Math.min(b.slowF, BT[b.t].boss ? 0.75 : 0.5);
     if (BT[b.t].boss) b.psnT = Math.max(b.psnT, 1.2);   // bosses: the 10% rule covers it, just the green look
