@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="448">v1.47</div>
+    <div id="ver" data-b="449">v1.48</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3788,7 +3788,7 @@ function specialMove(b, sp, dt) {
     for (const z of S.towers) if (z.mothT > 0) z.mothT -= dt;
     if (!giant && !b.free && !b.didCandle && b.s > 1) {
       let best = null, bd = 1e9;
-      for (const c of S.towers) { if (c.t !== 'candle' || c.pending || c.snuff) continue; const n = S.bugs.filter(o => o.free && o.free.tw === c).length; if (n >= 2) continue; const d = (c.x - b.x) ** 2 + (c.z - b.z) ** 2; if (d < bd) { bd = d; best = c; } }
+      for (const c of S.towers) { if (c.t !== 'zap' || c.pending) continue; const n = S.bugs.filter(o => o.free && o.free.tw === c).length; if (n >= 2) continue; const d = (c.x - b.x) ** 2 + (c.z - b.z) ** 2; if (d < bd) { bd = d; best = c; } }   // moths are drawn to the glow of a Bug Zapper
       if (best) b.free = { tw: best, phase: 'go', land: 0 };
     }
     if (b.free) return 0;   // flying off the trail: position handled after the path step
@@ -3805,12 +3805,15 @@ function mothFree(b, dt) {
   if (f.phase === 'land' && c.t === 'venus') {   // a fly buzzing around the flytrap until it gets snapped up (or gives up after a few seconds)
     f.land += dt; b.walk += dt * 8; const a = f.land * 5 + b.id; b.fx = c.x + Math.cos(a) * 0.6; b.fz = c.z + Math.sin(a) * 0.6; b.hy = 1 + (c.ctrY || 0) + Math.sin(f.land * 7) * 0.2;
     if (f.land >= 4) { b.didVenus = true; f.phase = 'back'; }
+  } else if (f.phase === 'land' && c.t === 'zap') {   // fluttering around the zapper's lamp: it fires a little slower while they crowd it
+    f.land += dt; b.walk += dt * 10; const a = f.land * 4 + b.id, rr = Math.min(0.7, f.land * 1.5); b.fx = c.x + Math.cos(a) * rr; b.fz = c.z + Math.sin(a) * rr; b.hy = 2.2 + Math.sin(f.land * 6) * 0.25;
+    if (f.land >= 5) { b.didCandle = true; f.phase = 'back'; }
   } else if (f.phase === 'land') {
     f.land += dt; b.hy = 0.75; b.walk += dt * 6;
     if (Math.random() < dt * 6) FX.smoke.spawn({ x: c.x, y: 2.4, z: c.z, vy: 1.2, life: 0.6, s0: 0.25, s1: 0.7, c: [0.5, 0.5, 0.5], a0: 0.4 });
     if (f.land >= (BT[b.t].boss ? 1.5 : 3)) { c.snuff = true; if (BT[b.t].boss) for (const o of S.towers) if (o.t === 'candle' && (o.x - c.x) ** 2 + (o.z - c.z) ** 2 < 64) o.snuff = true; b.didCandle = true; f.phase = 'back'; SND.play('sizzle'); for (let i = 0; i < 10; i++) FX.smoke.spawn({ x: c.x, y: 2.2, z: c.z, vy: 1.6, life: 1, s0: 0.4, s1: 1.2, c: [0.35, 0.35, 0.35], a0: 0.5 }); if (S.mode === 'play') banner('Candle snuffed!', 'A moth put it out. Tap the candle to relight it (15 coins)', false, 1600); }
   } else if (d < 0.35) { if (f.phase === 'go') { f.phase = 'land'; f.land = 0; } else { b.free = null; b.hy = 0; return; } }
-  else { const v = Math.min(d, 4.5 * dt * (b.windT > 0 ? b.windF || 1 : 1)); b.fx += dx / d * v; b.fz += dz / d * v; b.ang = Math.atan2(dx, dz); b.walk += dt * 6; b.hy += ((f.phase === 'go' ? 1.2 + (c.ctrY || 0) : 0) - b.hy) * Math.min(1, dt * 3); }
+  else { const v = Math.min(d, 4.5 * dt * (b.windT > 0 ? b.windF || 1 : 1)); b.fx += dx / d * v; b.fz += dz / d * v; b.ang = Math.atan2(dx, dz); b.walk += dt * 6; b.hy += ((f.phase === 'go' ? (c.t === 'zap' ? 2.2 : 1.2 + (c.ctrY || 0)) : 0) - b.hy) * Math.min(1, dt * 3); }
   b.x = b.fx; b.z = b.fz; b.y0 = 0;
 }
 function relight(tw = S.pick) {
@@ -4905,7 +4908,7 @@ function towerAct(tw, dt) {
   if (tw.moving) { tw.anim += dt; return; }   // being wheeled to a new spot
   const T = TT[tw.t], L = tw.lv - 1, R = T.range[L] * (1 + (tw.rmul || 0)) * PR(tw), stinky = tw.stink > 0;
   if (stinky) { tw.stink -= dt; dt *= 0.6; }   // stink bug cloud: 40% slower
-  tw.cd -= dt; tw.anim += dt;
+  tw.cd -= dt * (tw.t === 'zap' && S.bugs.some(b => b.free && b.free.tw === tw && b.free.phase === 'land' && !b.dead) ? 0.8 : 1); tw.anim += dt;   // moths crowding a zapper's lamp: its next shot comes 25% later
   if (tw.itchT > 0) { tw.itchT -= dt; if (Math.random() < dt * 5) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.2, y: 1.2 + Math.random() * 1.2, z: tw.z + (Math.random() - 0.5) * 1.2, vy: 1, life: 0.4, s0: 0.3, s1: 0.05, c: [1, 0.35, 0.35], a0: 1 }); }
   if (tw.t === 'cat') { catAct(tw, T, L, R, dt); return; }
   if (tw.t === 'venus') {   // each head bites on its own, then chews
@@ -5617,7 +5620,7 @@ function drawBugs(t) {
       if (b.hid) { b.mesh.visible = false; continue; } b.mesh.visible = true;
       const q = b.mesh, u = q.userData, fy = BT[b.t].fly; q.position.set(b.x, b.y0 + (fy ? 1.6 + Math.sin(b.walk * 0.9) * 0.2 : 0), b.z); q.rotation.set(b.pitch, b.ang, fy ? Math.sin(b.walk * 0.5) * 0.08 : 0, 'YXZ');
       if (u.wings) {
-        if (BT[b.t].base === 'moth') { const landed = b.free && b.free.phase === 'land'; u.wings.forEach((w, k) => { w.rotation.z = (landed ? 0.5 + Math.sin(t * 3 + k) * 0.12 : 0.15 + Math.sin(t * 13 + b.id + k * 0.3) * 0.7) * w.userData.s; }); }   /* giant moth: big slow wingbeats in the air; on a candle the wings settle up and just twitch */
+        if (BT[b.t].base === 'moth') { const landed = b.free && b.free.phase === 'land' && b.free.tw.t !== 'zap'; u.wings.forEach((w, k) => { w.rotation.z = (landed ? 0.5 + Math.sin(t * 3 + k) * 0.12 : 0.15 + Math.sin(t * 13 + b.id + k * 0.3) * 0.7) * w.userData.s; }); }   /* giant moth: big slow wingbeats in the air; on a candle the wings settle up and just twitch */
         else u.wings.forEach((w, k) => { w.rotation.x = u.wingTilt || 0; w.rotation.z = ((u.wingRest || 0) + Math.sin(t * 48 + k) * 0.55) * w.userData.s; });   /* wingTilt tips raised wings back to lie over the body */   /* wingRest: a model built with wings raised folds them down flat */
       }
       if (u.gait) gaitLegs(u.legs, u.gait, b.walk * 1.5, 0.55, 0.18);
@@ -6450,7 +6453,7 @@ const BUGINFO = [
   ['hopper', 'Grasshopper', 'Level 6 on', 'Every few seconds it crouches and leaps two tiles ahead. In the air it can\'t be hit by the Newspaper or Broom. Spread your tools out so it lands next to one. A sticky trap stops it jumping.', '1 slice'],
   ['centi', 'Centipede', 'Level 7 on', 'Eight fast segments in a line. Hits on the head pass back to the body, so the head is the last to go; squash a middle segment and the rest closes up. Area damage (Spray, Newspaper, Zapper) shreds it.', '⅓ slice per segment'],
   ['stink', 'Stink Bug', 'Level 8 on', 'Tough shell (blocks about a sixth of every hit). When it dies it lets out a green stink cloud: tools inside work 40% slower for 4 seconds. Squash it away from your best tools.', '1 slice'],
-  ['moth', 'Moth', 'Level 9 on', 'Flies. If you have Candles, it leaves the trail and flies to one, beats out the flame and snuffs it. Snuffed candles give no boost until you tap them and Relight (15 coins). Keep a Swatter near your candles.', '1 slice'],
+  ['moth', 'Moth', 'Level 9 on', 'Flies. Drawn to the glow of a Bug Zapper: it leaves the trail and flutters around the lamp for a few seconds, and while moths crowd it the zapper fires a little slower. Then it goes back to the trail.', '1 slice'],
   ['mantis', 'Praying Mantis', 'Level 9 on', 'Tall and tough. Every so often it snatches a small bug off the trail and eats it to heal itself, so take it down fast.', '2 slices'],
   ['ghop', 'Giant Grasshopper', 'Boss, Levels 6–8 and 9', 'Every so often it hops one tile ahead. Where it lands, the shockwave stuns nearby tools for a moment.', '5 slices'],
   ['gcenti', 'Giant Centipede', 'Boss, Levels 7–10', 'Fourteen big segments. The head is heavily armored (blocks a third of every hit), so hit the body. Break the middle and it splits in two.', '⅖ slice per segment'],
@@ -7529,7 +7532,7 @@ function aiSpecial(b, sp, dt) {
     for (const z of A.towers) if (z.mothT > 0) z.mothT -= dt;
     if (!giant && !b.free && !b.didCandle && b.s > 1) {
       const p = aiBugXZ(b); let best = null, bd = 1e9;
-      for (const c of A.towers) { if (c.t !== 'candle' || c.snuff) continue; const d = (ccx(c.c) - p.x) ** 2 + (ccz(c.r) - p.z) ** 2; if (d < bd) { bd = d; best = c; } }
+      for (const c of A.towers) { if (c.t !== 'zap') continue; const d = (ccx(c.c) - p.x) ** 2 + (ccz(c.r) - p.z) ** 2; if (d < bd) { bd = d; best = c; } }
       if (best) { b.free = { tw: best, phase: 'go', land: 0 }; b.fx = p.x; b.fz = p.z; }
     }
     if (b.free) {
@@ -7537,7 +7540,8 @@ function aiSpecial(b, sp, dt) {
       if (f.phase !== 'back' && (!A.towers.includes(c) || c.snuff)) f.phase = 'back';
       let tx, tz; if (f.phase === 'back') { pathAt(b.s, tmpP, b.route); tx = tmpP.x + tmpP.px * b.off; tz = tmpP.z + tmpP.pz * b.off; } else { tx = ccx(c.c); tz = ccz(c.r); }
       const dx = tx - b.fx, dz = tz - b.fz, d = Math.hypot(dx, dz);
-      if (f.phase === 'land') { b.hy = 0.75; if ((f.land += dt) >= (giant ? 1.5 : 3)) { c.snuff = true; if (giant) for (const o of A.towers) if (o.t === 'candle' && (o.c - c.c) ** 2 + (o.r - c.r) ** 2 < 8) o.snuff = true; b.didCandle = true; f.phase = 'back'; } }
+      if (f.phase === 'land' && c.t === 'zap') { b.hy = 2.2; if ((f.land += dt) >= 5) { b.didCandle = true; f.phase = 'back'; } }
+      else if (f.phase === 'land') { b.hy = 0.75; if ((f.land += dt) >= (giant ? 1.5 : 3)) { c.snuff = true; if (giant) for (const o of A.towers) if (o.t === 'candle' && (o.c - c.c) ** 2 + (o.r - c.r) ** 2 < 8) o.snuff = true; b.didCandle = true; f.phase = 'back'; } }
       else if (d < 0.35) { if (f.phase === 'go') { f.phase = 'land'; f.land = 0; } else { b.free = null; b.hy = 0; } }
       else { const v = Math.min(d, 4.5 * dt * (b.windT > 0 ? b.windF || 1 : 1)); b.fx += dx / d * v; b.fz += dz / d * v; b.hy = f.phase === 'go' ? 1.2 : 0.4; }
       return 0;
