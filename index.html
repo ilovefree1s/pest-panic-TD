@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="452">v1.51</div>
+    <div id="ver" data-b="454">v1.53</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4366,6 +4366,7 @@ const SND = (() => {
     sprayStop: () => { if (!SPRAY_SRC) return; const { src, g } = SPRAY_SRC, t = ac.currentTime; SPRAY_SRC = null; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(Math.max(0.0001, g.gain.value), t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25); src.stop(t + 0.3); },
     sweep: () => { hiss(0.22, 0.3, 1800, 0.8); hiss(0.18, 0.22, 3200, 0.8, 'bandpass', 0.12); },
     slam: () => { tone('sine', 150, 40, 0.28, 0.6); hiss(0.18, 0.35, 500, 1); },
+    chomp: () => { tone('triangle', 240, 95, 0.06, 0.4); hiss(0.04, 0.3, 2600, 2, 'bandpass'); tone('triangle', 200, 80, 0.07, 0.32, 0.11); hiss(0.05, 0.25, 1800, 2, 'bandpass', 0.11); },   /* a two-snap CHOMP-chomp for the flytrap */
     zap: () => { tone('sawtooth', 110, 70, 0.16, 0.12); hiss(0.1, 0.22, 7000, 2); },
     squish: () => { tone('triangle', 280, 70, 0.1, 0.22); hiss(0.05, 0.18, 1100, 2); },
     bite: () => { hiss(0.2, 0.55, 800, 1.5); tone('square', 130, 60, 0.15, 0.12); },
@@ -4915,12 +4916,12 @@ function towerAct(tw, dt) {
     const hs = tw.vh ||= [{ cd: 0, t: 9 }, { cd: 0.5, t: 9 }, { cd: 1, t: 9 }], taken = new Set();
     for (let k = 0; k < venusHeads(tw); k++) {
       const h = hs[k]; h.cd -= dt; h.t += dt; if (h.cd > 0) continue;
-      let tg = null; for (const b of S.bugs) if (canHit(tw, b) && (BT[b.t].fly || b.free) && !taken.has(b.id) && inRange(tw, b, R) && (!tg || leftOf(b) < leftOf(tg))) tg = b;   // flying bugs only
+      let tg = null; for (const b of S.bugs) if (canHit(tw, b) && (BT[b.t].fly || b.free) && !taken.has(b.id) && inRange(tw, b, R) && !(b.free && b.free.tw === tw && b.free.phase === 'go') && (!tg || leftOf(b) < leftOf(tg))) tg = b;   // flying bugs only (a fly it's luring in gets eaten when it arrives, not on the way)
       if (!tg) continue; taken.add(tg.id);
       const whole = !BT[tg.t].boss && (BT[tg.t].base || tg.t) === 'fly';   // flies get gulped whole; moths and the rest take a bite
       hit(tg, whole ? tg.hp + 1 + (tg.ball ? tg.ball.hp : 0) : T.dmg[L], true); h.cd = T.chew[L] * (tw.perk ? 0.75 : 1);   /* Miracle Grow: 25% faster */ h.t = 0; h.yaw = Math.atan2(tg.x - tw.x, tg.z - tw.z);
       for (let i = 0; i < 6; i++) FX.goo.spawn({ x: tg.x, y: 0.8, z: tg.z, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 3, grav: 14, life: 0.4, s0: 0.2, s1: 0.1, c: BT[tg.t].goo || [0.5, 0.3, 0.2], a0: 1, a1: 1 });
-      SND.play('slam');
+      SND.play('chomp');
     }
     return;
   }
@@ -5052,22 +5053,22 @@ function towerAct(tw, dt) {
     SND.play('spray');
   } else if (tw.t === 'fogger') {
     // a big fog blast down the trail: everything in the cone takes a hit and keeps choking (shells don't help)
-    const dx = tg.x - tw.x, dz = tg.z - tw.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d;
+    const dx = tg.x - tw.x, dz = tg.z - tw.z, d = Math.hypot(dx, dz) || 1, ux = dx / d, uz = dz / d, RF = Math.min(R, d + 2.4);   // the blast reaches just past the trail it aims at, not its full range
     for (const b of S.bugs) {
       if (!canHit(tw, b)) continue;
       const bx = b.x - tw.x, bz = b.z - tw.z, bd = Math.hypot(bx, bz) || 1;
-      if (bd > R || ((bx * ux + bz * uz) / bd < 0.6 && bd > 2.2)) continue;   // a wide cone
+      if (bd > RF || ((bx * ux + bz * uz) / bd < 0.6 && bd > 2.2)) continue;   // a wide cone
       hit(b, T.dmg[L], true); b.flash = 0.08; b.psnT = Math.max(b.psnT, 2); b.psnD = Math.max(b.psnD, T.dot[L] * (1 + CUR_AMP)); b.psnSrc = 'fogger'; b.psnOwn = S.cur || 0; b.psnTw = tw; b.psnAmp = CUR_AMP;
       for (let i = 0; i < 4; i++) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 1.2, y: 0.6 + Math.random(), z: b.z + (Math.random() - 0.5) * 1.2, vy: 1.2, life: 0.7, s0: 0.7, s1: 0.15, c: [0.55, 1, 0.35], a0: 1 });   // a green puff on every bug it hits
     }
-    (S.fog ||= []).push({ tw, x: tw.x, z: tw.z, ux, uz, R, t: T.fogT, dot: T.dot[L] * (1 + CUR_AMP), own: S.cur || 0, amp: CUR_AMP });   // the cloud hangs there: anything inside keeps choking, even bugs that walk in after the blast
+    (S.fog ||= []).push({ tw, x: tw.x, z: tw.z, ux, uz, R: RF, t: T.fogT, dot: T.dot[L] * (1 + CUR_AMP), own: S.cur || 0, amp: CUR_AMP });   // the cloud hangs there: anything inside keeps choking, even bugs that walk in after the blast
     const nx = tw.x + ux * 1.8, nz = tw.z + uz * 1.8;
     for (let i = 0; i < 64; i++) {   // a thick, bright cloud you can see across the kitchen
-      const sp = R * (0.9 + Math.random() * 0.9), j = (Math.random() - 0.5) * 0.8, c = Math.cos(j), s2 = Math.sin(j), low = i % 3 === 0;
+      const sp = RF * (0.9 + Math.random() * 0.9), j = (Math.random() - 0.5) * 0.8, c = Math.cos(j), s2 = Math.sin(j), low = i % 3 === 0;
       FX.smoke.spawn({ x: nx, y: low ? 0.5 : 1.6, z: nz, vx: (ux * c - uz * s2) * sp, vy: low ? 0.1 : -0.4 + Math.random() * 0.8, vz: (uz * c + ux * s2) * sp, drag: 1.6, life: 1.9 + Math.random() * 0.8, s0: 1.1, s1: 4.4, c: low ? [0.62, 0.95, 0.5] : [0.9, 1, 0.9], a0: 0.72 });
     }
     for (let i = 0; i < 10; i++) FX.glow.spawn({ x: nx, y: 1.6, z: nz, vx: ux * (6 + Math.random() * 6) + (Math.random() - 0.5) * 3, vy: Math.random() * 2, vz: uz * (6 + Math.random() * 6) + (Math.random() - 0.5) * 3, drag: 2, life: 0.5, s0: 1.2, s1: 0.3, c: [0.7, 1, 0.5], a0: 1 });   // nozzle flash
-    if (tw.perk) (tw.pools ||= []).push({ x: tw.x + ux * R * 0.55, z: tw.z + uz * R * 0.55, r: R * 0.45, t: 3, dps: T.dot[L] * 0.7 });   // the fog settles on the floor
+    if (tw.perk) (tw.pools ||= []).push({ x: tw.x + ux * RF * 0.55, z: tw.z + uz * RF * 0.55, r: Math.max(1.6, RF * 0.45), t: 3, dps: T.dot[L] * 0.7 });   // the fog settles on the floor
     S.shake = Math.max(S.shake, 0.1); SND.play('spray');
   } else if (tw.t === 'paper') {
     for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, R)) { if (BT[b.t].boss) { hit(b, T.dmg[L] * 1.25); bossStun(b, 0.35, 0.15); } else hit(b, T.dmg[L]); }   // bosses: +25% and a stagger
