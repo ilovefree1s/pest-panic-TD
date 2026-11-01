@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="455">v1.54</div>
+    <div id="ver" data-b="456">v1.55</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1013,8 +1013,7 @@ LEVELS[16] = { ...LEVELS[6], bossMul: null, name: 'Snake Pit', sub: 'Medium', in
   routes: [[[2, 10.6], [2, 9], [0, 9], [0, 0], [4, 0], [4, 5], [3, 5], [3, 7], [8, 7], [8, 3], [10, 3], [10, -0.05]],
            [[20.6, 7], [20, 7], [20, 9], [17, 9], [17, 7], [15, 7], [15, 4], [18, 4], [18, 1], [12, 1], [12, 6], [10, 6], [10, -0.05]]] };
 LEVELS[16].bossHp = (LEVELS[16].bossHp || 1) * 0.6;
-LEVELS[11].bugMulAfter = [15, 0.9]; LEVELS[11].bossMulW = { ...(LEVELS[11].bossMulW || {}), 20: { '*': 0.9 }, 25: { '*': 0.9, gfly: 0.9 * 0.65 } };   // Level 9 Corner Bakery: everything from wave 16 on is 10% weaker; the last wave's Giant Housefly another 35%
-LEVELS[11].bugMulW = { ...(LEVELS[11].bugMulW || {}), 25: { fly: 0.65 } };   // ...and the last wave's flies 35% weaker   // Team Kitchen 7 bosses: -40%
+LEVELS[11].bugMulAfter = [15, 0.9]; LEVELS[11].bossMulW = { ...(LEVELS[11].bossMulW || {}), 20: { '*': 0.9 }, 25: { '*': 0.9, gfly: 0.9 * 0.65 } };   // Level 9 Corner Bakery: everything from wave 16 on is 10% weaker; the last wave's Giant Housefly another 35%   // Team Kitchen 7 bosses: -40%
 // Levels 11 and 12: drawn in the Trail Builder, the cake moved to the back corners
 LEVELS[17] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Crossroads', sub: 'Two long trails that cross', intro: 'Two doors, two long trails that cross in the middle, and the cake in the back-left corner.', hp: 1.7, money: 225, cakeCol: 1,
   bosses: [['gant'], ['gbed'], ['gfly'], ['gmoth'], ['herc', 'gcenti']],
@@ -4485,7 +4484,7 @@ const MUSIC = (() => {
 // ---------------------------------------------------------------- game data
 const BT = {
   ant:    { hp: 30,   spd: 3.2, gold: 4,   lives: 1, goo: [0.62, 0.16, 0.1] },
-  fly:    { hp: 22,   spd: 5.0, gold: 5,   lives: 1, fly: true, goo: [0.5, 0.82, 0.22] },
+  fly:    { hp: 26,   spd: 5.0, gold: 5,   lives: 1, fly: true, goo: [0.5, 0.82, 0.22] },
   spider: { hp: 120,  spd: 2.0, gold: 11,  lives: 2, armor: 3, goo: [0.45, 0.22, 0.6] },
   bed:    { hp: 7,    spd: 3.8, gold: 1,   lives: 0.25, goo: [0.55, 0.12, 0.08], swarm: 12 },
   dung:   { hp: 90,   spd: 2.2, gold: 9,   lives: 1, ball: 75, goo: [0.3, 0.26, 0.2] },
