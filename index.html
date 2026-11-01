@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="451">v1.50</div>
+    <div id="ver" data-b="452">v1.51</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3089,7 +3089,7 @@ function setAbil() {
   const el = $('abil'); if (!el) return; el.classList.toggle('pro', pro); el.querySelector('small').textContent = pro ? ABIL.cost + 'g' : 'Free'; el.querySelector('b').textContent = pro ? 'Pro' : 'Spray';
 }
 // the bug closest to the cake: measured as distance LEFT on its own trail, so two trails of different lengths compare fairly
-const leftOf = b => (ROUTES[b.route] ? ROUTES[b.route].len : 0) - b.s;
+const leftOf = b => (ROUTES[b.route] ? ROUTES[b.route].len : 0) - b.s;   // trail left to the cake: the real "closest to the cake" when there are several trails of different lengths
 function leadBug(stick) {
   let best = null;
   for (const b of S.bugs) if (!b.dead && b.y0 < 0.5 && (!best || leftOf(b) < leftOf(best))) best = b;
@@ -4761,13 +4761,13 @@ function sprayTarget(tw, r) {
   for (const b of S.bugs) {
     if (!canHit(tw, b) || !inRange(tw, b, r)) continue;
     const dosed = BT[b.t].boss ? !!(b.psnBy && b.psnBy[tw.id] && b.psnBy[tw.id].until - now > 0.5) : b.psnT > 0.5;
-    if (!dosed && (!best || b.s > best.s)) best = b;
+    if (!dosed && (!best || leftOf(b) < leftOf(best))) best = b;
   }
   return best || firstTarget(tw, r);
 }
-function frogTarget(tw, r) { let best = null; for (const b of S.bugs) if (BT[b.t].fly && canHit(tw, b) && inRange(tw, b, r) && (!best || b.s > best.s)) best = b; return best || firstTarget(tw, r); }   // flyers first
+function frogTarget(tw, r) { let best = null; for (const b of S.bugs) if (BT[b.t].fly && canHit(tw, b) && inRange(tw, b, r) && (!best || leftOf(b) < leftOf(best))) best = b; return best || firstTarget(tw, r); }   // flyers first
 function firstTarget(tw, r) { if (tw.itchT > 0) { const c = S.bugs.filter(b => canHit(tw, b) && inRange(tw, b, r)); return c.length ? c[Math.floor(Math.random() * c.length)] : null; }   /* itchy (Bed Bug Mother): swings at any bug in reach */
-  let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || b.s > best.s)) best = b; return best; }
+  let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || leftOf(b) < leftOf(best))) best = b; return best; }
 
 const ZAP_JUMP = 6.5, ZAP_HOP = 0.13;
 function zapHop(z) {
@@ -4915,7 +4915,7 @@ function towerAct(tw, dt) {
     const hs = tw.vh ||= [{ cd: 0, t: 9 }, { cd: 0.5, t: 9 }, { cd: 1, t: 9 }], taken = new Set();
     for (let k = 0; k < venusHeads(tw); k++) {
       const h = hs[k]; h.cd -= dt; h.t += dt; if (h.cd > 0) continue;
-      let tg = null; for (const b of S.bugs) if (canHit(tw, b) && (BT[b.t].fly || b.free) && !taken.has(b.id) && inRange(tw, b, R) && (!tg || b.s > tg.s)) tg = b;   // flying bugs only
+      let tg = null; for (const b of S.bugs) if (canHit(tw, b) && (BT[b.t].fly || b.free) && !taken.has(b.id) && inRange(tw, b, R) && (!tg || leftOf(b) < leftOf(tg))) tg = b;   // flying bugs only
       if (!tg) continue; taken.add(tg.id);
       const whole = !BT[tg.t].boss && (BT[tg.t].base || tg.t) === 'fly';   // flies get gulped whole; moths and the rest take a bite
       hit(tg, whole ? tg.hp + 1 + (tg.ball ? tg.ball.hp : 0) : T.dmg[L], true); h.cd = T.chew[L] * (tw.perk ? 0.75 : 1);   /* Miracle Grow: 25% faster */ h.t = 0; h.yaw = Math.atan2(tg.x - tw.x, tg.z - tw.z);
@@ -4979,7 +4979,7 @@ function towerAct(tw, dt) {
     for (const b of S.bugs) {
       if (b.dead || !BT[b.t].fly || !inRange(tw, b, R)) continue;
       b.windT = 0.2; b.windF = BT[b.t].boss ? 1 - (1 - T.slow[L]) * 0.5 : T.slow[L];
-      if (!tg || b.s > tg.s) tg = b;
+      if (!tg || leftOf(b) < leftOf(tg)) tg = b;
     }
     tw.blow = !!tg; if (tg) tw.yawT = Math.atan2(tg.x - tw.x, tg.z - tw.z);
     if (tw.cd > 0 || !tg) return;
