@@ -654,7 +654,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="472">v1.71</div>
+    <div id="ver" data-b="473">v1.72</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3115,8 +3115,8 @@ function setAbil() {
 const leftOf = b => (ROUTES[b.route] ? ROUTES[b.route].len : 0) - b.s;   // trail left to the cake: the real "closest to the cake" when there are several trails of different lengths
 function leadBug(stick) {
   let best = null;
-  for (const b of S.bugs) if (!b.dead && !b.hid && (!best || leftOf(b) < leftOf(best))) best = b;   // bugs climbing up to the counter count too: those are the ones about to reach the cake
-  if (stick && !stick.dead && !stick.hid && best && leftOf(stick) - leftOf(best) < 4) return stick;   // don't flip to a bug only a little closer: he'd run back and forth
+  for (const b of S.bugs) if (!b.dead && !b.hid && !b.free && (!best || leftOf(b) < leftOf(best))) best = b;   // (a moth off fluttering at a zapper isn't on its way to the cake)   // bugs climbing up to the counter count too: those are the ones about to reach the cake
+  if (stick && !stick.dead && !stick.hid && !stick.free && best && leftOf(stick) - leftOf(best) < 1.5) return stick;   // don't flip to a bug only a little closer: he'd run back and forth
   return best;
 }
 // ---- shiny bugs: a very rare rainbow bug. Tap Catch and the exterminator runs over and grabs it before it's squashed
@@ -3307,7 +3307,7 @@ function abilUpdate(e, dt) {
     for (const d of [2.9, 3.6, 4.4]) { for (const sd of [a.side || 1, -(a.side || 1)]) { const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd; if (offTrail(x, z)) { gx = x; gz = z; a.side = sd; break; } } if (gx !== null) break; }
     if (gx !== null) {
       const mx = gx - e.x, mz = gz - e.z, md = Math.hypot(mx, mz);
-      a.far = md > ABIL.range * 0.6;   // the front of the pack is somewhere else now: run there first
+      a.far = md > ABIL.range * 0.6 || Math.hypot(lead.x - e.x, lead.z - e.z) > ABIL.range * (bugY(lead) > 0.3 ? 1.45 : 1);   // the front of the pack is somewhere else, or still out of reach: run there first, don't waste spray on stragglers
       if (md > 0.3) { const step = Math.min(md, ABIL.speed * (a.far ? 1 : 0.45) * dt); e.x += mx / md * step; e.z += mz / md * step; e.phase += dt * (a.far ? 20 : 12); if (a.far) e.yaw = Math.atan2(mx, mz); }
     }
   }
