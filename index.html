@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="457">v1.56</div>
+    <div id="ver" data-b="458">v1.57</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2779,8 +2779,8 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 5.99 }, widow: { url: 'assets/boss_widow.glb', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb', len: 4.6, legs: 4 }, herc: { url: 'assets/boss_herc.glb', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
-function insectRig(geo, per = 3) {
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 5.99 }, widow: { url: 'assets/boss_widow.glb', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb', len: 4.6, legs: 4, legTop: 0.34 }, herc: { url: 'assets/boss_herc.glb', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
+function insectRig(geo, per = 3, top = 0.7) {   // top: how high up (share of height) a leg can reach before it's body
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
   const body = Wd * 0.58, legSide = [[], []]; let hipSum = 0, hipN = 0;
@@ -2789,7 +2789,7 @@ function insectRig(geo, per = 3) {
   const J = new Uint16Array(n * 4), Wt = new Float32Array(n * 4), ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
   /* a whole leg must follow one bone, or it tears where two hips meet: group the leg vertices into connected pieces through the
      triangles, then give each piece the hip nearest to where it joins the body */
-  const isLeg = new Uint8Array(n); for (let i = 0; i < n; i++) { const y = P.getY(i) - mn; isLeg[i] = (Math.abs(P.getX(i)) > body * 0.8 && y < H * 0.7) ? 1 : 0; }
+  const isLeg = new Uint8Array(n); for (let i = 0; i < n; i++) { const y = P.getY(i) - mn; isLeg[i] = (Math.abs(P.getX(i)) > body * 0.8 && y < H * top) ? 1 : 0; }
   const par = new Int32Array(n); for (let i = 0; i < n; i++) par[i] = i; const find = i => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
   const ix = geo.index, tri = ix ? ix.count : n, at = i => ix ? ix.getX(i) : i;
   for (let t = 0; t < tri; t += 3) { const a = at(t), b = at(t + 1), c = at(t + 2); if (isLeg[a] && isLeg[b]) par[find(a)] = find(b); if (isLeg[b] && isLeg[c]) par[find(b)] = find(c); }
@@ -2808,7 +2808,7 @@ function insectRig(geo, per = 3) {
   for (let i = 0; i < n; i++) {
     const x = P.getX(i), y = P.getY(i) - mn;
     let bone = 0, w = 0;
-    if (isLeg[i]) { w = ss(body * 0.8, body * 1.05, Math.abs(x)) * (1 - ss(H * 0.55, H * 0.7, y)); if (w > 0) bone = boneOf[find(i)]; }
+    if (isLeg[i]) { w = ss(body * 0.8, body * 1.05, Math.abs(x)) * (1 - ss(H * (top - 0.15), H * top, y)); if (w > 0) bone = boneOf[find(i)]; }
     J[i * 4] = bone; Wt[i * 4] = w; Wt[i * 4 + 1] = 1 - w;
   }
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
@@ -2892,7 +2892,7 @@ function buildModelBoss(t) {
     root.userData = { body, legs: [], wings, mats: [mat, wingMat], model: true, wingRest: M.wingRest || 0, wingTilt: M.wingTilt || 0 }; root.visible = false; scene.add(root);
     return root;
   }
-  const R = insectRig(src.geometry, M.legs || 3), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const R = insectRig(src.geometry, M.legs || 3, M.legTop || 0.7), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [];
   for (const [x, z] of R.hips) { const b = new THREE.Bone(); b.position.set(x, R.hipY, z); b.userData = { yaw: 0 }; bones[0].add(b); bones.push(b); legs.push(b); }
   const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.castShadow = true; sk.frustumCulled = false;
