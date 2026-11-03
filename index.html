@@ -654,7 +654,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="469">v1.68</div>
+    <div id="ver" data-b="470">v1.69</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4833,7 +4833,8 @@ function syncCandles() {
   for (const c of candles) { const r = c.o.auraR || 4.8; c.glowN = candles.filter(d => d !== c && Math.hypot(d.x - c.x, d.z - c.z) < (r + (d.o.auraR || 4.8)) * 0.55).length; }
 }
 // the house cat: wanders around its bed, and pounces on any bug that comes near
-const CAT_KNOCKS = 4;   // at most this many things knocked off per level
+const CAT_KNOCKS = 4;
+const CAT_TOO_BIG = new Set(['sink', 'microwave']);   // too big and heavy for the cat to push off the counter   // at most this many things knocked off per level
 function catMischief(tw, T, L, dt) {   // now and then: hop up on the counter, swat one thing off, hop back down
   const M = tw.mis;
   if (!M) return false;
@@ -4877,7 +4878,7 @@ function catHunt(tw) {   /* head for the nearest bug on the floor, wherever it i
 }
 function catPlanMischief(tw) {
   if ((tw.knocks || 0) >= CAT_KNOCKS || !KIT.props) return;
-  const keys = Object.keys(KIT.props).filter(k => !k.includes('#') && KIT.props[k].visible && !KIT.props[k].userData.knocked && k !== 'sink');
+  const keys = Object.keys(KIT.props).filter(k => !k.includes('#') && KIT.props[k].visible && !KIT.props[k].userData.knocked && !CAT_TOO_BIG.has(k));
   if (!keys.length) return;
   let best = null, bd = 1e9;
   for (const k of keys) { const g = KIT.props[k], d = (g.position.x - tw.cx) ** 2 + (g.position.z - tw.cz) ** 2 + Math.random() * 60; if (d < bd) { bd = d; best = k; } }
