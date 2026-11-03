@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="463">v1.62</div>
+    <div id="ver" data-b="464">v1.63</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4513,6 +4513,7 @@ const BOSS_AT = { 5: ['queen'], 10: ['widow'], 15: ['hornet'], 20: ['hornet', 'w
 const BOSS_HP20 = { queen: 1.556, widow: 0.7, hornet: 0.632, ghop: 0.7, gcenti: 0.7, gstink: 0.7, gmoth: 0.7, gmantis: 0.7, herc: 0.7, gant: 0.7, gfly: 0.7, gbed: 0.7 };
 const bossHpAll = t => bossHp(t) * (BT[t].segs || 1);
 function bossesFor(n) {
+  if (LV === DAILY_LV) { if (n % 5) return []; const L = ((LEVELS[LV] && LEVELS[LV].bosses) || [['queen']]).flat(); return [L[(n / 5 - 1) % L.length]]; }   // Daily Kitchen (10 slices): always one boss at a time, taking turns through today's six
   const BL = (LEVELS[LV] && LEVELS[LV].bosses) || [['queen'], ['widow'], ['hornet'], ['hornet', 'widow', 'queen']];
   if (n <= MAXW) {
     if (n % 5) return [];
