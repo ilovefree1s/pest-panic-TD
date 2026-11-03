@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="460">v1.59</div>
+    <div id="ver" data-b="461">v1.60</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -7745,7 +7745,8 @@ const cleanName = n => String(n || '').replace(/[<>&"]/g, '').trim().slice(0, 16
 const dailyMine = day => { try { return JSON.parse(LS.get('ppd-daily-' + day) || 'null'); } catch (e) { return null; } };
 function dailyStreak() { try { const o = JSON.parse(LS.get('ppd-daily-streak') || 'null'); if (!o) return 0; const y = new Date(Date.parse(dailyDay()) - 864e5).toISOString().slice(0, 10); return o.last === dailyDay() || o.last === y ? o.n : 0; } catch (e) { return 0; } }
 function bumpStreak(day) { let o = null; try { o = JSON.parse(LS.get('ppd-daily-streak') || 'null'); } catch (e) {} const y = new Date(Date.parse(day) - 864e5).toISOString().slice(0, 10); const n = o && o.last === y ? o.n + 1 : o && o.last === day ? o.n : 1; LS.set('ppd-daily-streak', JSON.stringify({ last: day, n })); return n; }
-const LB_URL = SB_URL + '/rest/v1/daily_scores', LB_H = { apikey: SB_KEY, 'Content-Type': 'application/json' };
+const LB_URL = SB_URL + '/rest/v1/ppd_daily_scores',   /* our own table: the Supabase project is shared with other games that have their own daily_scores */
+  LB_H = { apikey: SB_KEY, 'Content-Type': 'application/json' };
 let LB_ERR = '';
 async function lbSubmit(day, waves, kills) {   /* insert; if the table already has this player today (409), raise it to this run when this run is better */
   try { const r = await fetch(LB_URL, { method: 'POST', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ day, pid: myPid(), name: cleanName(dailyName()), waves, kills }) });
