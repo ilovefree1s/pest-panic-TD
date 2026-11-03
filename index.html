@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="462">v1.61</div>
+    <div id="ver" data-b="463">v1.62</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3488,7 +3488,7 @@ Object.assign(TT, {
   sticky:  { name: 'Sticky Trap', cost: 35, item: true, path: true, air: false, range: [1.6, 1.6, 1.6],
              d: 'A glue sheet for the trail. For one wave, every crawling bug that walks over it slows to 40% speed. Flies go over it. Placed between waves, it works during the next wave.' },
   bomb:    { name: 'Bug Bomb', cost: 75, item: true, path: true, air: true, range: [2.4, 2.4, 2.4], pct: 0.22, bossPct: 0.025,
-             d: 'A fogger for the trail. It waits on the trail until a bug walks over it, then fills the trail around it with thick green poison fog for the rest of that wave. Every bug passing through loses 22% of its health each second (bosses 2.5%), flies included, so it's just as strong in the last waves as the first. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
+             d: 'A fogger for the trail. It waits on the trail until a bug walks over it, then fills the trail around it with thick green poison fog for the rest of that wave. Every bug passing through loses 22% of its health each second (bosses 2.5%), flies included, so it\'s just as strong in the last waves as the first. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
   pack:    { name: 'Pro Spray Upgrade', abbr: 'Pro Spray', item: true, instant: true, air: true, cost: 150, range: [0, 0, 0],
              d: 'Loads your exterminator\'s backpack sprayer with pro-strength spray for the rest of the game: 60% more damage, stronger poison, a wider and longer reach, sprays for 4 seconds and takes 16% off a boss. Each spray then costs 20 coins and takes 75 seconds to recharge (instead of free and 60).' },
   license: { name: 'Exterminator License', abbr: 'License', item: true, instant: true, air: true, costs: [120, 200, 300], range: [0, 0, 0],
