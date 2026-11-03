@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="456">v1.55</div>
+    <div id="ver" data-b="457">v1.56</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2998,7 +2998,7 @@ function buildMantisModel() {
   R.arms.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); bones[0].add(b); bones.push(b); arms.push(b); });
   const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
   const k = M.hgt / R.H; sk.scale.setScalar(k); sk.position.y = -R.mn * k; body.add(sk);
-  u.legs = legs; u.arms = arms; u.mats = [mat]; u.shadow = 2.0; return root;
+  u.legs = legs; u.arms = arms; u.mats = [mat]; u.shadow = 2.0; u.stride = true; return root;
 }
 { let n = 0; const done = () => { if (++n < 2) return; const old = MODEL_BUILD.centi; MODEL_BUILD.centi = () => { try { return buildCentiModel(); } catch (e) { console.warn('centipede model', e); return old(); } }; };
   try { new GLTFLoader().load('assets/centi_head.glb', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
@@ -3687,6 +3687,7 @@ function drawMdl(b, t, sh) {
     u.crY = (u.crY || 0) + ((crouch ? -0.1 : 0) - (u.crY || 0)) * 0.2;
   }
   if (u.gait) gaitLegs(u.legs, u.gait, w * 1.5, 0.6, 0.32);
+  else if (u.stride) u.legs.forEach((g, k) => { const ph = w * 1.3 + (k === 0 || k === 3 ? 0 : Math.PI); g.rotation.y = g.userData.yaw; g.rotation.x = Math.sin(ph) * 0.32; g.rotation.z = Math.max(0, Math.cos(ph)) * 0.14 * g.userData.s; });   // mantis legs reach back along the body: step them forward and back (diagonal pairs), not side to side
   else u.legs.forEach((g, k) => { g.rotation.y = g.userData.yaw + (hop && b.jump > 0 ? 0 : Math.sin(w + k * 1.7) * sw * g.userData.s); g.rotation.z = Math.max(0, Math.sin(w + k)) * 0.15 * g.userData.s; });
   if (u.wings) u.wings.forEach((g, k) => { g.rotation.z = (b.free && b.free.phase === 'land' ? Math.sin(t * 22 + k) * 0.35 : 0.2 + Math.sin(t * 30 + b.id + k * 0.4) * 0.75) * g.userData.s; });
   if (u.back) {   // big legs: fold in the crouch, kick out on take-off, ease back in the air
