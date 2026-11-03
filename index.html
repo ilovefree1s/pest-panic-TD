@@ -654,7 +654,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="471">v1.70</div>
+    <div id="ver" data-b="472">v1.71</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1027,6 +1027,7 @@ LEVELS[16] = { ...LEVELS[6], bossMul: null, name: 'Snake Pit', sub: 'Medium', in
   routes: [[[2, 10.6], [2, 9], [0, 9], [0, 0], [4, 0], [4, 5], [3, 5], [3, 7], [8, 7], [8, 3], [10, 3], [10, -0.05]],
            [[20.6, 7], [20, 7], [20, 9], [17, 9], [17, 7], [15, 7], [15, 4], [18, 4], [18, 1], [12, 1], [12, 6], [10, 6], [10, -0.05]]] };
 LEVELS[16].bossHp = (LEVELS[16].bossHp || 1) * 0.6;
+LEVELS[12].bugMulAfter = [14, 0.9]; LEVELS[12].bossMulW = { ...(LEVELS[12].bossMulW || {}), 15: { '*': 0.9 }, 20: { '*': 0.9 }, 25: { '*': 0.9 } };   // Level 10 Haunted House: waves 15 on are 10% weaker
 LEVELS[11].bugMulAfter = [15, 0.9]; LEVELS[11].bossMulW = { ...(LEVELS[11].bossMulW || {}), 20: { '*': 0.9 }, 25: { '*': 0.9, gfly: 0.9 * 0.65 } };   // Level 9 Corner Bakery: everything from wave 16 on is 10% weaker; the last wave's Giant Housefly another 35%   // Team Kitchen 7 bosses: -40%
 // Levels 11 and 12: drawn in the Trail Builder, the cake moved to the back corners
 LEVELS[17] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Crossroads', sub: 'Two long trails that cross', intro: 'Two doors, two long trails that cross in the middle, and the cake in the back-left corner.', hp: 1.7, money: 225, cakeCol: 1,
