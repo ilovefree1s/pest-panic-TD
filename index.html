@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="464">v1.63</div>
+    <div id="ver" data-b="465">v1.64</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -701,6 +701,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
       <label class="dName">Your name on the board <input id="dName" maxlength="16" autocomplete="off" spellcheck="false"></label>
       <button class="btn" id="dPlay" type="button">Play today's kitchen</button>
       <h3 class="lhead2">Today's leaderboard</h3>
+      <p class="hint" id="dTie">Same wave? Whoever did more damage to bosses ranks higher.</p>
       <ol class="dBoard" id="dBoard"></ol>
       <p class="hint" id="dYou"></p>
       <button class="btn dark" id="dBack" type="button">Back</button>
@@ -4683,7 +4684,7 @@ function hit(b, d, raw) {
   const show = S.mode === 'play';
   if (b.ball && b.ball.hp > 0) { const bd = Math.min(d, b.ball.hp); b.ball.hp -= d; b.ball.flash = 0.08; if (show) { b.db = (b.db || 0) + bd; if (CUR_SRC) statFor(CUR_SRC).dmg += bd; credit(bd, false); } if (b.ball.hp <= 0) breakBall(b); return; }
   const dd = raw ? d : d * armorKeep(b);
-  if (show) { const real = Math.min(dd, Math.max(0, b.hp)); if (raw) b.dr = (b.dr || 0) + real; else b.dn = (b.dn || 0) + real; if (CUR_SRC) { const st = statFor(CUR_SRC); st.dmg += real; if (b.hp - dd <= 0) st.kills++; } credit(real, b.hp - dd <= 0); }
+  if (show) { const real = Math.min(dd, Math.max(0, b.hp)); if (raw) b.dr = (b.dr || 0) + real; else b.dn = (b.dn || 0) + real; if (BT[b.t].boss) S.bossDmg = (S.bossDmg || 0) + real;   /* Daily Kitchen tie-breaker */ if (CUR_SRC) { const st = statFor(CUR_SRC); st.dmg += real; if (b.hp - dd <= 0) st.kills++; } credit(real, b.hp - dd <= 0); }
   b.hp -= dd; if (!raw) b.flash = 0.08;
   if (b.hp <= 0) kill(b);
   else if (b.clutch && b.hp / b.max < b.clutch / 3) { b.clutch--; layClutch(b); }
@@ -7749,28 +7750,29 @@ function bumpStreak(day) { let o = null; try { o = JSON.parse(LS.get('ppd-daily-
 const LB_URL = SB_URL + '/rest/v1/ppd_daily_scores',   /* our own table: the Supabase project is shared with other games that have their own daily_scores */
   LB_H = { apikey: SB_KEY, 'Content-Type': 'application/json' };
 let LB_ERR = '';
-async function lbSubmit(day, waves, kills) {   /* insert; if the table already has this player today (409), raise it to this run when this run is better */
-  try { const r = await fetch(LB_URL, { method: 'POST', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ day, pid: myPid(), name: cleanName(dailyName()), waves, kills }) });
+async function lbSubmit(day, waves, kills, bd = 0) {   /* insert; if the table already has this player today (409), raise it to this run when this run is better */
+  try { const r = await fetch(LB_URL, { method: 'POST', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ day, pid: myPid(), name: cleanName(dailyName()), waves, kills, boss_dmg: bd }) });
     const why409 = r.status === 409 ? (await r.text()).slice(0, 160) : '';
     if (r.status === 409) {   /* this player already has a score today (another device with the same backup): keep the better one */
-      const u = await fetch(LB_URL + '?day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()) + '&or=(waves.lt.' + waves + ',and(waves.eq.' + waves + ',kills.lt.' + kills + '))', { method: 'PATCH', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ waves, kills, name: cleanName(dailyName()) }) });
+      const u = await fetch(LB_URL + '?day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()) + '&or=(waves.lt.' + waves + ',and(waves.eq.' + waves + ',boss_dmg.lt.' + bd + '),and(waves.eq.' + waves + ',boss_dmg.eq.' + bd + ',kills.lt.' + kills + '))', { method: 'PATCH', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ waves, kills, boss_dmg: bd, name: cleanName(dailyName()) }) });
       if (!u.ok) { LB_ERR = u.status + ' ' + (await u.text()).slice(0, 160); return false; } }
     if (r.ok || r.status === 409) {
       const c = await fetch(LB_URL + '?select=waves&day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()), { headers: LB_H });   /* make sure it's really on today's board before calling it sent */
       const rows = c.ok ? await c.json() : null; if (rows && !rows.length) { LB_ERR = 'refused ' + (why409 || r.status); return false; }
       const m = dailyMine(day); if (m) { m.sent = 3; LS.set('ppd-daily-' + day, JSON.stringify(m)); } return true; }
     LB_ERR = r.status + ' ' + (await r.text()).slice(0, 160); return false; } catch (e) { LB_ERR = String(e && e.message || e); return false; } }
-async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills&day=eq.' + day + '&order=waves.desc,kills.desc,created_at.asc&limit=50', { headers: LB_H }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
-async function lbRank(day, w, k) { try { const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',kills.gt.' + k + '))', { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
+async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills,boss_dmg&day=eq.' + day + '&order=waves.desc,boss_dmg.desc,kills.desc,created_at.asc&limit=50', { headers: LB_H }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+async function lbRank(day, w, k, bd = 0) { try { const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',boss_dmg.gt.' + bd + '),and(waves.eq.' + w + ',boss_dmg.eq.' + bd + ',kills.gt.' + k + '))', { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
+const fmtBd = n => { n = Math.round(n || 0); return n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'k' : n.toLocaleString('en-US'); };
 async function renderBoard(day) {
   const ol = $('dBoard'), you = $('dYou'), mine = dailyMine(day); ol.innerHTML = '<li><span class="nm">Loading…</span></li>'; you.textContent = '';
-  if (mine && mine.sent !== 3 && !(await lbSubmit(day, mine.w, mine.k))) you.textContent = 'Your score hasn\'t reached the board yet (' + LB_ERR + '). It will try again next time.';   /* a run that couldn't be sent gets another go */
+  if (mine && mine.sent !== 3 && !(await lbSubmit(day, mine.w, mine.k, mine.bd || 0))) you.textContent = 'Your score hasn\'t reached the board yet (' + LB_ERR + '). It will try again next time.';   /* a run that couldn't be sent gets another go */
   const top = await lbTop(day);
   if (!top) { ol.innerHTML = '<li><span class="nm">The leaderboard isn\'t reachable right now.</span></li>'; return; }
   if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
   const me = myPid();
-  ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span><span class="wv">Wave ${t.waves}</span><span class="kl">${t.kills} bugs</span></li>`).join('');
-  if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k); if (rk) you.textContent = 'You: #' + rk + ' · wave ' + mine.w + ' · ' + mine.k + ' bugs'; }
+  ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span><span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span></li>`).join('');
+  if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'; }
 }
 function openDaily() {
   setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
@@ -7788,11 +7790,11 @@ function startDaily() {
   banner('Daily Kitchen', S.daily.counts ? '10 slices, endless waves. This run goes on the leaderboard!' : 'Practice run: your score for today is already in', false, 2600);
 }
 function dailyOver() {
-  const d = S.daily, waves = Math.max(0, S.wave - 1), kills = S.kills || 0;
+  const d = S.daily, waves = Math.max(0, S.wave - 1), kills = S.kills || 0, bd = Math.round(S.bossDmg || 0);
   $('overt').textContent = 'Daily Kitchen over'; $('ostars').hidden = true; $('nextLv').hidden = true; $('endless').hidden = true; $('again').hidden = false; $('again').textContent = 'Practice again';
   let line = '';
-  if (d.counts) { LS.set('ppd-daily-' + d.day, JSON.stringify({ w: waves, k: kills })); const n = bumpStreak(d.day); line = `<dt>Daily streak</dt><dd>${n} 🔥</dd><dt>Today's rank</dt><dd id="oRank">Sending…</dd>`;
-    lbSubmit(d.day, waves, kills).then(ok => lbRank(d.day, waves, kills)).then(rk => { const el = $('oRank'); if (el) el.textContent = rk ? '#' + rk : 'Couldn\'t reach the leaderboard'; }); }
+  if (d.counts) { LS.set('ppd-daily-' + d.day, JSON.stringify({ w: waves, k: kills, bd })); const n = bumpStreak(d.day); line = `<dt>Damage to bosses</dt><dd>${fmtBd(bd)}</dd><dt>Daily streak</dt><dd>${n} 🔥</dd><dt>Today's rank</dt><dd id="oRank">Sending…</dd>`;
+    lbSubmit(d.day, waves, kills, bd).then(ok => lbRank(d.day, waves, kills, bd)).then(rk => { const el = $('oRank'); if (el) el.textContent = rk ? '#' + rk : 'Couldn\'t reach the leaderboard'; }); }
   else line = '<dt>Practice run</dt><dd>Not on the leaderboard</dd>';
   $('ores').innerHTML = `<dt>Waves survived</dt><dd>${waves}</dd><dt>Bugs squashed</dt><dd>${kills}</dd>` + line;
   showStats(); ACH.save();
