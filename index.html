@@ -212,6 +212,14 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .sh.no{background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
 @media (prefers-reduced-motion:reduce){.sh.yes::after{animation:none;opacity:0}}
 .shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;width:min(720px,92vw)}
+.shCols{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%} .shCol{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%} .shBugsH{display:none}
+/* computer screens: bugs, boss trophies and the locker side by side, so it all fits without scrolling */
+@media (min-width:1100px) and (min-height:600px){
+  .shCols{flex-direction:row;align-items:flex-start;justify-content:center;gap:28px;width:min(1560px,96vw)} .shCol{flex:1 1 0;min-width:0} .shLock{flex:0 0 340px}
+  .shBugsH{display:block} .shCol .shgrid{width:100%;grid-template-columns:repeat(auto-fill,minmax(100px,1fr))} .shLock .lkrow{width:100%;gap:4px} .shLock .lkopts{justify-content:flex-start;gap:6px} .shLock .lk{min-height:36px;padding:5px 10px;font-size:13px}
+  .shLock{flex-basis:420px;gap:8px} .shLock #lkPrev{width:180px;height:210px} .shLock .lkrow>b{font-size:16px}
+  #shinies{padding-top:14px;gap:8px} #shinies>.t{margin:0}
+}
 .sh{background:rgba(10,13,16,.78);border-radius:14px;padding:10px 8px;display:grid;justify-items:center;gap:4px;text-align:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .sh svg{width:52px;height:52px} .sh b{font:800 13px var(--body);color:var(--text)} .sh small{font-size:11px;color:var(--dim)}
 .sh .shimg{width:72px;height:72px;object-fit:contain} .sh.no .shimg{filter:brightness(0) opacity(.4)} .sh.yes .shimg{animation:shGlow 3s linear infinite}
@@ -646,7 +654,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="467">v1.66</div>
+    <div id="ver" data-b="468">v1.67</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -763,15 +771,17 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div class="screen" id="shinies" hidden>
       <h2 class="t">Shiny Collection</h2>
       <p class="shc" id="shCount"></p>
-      <div class="shgrid" id="shGrid"></div>
-      <h3 class="lhead2">Boss trophies</h3>
-      <p class="shnote">Super rare: about 1 boss in 10,000 comes out shiny.</p>
-      <div class="shgrid boss" id="shBoss"></div>
-      <h3 class="lhead2">Locker</h3>
-      <p class="shnote">Catch shinies to unlock gear. Everyone in your game sees what you wear.</p>
-      <canvas id="lkPrev" width="440" height="520" aria-label="Your exterminator in his current outfit. Drag to spin him around"></canvas>
-      <p class="lkHint">Drag him to spin him around</p>
-      <div id="locker"></div>
+      <div class="shCols">
+        <section class="shCol"><h3 class="lhead2 shBugsH">Bugs</h3><div class="shgrid" id="shGrid"></div></section>
+        <section class="shCol"><h3 class="lhead2">Boss trophies</h3>
+          <p class="shnote">Super rare: about 1 boss in 10,000 comes out shiny.</p>
+          <div class="shgrid boss" id="shBoss"></div></section>
+        <section class="shCol shLock"><h3 class="lhead2">Locker</h3>
+          <p class="shnote">Catch shinies to unlock gear. Everyone in your game sees what you wear.</p>
+          <canvas id="lkPrev" width="440" height="520" aria-label="Your exterminator in his current outfit. Drag to spin him around"></canvas>
+          <p class="lkHint">Drag him to spin him around</p>
+          <div id="locker"></div></section>
+      </div>
       <button class="btn" id="shBack" type="button">Back</button>
     </div>
     <div class="screen" id="sideways" hidden>
