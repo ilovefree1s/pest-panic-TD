@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="461">v1.60</div>
+    <div id="ver" data-b="462">v1.61</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3487,8 +3487,8 @@ Object.assign(TT, {
              d: 'Drop a pile of bug-sprayed crumbs on the trail. Every bug that reaches it stops to eat for about 1.5 seconds (bosses stop for 3 and eat 5 bites), and walks away poisoned: 10 damage a second for 3 seconds (bosses 5 seconds). Poison ignores shells. 15 bites, then the pile is gone.' },
   sticky:  { name: 'Sticky Trap', cost: 35, item: true, path: true, air: false, range: [1.6, 1.6, 1.6],
              d: 'A glue sheet for the trail. For one wave, every crawling bug that walks over it slows to 40% speed. Flies go over it. Placed between waves, it works during the next wave.' },
-  bomb:    { name: 'Bug Bomb', cost: 75, item: true, path: true, air: true, range: [2.4, 2.4, 2.4], dps: 30,
-             d: 'A fogger for the trail. It waits on the trail until a bug walks over it, then fills the trail around it with poison fog for the rest of that wave, burning every bug passing through for 30 per second, flies included. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
+  bomb:    { name: 'Bug Bomb', cost: 75, item: true, path: true, air: true, range: [2.4, 2.4, 2.4], pct: 0.22, bossPct: 0.025,
+             d: 'A fogger for the trail. It waits on the trail until a bug walks over it, then fills the trail around it with thick green poison fog for the rest of that wave. Every bug passing through loses 22% of its health each second (bosses 2.5%), flies included, so it's just as strong in the last waves as the first. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
   pack:    { name: 'Pro Spray Upgrade', abbr: 'Pro Spray', item: true, instant: true, air: true, cost: 150, range: [0, 0, 0],
              d: 'Loads your exterminator\'s backpack sprayer with pro-strength spray for the rest of the game: 60% more damage, stronger poison, a wider and longer reach, sprays for 4 seconds and takes 16% off a boss. Each spray then costs 20 coins and takes 75 seconds to recharge (instead of free and 60).' },
   license: { name: 'Exterminator License', abbr: 'License', item: true, instant: true, air: true, costs: [120, 200, 300], range: [0, 0, 0],
@@ -5260,10 +5260,10 @@ function itemsAct(dt) {
       if (armed && !it.trig && S.net !== 'guest') for (const b of S.bugs) if (!b.dead && !BT[b.t].fly && (b.x - it.x) ** 2 + (b.z - it.z) ** 2 <= R2 * 0.5 && b.y0 <= 0.5) { it.trig = true; SND.play('spray'); break; }   // waits for a bug to step on it
       it.o.ledM.emissiveIntensity = !armed ? 0 : it.trig ? (Math.sin(clock * 10) > 0 ? 3 : 0.3) : (Math.sin(clock * 3) > 0.6 ? 1.5 : 0.2);
       if (!armed || !it.trig) continue;
-      for (let n = 0; n < 2; n++) if (Math.random() < dt * 16) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * T.range[0]; FX.smoke.spawn({ x: it.x + Math.cos(a) * d, y: 0.3 + Math.random() * 0.7, z: it.z + Math.sin(a) * d, vx: Math.cos(a) * 0.5, vy: 0.4, vz: Math.sin(a) * 0.5, life: 1.4, s0: 1.4, s1: 3, c: [0.62, 0.9, 0.45], a0: 0.6 }); }
+      for (let n = 0; n < 2; n++) if (Math.random() < dt * 16) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * T.range[0]; FX.smoke.spawn({ x: it.x + Math.cos(a) * d, y: 0.3 + Math.random() * 0.7, z: it.z + Math.sin(a) * d, vx: Math.cos(a) * 0.5, vy: 0.4, vz: Math.sin(a) * 0.5, life: 1.4, s0: 1.4, s1: 3, c: [0.3, 0.95, 0.22], a0: 0.72 }); }
       for (const b of S.bugs) {
         if (b.dead || (b.x - it.x) ** 2 + (b.z - it.z) ** 2 > R2 || b.y0 > 0.5) continue;
-        CUR_SRC = 'bomb'; CUR_OWN = it.owner || 0; hit(b, T.dps * dt, true); CUR_SRC = null; CUR_OWN = null;
+        CUR_SRC = 'bomb'; CUR_OWN = it.owner || 0; hit(b, b.max * (BT[b.t].boss ? T.bossPct : T.pct) * dt, true);   // a share of the bug's own health, so it stays worth it all game CUR_SRC = null; CUR_OWN = null;
       }
     }
   }
