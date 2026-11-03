@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="458">v1.57</div>
+    <div id="ver" data-b="459">v1.58</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2636,7 +2636,7 @@ function fitExtModel(root, gltf, red) {
     m.traverse(o => {
       if (!o.isSkinnedMesh || tankMask || !tex) return;
       const g = o.geometry, P = g.attributes.position, J = g.attributes.skinIndex, W = g.attributes.skinWeight, UV = g.attributes.uv, I = g.index, sk = o.skeleton;
-      const spine = new Set(['Hips', 'Spine', 'Spine1', 'Spine2'].map(n => sk.bones.indexOf(B(n))).filter(k => k >= 0)), neckY = B('Neck').getWorldPosition(new V3()).y;
+      const spine = new Set(['Hips', 'Spine', 'Spine1', 'Spine2', 'LeftShoulder', 'RightShoulder'].map(n => sk.bones.indexOf(B(n))).filter(k => k >= 0))   /* (Meshy's rig hangs some of the tank off the shoulders) */, neckY = B('Neck').getWorldPosition(new V3()).y;
       o.skeleton.update(); const bb = new THREE.Box3(); o.computeBoundingBox(); bb.copy(o.boundingBox).applyMatrix4(o.matrixWorld);
       const Hh = bb.max.y - bb.min.y, hz = B('Spine2').getWorldPosition(new V3()).z, back = new Uint8Array(P.count);
       for (let i = 0; i < P.count; i++) { let best = -1, bw = 0; for (let c = 0; c < 4; c++) if (W.getComponent(i, c) > bw) { bw = W.getComponent(i, c); best = J.getComponent(i, c); } if (!spine.has(best)) continue; const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.z < hz - Hh * 0.07 && v.y < neckY) back[i] = 1; }   /* the tank hangs off his hips and back, below the neck */
