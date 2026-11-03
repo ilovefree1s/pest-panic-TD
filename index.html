@@ -223,7 +223,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .lkrow{display:grid;gap:6px;width:min(720px,92vw);text-align:left} .lkrow>b{font:400 18px var(--display);color:var(--gold);letter-spacing:.03em}
 .lkopts{display:flex;flex-wrap:wrap;gap:8px} .lk{min-height:44px;border-radius:12px;border:0;padding:8px 14px;background:rgba(10,13,16,.82);color:var(--text);font:800 14px var(--body);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);text-align:left}
 .lk.on{background:var(--gold);color:#2a1a00;box-shadow:0 3px 0 #8d5a00} .lk:disabled{opacity:.5;cursor:default} .lk small{display:block;font-size:11px;font-weight:700;opacity:.85}
-#lkPrev{width:180px;height:210px;border-radius:16px;background:radial-gradient(circle at 50% 40%,#3a4250,#161a20)}
+#lkPrev{width:220px;height:260px;border-radius:16px;background:radial-gradient(circle at 50% 40%,#3a4250,#161a20);touch-action:none;cursor:grab} #lkPrev:active{cursor:grabbing} .lkHint{margin:4px 0 0;font:700 11px var(--body);color:var(--dim);text-align:center}
 .shrew{list-style:none;margin:0;padding:0;display:grid;gap:6px;width:min(720px,92vw)} .shrew li{background:rgba(10,13,16,.78);border-radius:12px;padding:8px 12px;font-weight:700;display:flex;justify-content:space-between;gap:10px} .shrew li.on{color:var(--gold)} .shrew li span{color:var(--dim);font-weight:800}
 .gtabs{display:flex;gap:4px;background:rgba(10,13,16,.8);border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .gtabs button{border:0;border-radius:999px;padding:8px 16px;font:400 17px var(--display);letter-spacing:.03em;color:var(--dim);background:none;cursor:pointer}
@@ -646,7 +646,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="465">v1.64</div>
+    <div id="ver" data-b="466">v1.65</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -769,7 +769,8 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
       <div class="shgrid boss" id="shBoss"></div>
       <h3 class="lhead2">Locker</h3>
       <p class="shnote">Catch shinies to unlock gear. Everyone in your game sees what you wear.</p>
-      <canvas id="lkPrev" width="360" height="420" aria-label="Your exterminator in his current outfit"></canvas>
+      <canvas id="lkPrev" width="440" height="520" aria-label="Your exterminator in his current outfit. Drag to spin him around"></canvas>
+      <p class="lkHint">Drag him to spin him around</p>
       <div id="locker"></div>
       <button class="btn" id="shBack" type="button">Back</button>
     </div>
@@ -2695,6 +2696,7 @@ function poseExtModel(u, e, dt, st) {
   else arm(R, Bn.RArm, Bn.RFore, R * 0.3, -1, 0.05, R * 0.18, -1, 0.25);
 }
 let EXT_GLTF = null, LKP = null;
+function lkpCam() { const L = LKP, c = L.c, ch = Math.cos(L.tilt); L.m.rotation.y = L.yaw; L.cam.position.set(c.x, c.y + Math.sin(L.tilt) * L.dist + L.dist * 0.036, c.z + ch * L.dist); L.cam.lookAt(c.x, c.y, c.z); }   // spin him; tilt the camera up and over
 function lockerPreview() {   /* the exterminator in your chosen outfit, drawn into the Locker */
   const cv = $('lkPrev'); if (!cv) return;
   const M = EXT.userData.mdl; if (!EXT_GLTF || !M) { cv.hidden = true; return; } cv.hidden = false;
@@ -2716,7 +2718,14 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
     r.setPixelRatio(Math.min(3, window.devicePixelRatio || 1)); r.setSize(cv.clientWidth || 180, cv.clientHeight || 210, false);
     r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setClearColor(0x000000, 0);
     cam.aspect = (cv.clientWidth || 180) / (cv.clientHeight || 210); cam.updateProjectionMatrix();
-    LKP = { sc, m, mat, cam, crown, r };
+    LKP = { sc, m, mat, cam, crown, r, c: c.clone(), yaw: 0, tilt: 0, dist: h * 3.3 };
+    /* drag with a finger (or mouse) to turn him around and look from above or below */
+    let drag = null;
+    cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (_) {} e.preventDefault(); });
+    cv.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY };
+      LKP.yaw += dx * 0.012; LKP.tilt = clamp(LKP.tilt + dy * 0.008, -0.45, 0.9); lkpCam(); LKP.r.render(LKP.sc, LKP.cam); });
+    for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, () => { drag = null; });
+    lkpCam();
   }
   const look = myLook(), T = outfitTextures(M, look.suit, false, look.tank === 'toxic');
   LKP.mat.map = T.map; LKP.mat.emissiveMap = T.glow; LKP.mat.emissiveIntensity = T.glow ? 0.8 : 0; LKP.mat.needsUpdate = true; if (LKP.crown) LKP.crown.visible = !!look.crown;
