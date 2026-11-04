@@ -287,7 +287,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .teamBtn small{display:block;font:900 11px var(--body);opacity:.75}
 #lobby{z-index:30}
 .lsub{margin:-6px 0 4px;font-weight:800;color:var(--dim);text-align:center;max-width:90vw}
-#dTw{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:min(560px,92vw)} #dTw span{flex:1 1 220px;background:rgba(160,90,255,.14);box-shadow:inset 0 0 0 1px rgba(190,140,255,.35);border-radius:12px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--dim);text-align:center} #dTw b{display:block;font:400 17px var(--display);color:#e6c8ff;letter-spacing:.02em} #dTw .q{opacity:.8}
+#dTw{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:min(560px,92vw)} #dTw span{flex:1 1 220px;background:rgba(160,90,255,.14);box-shadow:inset 0 0 0 1px rgba(190,140,255,.35);border-radius:12px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--dim);text-align:center} #dTw b{display:block;font:400 17px var(--display);color:#e6c8ff;letter-spacing:.02em}
+#dTw .twSpin{flex:1 1 100%;border:0;cursor:pointer;border-radius:14px;padding:8px 12px;font:700 12px var(--body);color:#e8dcff;background:linear-gradient(170deg,#4a2a78,#2a1648);box-shadow:inset 0 0 0 2px #ffd34a,0 4px 0 #1a0d2e} #dTw .twSpin:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px #ffd34a,0 2px 0 #1a0d2e} #dTw .twSpin b{font-size:19px;color:var(--gold)}
 /* the Daily twist slot machine */
 #slot{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(6,8,12,.72);backdrop-filter:blur(3px)} #slot[hidden]{display:none}
 .slCard{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 18px 16px;border-radius:22px;background:linear-gradient(170deg,#3a1f5c,#1b1030);box-shadow:inset 0 0 0 3px #ffd34a,0 0 0 6px #6b3fa0,0 20px 50px rgba(0,0,0,.6);width:min(560px,92vw)}
@@ -665,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="477">v1.76</div>
+    <div id="ver" data-b="478">v1.77</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1373,7 +1374,7 @@ function slotMachine(keys, done) {   /* two reels spin and land on today's twist
     if (!all) requestAnimationFrame(frame); else { SND.play('clear'); go.hidden = false; try { LS.set('ppd-twseen', LEVELS[DAILY_LV].day); } catch (e) {} }
   };
   requestAnimationFrame(frame);
-  go.onclick = () => { SND.play('tap'); el.hidden = true; S.slot = false; done && done(); };
+  go.textContent = S.mode === 'play' ? "Let's go!" : 'Got it'; go.onclick = () => { SND.play('tap'); el.hidden = true; S.slot = false; done && done(); };
 }
 function mysteryTools(day) { const r = rng(dayHash('ppd-mystery-' + day)), pool = SHOP.filter(t => t !== 'swat' && t !== 'fogger').map(t => [t, r()]).sort((x, y) => x[1] - y[1]).map(x => x[0]); return ['swat', ...pool.slice(0, 4)]; }
 function setupDaily(day = dailyDay()) {
@@ -7880,7 +7881,8 @@ function openDaily() {
   setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
   $('dSub').textContent = day + ' · ' + HOUSES[L.look].name + ' look · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · ' + (L.twists.includes('glass') ? 5 : 10) + ' slices · endless waves';
   const seen = LS.get('ppd-twseen') === day;   /* keep today's twists a surprise until the slot machine has rolled them */
-  $('dTw').hidden = !L.twists.length; $('dTw').innerHTML = L.twists.map(k => seen ? `<span><b>${TWIST[k][1]} ${TWIST[k][2]}</b>${TWIST[k][3]}</span>` : `<span class="q"><b>🎰 ???</b>Today's twist is revealed when you play</span>`).join('');
+  $('dTw').hidden = !L.twists.length; $('dTw').innerHTML = seen ? L.twists.map(k => `<span><b>${TWIST[k][1]} ${TWIST[k][2]}</b>${TWIST[k][3]}</span>`).join('') : `<button type="button" class="twSpin" id="twSpin"><b>🎰 Spin for today's twists</b>See them now without starting a run</button>`;
+  if (!seen && $('twSpin')) $('twSpin').onclick = () => { SND.init(); slotMachine(L.twists, () => openDaily()); };   // reveal them right here, no run started
   $('dMine').innerHTML = mine ? `Your score today<b>Wave ${mine.w}</b>` : 'Your score today<b>Not played</b>';
   $('dStreak').innerHTML = `Daily streak<b>${dailyStreak()} 🔥</b>`;
   $('dPlay').textContent = mine ? 'Practice (your score is in)' : 'Play today\'s kitchen';
