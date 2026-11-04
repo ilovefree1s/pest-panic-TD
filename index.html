@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="479">v1.78</div>
+    <div id="ver" data-b="480">v1.79</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -797,7 +797,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
           <p class="lkHint">Drag him to spin him around</p>
           <div id="locker"></div></section>
       </div>
-      <button class="btn" id="shBack" type="button">Back</button>
+      <button class="btn" id="shBack" type="button" style="-webkit-touch-callout:none;user-select:none;-webkit-user-select:none">Back</button>
     </div>
     <div class="screen" id="sideways" hidden>
       <div class="swCard">
@@ -3259,7 +3259,12 @@ function openShinies(from) { SND.init(); SND.play('tap'); shinyFrom = from; rend
 $('shinyT').addEventListener('click', () => openShinies('title'));
 $('shinyP').addEventListener('click', () => openShinies('paused'));   /* mid-game, from the pause menu: just caught one? go look */
 $('locker').addEventListener('click', ev => { const b = ev.target.closest('.lk'); if (!b || b.disabled) return; SND.play('tap'); setLook(b.dataset.slot, b.dataset.v); });
-$('shBack').addEventListener('click', () => { SND.play('tap'); $('shinies').hidden = true; $(shinyFrom).hidden = false; });
+/* secret: hold Back for 3 seconds to unlock (or re-lock) every Locker outfit. A normal tap still just goes back */
+let shHold = null, shHeld = false;
+$('shBack').addEventListener('pointerdown', () => { shHeld = false; clearTimeout(shHold); shHold = setTimeout(() => { shHeld = true; const on = !lockAll(); try { localStorage.setItem('ppd-lkall', on ? '1' : '0'); } catch (e) {} renderLocker(); lockerPreview(); SND.play(on ? 'clear' : 'tap'); const c = $('shCount'); c.textContent = on ? '🔓 All Locker outfits unlocked (hold Back again to undo)' : '🔒 Locker outfits back to normal'; setTimeout(renderDex, 3500); }, 3000); });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('shBack').addEventListener(ev, () => clearTimeout(shHold));
+$('shBack').addEventListener('contextmenu', e => e.preventDefault());
+$('shBack').addEventListener('click', () => { if (shHeld) { shHeld = false; return; } SND.play('tap'); $('shinies').hidden = true; $(shinyFrom).hidden = false; });
 /* Team Kitchen: a shiny belongs to the player whose door it came in by. Only they hear about it and only they can catch it */
 const SHP = { x: 0, z: 0, dx: 0, dz: 0 };
 function shinyOwner(b) { if (!S || !S.p2 || !LEVELS[LV].team || (S.net !== 'host' && S.net !== 'guest') || !ROUTES[b.route]) return -1; pathAt(0, SHP, b.route); return SHP.x < ccx(BOARD.cakeCol) ? 0 : 1; }   // (playing with the AI teammate, you can still catch them all)
