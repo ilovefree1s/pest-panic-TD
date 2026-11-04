@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="478">v1.77</div>
+    <div id="ver" data-b="479">v1.78</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3207,7 +3207,8 @@ const LOCKER = [
 const LOOK_DEFAULT = { suit: 'standard', tank: 'standard', spray: 'mist', trail: 'none', crown: '' };
 function dexBossTypes() { const d = dexGet(); return DEX_BOSS.filter(t => d[t]).length; }
 function sanitizeLook(l) { const out = { ...LOOK_DEFAULT }; if (l && typeof l === 'object') for (const [slot, , opts] of LOCKER) if (opts.some(o => o[0] === l[slot])) out[slot] = l[slot]; return out; }   /* only known outfit names from the other player */
-function lockOpen(req) { return !req || ((req.reg == null || dexTypes() >= req.reg) && (req.boss == null || dexBossTypes() >= req.boss)); }
+const lockAll = () => { try { return localStorage.getItem('ppd-lkall') === '1'; } catch (e) { return false; } };   // the owner's secret code opens every Locker outfit
+function lockOpen(req) { return !req || lockAll() || ((req.reg == null || dexTypes() >= req.reg) && (req.boss == null || dexBossTypes() >= req.boss)); }
 function lockNeed(req) { return req.boss != null ? 'Catch ' + req.boss + ' shiny boss' + (req.boss > 1 ? 'es' : '') : 'Catch ' + req.reg + ' shiny types'; }
 let LOOK_CACHE = null, LOOK_T = 0;
 function myLook() {   /* what I'm wearing (only things I've actually unlocked) */
@@ -7829,7 +7830,8 @@ try { if (navigator.storage && navigator.storage.persist) navigator.storage.pers
 /* backup: every saved thing lives in localStorage under ppd-; the code is just all of it, packed */
 function backupCode() { const o = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('ppd-')) o[k] = localStorage.getItem(k); } } catch (e) {} return 'PPD1.' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
 function loadBackup(code) {
-  code = (code || '').trim(); if (!code.startsWith('PPD1.')) return 'That doesn\'t look like a Pest Panic backup code.';
+  code = (code || '').trim();
+  if (code.toUpperCase() === 'GOLDENSWATTER') { const on = !lockAll(); try { localStorage.setItem('ppd-lkall', on ? '1' : '0'); } catch (e) {} renderLocker(); return on ? '🔓 Secret code accepted: every Locker outfit is unlocked. Enter it again to lock them back up.' : '🔒 Locker outfits are back to normal: unlocked by catching shinies.'; }   // owner's secret code (shown as a message, nothing restarts) if (!code.startsWith('PPD1.')) return 'That doesn\'t look like a Pest Panic backup code.';
   let o; try { o = JSON.parse(decodeURIComponent(escape(atob(code.slice(5))))); } catch (e) { return 'That code is damaged or incomplete.'; }
   if (!o || typeof o !== 'object') return 'That code is damaged or incomplete.';
   let n = 0; try { for (const k in o) if (k.startsWith('ppd-') && typeof o[k] === 'string') { localStorage.setItem(k, o[k]); n++; } } catch (e) { return 'Couldn\'t save: your browser is blocking storage.'; }
