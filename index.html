@@ -665,7 +665,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="475">v1.74</div>
+    <div id="ver" data-b="476">v1.75</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1323,7 +1323,7 @@ function trailRoute(cells, tail) {   // cells run cake -> door; the game wants d
   for (let i = 1; i < fw.length - 1; i++) { const a = fw[i - 1], b = fw[i], c = fw[i + 1]; if ((b[0] - a[0]) !== (c[0] - b[0]) || (b[1] - a[1]) !== (c[1] - b[1])) out.push(b); }
   const last = fw[fw.length - 1]; out.push(last, [last[0], -0.05]); return out;
 }
-/* ---- Daily twists: two rules for the day, the same for everyone, rolled on a slot machine when the run starts (from 5 Nov 2026) */
+/* ---- Daily twists: two rules for the day, the same for everyone, rolled on a slot machine when the run starts (from 4 Nov 2026) */
 const TWISTS = [
   ['speed', '🏃', 'Speed Day', 'Bugs move 20% faster, but every squash pays double.'],
   ['swarm', '🐜', 'Swarm Day', 'Twice as many bugs, each with half the health.'],
@@ -1346,7 +1346,7 @@ const TWISTS = [
 const TWIST = Object.fromEntries(TWISTS.map(t => [t[0], t]));
 const TWIST_CLASH = [['swarm', 'giant'], ['court', 'parade'], ['giant', 'flyers']];
 function twistsFor(day) {
-  if (!(day > '2026-11-04')) return [];
+  if (!(day >= '2026-11-04')) return [];
   const r = rng(dayHash('ppd-twist-' + day)); r(); r(); r();   /* (the first few rolls from a fresh seed are too alike day to day) */
   const a = TWISTS[Math.floor(r() * TWISTS.length)][0];
   for (let i = 0; i < 50; i++) { const b = TWISTS[Math.floor(r() * TWISTS.length)][0]; if (b !== a && !TWIST_CLASH.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) return [a, b]; }
