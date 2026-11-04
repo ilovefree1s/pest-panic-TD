@@ -287,6 +287,16 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .teamBtn small{display:block;font:900 11px var(--body);opacity:.75}
 #lobby{z-index:30}
 .lsub{margin:-6px 0 4px;font-weight:800;color:var(--dim);text-align:center;max-width:90vw}
+#dTw{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:min(560px,92vw)} #dTw span{flex:1 1 220px;background:rgba(160,90,255,.14);box-shadow:inset 0 0 0 1px rgba(190,140,255,.35);border-radius:12px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--dim);text-align:center} #dTw b{display:block;font:400 17px var(--display);color:#e6c8ff;letter-spacing:.02em}
+/* the Daily twist slot machine */
+#slot{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(6,8,12,.72);backdrop-filter:blur(3px)} #slot[hidden]{display:none}
+.slCard{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 18px 16px;border-radius:22px;background:linear-gradient(170deg,#3a1f5c,#1b1030);box-shadow:inset 0 0 0 3px #ffd34a,0 0 0 6px #6b3fa0,0 20px 50px rgba(0,0,0,.6);width:min(560px,92vw)}
+.slT{font:400 28px var(--display);color:var(--gold);letter-spacing:.04em;text-shadow:0 3px 0 #6b3a00}
+.slReels{display:flex;gap:12px;width:100%} .slWin{flex:1;height:84px;overflow:hidden;border-radius:14px;background:linear-gradient(#0c0a12,#221836 18%,#221836 82%,#0c0a12);box-shadow:inset 0 0 0 2px rgba(255,211,74,.6),inset 0 8px 14px rgba(0,0,0,.7),inset 0 -8px 14px rgba(0,0,0,.7);position:relative}
+.slStrip{will-change:transform} .slItem{height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;font:400 19px var(--display);letter-spacing:.02em;text-align:center;line-height:1.05}
+.slItem i{font-style:normal;font-size:30px;line-height:1}
+.slDesc{display:flex;gap:12px;width:100%;min-height:0} .slDesc p{flex:1;margin:0;font:700 13px/1.3 var(--body);color:#e8dcff;text-align:center;opacity:0;transition:opacity .35s} .slDesc p.on{opacity:1}
+.slWin.win{animation:slWin .9s ease-out} @keyframes slWin{0%{box-shadow:inset 0 0 0 2px #fff,0 0 0 0 rgba(255,211,74,.9)}100%{box-shadow:inset 0 0 0 2px rgba(255,211,74,.6),0 0 0 14px rgba(255,211,74,0)}}
 .lbox{display:grid;gap:12px;width:min(340px,88vw);background:rgba(10,13,16,.75);border-radius:18px;padding:18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .tmaps{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:94vw}
 .tmap{display:grid;gap:1px;min-width:120px;padding:8px 12px;border-radius:14px;border:0;cursor:pointer;font:inherit;color:var(--text);background:rgba(20,26,32,.92);box-shadow:inset 0 0 0 2px rgba(255,255,255,.1)}
@@ -650,11 +660,12 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <button id="catch" type="button" hidden aria-label="Catch the shiny bug"><span>✨</span>Catch</button>
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
     <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
+    <div id="slot" hidden><div class="slCard"><b class="slT">Today's twists</b><div class="slReels"><div class="slWin"><div class="slStrip"></div></div><div class="slWin"><div class="slStrip"></div></div></div><div class="slDesc"></div><button class="btn" type="button" id="slGo" hidden>Let's go!</button></div></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="474">v1.73</div>
+    <div id="ver" data-b="475">v1.74</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -705,6 +716,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div class="screen" id="daily" hidden>
       <h2 class="t">Daily Kitchen</h2>
       <p class="lsub" id="dSub"></p>
+      <div id="dTw" hidden></div>
       <div class="dRow"><div class="dCard" id="dMine"></div><div class="dCard" id="dStreak"></div></div>
       <label class="dName">Your name on the board <input id="dName" maxlength="16" autocomplete="off" spellcheck="false"></label>
       <button class="btn" id="dPlay" type="button">Play today's kitchen</button>
@@ -1311,16 +1323,63 @@ function trailRoute(cells, tail) {   // cells run cake -> door; the game wants d
   for (let i = 1; i < fw.length - 1; i++) { const a = fw[i - 1], b = fw[i], c = fw[i + 1]; if ((b[0] - a[0]) !== (c[0] - b[0]) || (b[1] - a[1]) !== (c[1] - b[1])) out.push(b); }
   const last = fw[fw.length - 1]; out.push(last, [last[0], -0.05]); return out;
 }
+/* ---- Daily twists: two rules for the day, the same for everyone, rolled on a slot machine when the run starts (from 5 Nov 2026) */
+const TWISTS = [
+  ['speed', '🏃', 'Speed Day', 'Bugs move 20% faster, but every squash pays double.'],
+  ['swarm', '🐜', 'Swarm Day', 'Twice as many bugs, each with half the health.'],
+  ['armor', '🛡️', 'Armored Day', 'Every regular bug has +2 armor. Poison and fog burn right through it.'],
+  ['flyers', '🪰', 'Flyer Frenzy', 'Half of every wave is flies and moths.'],
+  ['giant', '🦣', 'Giant Day', 'Half as many bugs, but each is bigger, slower, twice as tough and pays double.'],
+  ['shiny', '✨', 'Shiny Rush', 'Shiny bugs are twice as common today.'],
+  ['court', '👑', 'Royal Court', 'Every boss brings its own Royal Guard.'],
+  ['parade', '🎺', 'Boss Parade', 'A boss every 3 waves instead of 5, each 25% weaker.'],
+  ['enraged', '😡', 'Enraged', 'Bosses speed up 40% once they drop below half health.'],
+  ['budget', '🪙', 'Tight Budget', 'Start with half the coins, but bugs pay 25% more.'],
+  ['nopets', '🚫', 'No Pets', 'The Pets tab is locked today.'],
+  ['pro', '💪', 'Pro Day', 'The Pro Spray Upgrade is yours from the start, but each spray costs 30 coins.'],
+  ['glass', '🍰', 'Glass Cake', 'Only 5 slices of cake, but every bug pays double.'],
+  ['mystery', '🎁', 'Mystery Tools', 'Only 5 random tools are in the shop today.'],
+  ['lights', '🌙', 'Lights Out', 'The kitchen is dark. Candles light up 35% wider and scorch 50% harder.'],
+  ['slippery', '🧊', 'Slippery Floor', 'Bugs slide 50% further when the broom or fan pushes them.'],
+  ['doors', '🚪', 'Three Doors', 'Three doors today: the second opens at wave 6, the third at wave 11.'],
+];
+const TWIST = Object.fromEntries(TWISTS.map(t => [t[0], t]));
+const TWIST_CLASH = [['swarm', 'giant'], ['court', 'parade'], ['giant', 'flyers']];
+function twistsFor(day) {
+  if (!(day > '2026-11-04')) return [];
+  const r = rng(dayHash('ppd-twist-' + day)); r(); r(); r();   /* (the first few rolls from a fresh seed are too alike day to day) */
+  const a = TWISTS[Math.floor(r() * TWISTS.length)][0];
+  for (let i = 0; i < 50; i++) { const b = TWISTS[Math.floor(r() * TWISTS.length)][0]; if (b !== a && !TWIST_CLASH.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) return [a, b]; }
+  return [a];
+}
+const TWX = k => LV === DAILY_LV && !!LEVELS[DAILY_LV] && !!LEVELS[DAILY_LV].twists && LEVELS[DAILY_LV].twists.includes(k);
+function slotMachine(keys, done) {   /* two reels spin and land on today's twists (the same for everyone: only the spin is for show) */
+  const el = $('slot'), wins = el.querySelectorAll('.slWin'), desc = el.querySelector('.slDesc'), go = $('slGo'), H = 84;
+  S.slot = true; el.hidden = false; go.hidden = true; desc.innerHTML = keys.map(() => '<p></p>').join('');
+  const item = k => `<div class="slItem"><i>${TWIST[k][1]}</i>${TWIST[k][2]}</div>`;
+  let ticks = 0; const tick = setInterval(() => { if (ticks++ < 26) SND.play('tap'); }, 95);
+  keys.forEach((k, j) => {
+    const n = 26 + j * 8, list = []; for (let i = 0; i < n; i++) list.push(TWISTS[Math.floor(Math.random() * TWISTS.length)][0]); list.push(k);
+    const st = wins[j].querySelector('.slStrip'); st.innerHTML = list.map(item).join(''); st.style.transition = 'none'; st.style.transform = 'translateY(0)';
+    void st.offsetWidth; const dur = 2.3 + j * 0.8; st.style.transition = `transform ${dur}s cubic-bezier(.15,.62,.2,1)`; st.style.transform = `translateY(${-n * H}px)`;
+    setTimeout(() => { wins[j].classList.add('win'); SND.play('up'); const p = desc.children[j]; p.textContent = TWIST[k][3]; p.classList.add('on'); if (j === keys.length - 1) { clearInterval(tick); go.hidden = false; } }, dur * 1000 + 60);
+  });
+  wins.forEach((w, j) => { w.hidden = j >= keys.length; w.classList.remove('win'); });
+  go.onclick = () => { SND.play('clear'); el.hidden = true; S.slot = false; done && done(); };
+}
+function mysteryTools(day) { const r = rng(dayHash('ppd-mystery-' + day)), pool = SHOP.filter(t => t !== 'swat' && t !== 'fogger').map(t => [t, r()]).sort((x, y) => x[1] - y[1]).map(x => x[0]); return ['swat', ...pool.slice(0, 4)]; }
 function setupDaily(day = dailyDay()) {
   const r = rng(dayHash('ppd-daily-' + day)), CAKES = [0, 1, 9, 10, 11, 12, 13], cake = CAKES[Math.floor(r() * CAKES.length)];
   let t1 = null; for (let i = 0; i < 20 && !t1; i++) t1 = genTrail(r, cake, new Set(), 26, 40);
   const taken = new Set(t1.map(([a, b]) => a + ',' + b)), routes = [trailRoute(t1)];
-  if (r() < 0.45) { const t2 = genTrail(r, cake, taken, 10, 26, t1); if (t2) routes.push(trailRoute(t2, t1.slice(0, t2.joinAt + 1).reverse())); }   // some days: a second door that joins the first trail
+  const twists = twistsFor(day);
+  if (r() < 0.45 && !twists.includes('doors')) { const t2 = genTrail(r, cake, taken, 10, 26, t1); if (t2) routes.push(trailRoute(t2, t1.slice(0, t2.joinAt + 1).reverse())); }   // some days: a second door that joins the first trail
+  if (twists.includes('doors')) { const r3 = rng(dayHash('ppd-doors-' + day)); for (let k = 0; k < 2; k++) { let t2 = null; for (let i = 0; i < 20 && !t2; i++) t2 = genTrail(r3, cake, taken, 10, 26, t1); if (t2) { t2.forEach(([a, b]) => taken.add(a + ',' + b)); routes.push(trailRoute(t2, t1.slice(0, t2.joinAt + 1).reverse())); } } }   // Three Doors twist
   const BOSSES = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'].map(t => [t, r()]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   const early = BOSSES.slice(0, 4).sort((a, b) => BT[a].hp - BT[b].hp);
   const look = SOLO[Math.floor(r() * SOLO.length)];
   LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125, money: 210, cakeCol: cake, shift: 1,
-    nb: [['hopper', 4, 2], ['centi', 7, 1], ['stink', 9, 1], ['moth', 11, 2], ['mantis', 14, 1]], bosses: [...early.map(t => [t]), [BOSSES[4], BOSSES[5]]], routes, look, day };
+    nb: [['hopper', 4, 2], ['centi', 7, 1], ['stink', 9, 1], ['moth', 11, 2], ['mantis', 14, 1]], bosses: [...early.map(t => [t]), [BOSSES[4], BOSSES[5]]], routes, look, day, twists, mystery: twists.includes('mystery') ? mysteryTools(day) : null };
   HOUSES[DAILY_LV] = { ...HOUSES[look] }; PROP_LAYOUT[DAILY_LV] = PROP_LAYOUT[look]; delete houseTex[DAILY_LV];
 }   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
 const houseTex = {};
@@ -3102,14 +3161,14 @@ function finishJob(j) {
   if (S.pick === o) syncTray();
 }
 // full gold for the opening 5 waves, then the 15% cut kicks in
-function goldMul(w = S.wave) { return w <= 5 ? 1 : w <= 10 ? 0.85 : w <= 15 ? 0.42 : 0.33; }
+function goldMul(w = S.wave) { return (w <= 5 ? 1 : w <= 10 ? 0.85 : w <= 15 ? 0.42 : 0.33) * (LV === DAILY_LV ? (TWX('speed') ? 2 : 1) * (TWX('glass') ? 2 : 1) * (TWX('giant') ? 2 : 1) * (TWX('budget') ? 1.25 : 1) : 1); }
 const payAt = (t, w) => Math.max(1, Math.round((BT[t].gold + Math.floor(w / 3)) * goldMul(w)));   // what one squash of t pays on wave w   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
 const ABIL = { cd: 60, cost: 0, dot: 12, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
 const ABIL_BASE = { ...ABIL }, ABIL_PRO = { ...ABIL, cd: 75, cost: 20, dot: 20, dur: 4, range: 8.5, cone: 0.7, dps: 42, bossPct: 0.16 };   /* Pro Backpack Spray, from Level 5: stronger, wider and longer, but 20 coins a spray and 15 seconds more cooldown */
 const ABIL_PRO_AT = 4;
 function setAbil() {
-  const can = !!S && !LEVELS[LV].team && !S.vs && (SOLO.indexOf(LV) >= ABIL_PRO_AT || LV === DAILY_LV), pro = can && !!S.proPack; Object.assign(ABIL, pro ? ABIL_PRO : ABIL_BASE); ABIL.pro = pro; ABIL.canPro = can;   /* from Level 5 you can buy the Pro Spray Upgrade in Items */
+  const can = !!S && !LEVELS[LV].team && !S.vs && (SOLO.indexOf(LV) >= ABIL_PRO_AT || LV === DAILY_LV), pro = can && !!S.proPack; Object.assign(ABIL, pro ? ABIL_PRO : ABIL_BASE); if (pro && TWX('pro')) ABIL.cost = 30; ABIL.pro = pro; ABIL.canPro = can;   /* from Level 5 you can buy the Pro Spray Upgrade in Items */
   const el = $('abil'); if (!el) return; el.classList.toggle('pro', pro); el.querySelector('small').textContent = pro ? ABIL.cost + 'g' : 'Free'; el.querySelector('b').textContent = pro ? 'Pro' : 'Spray';
 }
 // the bug closest to the cake: measured as distance LEFT on its own trail, so two trails of different lengths compare fairly
@@ -3547,7 +3606,7 @@ const PERK = {
   cat:    { name: 'Tiger', icon: '🐯', amp: 1, d: 'Grows into a tiger cub: double swipe damage, and bosses stay pinned as long as everything else.' },
 };
 const perkCost = tw => Math.round(TT[tw.t].cost * 1.6);
-const PR = tw => (tw.perk && PERK[tw.t].range) || 1;   // perk range bonus
+const PR = tw => ((tw.perk && PERK[tw.t].range) || 1) * (tw.t === 'candle' && TWX('lights') ? 1.35 : 1);   // perk range bonus
 const upCost = tw => tw.lv >= 3 ? (tw.perk || !PERK[tw.t] ? Infinity : perkCost(tw)) : Math.round(TT[tw.t].cost * [0.8, 1.3][tw.lv - 1]);
 // money spent since the last wave started comes back in full; older money at 60%
 const sellVal = tw => tw.pending ? tw.spent : (tw.fresh || 0) + Math.floor((tw.spent - (tw.fresh || 0)) * 0.6);
@@ -4537,7 +4596,7 @@ const BOSS_AT = { 5: ['queen'], 10: ['widow'], 15: ['hornet'], 20: ['hornet', 'w
 const BOSS_HP20 = { queen: 1.556, widow: 0.7, hornet: 0.632, ghop: 0.7, gcenti: 0.7, gstink: 0.7, gmoth: 0.7, gmantis: 0.7, herc: 0.7, gant: 0.7, gfly: 0.7, gbed: 0.7 };
 const bossHpAll = t => bossHp(t) * (BT[t].segs || 1);
 function bossesFor(n) {
-  if (LV === DAILY_LV) { if (n % 5) return []; const L = ((LEVELS[LV] && LEVELS[LV].bosses) || [['queen']]).flat(); return [L[(n / 5 - 1) % L.length]]; }   // Daily Kitchen (10 slices): always one boss at a time, taking turns through today's six
+  if (LV === DAILY_LV) { const ev = TWX('parade') ? 3 : 5; if (n % ev) return []; const L = ((LEVELS[LV] && LEVELS[LV].bosses) || [['queen']]).flat(); return [L[(n / ev - 1) % L.length]]; }   // Daily Kitchen (10 slices): always one boss at a time, taking turns through today's six
   const BL = (LEVELS[LV] && LEVELS[LV].bosses) || [['queen'], ['widow'], ['hornet'], ['hornet', 'widow', 'queen']];
   if (n <= MAXW) {
     if (n % 5) return [];
@@ -4572,6 +4631,11 @@ function makeWave(n, sh = 0) {
   if (u >= 7) for (let i = 0; i < Math.floor((u - 4) / 3); i++) q.splice(Math.floor(r() * q.length), 0, 'bed');
   { const fk = !team && n <= MAXW ? FLY_K[LV] : null;   /* the first houses ease you into flies: some become ants */
     if (fk) { const r2 = rng(n * 53 + 11); for (let i = 0; i < q.length; i++) if (q[i] === 'fly' && r2() > fk) q[i] = 'ant'; } }
+  if (LV === DAILY_LV) {   // Daily twists that change who comes
+    if (TWX('swarm')) q.splice(0, q.length, ...q.flatMap(t => [t, t]));
+    if (TWX('giant')) q.splice(0, q.length, ...q.filter((t, i) => i % 2 === 0));
+    if (TWX('flyers')) for (let i = 1; i < q.length; i += 2) q[i] = (i >> 1) % 3 === 2 ? 'moth' : 'fly';
+  }
   q.push(...bossesFor(n)); if (team) q.push(...bossesFor(n));
   return q;
 }
@@ -4605,11 +4669,16 @@ function spawnBug(t, route = nextRoute()) {
   const bt = BT[t], LL = LEVELS[LV], wm = ((S.mode === 'play' && LL.bugMulW && LL.bugMulW[S.wave] && (LL.bugMulW[S.wave][t] || LL.bugMulW[S.wave]['*'])) || 1) * (S.mode === 'play' && LL.bugMulAfter && S.wave > LL.bugMulAfter[0] ? LL.bugMulAfter[1] : 1), hp = bt.boss ? bossHp(t) : Math.round(bt.hp * S.hpMul * wm * (S.mode === 'play' && S.wave >= 10 ? 1.2 : 1) * (S.mode === 'play' && S.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(S.mode === 'play' ? S.wave : 0)), b = { id: S.nid++, t, s: 0, off: (Math.random() - 0.5) * (bt.boss ? 0.2 : 1.3), hp, max: hp,
     x: 0, y0: 0, z: 0, ang: 0, pitch: 0, flash: 0, psnT: 0, psnD: 0, pacc: 0, stuck: 0, slowF: 1, walk: Math.random() * 6, glued: 0 };
   b.route = route; pathAt(0, tmpP, route); b.x = tmpP.x; b.z = tmpP.z; b.ang = Math.atan2(tmpP.dx, tmpP.dz);
-  if (S.mode === 'play' && S.net !== 'guest' && Math.random() < (bt.boss ? SHINY_BOSS : SHINY_CHANCE) / (bt.swarm || bt.segs || 1)) makeShiny(b);   // a bed bug swarm (12) or a centipede (8 segments) gets one roll's worth as a group, not one per bug
+  if (S.mode === 'play' && S.net !== 'guest' && Math.random() < (bt.boss ? SHINY_BOSS : SHINY_CHANCE) * (TWX('shiny') ? 2 : 1) / (bt.swarm || bt.segs || 1)) makeShiny(b);   // a bed bug swarm (12) or a centipede (8 segments) gets one roll's worth as a group, not one per bug
   if (bt.ball) { const h = Math.round(bt.ball * S.hpMul * wm * (S.wave === 6 || S.wave === 7 ? 0.7 / 0.9 : 1));   // beetle balls 30% weaker on waves 6-7
     b.ball = { hp: h, max: h, flash: 0 }; }
-  if (bt.boss) { b.mesh = getBoss(t); $('queen').hidden = false; if (t === 'widow') b.clutch = 2; if (bt.base) b.mdl = b.mesh; if (t === 'gant') b.needGuard = 1; }
-  else if (MODEL_BUILD[t]) b.mdl = getModel(t);
+  if (LV === DAILY_LV && S.mode === 'play') {   // Daily twists on the bug itself
+    const k = bt.boss ? (TWX('parade') ? 0.75 : 1) : (TWX('swarm') ? 0.5 : 1) * (TWX('giant') ? 2 : 1);
+    if (k !== 1) { b.hp = b.max = Math.round(b.hp * k); if (b.ball) { b.ball.hp = b.ball.max = Math.round(b.ball.max * k); } }
+    if (!bt.boss && TWX('giant')) b.giant = 1;
+  }
+  if (bt.boss) { b.mesh = getBoss(t); $('queen').hidden = false; if (t === 'widow') b.clutch = 2; if (bt.base) b.mdl = b.mesh; if (t === 'gant' || TWX('court')) b.needGuard = 1; }
+  else if (MODEL_BUILD[t]) { b.mdl = getModel(t); if (b.giant) b.mdl.scale.multiplyScalar(1.5); }
   S.bugs.push(b);
   return b;
 }
@@ -4689,7 +4758,7 @@ let CUR_TW = null, CUR_CAMP = null;   /* CUR_CAMP: the candle boost already bake
 let CUR_OWN = null;   // which player's tool did it (for damage that lands later: poison, zap hops, bombs)
 function statFor(src) { const mine = !S.p2 || CUR_OWN == null || CUR_OWN === S.cur, st = mine ? (S.stats ||= {}) : (S.p2.stats ||= {}); return st[src] || (st[src] = { dmg: 0, kills: 0 }); }
 // armor blocks a share of every hit: 8% per point, at most half (so small, fast hits still count)
-const armorKeep = b => 1 - Math.min(0.5, 0.08 * (b.armor ?? BT[b.t].armor ?? 0));
+const armorKeep = b => 1 - Math.min(0.5, 0.08 * ((b.armor ?? BT[b.t].armor ?? 0) + (!BT[b.t].boss && TWX('armor') ? 2 : 0)));
 function credit(real, killed) {   /* per-tower damage for the info card: the tower's own total, and the candles' share of the boost */
   const tw = CUR_TW; if (!tw || !(real > 0)) return;
   tw.dmg = (tw.dmg || 0) + real; tw.wdmg = (tw.wdmg || 0) + real; if (killed) tw.kills = (tw.kills || 0) + 1;
@@ -4956,7 +5025,7 @@ function towerAct(tw, dt) {
     if (tw.snuff || tw.pending) return;
     for (const b of S.bugs) {
       if (b.dead || b.scorchN === SCORCH_N || !inRange(tw, b, R)) continue;
-      b.scorchN = SCORCH_N; hit(b, T.burn[L] * (tw.perk ? 2 : 1) * dt, true);
+      b.scorchN = SCORCH_N; hit(b, T.burn[L] * (tw.perk ? 2 : 1) * (TWX('lights') ? 1.5 : 1) * dt, true);
       if (Math.random() < dt * 2) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.6, y: bugY(b) + 0.5, z: b.z + (Math.random() - 0.5) * 0.6, vy: 1.4, life: 0.4, s0: 0.28, s1: 0.05, c: [1, 0.6, 0.2], a0: 1 });
     }
     return;
@@ -5022,7 +5091,7 @@ function towerAct(tw, dt) {
         if (b.free.phase === 'land') { b.free.phase = 'go'; b.free.land = 0; }
         continue;
       }
-      b.push = BT[b.t].noPush || boss ? 0 : T.push[L] * (fly ? (tw.perk ? 1.25 : 1) : 0.4);
+      b.push = BT[b.t].noPush || boss ? 0 : T.push[L] * (fly ? (tw.perk ? 1.25 : 1) : 0.4) * (TWX('slippery') ? 1.5 : 1);
       if (tw.perk && fly && !boss) { b.stuck = Math.max(b.stuck, 0.8); b.slowF = 0; }   // dizzy
       for (let i = 0; i < 3; i++) FX.smoke.spawn({ x: b.x, y: bugY(b) + 0.5, z: b.z, vx: (b.x - tw.x) * 0.8 + (Math.random() - 0.5) * 2, vy: 0.4, vz: (b.z - tw.z) * 0.8 + (Math.random() - 0.5) * 2, drag: 3, life: 0.45, s0: 0.35, s1: 1, c: [0.85, 0.95, 1], a0: 0.4 });
     }
@@ -5108,7 +5177,7 @@ function towerAct(tw, dt) {
     for (const b of S.bugs) {
       if (!canHit(tw, b) || !inRange(tw, b, R) || b.sweptT > 0 || b.y0 > 0.5) continue;
       hit(b, T.dmg[L]); if (b.dead) continue;
-      b.push = BT[b.t].noPush ? 0 : T.push[L] * (tw.perk ? 1.25 : 1) * (BT[b.t].boss ? 0.1 * 4 / 2.4 : 1); b.sweptT = 3; n++;
+      b.push = BT[b.t].noPush ? 0 : T.push[L] * (tw.perk ? 1.25 : 1) * (BT[b.t].boss ? 0.1 * 4 / 2.4 : 1) * (TWX('slippery') ? 1.5 : 1); b.sweptT = 3; n++;
       for (let i = 0; i < 3; i++) FX.smoke.spawn({ x: b.x, y: 0.25, z: b.z, vx: (Math.random() - 0.5) * 3, vy: 0.6, vz: (Math.random() - 0.5) * 3, drag: 3, life: 0.45, s0: 0.4, s1: 1.1, c: [0.85, 0.8, 0.7], a0: 0.4 });
     }
     if (!n) { tw.cd = 0.15; tw.anim = anim0; tw.yawT = yaw0; return; }   // nothing sweepable yet: don't restart the swing (that made the broom jump back and forth)
@@ -5149,7 +5218,7 @@ function update(dt) {
       if (Math.random() < dt * 6) FX.smoke.spawn({ x: b.x, y: bugY(b) + 0.6, z: b.z, vy: 1.2, life: 0.5, s0: 0.25, s1: 0.6, c: [0.6, 1, 0.5], a0: 0.6 });
     } else b.psnD = 0;
     if (b.dead) continue;
-    let sp = bt.spd * (b.stuck > 0 && !bt.heavy ? b.slowF : 1) * (b.glueT > 0 && !bt.heavy ? b.glueF : 1) * (b.psnT > 0 && !bt.heavy ? 0.75 : 1) * (b.angry ? 1.45 : 1);
+    let sp = bt.spd * (b.stuck > 0 && !bt.heavy ? b.slowF : 1) * (b.glueT > 0 && !bt.heavy ? b.glueF : 1) * (b.psnT > 0 && !bt.heavy ? 0.75 : 1) * (b.angry ? 1.45 : 1) * (LV === DAILY_LV ? (TWX('speed') ? 1.2 : 1) * (b.giant ? 0.8 : 1) * (bt.boss && TWX('enraged') && b.hp < b.max / 2 ? 1.4 : 1) : 1);
     if (b.glueT > 0) b.glueT -= dt; if (b.fireT > 0) b.fireT -= dt;
     if (b.ball) b.ball.flash -= dt;
     if (b.eatT > 0) { b.eatT -= dt; sp = 0; b.walk += dt * 6; if (Math.random() < dt * 5) FX.goo.spawn({ x: b.x, y: b.y0 + 0.5, z: b.z, vx: (Math.random() - 0.5) * 2, vy: 2.5, vz: (Math.random() - 0.5) * 2, grav: 14, life: 0.4, s0: 0.14, s1: 0.08, c: [0.75, 0.5, 0.28], a0: 1, a1: 1 }); }
@@ -5295,7 +5364,8 @@ function itemsAct(dt) {
   }
 }
 const UNLOCK_AT = { frog: 1, venus: 1, fan: 2, cat: 2, fogger: 3 };   /* solo story: frog and fly trap at level 2, desk fan and cat at 3, fogger at 4 */
-function toolLocked(t) { if (t === 'fogger' && S && LV === DAILY_LV && LEVELS[DAILY_LV] && LEVELS[DAILY_LV].day > '2026-10-30') return true;   /* the Fogger is too strong for the Daily Kitchen (from 31 Oct) */
+function toolLocked(t) { if (t === 'fogger' && S && LV === DAILY_LV && LEVELS[DAILY_LV] && LEVELS[DAILY_LV].day > '2026-10-30') return true;
+  if (S && LV === DAILY_LV && LEVELS[DAILY_LV]) { if (TWX('nopets') && PETS.includes(t)) return true; const my = LEVELS[DAILY_LV].mystery; if (my && SHOP.includes(t) && !my.includes(t)) return true; }   // Daily twists: No Pets, Mystery Tools   /* the Fogger is too strong for the Daily Kitchen (from 31 Oct) */
   return !!UNLOCK_AT[t] && !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < UNLOCK_AT[t]; }
 function ownsUnique(t) { return !!(TT[t] && TT[t].unique && S && S.towers.some(o => o.t === t && (TT[t].oneKitchen || (o.owner || 0) === (S.cur || 0)))); }   /* cat and flytrap: one in the whole kitchen, whoever bought it */
 /* ghost tools: tap a spot when you're short on coins and a see-through tool waits there; the moment you can afford it, it gets bought and built */
@@ -5521,7 +5591,7 @@ function moodAt(p) {
 function syncMood(dt) {
   const play = S && (S.mode === 'play' || S.mode === 'over') && !(S.vs && S.vs.v22) && S.mode !== 'build';
   const DARK_MAX = 19.6 / (MAXW - 1);   /* the darkest it gets is how wave 20 used to look, reached at wave 25 */
-  const p = play ? clamp(((S.wave || 1) - 1 + (S.active ? 0.6 : 0)) / (MAXW - 0.4), 0, 1) * DARK_MAX : 0.35;   /* title screen and builder: plain daylight */
+  const p0 = play ? clamp(((S.wave || 1) - 1 + (S.active ? 0.6 : 0)) / (MAXW - 0.4), 0, 1) * DARK_MAX : 0.35, p = play && TWX('lights') ? Math.max(p0, DARK_MAX * 0.95) : p0;   /* Lights Out: dark from the start */   /* title screen and builder: plain daylight */
   const tg = moodAt(p), k = MOOD.cur ? Math.min(1, dt * 0.6) : 1;
   if (!MOOD.cur) MOOD.cur = tg; else for (const key in tg) { const c = MOOD.cur[key], v = tg[key]; if (Array.isArray(v)) for (let i = 0; i < v.length; i++) c[i] += (v[i] - c[i]) * k; else MOOD.cur[key] = c + (v - c) * k; }
   const m = MOOD.cur;
@@ -5589,7 +5659,7 @@ function drawBugs(t) {
     const fl = b.shiny ? shinyCol(b, t, 0.6).multiplyScalar(3.2) : b.flash > 0 ? flashC : b.stuck > 0 || b.glueT > 0 ? stuckC : b.psnT > 0 ? psnC : white;
     if (b.shiny && Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 });
     if (b.t === 'ant') {
-      const i = c.ant++, base = baseM.copy(setI(IM.ant, i, b.x, b.y0, b.z, b.ang, b.guard ? 2.0 : 1.15, b.pitch)); IM.ant.setColorAt(i, b.guard && fl === white ? guardC : fl);
+      const i = c.ant++, base = baseM.copy(setI(IM.ant, i, b.x, b.y0, b.z, b.ang, (b.guard ? 2.0 : 1.15) * (b.giant ? 1.5 : 1), b.pitch)); IM.ant.setColorAt(i, b.guard && fl === white ? guardC : fl);
       for (let l = 0; l < 6; l++) {
         const L = GEO.antLegs[l >> 1], side = l & 1 ? -1 : 1, sw = Math.sin(b.walk + (l >> 1) * Math.PI + (side > 0 ? 0 : Math.PI)) * 0.4;
         tmpE.set(0, side > 0 ? L[3] + sw : Math.PI - L[3] - sw, Math.sin(b.walk * 2 + l) * 0.08); tmpQ.setFromEuler(tmpE);
@@ -5597,7 +5667,7 @@ function drawBugs(t) {
       }
       if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, 1.6, 0, 0, 0, 0, 0.45);
     } else if (b.t === 'fly') {
-      const i = c.fly++, base = baseM.copy(setI(IM.fly, i, b.x, bugY(b), b.z, b.ang, 1.25, b.pitch)); IM.fly.setColorAt(i, fl);
+      const i = c.fly++, base = baseM.copy(setI(IM.fly, i, b.x, bugY(b), b.z, b.ang, 1.25 * (b.giant ? 1.5 : 1), b.pitch)); IM.fly.setColorAt(i, fl);
       const flap = Math.sin(t * 55 + b.id) * 0.4;
       for (const side of [1, -1]) {
         tmpE.set(0, side > 0 ? -0.45 : Math.PI + 0.45, flap * side, 'YXZ'); tmpQ.setFromEuler(tmpE);
@@ -5605,7 +5675,7 @@ function drawBugs(t) {
       }
       if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, 1.2, 0, 0, 0, 0, 0.3);
     } else if (b.t === 'spider') {
-      const i = c.spider++, base = baseM.copy(setI(IM.spider, i, b.x, b.y0, b.z, b.ang, 1.05, b.pitch)); IM.spider.setColorAt(i, fl);
+      const i = c.spider++, base = baseM.copy(setI(IM.spider, i, b.x, b.y0, b.z, b.ang, 1.05 * (b.giant ? 1.5 : 1), b.pitch)); IM.spider.setColorAt(i, fl);
       for (let l = 0; l < 8; l++) {
         const L = GEO.spiderLegs[l >> 1], side = l & 1 ? -1 : 1, sw = Math.sin(b.walk + (l >> 1) * 1.6 + (side > 0 ? 0 : Math.PI)) * 0.3;
         tmpE.set(0, side > 0 ? L[3] + sw : Math.PI - L[3] - sw, Math.max(0, Math.sin(b.walk + l)) * 0.15); tmpQ.setFromEuler(tmpE);
@@ -5621,7 +5691,7 @@ function drawBugs(t) {
       }
       if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, 1.2, 0, 0, 0, 0, 0.4);
     } else if (b.t === 'bed') {
-      const i = c.bed++, base = baseM.copy(setI(IM.bed, i, b.x, b.y0, b.z, b.ang, 0.62, b.pitch)); IM.bed.setColorAt(i, fl);
+      const i = c.bed++, base = baseM.copy(setI(IM.bed, i, b.x, b.y0, b.z, b.ang, 0.62 * (b.giant ? 1.5 : 1), b.pitch)); IM.bed.setColorAt(i, fl);
       for (let l = 0; l < 6; l++) {
         const L = GEO.antLegs[l >> 1], side = l & 1 ? -1 : 1, sw = Math.sin(b.walk * 1.4 + (l >> 1) * Math.PI + (side > 0 ? 0 : Math.PI)) * 0.45;
         tmpE.set(0, side > 0 ? L[3] + sw : Math.PI - L[3] - sw, 0); tmpQ.setFromEuler(tmpE);
@@ -7800,7 +7870,8 @@ async function renderBoard(day) {
 }
 function openDaily() {
   setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
-  $('dSub').textContent = day + ' · ' + HOUSES[L.look].name + ' look · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · 10 slices · endless waves';
+  $('dSub').textContent = day + ' · ' + HOUSES[L.look].name + ' look · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · ' + (L.twists.includes('glass') ? 5 : 10) + ' slices · endless waves';
+  $('dTw').hidden = !L.twists.length; $('dTw').innerHTML = L.twists.map(k => `<span><b>${TWIST[k][1]} ${TWIST[k][2]}</b>${TWIST[k][3]}</span>`).join('');
   $('dMine').innerHTML = mine ? `Your score today<b>Wave ${mine.w}</b>` : 'Your score today<b>Not played</b>';
   $('dStreak').innerHTML = `Daily streak<b>${dailyStreak()} 🔥</b>`;
   $('dPlay').textContent = mine ? 'Practice (your score is in)' : 'Play today\'s kitchen';
@@ -7810,8 +7881,13 @@ function openDaily() {
 function startDaily() {
   setupDaily(); const day = LEVELS[DAILY_LV].day;
   startGame(DAILY_LV);
-  S.daily = { day, counts: !dailyMine(day) }; S.lives = DAILY_LIVES; setCake(DAILY_LIVES); S.endless = true; $('waveMax').textContent = ' ∞'; syncHud(); syncGo();
-  banner('Daily Kitchen', S.daily.counts ? '10 slices, endless waves. This run goes on the leaderboard!' : 'Practice run: your score for today is already in', false, 2600);
+  const lives = TWX('glass') ? 5 : DAILY_LIVES;
+  S.daily = { day, counts: !dailyMine(day) }; S.lives = lives; setCake(lives); S.endless = true; $('waveMax').textContent = ' ∞';
+  if (TWX('budget')) S.money = Math.round(S.money / 2);
+  if (TWX('pro')) { S.proPack = true; setAbil(); }
+  syncHud(); syncGo(); renderShop(); syncTray();
+  const tw = LEVELS[DAILY_LV].twists || [], go = () => banner('Daily Kitchen', S.daily.counts ? lives + ' slices, endless waves. This run goes on the leaderboard!' : 'Practice run: your score for today is already in', false, 2600);
+  if (tw.length) slotMachine(tw, go); else go();
 }
 function dailyOver() {
   const d = S.daily, waves = Math.max(0, S.wave - 1), kills = S.kills || 0, bd = Math.round(S.bossDmg || 0);
@@ -8536,7 +8612,7 @@ function step(now, draw) {
   const raw = (now - last) / 1000, dt = Math.max(0, Math.min(0.05, raw)); if (now > last) last = now; clock += dt;   /* a frame's timestamp can be older than the backup timer's last step: never step time backwards */
   try {
     if (raw > 0 && raw < 1 && !document.hidden) perfCheck(raw);
-    if (!S.paused && !S.hold && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; BN_FWD++; try { for (let i = 0; i < n; i++) update(dt); } finally { BN_FWD--; } }
+    if (!S.paused && !S.hold && !S.slot && S.mode !== 'over') { const n = S.mode === 'play' ? S.speed : 1; BN_FWD++; try { for (let i = 0; i < n; i++) update(dt); } finally { BN_FWD--; } }
     if (S.mode === 'play' && !S.paused && !S.hold && !S.active && S.nextT > 0 && $('guide').hidden && TUT.step < 0 && S.net !== 'guest') {
       const was = Math.ceil(S.nextT); S.nextT -= dt;
       if (S.nextT <= 0) { S.nextT = 0; if (vsPaced()) vsTimeUp(); else { S.teamGo = true; try { startWave(); } finally { S.teamGo = false; } } }
