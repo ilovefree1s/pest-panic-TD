@@ -287,7 +287,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .teamBtn small{display:block;font:900 11px var(--body);opacity:.75}
 #lobby{z-index:30}
 .lsub{margin:-6px 0 4px;font-weight:800;color:var(--dim);text-align:center;max-width:90vw}
-#dTw{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:min(560px,92vw)} #dTw span{flex:1 1 220px;background:rgba(160,90,255,.14);box-shadow:inset 0 0 0 1px rgba(190,140,255,.35);border-radius:12px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--dim);text-align:center} #dTw b{display:block;font:400 17px var(--display);color:#e6c8ff;letter-spacing:.02em}
+#dTw{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:min(560px,92vw)} #dTw span{flex:1 1 220px;background:rgba(160,90,255,.14);box-shadow:inset 0 0 0 1px rgba(190,140,255,.35);border-radius:12px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--dim);text-align:center} #dTw b{display:block;font:400 17px var(--display);color:#e6c8ff;letter-spacing:.02em} #dTw .q{opacity:.8}
 /* the Daily twist slot machine */
 #slot{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(6,8,12,.72);backdrop-filter:blur(3px)} #slot[hidden]{display:none}
 .slCard{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 18px 16px;border-radius:22px;background:linear-gradient(170deg,#3a1f5c,#1b1030);box-shadow:inset 0 0 0 3px #ffd34a,0 0 0 6px #6b3fa0,0 20px 50px rgba(0,0,0,.6);width:min(560px,92vw)}
@@ -665,7 +665,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="476">v1.75</div>
+    <div id="ver" data-b="477">v1.76</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1356,16 +1356,24 @@ const TWX = k => LV === DAILY_LV && !!LEVELS[DAILY_LV] && !!LEVELS[DAILY_LV].twi
 function slotMachine(keys, done) {   /* two reels spin and land on today's twists (the same for everyone: only the spin is for show) */
   const el = $('slot'), wins = el.querySelectorAll('.slWin'), desc = el.querySelector('.slDesc'), go = $('slGo'), H = 84;
   S.slot = true; el.hidden = false; go.hidden = true; desc.innerHTML = keys.map(() => '<p></p>').join('');
-  const item = k => `<div class="slItem"><i>${TWIST[k][1]}</i>${TWIST[k][2]}</div>`;
-  let ticks = 0; const tick = setInterval(() => { if (ticks++ < 26) SND.play('tap'); }, 95);
-  keys.forEach((k, j) => {
-    const n = 26 + j * 8, list = []; for (let i = 0; i < n; i++) list.push(TWISTS[Math.floor(Math.random() * TWISTS.length)][0]); list.push(k);
-    const st = wins[j].querySelector('.slStrip'); st.innerHTML = list.map(item).join(''); st.style.transition = 'none'; st.style.transform = 'translateY(0)';
-    void st.offsetWidth; const dur = 2.3 + j * 0.8; st.style.transition = `transform ${dur}s cubic-bezier(.15,.62,.2,1)`; st.style.transform = `translateY(${-n * H}px)`;
-    setTimeout(() => { wins[j].classList.add('win'); SND.play('up'); const p = desc.children[j]; p.textContent = TWIST[k][3]; p.classList.add('on'); if (j === keys.length - 1) { clearInterval(tick); go.hidden = false; } }, dur * 1000 + 60);
-  });
   wins.forEach((w, j) => { w.hidden = j >= keys.length; w.classList.remove('win'); });
-  go.onclick = () => { SND.play('clear'); el.hidden = true; S.slot = false; done && done(); };
+  const item = k => `<div class="slItem"><i>${TWIST[k][1]}</i>${TWIST[k][2]}</div>`, t0 = performance.now(), ease = x => 1 - Math.pow(1 - x, 3.2);
+  const reels = keys.map((k, j) => {
+    const n = 34 + j * 14, list = []; for (let i = 0; i < n; i++) list.push(TWISTS[Math.floor(Math.random() * TWISTS.length)][0]); list.push(k);
+    const st = wins[j].querySelector('.slStrip'); st.style.transition = 'none'; st.innerHTML = list.map(item).join(''); st.style.transform = 'translateY(0)';
+    return { st, n, dur: 3200 + j * 1700, last: 0, done: false, k };
+  });
+  const frame = now => {   // the reels slow down for real, ticking once per symbol, so the last few clicks build the suspense
+    let all = true;
+    reels.forEach((R, j) => {
+      if (R.done) return; const x = Math.min(1, (now - t0) / R.dur), pos = ease(x) * R.n; R.st.style.transform = `translateY(${-pos * H}px)`;
+      if (Math.floor(pos) !== R.last) { R.last = Math.floor(pos); SND.play('tap'); }
+      if (x >= 1) { R.done = true; wins[j].classList.add('win'); SND.play('up'); const p = desc.children[j]; p.innerHTML = `<b>${TWIST[R.k][2]}</b><br>${TWIST[R.k][3]}`; p.classList.add('on'); } else all = false;
+    });
+    if (!all) requestAnimationFrame(frame); else { SND.play('clear'); go.hidden = false; try { LS.set('ppd-twseen', LEVELS[DAILY_LV].day); } catch (e) {} }
+  };
+  requestAnimationFrame(frame);
+  go.onclick = () => { SND.play('tap'); el.hidden = true; S.slot = false; done && done(); };
 }
 function mysteryTools(day) { const r = rng(dayHash('ppd-mystery-' + day)), pool = SHOP.filter(t => t !== 'swat' && t !== 'fogger').map(t => [t, r()]).sort((x, y) => x[1] - y[1]).map(x => x[0]); return ['swat', ...pool.slice(0, 4)]; }
 function setupDaily(day = dailyDay()) {
@@ -7871,7 +7879,8 @@ async function renderBoard(day) {
 function openDaily() {
   setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
   $('dSub').textContent = day + ' · ' + HOUSES[L.look].name + ' look · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · ' + (L.twists.includes('glass') ? 5 : 10) + ' slices · endless waves';
-  $('dTw').hidden = !L.twists.length; $('dTw').innerHTML = L.twists.map(k => `<span><b>${TWIST[k][1]} ${TWIST[k][2]}</b>${TWIST[k][3]}</span>`).join('');
+  const seen = LS.get('ppd-twseen') === day;   /* keep today's twists a surprise until the slot machine has rolled them */
+  $('dTw').hidden = !L.twists.length; $('dTw').innerHTML = L.twists.map(k => seen ? `<span><b>${TWIST[k][1]} ${TWIST[k][2]}</b>${TWIST[k][3]}</span>` : `<span class="q"><b>🎰 ???</b>Today's twist is revealed when you play</span>`).join('');
   $('dMine').innerHTML = mine ? `Your score today<b>Wave ${mine.w}</b>` : 'Your score today<b>Not played</b>';
   $('dStreak').innerHTML = `Daily streak<b>${dailyStreak()} 🔥</b>`;
   $('dPlay').textContent = mine ? 'Practice (your score is in)' : 'Play today\'s kitchen';
