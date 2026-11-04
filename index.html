@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="480">v1.79</div>
+    <div id="ver" data-b="481">v1.80</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3259,9 +3259,9 @@ function openShinies(from) { SND.init(); SND.play('tap'); shinyFrom = from; rend
 $('shinyT').addEventListener('click', () => openShinies('title'));
 $('shinyP').addEventListener('click', () => openShinies('paused'));   /* mid-game, from the pause menu: just caught one? go look */
 $('locker').addEventListener('click', ev => { const b = ev.target.closest('.lk'); if (!b || b.disabled) return; SND.play('tap'); setLook(b.dataset.slot, b.dataset.v); });
-/* secret: hold Back for 3 seconds to unlock (or re-lock) every Locker outfit. A normal tap still just goes back */
+/* secret: hold Back for 5 seconds to unlock (or re-lock) every Locker outfit. A normal tap still just goes back */
 let shHold = null, shHeld = false;
-$('shBack').addEventListener('pointerdown', () => { shHeld = false; clearTimeout(shHold); shHold = setTimeout(() => { shHeld = true; const on = !lockAll(); try { localStorage.setItem('ppd-lkall', on ? '1' : '0'); } catch (e) {} renderLocker(); lockerPreview(); SND.play(on ? 'clear' : 'tap'); const c = $('shCount'); c.textContent = on ? '🔓 All Locker outfits unlocked (hold Back again to undo)' : '🔒 Locker outfits back to normal'; setTimeout(renderDex, 3500); }, 3000); });
+$('shBack').addEventListener('pointerdown', () => { shHeld = false; clearTimeout(shHold); shHold = setTimeout(() => { shHeld = true; const on = !lockAll(); try { localStorage.setItem('ppd-lkall', on ? '1' : '0'); } catch (e) {} renderLocker(); lockerPreview(); SND.play(on ? 'clear' : 'tap'); const c = $('shCount'); c.textContent = on ? '🔓 All Locker outfits unlocked (hold Back again to undo)' : '🔒 Locker outfits back to normal'; setTimeout(renderDex, 3500); }, 5000); });
 for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('shBack').addEventListener(ev, () => clearTimeout(shHold));
 $('shBack').addEventListener('contextmenu', e => e.preventDefault());
 $('shBack').addEventListener('click', () => { if (shHeld) { shHeld = false; return; } SND.play('tap'); $('shinies').hidden = true; $(shinyFrom).hidden = false; });
