@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="489">v1.88</div>
+    <div id="ver" data-b="490">v1.89</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3603,7 +3603,7 @@ Object.assign(TT, {
   crumbs:  { name: 'Poison Crumbs', cost: 40, item: true, path: true, air: true, range: [1.5, 1.5, 1.5], bites: 15, psn: 10,
              d: 'Drop a pile of bug-sprayed crumbs on the trail. Every bug that reaches it stops to eat for about 1.5 seconds (bosses stop for 3 and eat 5 bites), and walks away poisoned: 10 damage a second for 3 seconds (bosses 5 seconds). Poison ignores shells. 15 bites, then the pile is gone.' },
   sticky:  { name: 'Sticky Trap', cost: 35, item: true, path: true, air: false, range: [1.6, 1.6, 1.6],
-             d: 'A glue sheet for the trail. For one wave, every crawling bug that walks over it slows to 40% speed. Flies go over it. Placed between waves, it works during the next wave.' },
+             d: 'A glue sheet for the trail. For one wave, every crawling bug that walks over it slows to 40% speed. Flies go over it. Placed between waves, it works during the next wave. If no bug touches it, it stays out for the next wave too.' },
   bomb:    { name: 'Bug Bomb', cost: 75, item: true, path: true, air: true, range: [2.4, 2.4, 2.4], pct: 0.22, bossPct: 0.025,
              d: 'A fogger for the trail. It waits on the trail until a bug walks over it, then fills the trail around it with thick green poison fog for the rest of that wave. Every bug passing through loses 22% of its health each second (bosses 2.5%), flies included, so it\'s just as strong in the last waves as the first. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
   pack:    { name: 'Pro Spray Upgrade', abbr: 'Pro Spray', item: true, instant: true, air: true, cost: 150, range: [0, 0, 0],
@@ -5325,7 +5325,7 @@ function update(dt) {
   if (S.active && ((S.saveT = (S.saveT || 0) - dt) <= 0 || S.lives !== S.savedLives)) { S.saveT = 2; S.savedLives = S.lives; saveRun(); }   /* mid-wave: keep the save current every couple of seconds */
   if (S.active && !S.queue.length && !S.bugs.length && !(S.vs && S.vs.inbox.length)) {
     S.active = false;
-    for (const it of [...S.items]) { if (it.t === 'bomb' && !it.trig && it.waveEnd <= S.wave) it.waveEnd = S.wave + 1; if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it); }   // an unused Bug Bomb waits for the next wave
+    for (const it of [...S.items]) { if ((it.t === 'bomb' || it.t === 'sticky') && !it.trig && it.waveEnd <= S.wave) it.waveEnd = S.wave + 1; if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it); }   // an unused Bug Bomb or untouched Sticky Trap waits for the next wave
     if (S.vs) S.vs.cl = S.wave;   // waves cleared (2v2 race: more is better)
     if (S.wave >= MAXW && !S.endless) { if (S.vs) vsFinish(); else if (!S.cheered) gameOver(true); return; }   /* the cheer schedules its own results */
     const cl = S.clears && S.clears.length ? S.clears : [S.wave];
@@ -5395,7 +5395,7 @@ function itemsAct(dt) {
       if (!armed) continue;
       for (const b of S.bugs) {
         if (b.dead || BT[b.t].fly || (b.x - it.x) ** 2 + (b.z - it.z) ** 2 > R2 || b.y0 > 0.5) continue;
-        b.glueT = 0.15; b.glueF = BT[b.t].boss ? 0.6 : 0.4;   /* its own timer: the trap must not keep a swat stun's zero speed alive (that froze bosses on it for good) */
+        b.glueT = 0.15; b.glueF = BT[b.t].boss ? 0.6 : 0.4; it.trig = true;   // touched: it's used up at the end of this wave   /* its own timer: the trap must not keep a swat stun's zero speed alive (that froze bosses on it for good) */
       }
     } else if (it.t === 'bomb') {
       if (armed && !it.trig && S.net !== 'guest') for (const b of S.bugs) if (!b.dead && !BT[b.t].fly && (b.x - it.x) ** 2 + (b.z - it.z) ** 2 <= R2 * 0.5 && b.y0 <= 0.5) { it.trig = true; SND.play('spray'); break; }   // waits for a bug to step on it
