@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="487">v1.86</div>
+    <div id="ver" data-b="488">v1.87</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1342,7 +1342,7 @@ const TWISTS = [
   ['budget', '🪙', 'Tight Budget', 'Start with half the coins, but bugs pay 25% more.'],
   ['nopets', '🚫', 'No Pets', 'The Pets tab is locked today.'],
   ['pro', '💪', 'Pro Day', 'The Pro Spray Upgrade is yours from the start, but each spray costs 30 coins.'],
-  ['glass', '🍰', 'Glass Cake', 'Only 5 slices of cake, but every bug pays double.'],
+  ['glass', '🍰', 'Glass Cake', 'Only 5 slices of cake (a boss takes 3 instead of 5), but every bug pays double.'],
   ['mystery', '🎁', 'Mystery Tools', 'Only 5 random tools are in the shop today.'],
   ['lights', '🌙', 'Lights Out', 'The kitchen is dark. Candles light up 35% wider and scorch 50% harder.'],
   ['slippery', '🧊', 'Slippery Floor', 'Bugs slide 50% further when the broom or fan pushes them.'],
@@ -2228,7 +2228,7 @@ const MAT = {
   wing: new THREE.MeshStandardMaterial({ map: wingTex(), color: '#ffffff', transparent: true, opacity: 0.9, side: THREE.DoubleSide, roughness: 0.3, metalness: 0.1, depthWrite: false, envMapIntensity: 0.6 }),
   coin: std({ color: '#f5c242', metalness: 1, roughness: 0.22, emissive: '#5a3a00', emissiveIntensity: 0.6, envMapIntensity: 1.4 }),
 };
-const MAXB = 320;
+const MAXB = 640;
 function instanced(geo, mat, max) {
   const m = new THREE.InstancedMesh(geo, mat, max);
   m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0;
@@ -3818,7 +3818,7 @@ function drawMdl(b, t, sh) {
 function spawnEntry(t, rt, sent) {
   if (rt === undefined) rt = !LEVELS[LV].team && (BT[t].boss || S.wave <= 5) ? LONG_R : nextRoute();   // solo: bosses, and all of waves 1-5, use the longest trail   // solo: bosses always take the longest trail
   if (t === 'bed') { for (let i = 0; i < BT.bed.swarm; i++) { const b = spawnBug('bed', rt); if (sent) b.sent = 1; b.s = -i * 0.35 - Math.random() * 0.3; b.off = (Math.random() - 0.5) * 1.8; } return; }
-  if (t === 'centi' || t === 'gcenti') { let lead = null; for (let i = 0; i < BT[t].segs; i++) { const b = spawnBug(t, rt); if (sent) b.sent = 1; b.s = -i * (BT[t].gap || 0.62); b.off = 0; b.lead = lead; lead = b; } return; }
+  if (t === 'centi' || t === 'gcenti') { let lead = null; for (let i = 0; i < BT[t].segs; i++) { const b = spawnBug(t, rt); if (sent) b.sent = 1; b.s = -i * (BT[t].gap || 0.62) * (b.giant ? 1.5 : 1); b.off = 0; b.lead = lead; lead = b; } return; }
   const b = spawnBug(t, rt); if (sent) b.sent = 1; return b;
 }
 // stink clouds: tools inside work 40% slower for a few seconds
@@ -3838,7 +3838,7 @@ function specialMove(b, sp, dt) {
   const bt = BT[b.t], base = bt.base || b.t, giant = !!bt.boss;
   if (base === 'centi') {
     if (b.lead && b.lead.dead) { if (giant) b.lead = null; else { let q = b.lead; while (q && q.dead) q = q.lead; b.lead = q; } }   // giant: the bit in front got squashed, this segment is a new head. regular: the chain closes up behind the gap
-    if (b.lead) { const want = b.lead.s - (bt.gap || 0.62), gap = want - b.s; sp = gap > 0.05 ? sp * Math.min(4, 1.35 + gap * 4) : gap < 0 ? 0 : sp; }   /* the further behind, the faster it hurries up: a hole left by a squashed segment closes in well under a second */
+    if (b.lead) { const want = b.lead.s - (bt.gap || 0.62) * (b.giant ? 1.5 : 1), gap = want - b.s; sp = gap > 0.05 ? sp * Math.min(4, 1.35 + gap * 4) : gap < 0 ? 0 : sp; }   /* the further behind, the faster it hurries up: a hole left by a squashed segment closes in well under a second */
     if (giant) b.armor = b.lead ? 0 : 4;   // the giant's head is armored
   } else if (base === 'hopper' && S.net !== 'guest') {
     const JT = giant ? 0.6 : 0.5, JL = giant ? 3 : 6, CR = giant ? 0.45 : 0.3;   // the giant only hops one tile, now and then
@@ -4340,7 +4340,7 @@ const BUILD = {
       extra.forEach(([w, f], i) => { w.visible = f.visible = lv >= 2; const x = (i ? 1 : -1) * (lv === 2 ? 0.17 : 0.32); w.position.x = x; f.position.x = x; });
       lid.visible = lv >= 3; waxM.color.set(lv >= 3 ? '#f0b84a' : '#e9d36a');
       jar.scale.setScalar([1, 1.12, 1.25][lv - 1]);
-      const r = TT.candle.range[lv - 1] * 1.08 * (o.perk ? 1.5 : 1); aura.scale.set(r, r, 1); o.auraR = r;
+      const r = TT.candle.range[lv - 1] * 1.08 * (o.perk ? 1.5 : 1) * (TWX('lights') ? 1.35 : 1); aura.scale.set(r, r, 1); o.auraR = r;
     };
     o.setPerk = () => { o.perk = true; o.baseScale = 1.25; waxM.color.set('#ff7a2a'); o.setLevel(3); flames.forEach(f => f.scale.multiplyScalar(1.6)); };
     return o;
@@ -4694,7 +4694,7 @@ function spawnBug(t, route = nextRoute()) {
   const bt = BT[t], LL = LEVELS[LV], wm = ((S.mode === 'play' && LL.bugMulW && LL.bugMulW[S.wave] && (LL.bugMulW[S.wave][t] || LL.bugMulW[S.wave]['*'])) || 1) * (S.mode === 'play' && LL.bugMulAfter && S.wave > LL.bugMulAfter[0] ? LL.bugMulAfter[1] : 1), hp = bt.boss ? bossHp(t) : Math.round(bt.hp * S.hpMul * wm * (S.mode === 'play' && S.wave >= 10 ? 1.2 : 1) * (S.mode === 'play' && S.wave > 5 && t !== 'dung' ? 1.05 : 1) * lateRamp(S.mode === 'play' ? S.wave : 0)), b = { id: S.nid++, t, s: 0, off: (Math.random() - 0.5) * (bt.boss ? 0.2 : 1.3), hp, max: hp,
     x: 0, y0: 0, z: 0, ang: 0, pitch: 0, flash: 0, psnT: 0, psnD: 0, pacc: 0, stuck: 0, slowF: 1, walk: Math.random() * 6, glued: 0 };
   b.route = route; pathAt(0, tmpP, route); b.x = tmpP.x; b.z = tmpP.z; b.ang = Math.atan2(tmpP.dx, tmpP.dz);
-  if (S.mode === 'play' && S.net !== 'guest' && Math.random() < (bt.boss ? SHINY_BOSS : SHINY_CHANCE) * (TWX('shiny') ? 2 : 1) / (bt.swarm || bt.segs || 1)) makeShiny(b);   // a bed bug swarm (12) or a centipede (8 segments) gets one roll's worth as a group, not one per bug
+  if (S.mode === 'play' && S.net !== 'guest' && Math.random() < (bt.boss ? SHINY_BOSS : SHINY_CHANCE) * (TWX('shiny') ? 2 : 1) * (TWX('swarm') ? 0.5 : 1) / (bt.swarm || bt.segs || 1)) makeShiny(b);   // a bed bug swarm (12) or a centipede (8 segments) gets one roll's worth as a group, not one per bug
   if (bt.ball) { const h = Math.round(bt.ball * S.hpMul * wm * (S.wave === 6 || S.wave === 7 ? 0.7 / 0.9 : 1));   // beetle balls 30% weaker on waves 6-7
     b.ball = { hp: h, max: h, flash: 0 }; }
   if (LV === DAILY_LV && S.mode === 'play') {   // Daily twists on the bug itself
@@ -4797,7 +4797,7 @@ function hit(b, d, raw) {
   if (b.hid) return;   // under the counter: out of reach
   if (b.t === 'gfly' && b.darting && (CUR_SRC === 'swat' || CUR_SRC === 'frog') && Math.random() < 0.5) { if (S.mode === 'play' && Math.random() < 0.5) FX.smoke.spawn({ x: b.x, y: bugY(b) + 1, z: b.z, vy: 1, life: 0.35, s0: 0.5, s1: 1.2, c: [0.9, 0.9, 0.9], a0: 0.5 }); return; }   /* she darted: missed */
   d *= S.dmgMul * (1 + CUR_AMP);
-  if (b.t === 'gant' && b.guards && b.guards.some(g => !g.dead)) { d *= 0.3; if (Math.random() < 0.15) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 2, y: 1.2 + Math.random(), z: b.z + (Math.random() - 0.5) * 2, vy: 0.6, life: 0.4, s0: 0.6, s1: 0.1, c: [1, 0.85, 0.3], a0: 1 }); }   /* her Royal Guard shields her */
+  if (b.guards && BT[b.t].boss && b.guards.some(g => !g.dead)) { d *= 0.3; if (Math.random() < 0.15) FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 2, y: 1.2 + Math.random(), z: b.z + (Math.random() - 0.5) * 2, vy: 0.6, life: 0.4, s0: 0.6, s1: 0.1, c: [1, 0.85, 0.3], a0: 1 }); }   /* her Royal Guard shields her */
   const show = S.mode === 'play';
   if (b.ball && b.ball.hp > 0) { const bd = Math.min(d, b.ball.hp); b.ball.hp -= d; b.ball.flash = 0.08; if (show) { b.db = (b.db || 0) + bd; if (CUR_SRC) statFor(CUR_SRC).dmg += bd; credit(bd, false); } if (b.ball.hp <= 0) breakBall(b); return; }
   const dd = raw ? d : d * armorKeep(b);
@@ -5264,7 +5264,7 @@ function update(dt) {
     if (b.mdl || b.t === 'fly') sp = specialMove(b, sp, dt);
     if (b.sk) sp = 0;   // skittering: he doesn't move along the trail
     if (b.push > 0) { const d = Math.min(b.push, dt * 16); b.push -= d; b.s = Math.max(0, b.s - d); sp = 0; b.walk += dt * 20; }
-    if (b.lead && !b.lead.dead && b.s > b.lead.s - (bt.gap || 0.62) * 0.7) { b.s = Math.max(0, b.lead.s - (bt.gap || 0.62) * 0.7); sp = 0; }   // a centipede segment gets shoved back with the segment in front of it (the head was sliding back through its own body)
+    if (b.lead && !b.lead.dead && b.s > b.lead.s - (bt.gap || 0.62) * (b.giant ? 1.5 : 1) * 0.7) { b.s = Math.max(0, b.lead.s - (bt.gap || 0.62) * (b.giant ? 1.5 : 1) * 0.7); sp = 0; }   // a centipede segment gets shoved back with the segment in front of it (the head was sliding back through its own body)
     if (b.needGuard && S.net !== 'guest') { b.needGuard = 0; royalGuard(b); }
     if (b.guard) { if (b.guard.dead) b.guard = null; else { b.gph += dt * 1.4; b.s = Math.max(0, b.guard.s + Math.cos(b.gph) * 3.1); b.off = Math.sin(b.gph) * 2.6; sp = 0; b.walk += dt * 9; b.push = 0; } }   // a soldier ant marching in a ring around its queen
     if (b.t === 'gfly') {   // zig-zag: quick darts from side to side of the trail
@@ -5295,7 +5295,7 @@ function update(dt) {
     if (b.s >= ROUTES[b.route].end) {
       b.dead = true;
       hideBug(b);
-      if (S.mode === 'play' && S.net !== 'guest') biteCake(bt.lives);
+      if (S.mode === 'play' && S.net !== 'guest') biteCake(bt.boss && TWX('glass') ? Math.ceil(bt.lives / 2) : bt.lives);   // Glass Cake has half the slices: a boss takes half as many, so one boss is never the whole cake
     }
   }
   // citronella glow: every tool standing in a candle's glow gets its boost (two candles stack, no more)
@@ -5766,7 +5766,7 @@ function drawBugs(t) {
       if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, fy ? 4 : 6, 0, 0, 0, 0, fy ? 0.3 : 0.5);
     }
   }
-  for (const k in c) { IM[k].count = c[k]; IM[k].instanceMatrix.needsUpdate = true; if (IM[k].instanceColor) IM[k].instanceColor.needsUpdate = true; }
+  for (const k in c) { IM[k].count = Math.min(c[k], IM[k].instanceMatrix.count); IM[k].instanceMatrix.needsUpdate = true;   /* never ask the GPU for more copies than there's room for (hundreds of Swarm Day bed bugs broke the drawing) */ if (IM[k].instanceColor) IM[k].instanceColor.needsUpdate = true; }
 }
 // broom pose: head on the floor at H, handle up to a grip above the tower; sweeps along the trail when it fires
 const bH = new V3(), bG = new V3(), bU = new V3(), bX = new V3(), bZ = new V3(), bM = new THREE.Matrix4();
