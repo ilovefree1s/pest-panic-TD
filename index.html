@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="484">v1.83</div>
+    <div id="ver" data-b="485">v1.84</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1331,7 +1331,7 @@ function trailRoute(cells, tail) {   // cells run cake -> door; the game wants d
 /* ---- Daily twists: two rules for the day, the same for everyone, rolled on a slot machine when the run starts (from 4 Nov 2026) */
 const TWISTS = [
   ['speed', '🏃', 'Speed Day', 'Bugs move 20% faster, but every squash pays double.'],
-  ['swarm', '🐜', 'Swarm Day', 'Twice as many bugs, each with half the health.'],
+  ['swarm', '🐜', 'Swarm Day', 'Twice as many bugs, each with half the health and half the coins.'],
   ['armor', '🛡️', 'Armored Day', 'Every regular bug has +2 armor. Poison and fog burn right through it.'],
   ['flyers', '🪰', 'Flyer Frenzy', 'Half of every wave is flies and moths.'],
   ['giant', '🦣', 'Giant Day', 'Half as many bugs, but each is bigger, slower, twice as tough and pays double.'],
@@ -3178,7 +3178,7 @@ function finishJob(j) {
   if (S.pick === o) syncTray();
 }
 // full gold for the opening 5 waves, then the 15% cut kicks in
-function goldMul(w = S.wave) { return (w <= 5 ? 1 : w <= 10 ? 0.85 : w <= 15 ? 0.42 : 0.33) * (LV === DAILY_LV ? (TWX('speed') ? 2 : 1) * (TWX('glass') ? 2 : 1) * (TWX('giant') ? 2 : 1) * (TWX('budget') ? 1.25 : 1) : 1); }
+function goldMul(w = S.wave) { return (w <= 5 ? 1 : w <= 10 ? 0.85 : w <= 15 ? 0.42 : 0.33) * (LV === DAILY_LV ? (TWX('speed') ? 2 : 1) * (TWX('glass') ? 2 : 1) * (TWX('giant') ? 2 : 1) * (TWX('budget') ? 1.25 : 1) * (TWX('swarm') ? 0.5 : 1) : 1); }   /* Swarm Day: twice the bugs, so each pays half (it was doubling everyone's income) */
 const payAt = (t, w) => Math.max(1, Math.round((BT[t].gold + Math.floor(w / 3)) * goldMul(w)));   // what one squash of t pays on wave w   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
 const ABIL = { cd: 60, cost: 0, dot: 12, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
