@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="483">v1.82</div>
+    <div id="ver" data-b="484">v1.83</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -963,13 +963,17 @@ const CLEAN = new ShaderPass({ uniforms: { tDiffuse: { value: null } },
 composer.addPass(CLEAN);
 const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.3, 0.4, 1.15); bloom.enabled = !LITE; composer.addPass(bloom);
 // if the computer is struggling (slow frames), drop to the lighter graphics automatically
-const PERF = { t: 0, n: 0, done: false };   /* phones get checked too: if frames are slow, drop the smoothing and resolution */
+const PERF = { t: 0, n: 0, done: false, step: 0 };   /* phones get checked too, all game long: a busy wave (Swarm Day...) can be what tips a phone over */
+function goLite() { LITE = true; bloom.enabled = false; renderer.setPixelRatio(1); for (const rt of [composer.renderTarget1, composer.renderTarget2]) { rt.samples = 0; rt.dispose(); } requestAnimationFrame(resize); }
 function perfCheck(dt) {
   if (PERF.done) return;
   PERF.t += dt; PERF.n++;
-  if (PERF.t >= 4) {
-    PERF.done = true;
-    if (PERF.n / PERF.t < 32) { LITE = true; bloom.enabled = false; renderer.setPixelRatio(1); for (const rt of [composer.renderTarget1, composer.renderTarget2]) { rt.samples = 0; rt.dispose(); } requestAnimationFrame(resize); }
+  if (PERF.t >= 3) {
+    const fps = PERF.n / PERF.t; PERF.t = 0; PERF.n = 0;
+    if (fps >= 32) return;
+    if (!LITE) goLite();   // step 1: no bloom, no smoothing, normal resolution
+    else if (PERF.step === 0 && fps < 26) { PERF.step = 1; sun.castShadow = false; scene.traverse(o => { if (o.material) { const M = Array.isArray(o.material) ? o.material : [o.material]; M.forEach(m => m.needsUpdate = true); } }); }   // step 2: no shadows
+    else if (PERF.step === 1 && fps < 22) { PERF.step = 2; PERF.done = true; renderer.setPixelRatio(Math.max(0.6, Math.min(1, (window.devicePixelRatio || 1) * 0.5))); requestAnimationFrame(resize); }   // step 3: a bit softer picture
   }
 }
 composer.addPass(new OutputPass());
