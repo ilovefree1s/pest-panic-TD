@@ -73,7 +73,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #jar{position:absolute;left:88px;bottom:16px;z-index:4;border:0;border-radius:14px;padding:5px 10px;cursor:pointer;background:rgba(14,18,22,.92);color:var(--text);font:800 12px var(--body);box-shadow:inset 0 0 0 2px #ffd84a,0 4px 12px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px}
 #jar b{color:#ffd84a;font:400 15px var(--display)}
 #jarAsk{position:absolute;left:88px;bottom:52px;z-index:6;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;border-radius:14px;background:rgba(14,18,22,.95);box-shadow:inset 0 0 0 2px #ffd84a,0 6px 16px rgba(0,0,0,.5)} #jarAsk span{grid-column:1/-1;font:800 12px var(--body);color:#ffd84a;text-align:center}
-#jarAsk button{border:0;border-radius:10px;padding:6px 10px;cursor:pointer;font:900 13px var(--body);color:#fff;display:grid;gap:1px} #jarAsk small{font:700 11px var(--body);opacity:.85} #jarKeep{background:#3c4652} #jarSplit{background:#3fae5a}
+#jarAsk button{border:0;border-radius:10px;padding:6px 10px;cursor:pointer;font:900 13px var(--body);color:#fff;display:grid;gap:1px} #jarAsk small{font:700 11px var(--body);opacity:.85} #jarKeep{background:#c0732a} #jarSplit{background:#3fae5a} #jarNo{background:#3c4652;grid-column:1/-1} #jarAsk em{grid-column:1/-1;font:700 11px var(--body);font-style:normal;color:#ffd84a;text-align:center;max-width:220px} #jarAsk.solo #jarSplit{display:none} #jarAsk.solo #jarNo{grid-column:auto}
 #abil b{font:400 12px var(--display);letter-spacing:.05em;margin-top:-3px}
 #abil.pro{background:radial-gradient(circle at 50% 40%,#5a3a1c,#24160a);box-shadow:0 0 0 3px #ff8a2a,0 0 14px rgba(255,138,42,.55),0 6px 16px rgba(0,0,0,.5)}
 #abil.pro svg rect:first-child{fill:#ff9a3a}
@@ -659,14 +659,14 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
       <path d="M18 32c0 6 4 8 9 8l12-8" stroke="#1c1d22" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M39 32l7-5M39 32l7 1M39 32l6 6" stroke="#bff0c8" stroke-width="2.5" stroke-linecap="round"/></svg>
       <b>Spray</b><small>Free</small><i id="abilT"></i></button>
     <button id="catch" type="button" hidden aria-label="Catch the shiny bug"><span>✨</span>Catch</button>
-    <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +100</button>
-    <div id="jarAsk" hidden><span>Sell a shiny bug</span><button type="button" id="jarKeep">Keep all<small>+100 for you</small></button><button type="button" id="jarSplit">Split it<small>+50 each</small></button></div>
+    <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +200</button>
+    <div id="jarAsk" hidden><span id="jarQ">Sell a shiny bug?</span><em id="jarW"></em><button type="button" id="jarKeep">Sell it<small>+200 for you</small></button><button type="button" id="jarSplit">Split it<small>+100 each</small></button><button type="button" id="jarNo">Keep it<small>don't sell</small></button></div>
     <div id="slot" hidden><div class="slCard"><b class="slT">Today's twists</b><div class="slReels"><div class="slWin"><div class="slStrip"></div></div><div class="slWin"><div class="slStrip"></div></div></div><div class="slDesc"></div><button class="btn" type="button" id="slGo" hidden>Let's go!</button></div></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="488">v1.87</div>
+    <div id="ver" data-b="489">v1.88</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3299,8 +3299,9 @@ function makeShiny(b) {
 /* the jar lives in the run: a shiny you catch can be sold until that game ends. Only the ones you KEEP go into your collection, when the run is over */
 function jarCount() { return (S && S.jarT && S.jarT.length) || 0; }
 function jarAdd(t) { if (!S) return; (S.jarT ||= []).push(t); S.jar = S.jarT.length; syncCatch(); }
-function jarSell() {   // sell one you already have in your collection first, so a new one isn't sold by accident
-  const J = S.jarT || [], d = dexGet(); let i = J.findIndex(t => !t || d[t]); if (i < 0) i = J.length - 1; if (i >= 0) J.splice(i, 1); S.jar = J.length; syncCatch(); }
+const SHINY_SELL = 200;
+function jarPick() { const J = S.jarT || [], d = dexGet(); let i = J.findIndex(t => !t || d[t]); if (i < 0) i = J.length - 1; return i; }   // sell one you already have in your collection first, so a new one isn't sold by accident
+function jarSell() { const J = S.jarT || [], i = jarPick(); if (i >= 0) J.splice(i, 1); S.jar = J.length; syncCatch(); }
 function stopSpray() { try { SND.play('sprayStop'); for (const e of [S && S.ext, S && S.p2 && S.p2.ext]) if (e && e.abil) { e.abil.sndOn = false; e.abil = null; e.state = 'idle'; } } catch (err) {} }   // the game is over: no hiss on the results screen
 function bankLive() { const J = S && S.jarT; if (J) for (let i = 0; i < J.length; i++) if (J[i]) { dexAdd(J[i]); J[i] = null; } }   // the run is over: whatever is still in the jar joins the collection (null = already counted; it can still be sold in Endless)
 try { localStorage.removeItem('ppd-shiny'); } catch (e) {}   /* the old everlasting jar */
@@ -3321,16 +3322,23 @@ function catchUpdate(e, dt) {
   b.dead = true; hideBug(b); e.catch = null; e.state = e.job ? 'walk' : 'idle'; e.rest = null;
   for (let i = 0; i < 24; i++) { const a = Math.random() * TAU, v = 2 + Math.random() * 4; FX.glow.spawn({ x: b.x, y: 1, z: b.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 4, vz: Math.sin(a) * v, grav: 8, life: 0.8, s0: 0.6, s1: 0.1, c: [Math.random(), Math.random(), 1], a0: 1 }); }
   SND.play('clear');
-  banner('Caught a ' + shinyName(b) + '!', 'Keep it to the end of the game to add it to your collection, or sell it for 100 coins.', false, 3000);
+  banner('Caught a ' + shinyName(b) + '!', 'Keep it to the end of the game to add it to your collection, or sell it for 200 coins.', false, 3000);
   if (S.p2 && (S.cur || 0) !== (S.me || 0)) netSend({ k: 'caught', t: b.t }); else jarAdd(b.t);
 }
 function sellShiny(split) {
   if (S.mode !== 'play' || jarCount() <= 0) return;
-  if (split === undefined && S.p2 && (S.net === 'host' || S.net === 'guest')) { $('jarAsk').hidden = !$('jarAsk').hidden; SND.play('tap'); return; }   // Team Kitchen: ask first
+  if (split === undefined) {   // always ask first: a sold shiny never makes it into the collection
+    const A = $('jarAsk'); if (!A.hidden) { A.hidden = true; return; }
+    const t = (S.jarT || [])[jarPick()], have = !t || dexGet()[t];
+    $('jarQ').textContent = 'Sell your ' + (t ? 'shiny ' + (BUG_NAME[t] || (BT[t] && BT[t].name) || 'bug') : 'shiny bug') + '?';
+    $('jarW').textContent = have ? 'You already have this one in your collection.' : "It won't be added to your Shiny Collection!";
+    A.classList.toggle('solo', !(S.p2 && (S.net === 'host' || S.net === 'guest'))); A.hidden = false; SND.play('tap'); return;
+  }
   $('jarAsk').hidden = true; jarSell(); SND.play('sell');
-  if (S.net === 'guest') netSend({ k: 'sellShiny', split: split ? 1 : 0 }); else if (split) { S.money += 50; S.p2.money += 50; } else S.money += 100;
-  banner('Sold a shiny bug', split ? '+50 coins each for you and your teammate' : '+100 coins', false, 1400);
-  if (split && S.net === 'host' && !(S.vs && S.vs.v22)) netSend({ k: 'bn', a: 'Your teammate shared a shiny bug!', b: '+50 coins', r: 0, ms: 1600 });
+  const half = SHINY_SELL / 2;
+  if (S.net === 'guest') netSend({ k: 'sellShiny', split: split ? 1 : 0 }); else if (split) { S.money += half; S.p2.money += half; } else S.money += SHINY_SELL;
+  banner('Sold a shiny bug', split ? '+' + half + ' coins each for you and your teammate' : '+' + SHINY_SELL + ' coins', false, 1400);
+  if (split && S.net === 'host' && !(S.vs && S.vs.v22)) netSend({ k: 'bn', a: 'Your teammate shared a shiny bug!', b: '+' + half + ' coins', r: 0, ms: 1600 });
 }
 function syncCatch() {
   if (!S) return;
@@ -3343,6 +3351,7 @@ $('catch').addEventListener('click', e => { e.stopPropagation(); SND.init(); sta
 $('jar').addEventListener('click', e => { e.stopPropagation(); SND.init(); sellShiny(); });
 $('jarKeep').addEventListener('click', e => { e.stopPropagation(); SND.init(); sellShiny(false); });
 $('jarSplit').addEventListener('click', e => { e.stopPropagation(); SND.init(); sellShiny(true); });
+$('jarNo').addEventListener('click', e => { e.stopPropagation(); SND.play('tap'); $('jarAsk').hidden = true; });
 for (const id of ['catch', 'jar', 'jarAsk']) for (const ev of ['pointerdown', 'pointerup']) $(id).addEventListener(ev, e => e.stopPropagation());
 function useAbility() {
   if (S.mode !== 'play' || S.paused) return;
@@ -7091,7 +7100,7 @@ document.addEventListener('visibilitychange', () => {
 function netWarn(t) { const el = $('netWarn'); el.textContent = t; el.hidden = false; clearTimeout(netWarn.t); netWarn.t = setTimeout(() => el.hidden = true, 6000); }
 // host: carry out the guest's request as player 2
 function netHostCmd(m) {
-  if (m.k === 'sellShiny' && m.split) { S.money += 50; S.p2.money += 50; BN_FWD++; try { banner('Shiny bug shared!', '+50 coins each', false, 1600); } finally { BN_FWD--; } return; }
+  if (m.k === 'sellShiny' && m.split) { S.money += SHINY_SELL / 2; S.p2.money += SHINY_SELL / 2; BN_FWD++; try { banner('Shiny bug shared!', '+' + SHINY_SELL / 2 + ' coins each', false, 1600); } finally { BN_FWD--; } return; }
   if (m.k === 'look') { if (S.p2) S.p2look = sanitizeLook(m.l); return; }
   if (m.k === 'ghosts') { setPartnerGhosts(m.g, 1); return; }
   const tw = m.id != null ? S.towers.find(t => t.id === m.id) : null;
@@ -7105,7 +7114,7 @@ function netHostCmd(m) {
     else if (m.k === 'vsSend' && S.vs) vsSend(m.i);
     else if (m.k === 'rk' && S.vs) S.vs.rkMate = 1;
     else if (m.k === 'catch') startCatch();
-    else if (m.k === 'sellShiny' && !m.split) S.money += 100;
+    else if (m.k === 'sellShiny' && !m.split) S.money += SHINY_SELL;
     else if (m.k === 'sell' && tw && tw.owner === 1) sell(tw);   // (sell() also remembers it so the partner can undo)
     else if (m.k === 'lic') buyLicense();
     else if (m.k === 'abil') useAbility();
@@ -8085,14 +8094,14 @@ function rules22(team, mate, battle) {
     'From <b>wave 6</b>, open the <b>Send</b> tab to send bugs into the other team\'s kitchen. Either of you can send, paid from your own coins.',
     '<b>Last cake standing wins.</b> If both teams survive all ' + MAXW + ' waves, the team with more cake left wins.',
     'Every coin from every kill is <b>split 50/50</b> with your teammate.',
-    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar: <b>keep all 100 coins</b> or <b>split it 50/50</b> with your teammate.'
+    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar: <b>keep all 200 coins</b> or <b>split it 100/100</b> with your teammate.'
   ] : [
     'Both teams play the <b>same map and the same waves</b>, each in their own kitchen.',
     '<b>First team to clear all ' + MAXW + ' waves wins!</b>',
     'A wave only goes early when <b>both of you tap Send bugs</b>. Sending early is how you get ahead.',
     'If a cake gets eaten, the team that <b>cleared more waves</b> wins. Same number of waves? The cake that lasted longer wins.',
     'Every coin from every kill is <b>split 50/50</b> with your teammate.',
-    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar: <b>keep all 100 coins</b> or <b>split it 50/50</b> with your teammate.'
+    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar: <b>keep all 200 coins</b> or <b>split it 100/100</b> with your teammate.'
   ];
   $('r22L').innerHTML = L.map(t => '<li>' + t + '</li>').join('');
   $('r22Ok').disabled = false; $('r22Ok').textContent = 'Got it!'; $('rules22').hidden = false;
@@ -8190,7 +8199,7 @@ function rulesFfa(n) {
     '<b>First to clear all ' + MAXW + ' waves wins!</b>',
     'Your cake has <b>' + FFA_LIVES + ' slices</b>. If it gets eaten, you\'re out. If everyone else is out, the <b>last cake standing wins</b> right away.',
     'Tap the <b>VS</b> bar at the top to watch anyone else\'s kitchen.',
-    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar for <b>100 coins</b> (then it doesn\'t count).'
+    '✨ Very rarely a <b>shiny bug</b> shows up. Tap <b>Catch</b> before it gets squashed. <b>Keep it</b> to the end of the game and it joins your Shiny Collection, or sell it from your jar for <b>200 coins</b> (then it doesn\'t count).'
   ].map(t => '<li>' + t + '</li>').join('');
   $('r22Ok').disabled = false; $('r22Ok').textContent = 'Got it!'; $('rules22').hidden = false;
 }
