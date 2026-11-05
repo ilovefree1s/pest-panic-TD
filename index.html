@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="485">v1.84</div>
+    <div id="ver" data-b="486">v1.85</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5264,6 +5264,7 @@ function update(dt) {
     if (b.mdl || b.t === 'fly') sp = specialMove(b, sp, dt);
     if (b.sk) sp = 0;   // skittering: he doesn't move along the trail
     if (b.push > 0) { const d = Math.min(b.push, dt * 16); b.push -= d; b.s = Math.max(0, b.s - d); sp = 0; b.walk += dt * 20; }
+    if (b.lead && !b.lead.dead && b.s > b.lead.s - (bt.gap || 0.62) * 0.7) { b.s = Math.max(0, b.lead.s - (bt.gap || 0.62) * 0.7); sp = 0; }   // a centipede segment gets shoved back with the segment in front of it (the head was sliding back through its own body)
     if (b.needGuard && S.net !== 'guest') { b.needGuard = 0; royalGuard(b); }
     if (b.guard) { if (b.guard.dead) b.guard = null; else { b.gph += dt * 1.4; b.s = Math.max(0, b.guard.s + Math.cos(b.gph) * 3.1); b.off = Math.sin(b.gph) * 2.6; sp = 0; b.walk += dt * 9; b.push = 0; } }   // a soldier ant marching in a ring around its queen
     if (b.t === 'gfly') {   // zig-zag: quick darts from side to side of the trail
