@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="491">v1.90</div>
+    <div id="ver" data-b="492">v1.91</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1349,12 +1349,24 @@ const TWISTS = [
 ];
 const TWIST = Object.fromEntries(TWISTS.map(t => [t[0], t]));
 const TWIST_CLASH = [['court', 'parade'], ['giant', 'flyers']];
+const TW_MEMO = {};
 function twistsFor(day) {
-  if (!(day >= '2026-11-04')) return [];
-  const r = rng(dayHash('ppd-twist-' + day)); r(); r(); r();   /* (the first few rolls from a fresh seed are too alike day to day) */
-  const a = TWISTS[Math.floor(r() * TWISTS.length)][0];
-  for (let i = 0; i < 50; i++) { const b = TWISTS[Math.floor(r() * TWISTS.length)][0]; if (b !== a && !TWIST_CLASH.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) return [a, b]; }
-  return [a];
+  if (!(day >= '2026-11-04') || !/^\d{4}-\d\d-\d\d$/.test(day)) return [];
+  if (TW_MEMO[day]) return TW_MEMO[day].slice();
+  let prev = [];   /* no twist two days in a row: walk forward from the first Daily twist day, each day avoiding the day before */
+  const d = new Date('2026-11-04T00:00:00Z'), last = new Date(day + 'T00:00:00Z');
+  for (; d <= last; d.setUTCDate(d.getUTCDate() + 1)) {
+    const k = d.toISOString().slice(0, 10);
+    if (!TW_MEMO[k]) {
+      const r = rng(dayHash('ppd-twist-' + k)); r(); r(); r();   /* (the first few rolls from a fresh seed are too alike day to day) */
+      const pick = () => { for (let i = 0; i < 80; i++) { const t = TWISTS[Math.floor(r() * TWISTS.length)][0]; if (!prev.includes(t)) return t; } return TWISTS.find(t => !prev.includes(t[0]))[0]; };
+      const a = pick(); let out = [a];
+      for (let i = 0; i < 50; i++) { const b = pick(); if (b !== a && !TWIST_CLASH.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) { out = [a, b]; break; } }
+      TW_MEMO[k] = out;
+    }
+    prev = TW_MEMO[k];
+  }
+  return TW_MEMO[day].slice();
 }
 const TWX = k => LV === DAILY_LV && !!LEVELS[DAILY_LV] && !!LEVELS[DAILY_LV].twists && LEVELS[DAILY_LV].twists.includes(k);
 function slotMachine(keys, done) {   /* two reels spin and land on today's twists (the same for everyone: only the spin is for show) */
@@ -7938,7 +7950,9 @@ function startDaily() {
   if (TWX('pro')) { S.proPack = true; setAbil(); }
   syncHud(); syncGo(); renderShop(); syncTray();
   const tw = LEVELS[DAILY_LV].twists || [], go = () => banner('Daily Kitchen', S.daily.counts ? lives + ' slices, endless waves. This run goes on the leaderboard!' : 'Practice run: your score for today is already in', false, 2600);
-  if (tw.length) slotMachine(tw, go); else go();
+  if (tw.length && LS.get('ppd-twseen') !== LEVELS[DAILY_LV].day) slotMachine(tw, go);   // already spun today (here or on the Daily screen): no second spin
+  else if (tw.length) banner('Daily Kitchen', tw.map(k => TWIST[k][1] + ' ' + TWIST[k][2]).join(' + '), false, 2600);
+  else go();
 }
 function dailyOver() {
   const d = S.daily, waves = Math.max(0, S.wave - 1), kills = S.kills || 0, bd = Math.round(S.bossDmg || 0);
