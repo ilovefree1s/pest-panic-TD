@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="490">v1.89</div>
+    <div id="ver" data-b="491">v1.90</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1331,7 +1331,6 @@ function trailRoute(cells, tail) {   // cells run cake -> door; the game wants d
 /* ---- Daily twists: two rules for the day, the same for everyone, rolled on a slot machine when the run starts (from 4 Nov 2026) */
 const TWISTS = [
   ['speed', '🏃', 'Speed Day', 'Bugs move 20% faster, but every squash pays double.'],
-  ['swarm', '🐜', 'Swarm Day', 'Twice as many bugs, each with half the health and half the coins.'],
   ['armor', '🛡️', 'Armored Day', 'Every regular bug has +2 armor. Poison and fog burn right through it.'],
   ['flyers', '🪰', 'Flyer Frenzy', 'Half of every wave is flies and moths.'],
   ['giant', '🦣', 'Giant Day', 'Half as many bugs, but each is bigger, slower, twice as tough and pays double.'],
@@ -1349,7 +1348,7 @@ const TWISTS = [
   ['doors', '🚪', 'Three Doors', 'Three doors today: the second opens at wave 6, the third at wave 11.'],
 ];
 const TWIST = Object.fromEntries(TWISTS.map(t => [t[0], t]));
-const TWIST_CLASH = [['swarm', 'giant'], ['court', 'parade'], ['giant', 'flyers']];
+const TWIST_CLASH = [['court', 'parade'], ['giant', 'flyers']];
 function twistsFor(day) {
   if (!(day >= '2026-11-04')) return [];
   const r = rng(dayHash('ppd-twist-' + day)); r(); r(); r();   /* (the first few rolls from a fresh seed are too alike day to day) */
@@ -3902,7 +3901,7 @@ function specialMove(b, sp, dt) {
     if (b.free) return 0;
   } else if (base === 'moth' && S.net !== 'guest') {
     if (giant) for (const z of S.towers) if (z.t === 'zap' && !z.pending && !(z.mothT > 0) && (z.x - b.x) ** 2 + (z.z - b.z) ** 2 < 25) { z.stunT = 2.5; z.mothT = 8; }   // zappers flicker out as it passes
-    if (giant) for (const c of S.towers) if (c.t === 'candle' && !c.pending && !c.snuff && (c.x - b.x) ** 2 + (c.z - b.z) ** 2 < 25) { c.snuff = true; SND.play('sizzle'); for (let i = 0; i < 8; i++) FX.smoke.spawn({ x: c.x + (Math.random() - 0.5) * 0.6, y: 2.2, z: c.z + (Math.random() - 0.5) * 0.6, vy: 1.4, life: 0.8, s0: 0.3, s1: 0.9, c: [0.5, 0.5, 0.5], a0: 0.5 }); }   // the giant stays on the trail: its wind puts out candles it flies past
+    if (giant) for (const c of S.towers) if (c.t === 'candle' && !c.pending && !c.snuff && (c.x - b.x) ** 2 + (c.z - b.z) ** 2 < 25) { c.snuff = true; SND.play('sizzle'); if (S.mode === 'play') banner('Candle blown out!', 'The Giant Moth\'s wings put it out. Tap the candle to relight it (15 coins)', false, 2200); for (let i = 0; i < 8; i++) FX.smoke.spawn({ x: c.x + (Math.random() - 0.5) * 0.6, y: 2.2, z: c.z + (Math.random() - 0.5) * 0.6, vy: 1.4, life: 0.8, s0: 0.3, s1: 0.9, c: [0.5, 0.5, 0.5], a0: 0.5 }); }   // the giant stays on the trail: its wind puts out candles it flies past
     for (const z of S.towers) if (z.mothT > 0) z.mothT -= dt;
     if (!giant && !b.free && !b.didCandle && b.s > 1) {
       let best = null, bd = 1e9;
