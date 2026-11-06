@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="506">v1.004</div>
+    <div id="ver" data-b="507">v1.005</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2644,7 +2644,7 @@ function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per
     } else if (red && r > 150 && r > g * 1.8 && r > b * 2.6) { a[i] = b; a[i + 1] = g; a[i + 2] = r; }   // orange cap -> blue for player 2
   }
   x.putImageData(D, 0, 0);
-  const mk = c => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; if (M.geo) seamSafeMips(t, M.geo); return t; };
+  const mk = c => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; extMips(t); return t; };
   let glow = null; if (gcv) { gcv.getContext('2d').putImageData(GD, 0, 0); glow = mk(gcv); }
   let mr = null; if (mcv) { mcv.getContext('2d').putImageData(MD, 0, 0); mr = mk(mcv); mr.colorSpace = THREE.NoColorSpace; }
   return (M.cache[key] = { map: mk(cv), glow, mr, toxic, gold });
@@ -2666,12 +2666,26 @@ function smoothModel(g, crease = 1.05) {   /* Meshy models come in with hard edg
 /* Meshy paints a model as hundreds of tiny patches on one sheet, each only a few pixels wide. The small far-away copies of the sheet
    (mipmaps) can't keep patches that small apart, so they bleed into each other and show as pale lines along every edge and flecks of
    the wrong colour. These models always sample the full-size sheet instead. */
+/* the texture is padded: the gaps between its patches carry the colour of the nearest patch. Give the outfit masks the same treatment,
+   so the small far-away copies of the sheet (mipmaps) blend in suit colour, never a rim of the old orange */
+function padMask(mask, cover, W, H) {
+  const q = new Int32Array(W * H); let h = 0, t = 0; const seen = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) if (cover[i]) { seen[i] = 1; q[t++] = i; }
+  while (h < t) { const i = q[h++], x = i % W, y = (i / W) | 0, v = mask[i];
+    if (x > 0 && !seen[i - 1]) { seen[i - 1] = 1; mask[i - 1] = v; q[t++] = i - 1; }
+    if (x < W - 1 && !seen[i + 1]) { seen[i + 1] = 1; mask[i + 1] = v; q[t++] = i + 1; }
+    if (y > 0 && !seen[i - W]) { seen[i - W] = 1; mask[i - W] = v; q[t++] = i - W; }
+    if (y < H - 1 && !seen[i + W]) { seen[i + W] = 1; mask[i + W] = v; q[t++] = i + W; } }
+  return mask;
+}
+/* the exterminator's sheet is padded, so it can use real mipmaps: without them, his small in-game size sampled scattered texels and sparkled with specks */
+function extMips(tex) { if (!tex) return tex; tex.generateMipmaps = true; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); tex.needsUpdate = true; return tex; }
 function seamSafeMips(tex) { if (!tex || tex.userData.seamSafe) return tex; tex.userData.seamSafe = true; tex.generateMipmaps = false; tex.mipmaps = []; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true; return tex; }
 function fitExtModel(root, gltf, red) {
   const u = root.userData, m = SkeletonUtils.clone(gltf.scene), cont = new THREE.Group();
   let tex = null; m.traverse(o => { if (o.isMesh && o.material && o.material.map) tex = o.material.map; });
   let geo0 = null; m.traverse(o => { if (o.isSkinnedMesh && !geo0) geo0 = o.geometry; });
-  const map = red && tex ? extRedTexture(tex) : tex; if (map) seamSafeMips(map, geo0);
+  const map = red && tex ? extRedTexture(tex) : tex; if (map) extMips(map);
   const mat = new THREE.MeshStandardMaterial({ map, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0, color: new THREE.Color(0.62, 0.62, 0.62), roughness: 0.8, metalness: 0 });   /* the kitchen is brightly lit: tone the texture down so the colours don't wash out */
   m.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; o.receiveShadow = false; o.frustumCulled = false;   /* no shadows ON him: the shadow map drew faint lines along every edge of the hat and suit */ if (o.isSkinnedMesh) o.geometry = o.geometry.clone(); } });   /* own copy: the wand split below rewrites its bone weights */
   m.updateMatrixWorld(true);
@@ -2741,7 +2755,7 @@ function fitExtModel(root, gltf, red) {
   u.trim.parent && u.trim.parent.remove(u.trim); cont.add(u.trim);
   u.body.visible = false; u.wand.visible = false;
   // the tank's patch of the texture: triangles on his back that hang off the spine (so a tank colour never touches his teeth or eyes)
-  let tankMask = null, crown = null, suitMask = null;
+  let tankMask = null, crown = null, suitMask = null, cover = null;
   try {
     m.traverse(o => {
       if (!o.isSkinnedMesh || tankMask || !tex) return;
@@ -2764,6 +2778,9 @@ function fitExtModel(root, gltf, red) {
         const nn = I ? I.count : P.count;
         for (let t = 0; t < nn; t += 3) { const A = I ? I.getX(t) : t, Bv = I ? I.getX(t + 1) : t + 1, C = I ? I.getX(t + 2) : t + 2; if (!(body[A] && body[Bv] && body[C])) continue; sx.beginPath(); sx.moveTo(UV.getX(A) * iw, UV.getY(A) * ih); sx.lineTo(UV.getX(Bv) * iw, UV.getY(Bv) * ih); sx.lineTo(UV.getX(C) * iw, UV.getY(C) * ih); sx.closePath(); sx.fill(); sx.stroke(); }
         const sd = sx.getImageData(0, 0, iw, ih).data; suitMask = new Uint8Array(iw * ih); for (let i = 0; i < suitMask.length; i++) suitMask[i] = sd[i * 4] > 128 ? 1 : 0; }
+      { const cv2 = document.createElement('canvas'); cv2.width = iw; cv2.height = ih; const cx = cv2.getContext('2d'); cx.fillStyle = '#fff'; cx.strokeStyle = '#fff'; cx.lineWidth = 1; const nn = I ? I.count : P.count;
+        for (let t = 0; t < nn; t += 3) { const A = I ? I.getX(t) : t, Bv = I ? I.getX(t + 1) : t + 1, C = I ? I.getX(t + 2) : t + 2; cx.beginPath(); cx.moveTo(UV.getX(A) * iw, UV.getY(A) * ih); cx.lineTo(UV.getX(Bv) * iw, UV.getY(Bv) * ih); cx.lineTo(UV.getX(C) * iw, UV.getY(C) * ih); cx.closePath(); cx.fill(); cx.stroke(); }
+        const cd = cx.getImageData(0, 0, iw, ih).data; cover = new Uint8Array(iw * ih); for (let i = 0; i < cover.length; i++) cover[i] = cd[i * 4] > 128 ? 1 : 0; }
       const d = x.getImageData(0, 0, iw, ih).data; tankMask = new Uint8Array(iw * ih); for (let i = 0; i < tankMask.length; i++) tankMask[i] = d[i * 4] > 128 ? 1 : 0;
       // the Exterminator King's crown, sitting on top of his cap
       const head = B('Head'); let top = -1e9; for (let i = 0; i < P.count; i++) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.y > top) top = v.y; }
@@ -2775,7 +2792,7 @@ function fitExtModel(root, gltf, red) {
       crown.position.set(hp.x, top - R * 0.02, hp.z - Hh * 0.01); crown.rotation.x = -0.12; crown.userData.glow = goldM; scene.add(crown); head.attach(crown); crown.visible = false;
     });
   } catch (err) { console.warn('outfit setup', err); }
-  u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, suitMask, crown, red, look: '' };
+  u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask: tankMask && cover ? padMask(tankMask, cover, tex.image.width, tex.image.height) : tankMask, suitMask: suitMask && cover ? padMask(suitMask, cover, tex.image.width, tex.image.height) : suitMask, crown, red, look: '' };
   u.tip = tip;
 }
 function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points the given way (in the model's own space: +z forward, +y up) */
