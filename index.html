@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="510">v1.008</div>
+    <div id="ver" data-b="511">v1.009</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2633,15 +2633,35 @@ function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per
   const gold = suit === 'gold';
   let gcv = null, ga = null, GD = null; if (toxic || gold) { gcv = document.createElement('canvas'); gcv.width = W; gcv.height = H; GD = gcv.getContext('2d').createImageData(W, H); ga = GD.data; for (let i = 3; i < ga.length; i += 4) ga[i] = 255; }   /* opaque black where nothing glows: a see-through sheet shrinks into full-strength colour at every edge */
   let mcv = null, ma = null, MD = null; if (gold) { mcv = document.createElement('canvas'); mcv.width = W; mcv.height = H; MD = mcv.getContext('2d').createImageData(W, H); ma = MD.data; for (let i = 0; i < ma.length; i += 4) { ma[i + 1] = 204; ma[i + 3] = 255; } }   // roughness (G) / metalness (B): matte everywhere but the gold
+  const painted = sc ? new Uint8Array(W * H) : null, src = sc ? new Uint8ClampedArray(a) : null;   /* which texels the outfit covered, and the sheet as it was */
+  const paint = (i, L) => { const p = i >> 2; let c = sc ? (typeof sc === 'function' ? sc(p % W, (p / W) | 0, L) : sc.map(v => v * L * 1.25)) : null; if (!c) return;
+    a[i] = Math.min(255, c[0]); a[i + 1] = Math.min(255, c[1]); a[i + 2] = Math.min(255, c[2]); if (gold) { ga[i] = 170; ga[i + 1] = 92; ga[i + 2] = 0; ga[i + 3] = 255; ma[i + 1] = 70; ma[i + 2] = 215; } if (painted) painted[p] = 1; };
   for (let i = 0; i < a.length; i += 4) {
     const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
     if (inTank && toxic && lum > 0.3) { const l2 = Math.max(lum, 0.55); a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green
     const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 40 && r < 160 && g < r * 0.42 && b <= g;   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */   /* the work clothes: blue jeans, and the orange shirt (not the orange cap) */
     if ((blue || orange) && !inTank) {   // suit and boots
       const L = orange ? lum * 0.78 : M.suitMask ? Math.min(1, lum * 1.6) : lum;   /* even out the bright shirt and the dark jeans */
-      let c = sc ? (typeof sc === 'function' ? sc(p % W, (p / W) | 0, L) : sc.map(v => v * L * 1.25)) : red ? [b, g * 0.55, r * 0.7] : null;
-      if (c) { a[i] = Math.min(255, c[0]); a[i + 1] = Math.min(255, c[1]); a[i + 2] = Math.min(255, c[2]); if (gold) { ga[i] = 170; ga[i + 1] = 92; ga[i + 2] = 0; ga[i + 3] = 255; ma[i + 1] = 70; ma[i + 2] = 215; } }
+      if (sc) paint(i, L); else if (red) { a[i] = b; a[i + 1] = g * 0.55; a[i + 2] = r * 0.7; }
     } else if (red && r > 150 && r > g * 1.8 && r > b * 2.6) { a[i] = b; a[i + 1] = g; a[i + 2] = r; }   // orange cap -> blue for player 2
+  }
+  /* The cloth also carries faded-denim highlights, dirt stains and worn patches that aren't blue or orange enough to be recognised
+     by colour, and on a dark outfit they were left as pale specks. Spread the outfit outward from the cloth it did recognise, across
+     anything that isn't clearly something else: bare metal, white tag, black straps and hose, red fittings, leather, skin. */
+  if (painted && M.suitMask) {
+    const keep = p => { const i = p * 4, r = src[i], g = src[i + 1], b = src[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), lum = mx / 255, sat = mx ? (mx - mn) / mx : 0;
+      if (lum < 0.17) return true;                                   // straps, hose, buttons, deep creases of leather
+      if (sat < 0.09 && lum > 0.3 && b <= r + 4) return true;         // buckle, name tag, tank, metal fittings (white or warm grey; bluish grey is faded denim)
+      if (r > 150 && r > g * 2 && r > b * 2.4) return true;          // red fittings
+      if (lum > 0.5 && sat > 0.42 && r > g && g > b && (g - b) / (r - b + 1) > 0.28 && (g - b) / (r - b + 1) < 0.62) return true;   // skin
+      if (lum < 0.5 && sat > 0.3 && r > g && g >= b && b < r * 0.55) return true;   // leather belt and pouches
+      return false; };
+    const far = W / 36, q = new Int32Array(W * H), dist = new Uint8Array(W * H); let h = 0, t = 0;
+    for (let p = 0; p < W * H; p++) if (painted[p]) { dist[p] = 1; q[t++] = p; }
+    while (h < t) { const p = q[h++], d = dist[p]; if (d > far) continue; const px = p % W;
+      const nb = [px > 0 ? p - 1 : -1, px < W - 1 ? p + 1 : -1, p >= W ? p - W : -1, p < W * (H - 1) ? p + W : -1];
+      for (const n of nb) { if (n < 0 || dist[n] || !M.suitMask[n] || (mask && mask[n]) || keep(n)) continue; dist[n] = d + 1; q[t++] = n;
+        const i = n * 4, lum = Math.max(src[i], src[i + 1], src[i + 2]) / 255; paint(i, Math.min(1, lum * 1.1)); } }
   }
   x.putImageData(D, 0, 0);
   const mk = (c, mode) => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; extMips(t, mode || 'cover', M.cover); return t; };
@@ -2687,25 +2707,33 @@ function extMips(tex, mode, cover) {   /* mode 'min': a glow sheet shrinks by ta
   if (!tex || !tex.image || !tex.image.width) return tex;
   let img = tex.image, w = img.width, h = img.height; const chain = [img];
   if ((w & (w - 1)) === 0 && (h & (h - 1)) === 0) {   /* power-of-two sheets only (the loader may hand over a bitmap; drawImage copes with it) */
-    let prev = null, cov = null;
+    let prev = null, cov = null, isl = null;
     if (mode === 'cover' && cover && cover.length === w * h) {
       let sx = img.getContext ? img.getContext('2d') : null;
       if (!sx) { const c0 = document.createElement('canvas'); c0.width = w; c0.height = h; sx = c0.getContext('2d'); sx.drawImage(img, 0, 0); }
       prev = sx.getImageData(0, 0, w, h).data; cov = new Float32Array(w * h); for (let i = 0; i < cov.length; i++) cov[i] = cover[i] ? 1 : 0;
+      /* label the patches (islands of covered texels), so a shrunken texel never averages two different patches together */
+      isl = new Int32Array(w * h); const q = new Int32Array(w * h); let nid = 0;
+      for (let p0 = 0; p0 < w * h; p0++) { if (!cover[p0] || isl[p0]) continue; const id = ++nid; let hh = 0, tt = 0; q[tt++] = p0; isl[p0] = id;
+        while (hh < tt) { const p = q[hh++], px = p % w; const nb = [px > 0 ? p - 1 : -1, px < w - 1 ? p + 1 : -1, p >= w ? p - w : -1, p < w * (h - 1) ? p + w : -1];
+          for (const n of nb) if (n >= 0 && cover[n] && !isl[n]) { isl[n] = id; q[tt++] = n; } } }
     } else if (mode === 'cover') mode = null;
     while (w > 1 || h > 1) {
       const nw = Math.max(1, w >> 1), nh = Math.max(1, h >> 1), c = document.createElement('canvas'); c.width = nw; c.height = nh;
       const x = c.getContext('2d');
       if (mode === 'cover') {
-        const out = x.createImageData(nw, nh), o = out.data, nc = new Float32Array(nw * nh), W2 = w;
+        const out = x.createImageData(nw, nh), o = out.data, nc = new Float32Array(nw * nh), ni = new Int32Array(nw * nh), W2 = w, P4 = [0, 0, 0, 0], C4 = [0, 0, 0, 0];
         for (let y = 0; y < nh; y++) for (let xx = 0; xx < nw; xx++) {
-          const p0 = (y * 2) * W2 + xx * 2, p1 = p0 + 1, p2 = p0 + W2, p3 = p2 + 1, j = y * nw + xx;
-          let c0 = cov[p0], c1 = cov[p1], c2 = cov[p2], c3 = cov[p3], t = c0 + c1 + c2 + c3;
-          if (t === 0) { c0 = c1 = c2 = c3 = 1; t = 4; } else nc[j] = t;
-          for (let k = 0; k < 3; k++) o[j * 4 + k] = (prev[p0 * 4 + k] * c0 + prev[p1 * 4 + k] * c1 + prev[p2 * 4 + k] * c2 + prev[p3 * 4 + k] * c3) / t;
-          o[j * 4 + 3] = 255;
+          P4[0] = (y * 2) * W2 + xx * 2; P4[1] = P4[0] + 1; P4[2] = P4[0] + W2; P4[3] = P4[2] + 1; const j = y * nw + xx;
+          /* the patch with the most coverage among the four children wins; only its children are averaged */
+          let best = 0, bestW = 0;
+          for (let k = 0; k < 4; k++) { const id = isl[P4[k]]; if (!id) continue; let wsum = 0; for (let m = 0; m < 4; m++) if (isl[P4[m]] === id) wsum += cov[P4[m]]; if (wsum > bestW) { bestW = wsum; best = id; } }
+          let t = 0;
+          for (let k = 0; k < 4; k++) { C4[k] = best ? (isl[P4[k]] === best ? cov[P4[k]] : 0) : 1; t += C4[k]; }
+          for (let k = 0; k < 3; k++) o[j * 4 + k] = (prev[P4[0] * 4 + k] * C4[0] + prev[P4[1] * 4 + k] * C4[1] + prev[P4[2] * 4 + k] * C4[2] + prev[P4[3] * 4 + k] * C4[3]) / t;
+          o[j * 4 + 3] = 255; nc[j] = best ? bestW : 0; ni[j] = best;
         }
-        x.putImageData(out, 0, 0); prev = o; cov = nc;
+        x.putImageData(out, 0, 0); prev = o; cov = nc; isl = ni;
       } else if (mode === 'min') {
         if (!prev) { const sx = img.getContext ? img.getContext('2d') : null; prev = sx ? sx.getImageData(0, 0, w, h).data : null; }
         const out = x.createImageData(nw, nh), o = out.data, W2 = w;
@@ -2912,7 +2940,7 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
   LKP.r.render(LKP.sc, LKP.cam);
 }
 function extModelLoad() {
-  try { new GLTFLoader().load('assets/exterminator.glb?h=9e58621a', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
+  try { new GLTFLoader().load('assets/exterminator.glb?h=cdc14a44', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
 }
 extModelLoad();
 /* ---- the modelled house cat (Meshy). One model; each level repaints its fur (orange, gray, black, tiger) and collar (red, blue, gold) */
