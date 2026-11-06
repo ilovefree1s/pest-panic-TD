@@ -624,7 +624,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   /* the buttons start just right of the cake: the wide picture fills the width (or the height on squarer screens) and the cake ends ~58% across it */
   #title.v2{--tcw:min(clamp(320px,28vw,560px),38vw)}
   #title.v2::after{top:0;height:auto;left:auto;width:50%;background:linear-gradient(90deg,rgba(60,20,6,0),rgba(60,20,6,.38))}
-  #title.v2 .tArt{background-image:url(assets/title_wide.jpg);background-position:left 25%}
+  #title.v2 .tArt{background-image:url(assets/title_wide.jpg);background-position:left top}
   #title.v2 .tCol{width:var(--tcw);margin-left:min(calc(max(100vw,150vh) * 0.585 + 2vw),calc(100vw - var(--tcw) - 24px))}
 }
 @media (orientation:landscape) and (max-height:560px){
@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="501">v2.00</div>
+    <div id="ver" data-b="502">v2.01</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
