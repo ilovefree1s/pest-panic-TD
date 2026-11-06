@@ -600,7 +600,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
 #title.v2{justify-content:flex-end;align-items:center;gap:0;padding:0 16px max(18px,env(safe-area-inset-bottom));background:#7a3a1e;overflow:hidden}
 #title.v2 .tBlur{display:none}
 #title.v2::after{content:'';position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(rgba(60,20,6,0),rgba(60,20,6,.35));pointer-events:none}
-#title.v2 .tArt{position:absolute;inset:0;background:url(assets/title_tall.jpg) center top/cover no-repeat}
+#title.v2 .tArt{position:absolute;inset:0;background:url(assets/title_tall.jpg?h=6f037f7d) center top/cover no-repeat}
 #title.v2 .logo,#title.v2 .sub{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #title.v2 .rotTip{display:none}
 #updPill{align-self:center;display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 18px;border-radius:999px;border:2px solid var(--gold);background:rgba(14,18,22,.88);color:#fff;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.45);animation:updPulse 2s ease-in-out infinite} #updPill[hidden]{display:none} #updPill b{font:900 15px var(--body);color:var(--gold)} #updPill small{font:800 12px var(--body);opacity:.85} @keyframes updPulse{50%{transform:scale(1.04)}} @media (prefers-reduced-motion:reduce){#updPill{animation:none}}
@@ -624,7 +624,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   /* the buttons start just right of the cake: the wide picture fills the width (or the height on squarer screens) and the cake ends ~58% across it */
   #title.v2{--tcw:min(clamp(320px,28vw,560px),38vw)}
   #title.v2::after{top:0;height:auto;left:auto;width:50%;background:linear-gradient(90deg,rgba(60,20,6,0),rgba(60,20,6,.38))}
-  #title.v2 .tArt{background-image:url(assets/title_wide.jpg);background-position:left top}
+  #title.v2 .tArt{background-image:url(assets/title_wide.jpg?h=49c49ae0);background-position:left top}
   #title.v2 .tCol{width:var(--tcw);margin-left:min(calc(max(100vw,150vh) * 0.585 + 2vw),calc(100vw - var(--tcw) - 24px))}
 }
 @media (orientation:landscape) and (max-height:560px){
@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="503">v1.001</div>
+    <div id="ver" data-b="504">v1.002</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2852,7 +2852,7 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
   LKP.r.render(LKP.sc, LKP.cam);
 }
 function extModelLoad() {
-  try { new GLTFLoader().load('assets/exterminator.glb', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
+  try { new GLTFLoader().load('assets/exterminator.glb?h=33a0497c', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
 }
 extModelLoad();
 /* ---- the modelled house cat (Meshy). One model; each level repaints its fur (orange, gray, black, tiger) and collar (red, blue, gold) */
@@ -2908,7 +2908,7 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb', len: 5.99 }, widow: { url: 'assets/boss_widow.glb', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb', len: 4.6, legs: 4, legTop: 0.34 }, herc: { url: 'assets/boss_herc.glb', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb?h=0a694301', len: 5.99 }, widow: { url: 'assets/boss_widow.glb?h=8a72c460', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb?h=307396bc', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb?h=e2d479f7', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb?h=7cf2cf34', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb?h=321d373a', len: 4.6, legs: 4, legTop: 0.34 }, herc: { url: 'assets/boss_herc.glb?h=944a4b6d', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
 function insectRig(geo, per = 3, top = 0.7) {   // top: how high up (share of height) a leg can reach before it's body
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
@@ -3031,7 +3031,7 @@ function buildModelBoss(t) {
 }
 /* ---- modelled regular bugs (also used, scaled up, for their Giant boss): the mantis */
 const CENTI_M = { head: null, seg: null };   /* the centipede is a chain: the front piece is the head model, every other piece a body ring */
-const BUG_MODELS = { mantis: { url: 'assets/mantis.glb', hgt: 1.9 }, hopper: { url: 'assets/hopper.glb', len: 2.3 }, stink: { url: 'assets/stink.glb', len: 1.55 }, moth: { url: 'assets/moth.glb', wid: 2.6, pitch: 0.35 } };
+const BUG_MODELS = { mantis: { url: 'assets/mantis.glb?h=271dbe40', hgt: 1.9 }, hopper: { url: 'assets/hopper.glb?h=6a49c023', len: 2.3 }, stink: { url: 'assets/stink.glb?h=85200e6d', len: 1.55 }, moth: { url: 'assets/moth.glb?h=dd55f923', wid: 2.6, pitch: 0.35 } };
 function mantisRig(geo) {   // 4 walking legs (2 a side) and the two big grabbing arms
   if (geo.userData.rig) return geo.userData.rig;
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn;
@@ -3130,7 +3130,7 @@ function buildMantisModel() {
   u.legs = legs; u.arms = arms; u.mats = [mat]; u.shadow = 2.0; u.stride = true; return root;
 }
 { let n = 0; const done = () => { if (++n < 2) return; const old = MODEL_BUILD.centi; MODEL_BUILD.centi = () => { try { return buildCentiModel(); } catch (e) { console.warn('centipede model', e); return old(); } }; };
-  try { new GLTFLoader().load('assets/centi_head.glb', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
+  try { new GLTFLoader().load('assets/centi_head.glb?h=66dd262e', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb?h=b25ec999', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
 for (const [t, fn] of [['stink', () => buildStinkModel()], ['moth', () => buildMothModel()]]) try { new GLTFLoader().load(BUG_MODELS[t].url, g => { BUG_MODELS[t].gltf = g; const old = MODEL_BUILD[t]; MODEL_BUILD[t] = () => { try { return fn(); } catch (e) { console.warn(t + ' model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.hopper.url, g => { BUG_MODELS.hopper.gltf = g; const old = MODEL_BUILD.hopper; MODEL_BUILD.hopper = () => { try { return buildHopperModel(); } catch (e) { console.warn('hopper model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.mantis.url, g => { BUG_MODELS.mantis.gltf = g; const old = MODEL_BUILD.mantis; MODEL_BUILD.mantis = () => { try { return buildMantisModel(); } catch (e) { console.warn('mantis model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
@@ -3151,7 +3151,7 @@ function layCatAsleep(o) {   // asleep on the bed: lying on his side, a bit smal
   if (!o.mdl) return; o.root.scale.set(1.15, 1.15, 1.15); o.root.position.y = 0.3; o.mdl.body.rotation.set(0, 0, Math.PI / 2); o.mdl.body.position.set(0.55, 0, 0);
 }
 function catPaint(o) { if (o.mdl) { const mat = catTexture(catLook(o)); o.mdl.m.traverse(n => { if (n.isMesh) n.material = mat; }); } }
-try { new GLTFLoader().load('assets/cat.glb', g => { let tex = null; g.scene.traverse(n => { if (n.isMesh && n.material && n.material.map) tex = n.material.map; }); if (!tex) return; CATM.base = tex.image; CATM.flip = tex.flipY; CATM.gltf = g; }, undefined, () => {}); } catch (e) {}
+try { new GLTFLoader().load('assets/cat.glb?h=20946ca6', g => { let tex = null; g.scene.traverse(n => { if (n.isMesh && n.material && n.material.map) tex = n.material.map; }); if (!tex) return; CATM.base = tex.image; CATM.flip = tex.flipY; CATM.gltf = g; }, undefined, () => {}); } catch (e) {}
 const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6, wake: 1.6, shelf: 0.9 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
