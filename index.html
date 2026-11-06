@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="494">v1.93</div>
+    <div id="ver" data-b="495">v1.94</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6570,6 +6570,7 @@ $('restart').addEventListener('click', () => {
     setTimeout(() => { if (performance.now() - RESTART_ASK >= 2900) { b.textContent = 'Restart'; b.classList.remove('warn'); } }, 3000); return;
   }
   RESTART_ASK = 0; $('restart').classList.remove('warn');
+  if (S.daily) { startDaily(); return; }   // restarting the Daily starts a proper Daily run (it was dropping to a plain 25-wave game)
   if (S.vs && S.vs.bot) { startGame(LV, 'vsbot', S.vs.bot.diff); return; }
   if (S.net === 'host' || S.net === 'guest') {   // online Team Kitchen: ask the partner, both have to agree
     if (S.vs || !LEVELS[LV].team) return;
