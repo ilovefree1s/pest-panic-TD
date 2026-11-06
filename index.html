@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="517">v1.015</div>
+    <div id="ver" data-b="518">v1.016</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2669,7 +2669,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
     for (let i = i0, iE = Math.min(a.length, i0 + SL); i < iE; i += 4) {
       const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
       if (inTank && toxic && lum > 0.3) { const l2 = Math.max(lum, 0.55); a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green
-      const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 40 && r < 160 && g < r * 0.42 && b <= g;   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */
+      const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35;   /* (brown leather and a dark beard have far more blue in them) */   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */
       if ((blue || orange) && !inTank) {   // suit and boots
         const L = orange ? lum * 0.78 : M.suitMask ? Math.min(1, lum * 1.6) : lum;   /* even out the bright shirt and the dark jeans */
         if (sc) paint(i, L); else if (red) { a[i] = b; a[i + 1] = g * 0.55; a[i + 2] = r * 0.7; }
@@ -2684,6 +2684,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
     const keep = p => { const i = p * 4, r = src[i], g = src[i + 1], b = src[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), lum = mx / 255, sat = mx ? (mx - mn) / mx : 0;
       if (lum < 0.17) return true;                                   // straps, buttons, deep creases of leather
       if (sat < 0.09 && lum > 0.3 && b <= r + 4) return true;         // buckle, name tag, tank, metal fittings (white or warm grey; bluish grey is faded denim)
+      if (sat < 0.3 && lum > 0.45 && b - r < 14 && !(r > g && g > b && (g - b) > (r - b) * 0.6 && sat > 0.2 && lum > 0.6 && r - b > 50)) return true;   // light greys, whites and warm off-whites: buckle, name tag, buttons (faded denim is bluer; the orange shirt's pale highlights are far more saturated)
       if (lum < 0.5 && sat > 0.3 && r > g && g >= b && b < r * 0.55) return true;   // leather belt and pouches
       return false; };
     const far = W / 36, q = new Int32Array(W * H), dist = new Uint8Array(W * H); let h = 0, t = 0;
@@ -2696,7 +2697,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
         const i = n * 4, lum = Math.max(src[i], src[i + 1], src[i + 2]) / 255; paint(i, Math.min(1, lum * 1.1)); } }
     /* what's left unpainted inside the cloth is either a real fitting (belt, pouches, straps: big) or a stain, scuff or shadow that happens
        to share a colour with leather (small). Fill the small ones. Bare metal is never filled, whatever its size. */
-    const hard = p => { const i = p * 4, r = src[i], g = src[i + 1], b = src[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx && (mx - mn) / mx < 0.09 && mx > 76 && b <= r + 4; };
+    const hard = p => { const i = p * 4, r = src[i], g = src[i + 1], b = src[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); return (mx && (mx - mn) / mx < 0.09 && mx > 76 && b <= r + 4) || keep(p); };   /* leather, beard, straps and metal are never filled */
     const seen = new Uint8Array(W * H), thr = Math.round(500 * (W / 2048) * (H / 2048)), comp = [];
     for (let p0 = 0; p0 < W * H; p0++) {
       if ((p0 & 0x3ffff) === 0) yield;
