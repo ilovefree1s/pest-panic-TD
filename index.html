@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="505">v1.003</div>
+    <div id="ver" data-b="506">v1.004</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2636,7 +2636,7 @@ function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per
   for (let i = 0; i < a.length; i += 4) {
     const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
     if (inTank && toxic && lum > 0.3) { const l2 = Math.max(lum, 0.55); a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green
-    const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 140 && r > g * 1.35 && g > b * 1.05;   /* the work clothes: blue jeans, and the orange shirt (not the orange cap) */
+    const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 40 && r < 160 && g < r * 0.42 && b <= g;   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */   /* the work clothes: blue jeans, and the orange shirt (not the orange cap) */
     if ((blue || orange) && !inTank) {   // suit and boots
       const L = orange ? lum * 0.78 : M.suitMask ? Math.min(1, lum * 1.6) : lum;   /* even out the bright shirt and the dark jeans */
       let c = sc ? (typeof sc === 'function' ? sc(p % W, (p / W) | 0, L) : sc.map(v => v * L * 1.25)) : red ? [b, g * 0.55, r * 0.7] : null;
@@ -2760,7 +2760,7 @@ function fitExtModel(root, gltf, red) {
       /* the clothes' patch of the texture: everything but the head, hands and feet (so an outfit recolours the shirt but never the orange cap) */
       { const skip = new Set(['Head', 'HeadTop_End', 'Bone_016', 'headfront', 'LeftHand', 'RightHand', 'LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'].map(n => sk.bones.indexOf(B(n))).filter(k => k >= 0)); sk.bones.forEach((bn, k) => { if (/Hand(Thumb|Middle|Index|Ring|Pinky)|Bone_04/.test(bn.name)) skip.add(k); });
         const body = new Uint8Array(P.count); for (let i = 0; i < P.count; i++) { let best = -1, bw = 0; for (let c = 0; c < 4; c++) if (W.getComponent(i, c) > bw) { bw = W.getComponent(i, c); best = J.getComponent(i, c); } body[i] = skip.has(best) ? 0 : 1; }
-        const sv = document.createElement('canvas'); sv.width = iw; sv.height = ih; const sx = sv.getContext('2d'); sx.fillStyle = '#fff'; sx.strokeStyle = '#fff'; sx.lineWidth = 2;
+        const sv = document.createElement('canvas'); sv.width = iw; sv.height = ih; const sx = sv.getContext('2d'); sx.fillStyle = '#fff'; sx.strokeStyle = '#fff'; sx.lineWidth = 5;   /* a little past each patch's edge, so no orange rim is left to blend in */
         const nn = I ? I.count : P.count;
         for (let t = 0; t < nn; t += 3) { const A = I ? I.getX(t) : t, Bv = I ? I.getX(t + 1) : t + 1, C = I ? I.getX(t + 2) : t + 2; if (!(body[A] && body[Bv] && body[C])) continue; sx.beginPath(); sx.moveTo(UV.getX(A) * iw, UV.getY(A) * ih); sx.lineTo(UV.getX(Bv) * iw, UV.getY(Bv) * ih); sx.lineTo(UV.getX(C) * iw, UV.getY(C) * ih); sx.closePath(); sx.fill(); sx.stroke(); }
         const sd = sx.getImageData(0, 0, iw, ih).data; suitMask = new Uint8Array(iw * ih); for (let i = 0; i < suitMask.length; i++) suitMask[i] = sd[i * 4] > 128 ? 1 : 0; }
