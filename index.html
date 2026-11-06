@@ -2852,7 +2852,7 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
   LKP.r.render(LKP.sc, LKP.cam);
 }
 function extModelLoad() {
-  try { new GLTFLoader().load('assets/exterminator.glb?h=33a0497c', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
+  try { new GLTFLoader().load('assets/exterminator.glb?h=6ad5b0e0', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
 }
 extModelLoad();
 /* ---- the modelled house cat (Meshy). One model; each level repaints its fur (orange, gray, black, tiger) and collar (red, blue, gold) */
