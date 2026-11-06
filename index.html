@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="495">v1.94</div>
+    <div id="ver" data-b="496">v1.95</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6548,11 +6548,12 @@ let quitArm = 0;
 function syncPauseMenu() {
   quitArm = 0; const on = S && S.net && S.net !== 'bot' && !(S.vs && S.vs.bot);
   const teamNet = on && !S.vs && LEVELS[LV].team;
-  $('restart').hidden = !!on && !teamNet; if (!teamNet) restartArm = 0; $('restart').textContent = teamNet && performance.now() - restartArm < 20000 ? 'Waiting for your partner…' : 'Restart'; $('restart').classList.remove('warn');   /* a solo game never waits on a partner (a leftover online restart request showed it) */ $('quit').textContent = 'Quit to main menu';
-  $('quitNote').textContent = S && S.vs && !S.vs.bot ? 'Quitting a Bug Battle counts as a loss.' : on ? 'Your partner keeps playing without you.' : '';
+  $('restart').hidden = (!!on && !teamNet) || !!(S && S.daily); if (!teamNet) restartArm = 0; $('restart').textContent = teamNet && performance.now() - restartArm < 20000 ? 'Waiting for your partner…' : 'Restart'; $('restart').classList.remove('warn');   /* a solo game never waits on a partner (a leftover online restart request showed it) */ $('quit').textContent = 'Quit to main menu';
+  $('quitNote').textContent = S && S.daily ? 'Your Daily run is saved. Come back today to pick up where you left off.' : S && S.vs && !S.vs.bot ? 'Quitting a Bug Battle counts as a loss.' : on ? 'Your partner keeps playing without you.' : '';
 }
 $('quit').addEventListener('click', () => {
   if (S && S.net && S.net !== 'bot' && !(S.vs && S.vs.bot) && S.mode === 'play' && performance.now() - quitArm > 5000) { quitArm = performance.now(); $('quit').textContent = 'Tap again to quit'; SND.play('err'); return; }
+  try { saveRun(); } catch (e) {}   // quitting keeps the run (a level or today's Daily) to pick up later
   netLeave(); toTitle();
 });
 let restartArm = 0;
@@ -6570,7 +6571,7 @@ $('restart').addEventListener('click', () => {
     setTimeout(() => { if (performance.now() - RESTART_ASK >= 2900) { b.textContent = 'Restart'; b.classList.remove('warn'); } }, 3000); return;
   }
   RESTART_ASK = 0; $('restart').classList.remove('warn');
-  if (S.daily) { startDaily(); return; }   // restarting the Daily starts a proper Daily run (it was dropping to a plain 25-wave game)
+  if (S.daily) return;   // the Daily can't be restarted
   if (S.vs && S.vs.bot) { startGame(LV, 'vsbot', S.vs.bot.diff); return; }
   if (S.net === 'host' || S.net === 'guest') {   // online Team Kitchen: ask the partner, both have to agree
     if (S.vs || !LEVELS[LV].team) return;
@@ -6848,24 +6849,33 @@ function toTitle() {
 }
 /* ---- resume a solo run: saved between waves (when a wave is cleared, when the next one is sent, and when the app goes to the background between waves) */
 const RUN_KEY = 'ppd-run';
-function runSavable() { return S && S.mode === 'play' && LV !== DAILY_LV && !S.net && !S.vs && !LEVELS[LV].team && !BLD.testing && LEVELS[LV].name !== 'My Trail' && S.lives > 0; }
+const DRUN_KEY = 'ppd-drun';   /* the Daily keeps its own save slot, so it never wipes a level save (or the other way round) */
+const runKey = (lv = LV) => lv === DAILY_LV ? DRUN_KEY : RUN_KEY;
+function runSavable() { return S && S.mode === 'play' && (LV !== DAILY_LV || !!S.daily) && !S.net && !S.vs && !LEVELS[LV].team && !BLD.testing && LEVELS[LV].name !== 'My Trail' && S.lives > 0; }
 function saveRun() {
   if (!runSavable()) return;
   const mid = S.active;
-  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(),
+  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(), daily: S.daily ? { day: S.daily.day, counts: !!S.daily.counts, bd: Math.round(S.bossDmg || 0) } : null,
     towers: S.towers.map(t => [t.t, t.c, t.r, Math.min(3, t.lv + (t.upPending && t.lv < 3 ? 1 : 0)), t.perk || (t.upPending && t.lv >= 3) ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
-  try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
+  try { localStorage.setItem(runKey(), JSON.stringify(d)); } catch (e) {}
 }
 function runLives() {   /* cake eaten during a wave stays eaten: leaving mid-wave can't undo it */
-  if (!runSavable() || !S.active) return; const d = loadRun(); if (!d || d.lv !== LV || !(S.lives < d.lives)) return;
-  d.lives = S.lives; try { localStorage.setItem(RUN_KEY, JSON.stringify(d)); } catch (e) {}
+  if (!runSavable() || !S.active) return; const d = loadRun(runKey()); if (!d || d.lv !== LV || !(S.lives < d.lives)) return;
+  d.lives = S.lives; try { localStorage.setItem(runKey(), JSON.stringify(d)); } catch (e) {}
 }
-function loadRun() { try { const d = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); return d && d.v === 1 && LEVELS[d.lv] && HOUSES[d.lv] ? d : null; } catch (e) { return null; } }
-function clearRun() { const d = loadRun(); if (d && d.jarT && !(S && S.rid && S.rid === d.rid)) for (const t of d.jarT) if (t) dexAdd(t); try { localStorage.removeItem(RUN_KEY); } catch (e) {} syncResume(); }   /* a saved run being thrown away still counts as over: keep its shinies */
+function loadRun(key = RUN_KEY) { try { const d = JSON.parse(localStorage.getItem(key) || 'null'); return d && d.v === 1 && LEVELS[d.lv] && HOUSES[d.lv] && (key === DRUN_KEY ? !!d.daily : !d.daily) ? d : null; } catch (e) { return null; } }
+function clearRun(key = RUN_KEY) { const d = loadRun(key); if (d && d.jarT && !(S && S.rid && S.rid === d.rid)) for (const t of d.jarT) if (t) dexAdd(t); try { localStorage.removeItem(key); } catch (e) {} syncResume(); }
+/* a saved Daily run from an earlier day that was never finished: its score still counts for that day */
+function settleOldDaily() {
+  const d = loadRun(DRUN_KEY); if (!d || d.daily.day === dailyDay()) return;
+  const dd = d.daily; if (dd.counts && !dailyMine(dd.day)) { LS.set('ppd-daily-' + dd.day, JSON.stringify({ w: d.wave, k: d.kills || 0, bd: dd.bd || 0 })); bumpStreak(dd.day); lbSubmit(dd.day, d.wave, d.kills || 0, dd.bd || 0).catch(() => {}); }
+  clearRun(DRUN_KEY);
+}   /* a saved run being thrown away still counts as over: keep its shinies */
 function syncResume() { const d = loadRun(), b = $('resumeT'); if (!b) return; b.hidden = !d; if (d) $('resumeS').textContent = 'Level ' + soloNum(d.lv) + ' · ' + HOUSES[d.lv].name + ' · ' + (d.wave ? 'wave ' + d.wave + ' cleared' : 'start') + ' · ' + d.lives + ' slices'; }
-function resumeRun() {
-  const d = loadRun(); if (!d) return;
+function resumeRun(key = RUN_KEY) {
+  const d = loadRun(key); if (!d) return;
   RESUMING = true; try { startGame(d.lv); } finally { RESUMING = false; }
+  if (d.daily) { S.daily = { day: d.daily.day, counts: d.daily.counts }; S.bossDmg = d.daily.bd || 0; S.endless = true; $('waveMax').textContent = ' ∞'; }
   const m0 = S.mode; S.mode = 'demo'; S.money = 1e9;
   for (const [t, c, r, lv, perk, dmg, kills, bonus, spent] of d.towers) {
     if (!TT[t]) continue;
@@ -6881,12 +6891,12 @@ function resumeRun() {
   S.money = d.money; S.withhold = S.owed0 = d.owed || 0; S.resumeWave = S.withhold > 0; S.lives = d.lives; S.wave = d.wave; S.kills = d.kills; S.earlyCalls = d.early; S.endless = d.endless; S.stats = d.stats || {};
   S.lic = 0; for (let i = 0; i < d.lic; i++) { S.lic++; } S.dmgMul = 1 + 0.05 * S.lic; S.proPack = !!d.pack; setAbil(); S.jarT = d.jarT || Array(d.jar || 0).fill(null); S.jar = S.jarT.length; if (d.rid) S.rid = d.rid;   /* (older saves: those shinies were already added when caught) */
   setCake(S.lives); S.nextT = 0; tutEnd(); syncHud(); syncTray(); showBelt(); renderShop();
-  banner('Welcome back!', 'Level ' + soloNum(d.lv) + ', picking up after wave ' + d.wave, false, 2200);
+  banner('Welcome back!', (d.daily ? 'Daily Kitchen' : 'Level ' + soloNum(d.lv)) + ', picking up after wave ' + d.wave, false, 2200);
 }
 let RESUMING = false, BN_QUIET = false;
 function startGame(lv = LV, net = null, aiDiff = 1) {
   if (!RESUMING && S && (S.mode === 'play' || S.mode === 'over')) bankLive();
-  if (!RESUMING) clearRun();
+  if (!RESUMING) clearRun(runKey(lv));
   $('rsAsk').hidden = true;
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
   clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools'; requestAnimationFrame(syncBeltPos);
@@ -7939,12 +7949,14 @@ function openDaily() {
   if (!seen && $('twSpin')) $('twSpin').onclick = () => { SND.init(); slotMachine(L.twists, () => openDaily()); };   // reveal them right here, no run started
   $('dMine').innerHTML = mine ? `Your score today<b>Wave ${mine.w}</b>` : 'Your score today<b>Not played</b>';
   $('dStreak').innerHTML = `Daily streak<b>${dailyStreak()} 🔥</b>`;
-  $('dPlay').textContent = mine ? 'Practice (your score is in)' : 'Play today\'s kitchen';
+  settleOldDaily(); const sv = loadRun(DRUN_KEY);
+  $('dPlay').textContent = sv ? 'Continue (after wave ' + sv.wave + ', ' + sv.lives + ' slices)' : mine ? 'Practice (your score is in)' : 'Play today\'s kitchen';
   $('dName').value = dailyName();
   $('title').hidden = true; $('daily').hidden = false; renderBoard(day);
 }
 function startDaily() {
   setupDaily(); const day = LEVELS[DAILY_LV].day;
+  settleOldDaily(); if (loadRun(DRUN_KEY)) { resumeRun(DRUN_KEY); return; }   // quit earlier today: carry on where you left off
   startGame(DAILY_LV);
   const lives = TWX('glass') ? 5 : DAILY_LIVES;
   S.daily = { day, counts: !dailyMine(day) }; S.lives = lives; setCake(lives); S.endless = true; $('waveMax').textContent = ' ∞';
@@ -8611,7 +8623,7 @@ function gameOver(won) {
   if (won && !S.vs && S.lives >= 20 && !S.cheered && S.ext && S.mode === 'play') {   /* flawless: a moment to celebrate before the results */
     S.cheered = true; S.active = false; S.nextT = 0; S.ext.cheer = 2.8; S.ext.job = null; S.ext.abil = null; SND.play('up'); setTimeout(() => { if (S && S.mode === 'play') gameOver(true); }, 2800); return;
   }
-  if (!(S.vs)) clearRun();
+  if (!(S.vs)) clearRun(runKey());
   if (S.vs && S.vs.ffa && !won) { vsEnd('lose', 'The bugs ate your cake. You\'re out!'); return; }
   if (S.vs && S.vs.race && !won) { raceDie(); return; }
   if (S.vs) { vsEnd(won ? 'win' : 'lose', won ? '' : 'The bugs ate your whole cake'); return; }
