@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="511">v1.009</div>
+    <div id="ver" data-b="512">v1.010</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2652,8 +2652,6 @@ function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per
     const keep = p => { const i = p * 4, r = src[i], g = src[i + 1], b = src[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), lum = mx / 255, sat = mx ? (mx - mn) / mx : 0;
       if (lum < 0.17) return true;                                   // straps, hose, buttons, deep creases of leather
       if (sat < 0.09 && lum > 0.3 && b <= r + 4) return true;         // buckle, name tag, tank, metal fittings (white or warm grey; bluish grey is faded denim)
-      if (r > 150 && r > g * 2 && r > b * 2.4) return true;          // red fittings
-      if (lum > 0.5 && sat > 0.42 && r > g && g > b && (g - b) / (r - b + 1) > 0.28 && (g - b) / (r - b + 1) < 0.62) return true;   // skin
       if (lum < 0.5 && sat > 0.3 && r > g && g >= b && b < r * 0.55) return true;   // leather belt and pouches
       return false; };
     const far = W / 36, q = new Int32Array(W * H), dist = new Uint8Array(W * H); let h = 0, t = 0;
@@ -2662,6 +2660,18 @@ function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per
       const nb = [px > 0 ? p - 1 : -1, px < W - 1 ? p + 1 : -1, p >= W ? p - W : -1, p < W * (H - 1) ? p + W : -1];
       for (const n of nb) { if (n < 0 || dist[n] || !M.suitMask[n] || (mask && mask[n]) || keep(n)) continue; dist[n] = d + 1; q[t++] = n;
         const i = n * 4, lum = Math.max(src[i], src[i + 1], src[i + 2]) / 255; paint(i, Math.min(1, lum * 1.1)); } }
+    /* what's left unpainted inside the cloth is either a real fitting (belt, pouches, straps: big) or a stain, scuff or shadow that happens
+       to share a colour with leather or skin (small). Fill the small ones. Bare metal and red fittings are never filled, whatever their size. */
+    const hard = p => { const i = p * 4, r = src[i], g = src[i + 1], b = src[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx && (mx - mn) / mx < 0.09 && mx > 76 && b <= r + 4; };
+    const seen = new Uint8Array(W * H), thr = Math.round(500 * (W / 2048) * (H / 2048)), comp = [];
+    for (let p0 = 0; p0 < W * H; p0++) {
+      if (seen[p0] || painted[p0] || !M.suitMask[p0] || (mask && mask[p0]) || !(M.cover && M.cover[p0]) || hard(p0)) continue;
+      let hh = 0, tt = 0; q[tt++] = p0; seen[p0] = 1; comp.length = 0;
+      while (hh < tt) { const p = q[hh++]; comp.push(p); const px = p % W;
+        const nb = [px > 0 ? p - 1 : -1, px < W - 1 ? p + 1 : -1, p >= W ? p - W : -1, p < W * (H - 1) ? p + W : -1];
+        for (const n of nb) { if (n < 0 || seen[n] || painted[n] || !M.suitMask[n] || (mask && mask[n]) || !M.cover[n] || hard(n)) continue; seen[n] = 1; q[tt++] = n; } }
+      if (comp.length < thr) for (const p of comp) { const i = p * 4, lum = Math.max(src[i], src[i + 1], src[i + 2]) / 255; paint(i, Math.min(1, lum * 1.1)); }
+    }
   }
   x.putImageData(D, 0, 0);
   const mk = (c, mode) => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; extMips(t, mode || 'cover', M.cover); return t; };
@@ -2751,6 +2761,42 @@ function extMips(tex, mode, cover) {   /* mode 'min': a glow sheet shrinks by ta
   tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); tex.needsUpdate = true; return tex;
 }
 function seamSafeMips(tex) { if (!tex || tex.userData.seamSafe) return tex; tex.userData.seamSafe = true; tex.generateMipmaps = false; tex.mipmaps = []; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true; return tex; }
+/* The hose is drawn by the game, not by the model: a rigged tube can only stretch when the arm moves, so Meshy's hose is stripped from the mesh
+   and this one runs from the pack's outlet to the rod's grip every frame, following the bones. It sags with its slack and pulls taut when
+   there isn't any (he's lifted by the player, say). The two end points are where the modelled hose used to attach, in the mesh's own space. */
+const HOSE_OUTLET = new V3(0.0331, 0.6089, -0.3865), HOSE_ROD = new V3(-0.7444, 0.9461, 0.1428);
+function makeHose(m, parent, B, ref) {   /* m: the model's root; parent: where the tube lives; B: bone lookup; ref: an existing hose to copy the fitted offsets from */
+  let skin = null; m.traverse(o => { if (o.isSkinnedMesh && !skin) skin = o; });
+  const sp = B('Spine1') || B('Spine'), hand = B('RightHand'), hips = B('Hips'); if (!skin || !sp || !hand || !hips) return null;
+  m.updateMatrixWorld(true);
+  const box = new THREE.Box3(); m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox(); box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+  const H = box.max.y - box.min.y || 1;
+  const h = { aB: sp, bB: hand, hipsB: hips, parent, H, mesh: null, mat: new THREE.MeshStandardMaterial({ color: '#141416', roughness: 0.5, metalness: 0 }) };
+  if (ref) { h.a = ref.a.clone(); h.b = ref.b.clone(); h.sideL = ref.sideL.clone(); h.restN = ref.restN; }
+  else {
+    const A = HOSE_OUTLET.clone().applyMatrix4(skin.matrixWorld), Bp = HOSE_ROD.clone().applyMatrix4(skin.matrixWorld);
+    h.a = sp.worldToLocal(A.clone()); h.b = hand.worldToLocal(Bp.clone()); h.restN = A.distanceTo(Bp) / H * 1.05;   /* a little longer than the straight run: a gentle sag at rest */
+    const o = hips.getWorldPosition(new V3()); h.sideL = hips.worldToLocal(o.clone().add(new V3(-1, 0, 0))).sub(hips.worldToLocal(o.clone()));   /* his right, in the hips' own frame */
+  }
+  h.mesh = new THREE.Mesh(new THREE.BufferGeometry(), h.mat); h.mesh.castShadow = true; h.mesh.frustumCulled = false; parent.add(h.mesh);
+  const ring = new THREE.MeshStandardMaterial({ color: '#c8262a', roughness: 0.5 }); h.f1 = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), ring); h.f2 = h.f1.clone(); parent.add(h.f1); parent.add(h.f2);   /* red couplings at both ends */
+  return h;
+}
+const HV = [new V3(), new V3(), new V3(), new V3(), new V3()];
+function updateHose(h, endBone) {
+  if (!h) return;
+  const bB = endBone || h.bB;
+  h.aB.updateWorldMatrix(true, false); bB.updateWorldMatrix(true, false); h.hipsB.updateWorldMatrix(true, false); h.parent.updateWorldMatrix(true, false);
+  const A = h.aB.localToWorld(HV[0].copy(h.a)), Bp = bB.localToWorld(HV[1].copy(h.b));
+  const o = h.hipsB.getWorldPosition(HV[2]), side = h.hipsB.localToWorld(HV[3].copy(h.sideL)).sub(o).normalize();
+  const H = h.H, rest = h.restN * H, d = A.distanceTo(Bp), sag = 0.55 * Math.sqrt(Math.max(0, rest - d) * rest);   /* how far a hose this long droops between two points this far apart */
+  const mid = A.clone().add(Bp).multiplyScalar(0.5).addScaledVector(side, 0.06 * H + sag * 0.35); mid.y -= sag * 0.55;   /* the loose length hangs out round his right hip */
+  const q1 = A.clone().lerp(mid, 0.5), q2 = mid.clone().lerp(Bp, 0.5); q1.y -= sag * 0.2; q2.y -= sag * 0.2;
+  const pts = [A, q1, mid, q2, Bp].map(v => h.parent.worldToLocal(v.clone()));
+  const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal'), r = 0.013 * H / (h.parent.getWorldScale(HV[4]).x || 1);
+  const g = new THREE.TubeGeometry(curve, 18, r, 7, false); if (h.mesh.geometry) h.mesh.geometry.dispose(); h.mesh.geometry = g;
+  h.f1.position.copy(pts[0]); h.f1.scale.setScalar(r * 1.6); h.f2.position.copy(pts[4]); h.f2.scale.setScalar(r * 1.5);
+}
 function fitExtModel(root, gltf, red) {
   const u = root.userData, m = SkeletonUtils.clone(gltf.scene), cont = new THREE.Group();
   let tex = null; m.traverse(o => { if (o.isMesh && o.material && o.material.map) tex = o.material.map; });
@@ -2817,6 +2863,7 @@ function fitExtModel(root, gltf, red) {
     const L = hips.matrixWorld.clone().invert().multiply(want), lp = new V3(), lq = new THREE.Quaternion(), ls = new V3(); L.decompose(lp, lq, ls);
     holster = { wb, hips, hand: bones.RHand, lp, lq, ls, hp0: wb.position.clone(), hq0: wb.quaternion.clone(), hs0: wb.scale.clone(), on: false };
   });
+  const hose = makeHose(m, cont, B, null);
   // the hammer moves into the model's right hand
   bones.RHand.add(u.hammer); u.hammer.position.set(0, 0, 0); u.hammer.rotation.set(0, 0, 0);
   root.updateMatrixWorld(true); const ws = u.hammer.getWorldScale(XV1).x || 1; u.hammer.scale.multiplyScalar(root.getWorldScale(XV2).x / ws);
@@ -2842,7 +2889,7 @@ function fitExtModel(root, gltf, red) {
         x.beginPath(); x.moveTo(UV.getX(A) * iw, UV.getY(A) * ih); x.lineTo(UV.getX(Bv) * iw, UV.getY(Bv) * ih); x.lineTo(UV.getX(C) * iw, UV.getY(C) * ih); x.closePath(); x.fill(); x.lineWidth = 1; x.strokeStyle = '#fff'; x.stroke();
       }
       /* the clothes' patch of the texture: everything but the head, hands and feet (so an outfit recolours the shirt but never the orange cap) */
-      { const skip = new Set(['Head', 'HeadTop_End', 'Bone_016', 'headfront', 'LeftHand', 'RightHand', 'LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'].map(n => sk.bones.indexOf(B(n))).filter(k => k >= 0)); sk.bones.forEach((bn, k) => { if (/Hand(Thumb|Middle|Index|Ring|Pinky)|Bone_04/.test(bn.name)) skip.add(k); });
+      { const skip = new Set(['Neck', 'Head', 'HeadTop_End', 'Bone_016', 'headfront', 'LeftHand', 'RightHand', 'LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'].map(n => sk.bones.indexOf(B(n))).filter(k => k >= 0)); sk.bones.forEach((bn, k) => { if (/Hand(Thumb|Middle|Index|Ring|Pinky)|Bone_04/.test(bn.name)) skip.add(k); });
         const body = new Uint8Array(P.count); for (let i = 0; i < P.count; i++) { let best = -1, bw = 0; for (let c = 0; c < 4; c++) if (W.getComponent(i, c) > bw) { bw = W.getComponent(i, c); best = J.getComponent(i, c); } body[i] = skip.has(best) ? 0 : 1; }
         const sv = document.createElement('canvas'); sv.width = iw; sv.height = ih; const sx = sv.getContext('2d'); sx.fillStyle = '#fff'; sx.strokeStyle = '#fff'; sx.lineWidth = 5;   /* a little past each patch's edge, so no orange rim is left to blend in */
         const nn = I ? I.count : P.count;
@@ -2863,7 +2910,7 @@ function fitExtModel(root, gltf, red) {
     });
   } catch (err) { console.warn('outfit setup', err); }
   if (map) extMips(map, 'cover', cover);
-  u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, cover, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask: tankMask && cover ? padMask(tankMask, cover, tex.image.width, tex.image.height) : tankMask, suitMask: suitMask && cover ? padMask(suitMask, cover, tex.image.width, tex.image.height) : suitMask, crown, red, look: '' };
+  u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, cover, hose, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask: tankMask && cover ? padMask(tankMask, cover, tex.image.width, tex.image.height) : tankMask, suitMask: suitMask && cover ? padMask(suitMask, cover, tex.image.width, tex.image.height) : suitMask, crown, red, look: '' };
   u.tip = tip;
 }
 function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points the given way (in the model's own space: +z forward, +y up) */
@@ -2901,6 +2948,7 @@ function poseExtModel(u, e, dt, st) {
   else if (st.cheer) { const k = Math.abs(Math.sin(t * 7)); arm(R, Bn.RArm, Bn.RFore, R * 0.35, 0.2 + k * 0.8, 0.35, R * 0.05, 1, 0.15 - k * 0.3); }   /* fist pump */
   else if (st.pet) { const k = Math.sin(t * 6) * 0.45; arm(R, Bn.RArm, Bn.RFore, R * 0.5 + k * 0.3, 1, 0.35, R * 0.2 + k, 1, 0.35); }
   else arm(R, Bn.RArm, Bn.RFore, R * 0.3, -1, 0.05, R * 0.18, -1, 0.25);
+  updateHose(M.hose, M.holster ? M.holster.wb : null);   /* the hose follows the rod, on his hand or hooked on his belt */
 }
 let EXT_GLTF = null, LKP = null;
 function lkpCam() { const L = LKP, c = L.c, ch = Math.cos(L.tilt); L.m.rotation.y = L.yaw; L.cam.position.set(c.x, c.y + Math.sin(L.tilt) * L.dist + L.dist * 0.036, c.z + ch * L.dist); L.cam.lookAt(c.x, c.y, c.z); }   // spin him; tilt the camera up and over
@@ -2925,22 +2973,23 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
     r.setPixelRatio(Math.min(3, window.devicePixelRatio || 1)); r.setSize(cv.clientWidth || 180, cv.clientHeight || 210, false);
     r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setClearColor(0x000000, 0);
     cam.aspect = (cv.clientWidth || 180) / (cv.clientHeight || 210); cam.updateProjectionMatrix();
-    LKP = { sc, m, mat, cam, crown, r, c: c.clone(), yaw: 0, tilt: 0, dist: h * 3.3 };
+    const lkB = n => m.getObjectByName('mixamorig' + n) || m.getObjectByName('mixamorig:' + n), lkHose = M.hose ? makeHose(m, sc, lkB, M.hose) : null;
+    LKP = { sc, m, mat, cam, crown, r, c: c.clone(), yaw: 0, tilt: 0, dist: h * 3.3, hose: lkHose };
     /* drag with a finger (or mouse) to turn him around and look from above or below */
     let drag = null;
     cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (_) {} e.preventDefault(); });
     cv.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY };
-      LKP.yaw += dx * 0.012; LKP.tilt = clamp(LKP.tilt + dy * 0.008, -0.45, 0.9); lkpCam(); LKP.r.render(LKP.sc, LKP.cam); });
+      LKP.yaw += dx * 0.012; LKP.tilt = clamp(LKP.tilt + dy * 0.008, -0.45, 0.9); lkpCam(); updateHose(LKP.hose); LKP.r.render(LKP.sc, LKP.cam); });
     for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, () => { drag = null; });
     lkpCam();
   }
   const look = myLook(), T = outfitTextures(M, look.suit, false, look.tank === 'toxic');
   LKP.mat.map = T.map; LKP.mat.emissiveMap = T.glow; LKP.mat.emissiveIntensity = T.glow ? (T.toxic ? 1.0 : 0.55) : 0; LKP.mat.roughnessMap = LKP.mat.metalnessMap = T.mr; LKP.mat.roughness = T.mr ? 1 : 0.8; LKP.mat.metalness = T.mr ? 1 : 0; LKP.mat.needsUpdate = true; if (LKP.crown) LKP.crown.visible = !!look.crown;
   { const w = cv.clientWidth || 180, h = cv.clientHeight || 210, sz = LKP.r.getSize(new THREE.Vector2()); if (sz.x !== w || sz.y !== h) { LKP.r.setSize(w, h, false); LKP.cam.aspect = w / h; LKP.cam.updateProjectionMatrix(); } }
-  LKP.r.render(LKP.sc, LKP.cam);
+  updateHose(LKP.hose); LKP.r.render(LKP.sc, LKP.cam);
 }
 function extModelLoad() {
-  try { new GLTFLoader().load('assets/exterminator.glb?h=cdc14a44', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
+  try { new GLTFLoader().load('assets/exterminator.glb?h=74eefdc9', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); } }, undefined, () => {}); } catch (err) {}
 }
 extModelLoad();
 /* ---- the modelled house cat (Meshy). One model; each level repaints its fur (orange, gray, black, tiger) and collar (red, blue, gold) */
