@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="493">v1.92</div>
+    <div id="ver" data-b="494">v1.93</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1392,8 +1392,9 @@ function slotMachine(keys, done) {   /* two reels spin and land on today's twist
   go.textContent = S.mode === 'play' ? "Let's go!" : 'Got it'; go.onclick = () => { SND.play('tap'); el.hidden = true; S.slot = false; done && done(); };
 }
 function mysteryTools(day) { const r = rng(dayHash('ppd-mystery-' + day)), pool = SHOP.filter(t => t !== 'swat' && t !== 'fogger').map(t => [t, r()]).sort((x, y) => x[1] - y[1]).map(x => x[0]); return ['swat', ...pool.slice(0, 4)]; }
+const DAY_RESEED = { '2026-11-05': '-b' };   /* a fresh map for a day that needed one */
 function setupDaily(day = dailyDay()) {
-  const r = rng(dayHash('ppd-daily-' + day)), CAKES = [0, 1, 9, 10, 11, 12, 13], cake = CAKES[Math.floor(r() * CAKES.length)];
+  const r = rng(dayHash('ppd-daily-' + day + (DAY_RESEED[day] || ''))), CAKES = [0, 1, 9, 10, 11, 12, 13], cake = CAKES[Math.floor(r() * CAKES.length)];
   let t1 = null; for (let i = 0; i < 20 && !t1; i++) t1 = genTrail(r, cake, new Set(), 26, 40);
   const taken = new Set(t1.map(([a, b]) => a + ',' + b)), routes = [trailRoute(t1)];
   const twists = twistsFor(day);
