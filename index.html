@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="496">v1.95</div>
+    <div id="ver" data-b="497">v1.96</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4745,7 +4745,7 @@ function startWave0() {
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
   if (S.endless && S.wave + 1 >= 30) ACH.unlock('end30');
   if (S.endless && S.wave + 1 >= 50) ACH.unlock('end50');
-  if (!rush) { S.waveEarn = 0; if (!S.resumeWave) { S.withhold = 0; S.owed0 = 0; } S.resumeWave = false; }
+  if (!rush) { S.kills0 = S.kills || 0; S.bd0 = S.bossDmg || 0; S.waveEarn = 0; if (!S.resumeWave) { S.withhold = 0; S.owed0 = 0; } S.resumeWave = false; }
   S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
   if (!rush && !LEVELS[LV].team) S.routeN = (LONG_R - 1 + ROUTES.length) % ROUTES.length;   // the wave opens on the longest trail   // every wave in this push pays its clear bonus at the end
@@ -6855,7 +6855,7 @@ function runSavable() { return S && S.mode === 'play' && (LV !== DAILY_LV || !!S
 function saveRun() {
   if (!runSavable()) return;
   const mid = S.active;
-  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(), daily: S.daily ? { day: S.daily.day, counts: !!S.daily.counts, bd: Math.round(S.bossDmg || 0) } : null,
+  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: mid ? S.kills0 ?? S.kills ?? 0 : S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(), daily: S.daily ? { day: S.daily.day, counts: !!S.daily.counts, bd: Math.round((mid ? S.bd0 ?? S.bossDmg : S.bossDmg) || 0) } : null,   /* mid-wave: kills and boss damage as the wave began (it gets replayed) */
     towers: S.towers.map(t => [t.t, t.c, t.r, Math.min(3, t.lv + (t.upPending && t.lv < 3 ? 1 : 0)), t.perk || (t.upPending && t.lv >= 3) ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
   try { localStorage.setItem(runKey(), JSON.stringify(d)); } catch (e) {}
 }
