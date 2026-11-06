@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="498">v1.97</div>
+    <div id="ver" data-b="499">v1.98</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -7926,12 +7926,12 @@ async function lbSubmit(day, waves, kills, bd = 0) {   /* insert; if the table a
       const u = await fetch(LB_URL + '?day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()) + '&or=(waves.lt.' + waves + ',and(waves.eq.' + waves + ',boss_dmg.lt.' + bd + '),and(waves.eq.' + waves + ',boss_dmg.eq.' + bd + ',kills.lt.' + kills + '))', { method: 'PATCH', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ waves, kills, boss_dmg: bd, name: cleanName(dailyName()) }) });
       if (!u.ok) { LB_ERR = u.status + ' ' + (await u.text()).slice(0, 160); return false; } }
     if (r.ok || r.status === 409) {
-      const c = await fetch(LB_URL + '?select=waves&day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()), { headers: LB_H });   /* make sure it's really on today's board before calling it sent */
+      const c = await fetch(LB_URL + '?select=waves&day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()) + '&t=' + Date.now(), { headers: LB_H, cache: 'no-store' });   /* make sure it's really on today's board before calling it sent */
       const rows = c.ok ? await c.json() : null; if (rows && !rows.length) { LB_ERR = 'refused ' + (why409 || r.status); return false; }
       const m = dailyMine(day); if (m) { m.sent = 3; LS.set('ppd-daily-' + day, JSON.stringify(m)); } return true; }
     LB_ERR = r.status + ' ' + (await r.text()).slice(0, 160); return false; } catch (e) { LB_ERR = String(e && e.message || e); return false; } }
-async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills,boss_dmg&day=eq.' + day + '&order=waves.desc,boss_dmg.desc,kills.desc,created_at.asc&limit=50', { headers: LB_H }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
-async function lbRank(day, w, k, bd = 0) { try { const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',boss_dmg.gt.' + bd + '),and(waves.eq.' + w + ',boss_dmg.eq.' + bd + ',kills.gt.' + k + '))', { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
+async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills,boss_dmg&day=eq.' + day + '&order=waves.desc,boss_dmg.desc,kills.desc,created_at.asc&limit=50&t=' + Date.now(), { headers: LB_H, cache: 'no-store' });   /* &t: never a saved copy (older app versions cached every request) */ return r.ok ? await r.json() : null; } catch (e) { return null; } }
+async function lbRank(day, w, k, bd = 0) { try { const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',boss_dmg.gt.' + bd + '),and(waves.eq.' + w + ',boss_dmg.eq.' + bd + ',kills.gt.' + k + '))' + '&t=' + Date.now(), { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
 const fmtBd = n => { n = Math.round(n || 0); return n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'k' : n.toLocaleString('en-US'); };
 async function renderBoard(day) {
   const ol = $('dBoard'), you = $('dYou'), mine = dailyMine(day); ol.innerHTML = '<li><span class="nm">Loading…</span></li>'; you.textContent = '';

@@ -1,11 +1,12 @@
 // offline support: the game page is fetched fresh when online (so updates show up), everything else is cached
-const CACHE = 'pest-panic-v1.97.498';
+const CACHE = 'pest-panic-v1.98.499';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/ext2-192.png', 'icons/ext2-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
   const req = e.request; if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  if (/supabase\.co$/.test(url.hostname) || url.pathname.includes('/rest/v1/')) return;   // leaderboard and other live data: always from the network, never a saved copy
   if (req.mode === 'navigate' || (url.origin === location.origin && url.pathname.endsWith('.html'))) {
     e.respondWith(fetch(req.url, { cache: 'no-cache' }).then(r => { const c = r.clone(); caches.open(CACHE).then(k => k.put(req, c)); return r; }).catch(() => caches.match(req).then(r => r || caches.match('index.html'))));
     return;
