@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="497">v1.96</div>
+    <div id="ver" data-b="498">v1.97</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1403,7 +1403,7 @@ function setupDaily(day = dailyDay()) {
   const BOSSES = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'].map(t => [t, r()]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   const early = BOSSES.slice(0, 4).sort((a, b) => BT[a].hp - BT[b].hp);
   const look = SOLO[Math.floor(r() * SOLO.length)];
-  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07, money: 210, cakeCol: cake, shift: 1,
+  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07 * (day >= '2026-11-06' ? 1.1 : 1), money: 210, cakeCol: cake, shift: 1,
     nb: [['hopper', 4, 2], ['centi', 7, 1], ['stink', 9, 1], ['moth', 11, 2], ['mantis', 14, 1]], bosses: [...early.map(t => [t]), [BOSSES[4], BOSSES[5]]], routes, look, day, twists, mystery: twists.includes('mystery') ? mysteryTools(day) : null };
   HOUSES[DAILY_LV] = { ...HOUSES[look] }; PROP_LAYOUT[DAILY_LV] = PROP_LAYOUT[look]; delete houseTex[DAILY_LV];
 }   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
@@ -2130,7 +2130,7 @@ const cake = { root: new THREE.Group(), slices: [], biting: [] };
   g.traverse(o => { if (o.isMesh && o !== flame) { o.castShadow = true; o.receiveShadow = true; } });
   scene.add(g);
 })();
-function setCake(n) { cake.slices.forEach((s, i) => { s.visible = i < n; s.scale.setScalar(1); }); cake.biting.length = 0; }
+function setCake(n) { const k = (S && S.cakeK) || 1; cake.slices.forEach((s, i) => { s.visible = i < n * k; s.scale.setScalar(1); }); cake.biting.length = 0; }
 
 // ---------------------------------------------------------------- bug models (from Pest Panic HD)
 function colorize(geo, hex) {
@@ -3617,7 +3617,7 @@ Object.assign(TT, {
   sticky:  { name: 'Sticky Trap', cost: 35, item: true, path: true, air: false, range: [1.6, 1.6, 1.6],
              d: 'A glue sheet for the trail. For one wave, every crawling bug that walks over it slows to 40% speed. Flies go over it. Placed between waves, it works during the next wave. If no bug touches it, it stays out for the next wave too.' },
   bomb:    { name: 'Bug Bomb', cost: 75, item: true, path: true, air: true, range: [2.4, 2.4, 2.4], pct: 0.22, bossPct: 0.025,
-             d: 'A fogger for the trail. It waits on the trail until a bug walks over it, then fills the trail around it with thick green poison fog for the rest of that wave. Every bug passing through loses 22% of its health each second (bosses 2.5%), flies included, so it\'s just as strong in the last waves as the first. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
+             d: 'A fogger for the trail. It waits on the trail until a bug walks or flies over it, then fills the trail around it with thick green poison fog for the rest of that wave. Every bug passing through loses 22% of its health each second (bosses 2.5%), flies included, so it\'s just as strong in the last waves as the first. Burns through shells. If nothing steps on it, it keeps waiting for the next wave.' },
   pack:    { name: 'Pro Spray Upgrade', abbr: 'Pro Spray', item: true, instant: true, air: true, cost: 150, range: [0, 0, 0],
              d: 'Loads your exterminator\'s backpack sprayer with pro-strength spray for the rest of the game: 60% more damage, stronger poison, a wider and longer reach, sprays for 4 seconds and takes 16% off a boss. Each spray then costs 20 coins and takes 75 seconds to recharge (instead of free and 60).' },
   license: { name: 'Exterminator License', abbr: 'License', item: true, instant: true, air: true, costs: [120, 200, 300], range: [0, 0, 0],
@@ -4886,8 +4886,7 @@ function biteCake(n) {
   S.biteAcc = (S.biteAcc || 0) + n; n = Math.floor(S.biteAcc + 1e-6); S.biteAcc -= n;
   if (!n) { SND.play('squish'); return; }
   for (let i = 0; i < n && S.lives > 0; i++) {
-    S.lives--; const s = cake.slices[S.lives];
-    if (s) cake.biting.push({ s, t: 0 });
+    S.lives--; const k = S.cakeK || 1; for (let j = 0; j < k; j++) { const s = cake.slices[Math.round(S.lives * k) + j]; if (s && s.visible) cake.biting.push({ s, t: 0 }); }   // cakeK: on a 10-slice cake each slice is 2 pieces
   }
   for (let i = 0; i < 10; i++) FX.smoke.spawn({ x: CAKE_POS.x + (Math.random() - 0.5) * 2, y: CAKE_POS.y + 1, z: CAKE_POS.z + (Math.random() - 0.5) * 2, vy: 2, life: 0.6, s0: 0.5, s1: 1.4, c: [1, 0.85, 0.9], a0: 0.5 });
   S.shake = Math.max(S.shake, 0.3); bumpStat('stLives');
@@ -5288,7 +5287,8 @@ function update(dt) {
     if (b.lead && !b.lead.dead && b.s > b.lead.s - (bt.gap || 0.62) * (b.giant ? 1.5 : 1) * 0.7) { b.s = Math.max(0, b.lead.s - (bt.gap || 0.62) * (b.giant ? 1.5 : 1) * 0.7); sp = 0; }   // a centipede segment gets shoved back with the segment in front of it (the head was sliding back through its own body)
     if (b.needGuard && S.net !== 'guest') { b.needGuard = 0; royalGuard(b); }
     if (b.guard) { if (b.guard.dead) b.guard = null; else { b.gph += dt * 1.4; b.s = Math.max(0, b.guard.s + Math.cos(b.gph) * 3.1); b.off = Math.sin(b.gph) * 2.6; sp = 0; b.walk += dt * 9; b.push = 0; } }   // a soldier ant marching in a ring around its queen
-    if (b.t === 'gfly') {   // zig-zag: quick darts from side to side of the trail
+    if (b.t === 'gfly' && b.eatT > 0) { b.off = (b.off || 0) * Math.max(0, 1 - dt * 5); b.darting = false; b.zzT = 0.3; }   // eating: she settles over the crumbs and holds still
+    else if (b.t === 'gfly') {   // zig-zag: quick darts from side to side of the trail
       if ((b.zzT = (b.zzT || 0) - dt) <= 0) { b.zzT = 0.5 + Math.random() * 0.45; b.zzTo = (b.zzTo > 0 ? -1 : 1) * (1.3 + Math.random() * 1.1); }
       const dz = (b.zzTo || 0) - (b.off || 0), st = Math.min(Math.abs(dz), dt * 9); b.off = (b.off || 0) + Math.sign(dz) * st; b.darting = Math.abs(dz) > 0.35;
     }
@@ -5387,6 +5387,7 @@ function buyLicense() {
   for (const tw of S.towers) for (let i = 0; i < 5; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.6, y: 0.5 + Math.random() * 2, z: tw.z + (Math.random() - 0.5) * 1.6, vy: 2, life: 0.6, s0: 0.5, s1: 0.1, c: [1, 0.85, 0.4], a0: 1 });
   SND.play('up'); bumpStat('stCoins'); renderShop(); syncTray();
 }
+const CRUMB_P = {};
 function itemsAct(dt) {
   for (const it of S.items) {
     if (it.pending) continue;
@@ -5394,7 +5395,8 @@ function itemsAct(dt) {
     if (it.t === 'crumbs') {
       for (const b of S.bugs) {
         if (b.dead || it.bites <= 0 || (b.ate && b.ate.has(it.id))) continue;
-        if ((b.x - it.x) ** 2 + (b.z - it.z) ** 2 > R2 || b.y0 > 0.5) continue;
+        if (b.t === 'gfly') { pathAt(b.s, CRUMB_P, b.route); if ((CRUMB_P.x - it.x) ** 2 + (CRUMB_P.z - it.z) ** 2 > R2 || b.y0 > 0.5) continue; }   // the fly boss: from the middle of the trail (her zig-zag swung her right past the pile)
+        else if ((b.x - it.x) ** 2 + (b.z - it.z) ** 2 > R2 || b.y0 > 0.5) continue;
         (b.ate ||= new Set()).add(it.id);
         const boss = BT[b.t].boss; b.eatT = boss ? 3 : 1.5; it.bites -= boss ? 5 : 1;
         b.psnT = Math.max(b.psnT, (boss ? 5 : 3) + b.eatT); b.psnD = Math.max(b.psnD, T.psn); b.psnSrc = 'crumbs'; b.psnOwn = it.owner || 0; b.psnTw = null;   // the crumbs were sprayed: whoever eats gets poisoned
@@ -5410,7 +5412,7 @@ function itemsAct(dt) {
         b.glueT = 0.15; b.glueF = BT[b.t].boss ? 0.6 : 0.4; it.trig = true;   // touched: it's used up at the end of this wave   /* its own timer: the trap must not keep a swat stun's zero speed alive (that froze bosses on it for good) */
       }
     } else if (it.t === 'bomb') {
-      if (armed && !it.trig && S.net !== 'guest') for (const b of S.bugs) if (!b.dead && !BT[b.t].fly && (b.x - it.x) ** 2 + (b.z - it.z) ** 2 <= R2 * 0.5 && b.y0 <= 0.5) { it.trig = true; SND.play('spray'); break; }   // waits for a bug to step on it
+      if (armed && !it.trig && S.net !== 'guest') for (const b of S.bugs) if (!b.dead && (b.x - it.x) ** 2 + (b.z - it.z) ** 2 <= R2 * 0.5 && b.y0 <= 0.5) { it.trig = true; SND.play('spray'); break; }   // waits for a bug to step on it
       it.o.ledM.emissiveIntensity = !armed ? 0 : it.trig ? (Math.sin(clock * 10) > 0 ? 3 : 0.3) : (Math.sin(clock * 3) > 0.6 ? 1.5 : 0.2);
       if (!armed || !it.trig) continue;
       for (let n = 0; n < 2; n++) if (Math.random() < dt * 16) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * T.range[0]; FX.smoke.spawn({ x: it.x + Math.cos(a) * d, y: 0.3 + Math.random() * 0.7, z: it.z + Math.sin(a) * d, vx: Math.cos(a) * 0.5, vy: 0.4, vz: Math.sin(a) * 0.5, life: 1.4, s0: 1.4, s1: 3, c: [0.3, 0.95, 0.22], a0: 0.72 }); }
@@ -6875,7 +6877,7 @@ function syncResume() { const d = loadRun(), b = $('resumeT'); if (!b) return; b
 function resumeRun(key = RUN_KEY) {
   const d = loadRun(key); if (!d) return;
   RESUMING = true; try { startGame(d.lv); } finally { RESUMING = false; }
-  if (d.daily) { S.daily = { day: d.daily.day, counts: d.daily.counts }; S.bossDmg = d.daily.bd || 0; S.endless = true; $('waveMax').textContent = ' ∞'; }
+  if (d.daily) { S.cakeK = 20 / (TWX('glass') ? 5 : DAILY_LIVES); S.daily = { day: d.daily.day, counts: d.daily.counts }; S.bossDmg = d.daily.bd || 0; S.endless = true; $('waveMax').textContent = ' ∞'; }
   const m0 = S.mode; S.mode = 'demo'; S.money = 1e9;
   for (const [t, c, r, lv, perk, dmg, kills, bonus, spent] of d.towers) {
     if (!TT[t]) continue;
@@ -7936,8 +7938,9 @@ async function renderBoard(day) {
   if (mine && mine.sent !== 3 && !(await lbSubmit(day, mine.w, mine.k, mine.bd || 0))) you.textContent = 'Your score hasn\'t reached the board yet (' + LB_ERR + '). It will try again next time.';   /* a run that couldn't be sent gets another go */
   const top = await lbTop(day);
   if (!top) { ol.innerHTML = '<li><span class="nm">The leaderboard isn\'t reachable right now.</span></li>'; return; }
-  if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
   const me = myPid();
+  if (mine && mine.sent === 3 && top.length < 50 && !top.some(t => t.pid === me) && !renderBoard.healed) { renderBoard.healed = true; mine.sent = 0; LS.set('ppd-daily-' + day, JSON.stringify(mine)); return renderBoard(day); }   /* our score went missing from the board: send it again */
+  if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
   ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span><span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span></li>`).join('');
   if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'; }
 }
@@ -7959,7 +7962,7 @@ function startDaily() {
   settleOldDaily(); if (loadRun(DRUN_KEY)) { resumeRun(DRUN_KEY); return; }   // quit earlier today: carry on where you left off
   startGame(DAILY_LV);
   const lives = TWX('glass') ? 5 : DAILY_LIVES;
-  S.daily = { day, counts: !dailyMine(day) }; S.lives = lives; setCake(lives); S.endless = true; $('waveMax').textContent = ' ∞';
+  S.daily = { day, counts: !dailyMine(day) }; S.lives = lives; S.cakeK = 20 / lives; setCake(lives); S.endless = true; $('waveMax').textContent = ' ∞';
   if (TWX('budget')) S.money = Math.round(S.money / 2);
   if (TWX('pro')) { S.proPack = true; setAbil(); }
   syncHud(); syncGo(); renderShop(); syncTray();
