@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="508">v1.006</div>
+    <div id="ver" data-b="509">v1.007</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2631,7 +2631,7 @@ function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per
   const im = M.baseImg, W = im.width, H = im.height, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
   const D = x.getImageData(0, 0, W, H), a = D.data, mask = M.tankMask, sc = OUTFIT_SUIT[suit] || null;
   const gold = suit === 'gold';
-  let gcv = null, ga = null, GD = null; if (toxic || gold) { gcv = document.createElement('canvas'); gcv.width = W; gcv.height = H; GD = gcv.getContext('2d').createImageData(W, H); ga = GD.data; }
+  let gcv = null, ga = null, GD = null; if (toxic || gold) { gcv = document.createElement('canvas'); gcv.width = W; gcv.height = H; GD = gcv.getContext('2d').createImageData(W, H); ga = GD.data; for (let i = 3; i < ga.length; i += 4) ga[i] = 255; }   /* opaque black where nothing glows: a see-through sheet shrinks into full-strength colour at every edge */
   let mcv = null, ma = null, MD = null; if (gold) { mcv = document.createElement('canvas'); mcv.width = W; mcv.height = H; MD = mcv.getContext('2d').createImageData(W, H); ma = MD.data; for (let i = 0; i < ma.length; i += 4) { ma[i + 1] = 204; ma[i + 3] = 255; } }   // roughness (G) / metalness (B): matte everywhere but the gold
   for (let i = 0; i < a.length; i += 4) {
     const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
@@ -2644,8 +2644,8 @@ function outfitTextures(M, suit, red, toxic) {   // -> { map, glow } (cached per
     } else if (red && r > 150 && r > g * 1.8 && r > b * 2.6) { a[i] = b; a[i + 1] = g; a[i + 2] = r; }   // orange cap -> blue for player 2
   }
   x.putImageData(D, 0, 0);
-  const mk = c => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; extMips(t); return t; };
-  let glow = null; if (gcv) { gcv.getContext('2d').putImageData(GD, 0, 0); glow = mk(gcv); }
+  const mk = (c, mode) => { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; extMips(t, mode); return t; };
+  let glow = null; if (gcv) { gcv.getContext('2d').putImageData(GD, 0, 0); glow = mk(gcv, 'min'); }
   let mr = null; if (mcv) { mcv.getContext('2d').putImageData(MD, 0, 0); mr = mk(mcv); mr.colorSpace = THREE.NoColorSpace; }
   return (M.cache[key] = { map: mk(cv), glow, mr, toxic, gold });
 }
@@ -2681,13 +2681,24 @@ function padMask(mask, cover, W, H) {
 /* the exterminator's sheet is padded, so it can use real mipmaps (the small far-away copies): without them his small in-game size sampled
    scattered texels and sparkled with specks. The copies are built here, on the CPU, and handed to the GPU ready-made: some phone graphics
    drivers build them badly (colour noise in the small levels), and a ready-made chain leaves them nothing to get wrong. */
-function extMips(tex) {
+function extMips(tex, mode) {   /* mode 'min': a glow sheet shrinks by taking the darkest of each 2x2, so a glow can only pull in toward its patch, never spread onto the next one */
   if (!tex || !tex.image || !tex.image.width) return tex;
   let img = tex.image, w = img.width, h = img.height; const chain = [img];
   if ((w & (w - 1)) === 0 && (h & (h - 1)) === 0) {   /* power-of-two sheets only (the loader may hand over a bitmap; drawImage copes with it) */
+    let prev = null;
     while (w > 1 || h > 1) {
       const nw = Math.max(1, w >> 1), nh = Math.max(1, h >> 1), c = document.createElement('canvas'); c.width = nw; c.height = nh;
-      const x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, w, h, 0, 0, nw, nh);
+      const x = c.getContext('2d');
+      if (mode === 'min') {
+        if (!prev) { const sx = img.getContext ? img.getContext('2d') : null; prev = sx ? sx.getImageData(0, 0, w, h).data : null; }
+        const out = x.createImageData(nw, nh), o = out.data, W2 = w;
+        for (let y = 0; y < nh; y++) for (let xx = 0; xx < nw; xx++) {
+          const i0 = ((y * 2) * W2 + xx * 2) * 4, i1 = i0 + 4, i2 = i0 + W2 * 4, i3 = i2 + 4, j = (y * nw + xx) * 4;
+          for (let k = 0; k < 3; k++) o[j + k] = Math.min(prev[i0 + k], prev[i1 + k], prev[i2 + k], prev[i3 + k]);
+          o[j + 3] = 255;
+        }
+        x.putImageData(out, 0, 0); prev = o;
+      } else { x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, w, h, 0, 0, nw, nh); }
       chain.push(c); img = c; w = nw; h = nh;
     }
     tex.mipmaps = chain; tex.generateMipmaps = false;
