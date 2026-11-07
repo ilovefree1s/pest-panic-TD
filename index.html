@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="527">v1.025</div>
+    <div id="ver" data-b="528">v1.026</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2815,7 +2815,7 @@ function* extMipsGen(tex, mode, M, pix) {   /* pix: the sheet's pixels when the 
     }
     tex.mipmaps = chain; tex.generateMipmaps = false;
   } else tex.generateMipmaps = true;
-  tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); tex.needsUpdate = true; return tex;
+  tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.anisotropy = 1; tex.needsUpdate = true; return tex;   /* no anisotropic filtering on his sheet: on real GPUs it samples the sharper levels along a slanted view, where his patch borders bleed */
 }
 function seamSafeMips(tex) { if (!tex || tex.userData.seamSafe) return tex; tex.userData.seamSafe = true; tex.generateMipmaps = false; tex.mipmaps = []; tex.minFilter = THREE.LinearFilter; tex.needsUpdate = true; return tex; }
 /* The hose is drawn by the game, not by the model: a rigged tube can only stretch when the arm moves, so Meshy's hose is stripped from the mesh
@@ -2974,7 +2974,7 @@ function fitExtModel(root, gltf, red) {
       crown.position.set(hp.x, top - R * 0.02, hp.z - Hh * 0.01); crown.rotation.x = -0.12; crown.userData.glow = goldM; scene.add(crown); head.attach(crown); crown.visible = false;
     });
   } catch (err) { console.warn('outfit setup', err); }
-  if (map) { map.generateMipmaps = true; map.minFilter = THREE.LinearMipmapLinearFilter; map.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); map.needsUpdate = true; }   /* quick GPU mipmaps for the first frames; the proper sheet arrives from the outfit pump */
+  if (map) { map.generateMipmaps = false; map.minFilter = THREE.LinearFilter; map.magFilter = THREE.LinearFilter; map.anisotropy = 1; map.needsUpdate = true; }   /* the first frames use the full-size sheet with no shrinking at all (driver-made mipmaps bleed); the proper sheet with its clean mip chain arrives from the outfit pump within a second */
   u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, cover, masks: masks || (gltf.userData.extMasks ||= {}), hose, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, suitMask, crown, red, look: '' };
   u.tip = tip;
 }
@@ -3726,7 +3726,7 @@ function extLook(EXTM, look) {   /* put an outfit on a modelled exterminator (re
   if (!M) return;
   const key = look.suit + '|' + look.tank;
   if (M.want !== key && M.baseImg) { M.want = key;   /* built in slices; he keeps his current look until the new one is ready */
-    outfitTextures(M, look.suit, M.red, look.tank === 'toxic', T => { if (M.want !== key) return; M.look = key; M.T = T; M.mat.map = T.map; M.mat.emissiveMap = T.glow; M.mat.emissiveIntensity = T.glow ? 0.9 : 0;
+    outfitTextures(M, look.suit, M.red, look.tank === 'toxic', T => { if (M.want !== key) return; M.look = key; try { const v = $('ver'); if (v && !M.red) v.dataset.outfit = key + (T.map.mipmaps && T.map.mipmaps.length > 1 ? ' mips' : ' nomips'); } catch (e) {} M.T = T; M.mat.map = T.map; M.mat.emissiveMap = T.glow; M.mat.emissiveIntensity = T.glow ? 0.9 : 0;
       M.mat.roughnessMap = M.mat.metalnessMap = T.mr; M.mat.roughness = T.mr ? 1 : 0.8; M.mat.metalness = T.mr ? 1 : 0; M.mat.needsUpdate = true; }); }   /* gold suit: metal and shine where the suit is */
   if (M.mat.emissiveMap) { const t = performance.now(); M.mat.emissiveIntensity = M.T && M.T.toxic ? 0.95 + Math.sin(t / 260) * 0.35 : 0.5 + Math.sin(t / 700) * 0.12; }   // the toxic tank pulses; gold shimmers softly
   if (M.crown && M.crown.userData.glow) M.crown.userData.glow.emissiveIntensity = 0.85 + Math.sin(performance.now() / 500) * 0.25;
