@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="518">v1.016</div>
+    <div id="ver" data-b="519">v1.017</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3806,7 +3806,7 @@ const TT = {
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.0, 2.7, 3.4], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
 TT.fan = { name: 'Desk Fan', short: 'Fan', cost: 60, air: true, fliesOnly: true, range: [4.6, 5.0, 5.4], dmg: [5, 8, 12], push: [2.2, 3.0, 3.75], slow: [0.75, 0.7, 0.62], rate: [3.0, 2.7, 2.4],
-  d: 'A little desk fan that sweeps side to side. Its breeze slows every fly in reach, and every few seconds a strong gust blows them back up the trail so they have to fly past your other tools again. Barely hurts them. Each fly can only be gusted once every few seconds. Flying bosses just slow down a little. Can\'t reach crawling bugs.' };
+  d: 'A little desk fan that sweeps side to side. Its breeze slows every fly and moth in reach, and every few seconds a strong gust blows them back up the trail so they have to fly past your other tools again. Barely hurts them. Each fly can only be gusted once every few seconds. Flying bosses just slow down a little. Can\'t reach crawling bugs.' };
 TT.fogger = { name: 'Pro Fogger', short: 'Fogger', cost: 250, air: true, unique: true, buildMul: 2.5, range: [8.5, 9.5, 10.5], dmg: [35, 59, 93], dot: [23, 38, 61], rate: [2.2, 2.0, 1.7], fogT: 2.5,
   d: 'An exterminator\'s fogging machine. Every few seconds it blasts a thick cloud down the trail in front of it: every bug in the cone, flies too, takes a hit, and the cloud hangs there for a few seconds so anything inside keeps choking, even bugs that walk in after the blast. The fog ignores shells, so it melts bosses. Only one per kitchen, and your exterminator can wheel it to a new spot once per wave (tap it, then Move).' };
 TT.candle = { name: 'Citronella Candle', short: 'Candle', cost: 90, air: true, support: true, range: [4.5, 4.8, 5.1], amp: [0.10, 0.15, 0.20], rng: [0.03, 0.05, 0.08], burn: [4, 7, 11],
@@ -6633,8 +6633,8 @@ function renderShop() {
     const armText = t === 'license' ? '+5% all damage' : 'Spray 2× damage';
     const extra = armed ? `<em class="armTag">${armText}</em>` : ownsUnique(t) ? `<em class="used">${t === 'fogger' ? 'One per kitchen · tap yours to move it' : 'One per kitchen'}</em>` : TT[t].roam ? `<em class="buyTag">Buy</em>` : t === 'frog' ? `<em class="buyTag">Buy &amp; place</em>` : t === 'pack' && S && S.proPack ? `<em class="used">Owned</em>` : used ? `<em class="used">Used this wave</em>` : isNew ? `<em class="newtag">NEW</em>` : t === 'license' && S && S.lic ? `<em>Owned ${S.lic}/3 · +${S.lic * 5}%</em>` : '';
     if (TT[t].roam && ownsUnique(t)) return `<button class="tc owned1" type="button" data-t="${t}"><span><b>1 per house</b><em class="used">Tap yours to upgrade</em></span></button>`;   /* the cat: once you have him, his tile just says so */
-    const reach = TT[t].fliesOnly ? '<i class="ht reach air">Air only</i>' : TT[t].air === false ? '<i class="ht reach gnd">Ground</i>' : '';
-    return `<button class="tc${used ? ' spent' : ''}${armed ? ' armed' : ''}" type="button" data-t="${t}">${i + off <= 10 ? `<kbd>${(i + off) % 10}</kbd>` : ''}<i class="ic">${ICON[t]}<small class="pr">${armed ? 'Tap again' : c === Infinity ? 'Max' : c}</small></i><span><b>${TT[t].abbr ? `<u class="full">${TT[t].short || TT[t].name}</u><u class="abbr">${TT[t].abbr}</u>` : TT[t].short || TT[t].name}</b><span class="tags">${TT[t].fliesOnly ? '' : hitTag(t, true)}${reach}</span>${extra}</span></button>`;   /* the price sits under the picture on phones */
+    const reach = TT[t].fliesOnly ? '<i class="ht reach air">Flies & moths</i>' : TT[t].air === false ? '<i class="ht reach gnd">Ground</i>' : '';
+    return `<button class="tc${used ? ' spent' : ''}${armed ? ' armed' : ''}" type="button" data-t="${t}">${i + off <= 10 ? `<kbd>${(i + off) % 10}</kbd>` : ''}<i class="ic">${ICON[t]}<small class="pr">${armed ? 'Tap again' : c === Infinity ? 'Max' : c}</small></i><span><b>${TT[t].abbr ? `<u class="full">${TT[t].short || TT[t].name}</u><u class="abbr">${TT[t].abbr}</u>` : TT[t].short || TT[t].name}</b><span class="tags">${hitTag(t, true)}${reach}</span>${extra}</span></button>`;   /* the price sits under the picture on phones */
   }).join('');
   for (const b of document.querySelectorAll('.stabs button')) b.classList.toggle('on', b.dataset.tab === shopTab);
   if (S) for (const el of shop.children) if (el.dataset.t) el.classList.toggle('poor', S.money < elCost(el));   /* freshly drawn tiles: grey out what you can't afford right away, not only when your coins change */
@@ -6672,7 +6672,7 @@ function showToolCard(t, buy) {
     stats = t === 'candle' ? fmtStat('Scorch', T.burn[0], T.burn[2], '/s') + fmtStat('Tools in glow', '+' + Math.round(T.amp[0] * 100), '+' + Math.round(T.amp[2] * 100), '% damage') + fmtStat('Range', T.range[0], T.range[2])
       : statsBase(fake).replace(/ → <b class="up">[^<]*<\/b>/g, '');
   }
-  el.innerHTML = `<div class="tch">${ICON[t]}<div><b>${T.name}</b><div class="tct">${hitTag(t)}${T.item ? '' : `<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies only' : T.air ? 'Hits flies' : 'Ground only'}</span>`}<span class="tag cost">${cost} coins</span></div></div></div>
+  el.innerHTML = `<div class="tch">${ICON[t]}<div><b>${T.name}</b><div class="tct">${hitTag(t)}${T.item ? '' : `<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies & moths' : T.air ? 'Hits flies' : 'Ground only'}</span>`}<span class="tag cost">${cost} coins</span></div></div></div>
     <p>${T.d}</p>${stats ? `<ul>${stats}</ul>` : ''}${buy ? `<button type="button" id="tcBuy"${S && S.money < T.cost ? ' disabled' : ''}>${S && S.money < T.cost ? 'Need ' + T.cost + ' coins' : 'Buy for ' + T.cost + ' coins'}</button>` : ''}<small>Tap anywhere to close</small>`;
   el.hidden = false; SND.play('tap');
   if (buy) $('tcBuy').addEventListener('click', ev => { ev.stopPropagation(); el.hidden = true; buyPet(t); syncTray(); });   /* pets that just walk in (cat, flytrap): you confirm the buy here */
@@ -6842,7 +6842,7 @@ const BUGINFO = [
   ['hornet', 'Hornet Queen', 'Boss, waves 15 and 25', 'Flies the whole way, so the Newspaper and sticky traps can\'t touch her. No shell, though, and the Bug Zapper does 60% extra to her.', '5 slices'],
   ['herc', 'Hercules Beetle', 'Boss, wave 20 on some houses', 'A huge horned beetle with the thickest shell in the house (it blocks 40% of every hit), and nothing slows it down: no sticky traps, no stuns. Poison, fog and the Magnifying Glass burn right through the shell.', '5 slices'],
 ];
-$('gTools').innerHTML = [...SHOP, ...PETS].map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.cost} coins</small>${hitTag(t)}<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies only' : T.air ? 'Hits flies' : 'Ground only'}</span></div><p>${T.d}</p></li>`; }).join('');
+$('gTools').innerHTML = [...SHOP, ...PETS].map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.cost} coins</small>${hitTag(t)}<span class="tag ${T.air ? 'ok' : 'no'}">${T.fliesOnly ? 'Flies & moths' : T.air ? 'Hits flies' : 'Ground only'}</span></div><p>${T.d}</p></li>`; }).join('');
 $('gPerks').innerHTML = [...SHOP, ...PETS].filter(t => PERK[t]).map(t => { const P = PERK[t]; return `<li>${ICON[t]}<div class="gh"><b>${P.icon} ${P.name}</b><small>${TT[t].short || TT[t].name} · ${Math.round(TT[t].cost * 1.6)} coins</small></div><p>${P.d}</p></li>`; }).join('');
 $('gItems').innerHTML = ITEMS.map(t => { const T = TT[t]; return `<li>${ICON[t]}<div class="gh"><b>${T.name}</b><small>${T.costs ? T.costs.join(' / ') : T.cost} coins</small><span class="tag">${T.instant ? 'Instant' : T.t === 'crumbs' || t === 'crumbs' ? 'Until eaten' : 'One wave'}</span></div><p>${T.d}</p></li>`; }).join('');
 const finaleOf = k => { const i = SOLO.findIndex(lv => { const B = LEVELS[lv].bosses; return B && B[B.length - 1][0] === k; }); return i < 0 ? null : 'Final boss, Level ' + (i + 1); };
