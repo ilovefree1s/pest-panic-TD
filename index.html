@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="534">v1.032</div>
+    <div id="ver" data-b="535">v1.033</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2741,6 +2741,10 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
         for (const d of [-1, 1, -W2, W2]) { const n = p + d; if (n < 0 || n >= N || (d === -1 && px === 0) || (d === 1 && px === W2 - 1) || seen[n]) continue; seen[n] = 1; q[t++] = n; dst[n * 4] = dst[p * 4]; dst[n * 4 + 1] = dst[p * 4 + 1]; dst[n * 4 + 2] = dst[p * 4 + 2]; dst[n * 4 + 3] = 255; } }
       return dst; };
     const suitPix = yield* flood(true); yield; const bodyPix = yield* flood(false); yield;
+    /* his hair is painted with bright orange-brown highlights that read as flecks from the game camera: pull them toward the hair's own colour */
+    for (let p = 0, i = 0; p < W * H; p++, i += 4) { if (!M.cover[p] || painted[p] || (M.tankMask && M.tankMask[p])) continue; const r = bodyPix[i], g = bodyPix[i + 1], b = bodyPix[i + 2];
+      if (r > 120 && r > g * 1.35 && g > b * 1.1 && r - b > 60 && r < 215 && g < 150 && !M.suitMask[p]) { bodyPix[i] = r * 0.72; bodyPix[i + 1] = g * 0.72; bodyPix[i + 2] = b * 0.75; } }   /* (the cap is brighter than this and untouched; skin is pinker) */
+    yield;
     const cS = document.createElement('canvas'); cS.width = W; cS.height = H; const dS = cS.getContext('2d').createImageData(W, H); dS.data.set(suitPix); cS.getContext('2d').putImageData(dS, 0, 0); yield;
     const cB = document.createElement('canvas'); cB.width = W; cB.height = H; const dB = cB.getContext('2d').createImageData(W, H); dB.data.set(bodyPix); cB.getContext('2d').putImageData(dB, 0, 0); yield;
     map = yield* mk(cS, 'plain', suitPix); mapB = yield* mk(cB, 'plain', bodyPix);
@@ -2885,7 +2889,7 @@ function updateHose(h, endBone) {
   h.aB.updateWorldMatrix(true, false); bB.updateWorldMatrix(true, false); h.hipsB.updateWorldMatrix(true, false); h.parent.updateWorldMatrix(true, false);
   const A = h.aB.localToWorld(HV[0].copy(h.a));
   /* the rod end: the grip in his hand, or, while the rod hangs on his belt, the hip itself (h.b is a hand-space offset, meaningless on another bone: applied there it threw the hose to a point below the floor, which drew as a long black string) */
-  const Bp = bB === h.bB ? bB.localToWorld(HV[1].copy(h.b)) : h.hipsB.localToWorld(HV[1].copy(h.sideL).multiplyScalar(0.18 * h.H / (h.sideL.length() || 1)));
+  const Bp = bB === h.bB ? bB.localToWorld(HV[1].copy(h.b)) : bB.getWorldPosition(HV[1]);   /* holstered: the rod's own grip, hanging on the belt */
   const o = h.hipsB.getWorldPosition(HV[2]), side = h.hipsB.localToWorld(HV[3].copy(h.sideL)).sub(o).normalize();
   const H = h.H, rest = h.restN * H, d = A.distanceTo(Bp), sag = 0.55 * Math.sqrt(Math.max(0, rest - d) * rest);   /* how far a hose this long droops between two points this far apart */
   /* the loose length hangs out round his right hip. Pulled tight (he's lifted, the rod up high) it still loops out sideways: seen from the
@@ -3031,7 +3035,7 @@ function extHolster(M, on) {
   else { h.hand.add(h.wb); h.wb.position.copy(h.hp0); h.wb.quaternion.copy(h.hq0); h.wb.scale.copy(h.hs0); }
 }
 function poseExtModel(u, e, dt, st) {
-  extHolster(u.mdl, !!((st.work && e.t >= 0.16) || st.pet));   /* wand on the belt to hammer, and to pet the cat */
+  extHolster(u.mdl, !!(st.work || st.pet || (st.walk && e.job && e.job.kind !== 'shelf' && e.job.kind !== 'item')));   /* the rod goes on his belt for the whole job, walk over included: he arrives hammer-ready, no sprayer-to-hammer swap on the spot */
   const M = u.mdl, Bn = M.bones, t = clock, R = -1, L = 1;   // the model's right arm is on its -x side
   const moving = st.walk || e.held;
   const stepping = !moving && st.spray && st.mv > 0.25 && (st.back ? M.legsB : M.legsF);   /* spraying on the move: only the legs walk (backwards when he backs up) */
@@ -3861,7 +3865,7 @@ function drawOneExt(dt, EXTM, e, show) {
     else if (u.look.trail === 'sparks') FX.glow.spawn({ x: bx, y: 0.2, z: bz, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 2, vz: (Math.random() - 0.5) * 2, grav: 9, life: 0.5, s0: 0.35, s1: 0.05, c: [1, 0.8, 0.25], a0: 1 });
   }
   u.body.position.y = walk ? Math.abs(Math.sin(e.phase)) * 0.06 : work ? -0.1 : Math.sin(clock * 2) * 0.02;
-  u.hammer.visible = work && (!u.mdl || !u.mdl.holster || e.t >= 0.3);
+  u.hammer.visible = work;
   if (e === S.ext) { EXT_SEL.visible = !!S.extSel && S.mode === 'play'; if (EXT_SEL.visible) { EXT_SEL.position.set(e.x, 0.08, e.z); EXT_SEL.scale.setScalar(1 + Math.sin(clock * 6) * 0.08); } }   // gold ring while he's selected
   B.shadow.add(e.x, 0.03, e.z, 2.2 - e.lift * 0.3, 0, 0, 0, 0, 0.45 - e.lift * 0.12);
   if (e.held) { const d = dropCell(e.x, e.z); if (d) B.shadow.add(ccx(d.c), 0.04, ccz(d.r), CS * 0.8, 0, 0, 0, 0, 0.25); }
