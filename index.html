@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="537">v1.035</div>
+    <div id="ver" data-b="538">v1.036</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4713,6 +4713,13 @@ const BUILD = {
     const orb = new THREE.Group(); orb.visible = false; top.add(orb);
     const R0 = 0.78, CY = 0.75, brass = std({ color: '#d9a441', metalness: 1, roughness: 0.3 });
     const cap = mesh(cyl(0.22, 0.16, 0.18, 16), brass); cap.position.y = -0.2; orb.add(cap);
+    /* the stand: four straight black legs, two brass rings, a brass plate the ball floats over (replaces the pole) */
+    const stand = new THREE.Group(); orb.add(stand);
+    { const Hs = top.position.y - 0.3 + 0.0, legM = std({ color: '#202228', metalness: 0.6, roughness: 0.45 });
+      for (let i = 0; i < 4; i++) { const an = i / 4 * TAU + Math.PI / 4, r0 = 0.6, r1 = 0.3, L = Math.hypot(Hs, r0 - r1); const leg = mesh(cyl(0.05, 0.065, L, 8), legM); leg.position.set(Math.cos(an) * (r0 + r1) / 2, Hs / 2, Math.sin(an) * (r0 + r1) / 2); leg.lookAt(new V3(Math.cos(an) * r1, Hs, Math.sin(an) * r1)); leg.rotateX(Math.PI / 2); stand.add(leg); }
+      const plate = mesh(cyl(0.42, 0.36, 0.1, 20), brass); plate.position.y = Hs; stand.add(plate);
+      for (const y of [Hs * 0.35, Hs * 0.7]) { const ring = mesh(new THREE.TorusGeometry(0.6 - 0.3 * (y / Hs), 0.03, 8, 32), brass); ring.rotation.x = Math.PI / 2; ring.position.y = y; stand.add(ring); }
+      stand.position.y = -top.position.y; }   /* built in floor space, parented under the top group */
     const orbBall = new THREE.Group(); orbBall.position.y = CY; orb.add(orbBall);   /* everything that floats */
     const plasmaM = std({ color: '#1a5cff', emissive: '#2a7fff', emissiveIntensity: 1.0, roughness: 0.6, transparent: true, opacity: 0.6 });
     orbBall.add(mesh(sph(R0 * 0.93, 28, 20), plasmaM, false));
@@ -4735,7 +4742,7 @@ const BUILD = {
     o.setLevel = lv => {
       rimLevel(o, lv);
       const storm = !!o.perk;
-      orb.visible = storm; for (const c of [glow, glow2, coil, hook]) c.visible = c.visible && !storm; if (storm) { for (const c of top.children) if (c !== orb) c.visible = false; redraw(); }
+      orb.visible = storm; pole.visible = !storm; for (const c of [glow, glow2, coil, hook]) c.visible = c.visible && !storm; if (storm) { for (const c of top.children) if (c !== orb) c.visible = false; redraw(); }
       if (storm) return;
       glow2.visible = lv >= 2; coil.visible = lv >= 3;
       glow.scale.set(lv >= 2 ? 1.2 : 1, 1, lv >= 2 ? 1.2 : 1);
