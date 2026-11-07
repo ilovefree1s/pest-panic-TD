@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="545">v1.043</div>
+    <div id="ver" data-b="546">v1.044</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2684,11 +2684,27 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
       const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
       if (inTank && toxic && lum > 0.3) { const l2 = Math.max(lum, 0.55); a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green
       const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35;   /* (brown leather and a dark beard have far more blue in them) */   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */
+      const isOr = (r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45)) || (r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35);
+      const paleOr = r > 225 && g > 140 && g < 190 && b > 85 && b < 140 && r - g > 55 && g - b > 25;   /* the collar's lighter, sun-bleached orange */
+      if (sc && !orange && (isOr || paleOr) && M.masks.neckMask && M.masks.neckMask[p]) {   /* the orange shirt collar at his neck: part of the outfit too (except the camo suit, which keeps it orange); either way it belongs to the suit sheet */
+        if (suit === 'camo') { if (painted) painted[p] = 1; } else paint(i, lum * 0.78);
+        continue; }
       if ((blue || orange) && !inTank) {   // suit and boots
         const L = orange ? lum * 0.78 : M.suitMask ? Math.min(1, lum * 1.6) : lum;   /* even out the bright shirt and the dark jeans */
         if (sc) paint(i, L); else if (red) { a[i] = b; a[i + 1] = g * 0.55; a[i + 2] = r * 0.7; }
       } else if (red && r > 150 && r > g * 1.8 && r > b * 2.6) { a[i] = b; a[i + 1] = g; a[i + 2] = r; }   // orange cap -> blue for player 2
     }
+    yield;
+  }
+  /* the rest of the collar: it rides partly on the head bone above the chin line, so follow it out from the neck through the sheet, texel by orange texel */
+  if (painted && M.masks.neckMask) {
+    const isOr2 = i => { const r = src[i], g = src[i + 1], b = src[i + 2]; return (r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45)) || (r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35) || (r > 225 && g > 140 && g < 190 && b > 85 && b < 140 && r - g > 55 && g - b > 25); };
+    const far = W / 16, q = new Int32Array(W * H), dist = new Uint8Array(W * H); let h = 0, t = 0;
+    for (let p = 0; p < W * H; p++) if (painted[p] && M.masks.neckMask[p]) { dist[p] = 1; q[t++] = p; }
+    while (h < t) { const p = q[h++], d = dist[p]; if (d > far) continue; const px = p % W;
+      const nb = [px > 0 ? p - 1 : -1, px < W - 1 ? p + 1 : -1, p >= W ? p - W : -1, p < W * (H - 1) ? p + W : -1];
+      for (const n of nb) { if (n < 0 || dist[n] || painted[n] || !M.cover[n] || (mask && mask[n]) || !isOr2(n * 4)) continue; dist[n] = d + 1; q[t++] = n;
+        if (suit === 'camo') painted[n] = 1; else { const i = n * 4, lum = Math.max(src[i], src[i + 1], src[i + 2]) / 255; paint(i, lum * 0.78); } } }
     yield;
   }
   /* The cloth also carries faded-denim highlights, dirt stains and worn patches that aren't blue or orange enough to be recognised
@@ -2991,21 +3007,21 @@ function fitExtModel(root, gltf, red) {
       const iw = tex.image.width, ih = tex.image.height;
       /* the clothes' patch of the texture: everything but the head, hands and feet (so an outfit recolours the shirt but never the orange cap) */
       const skip = new Set(['Neck', 'Head', 'HeadTop_End', 'Bone_016', 'headfront', 'LeftHand', 'RightHand', 'LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'].map(n => sk.bones.indexOf(B(n))).filter(k => k >= 0)); sk.bones.forEach((bn, k) => { if (/Hand(Thumb|Middle|Index|Ring|Pinky)|Bone_04/.test(bn.name)) skip.add(k); });
-      const body = new Uint8Array(P.count); for (let i = 0; i < P.count; i++) { let best = -1, bw = 0; for (let c = 0; c < 4; c++) if (W.getComponent(i, c) > bw) { bw = W.getComponent(i, c); best = J.getComponent(i, c); } body[i] = skip.has(best) ? 0 : 1; }
+      const cutY = (neckY + B('Head').getWorldPosition(new V3()).y) / 2, body = new Uint8Array(P.count), neck = new Uint8Array(P.count); for (let i = 0; i < P.count; i++) { let best = -1, bw = 0; for (let c = 0; c < 4; c++) if (W.getComponent(i, c) > bw) { bw = W.getComponent(i, c); best = J.getComponent(i, c); } body[i] = skip.has(best) ? 0 : 1; if (!body[i] && !/Hand|Foot|Toe/.test(sk.bones[best].name)) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); neck[i] = v.y < cutY ? 1 : 0; } }   /* the shirt collar: head-side geometry that sits below the chin line (it rides on the head and neck bones, so the clothes mask misses it) */
       /* All three masks (every patch, the tank's, the clothes') are painted in ONE pass over the triangles, one colour channel each, and read back
          once: three passes with strokes took a second or two on a phone and froze the game as he loaded. Shared by both players' models. */
       const cache = gltf.userData.extMasks ||= {};
       if (!cache.cover) {
         const cv = document.createElement('canvas'); cv.width = iw; cv.height = ih; const x = cv.getContext('2d', { willReadFrequently: true }); x.imageSmoothingEnabled = false;
-        const n = I ? I.count : P.count, styles = ['#ff0000', '#ffff00', '#ff00ff', '#ffffff'];   /* R: any patch, G: tank, B: clothes */
+        const n = I ? I.count : P.count, styles = ['#ff0000', '#ffff00', '#ff00ff', '#ffffff', '#ff0080'];   /* R: any patch, G: tank, B: clothes (half-blue: the neck) */
         for (let t = 0; t < n; t += 3) {
           const A = I ? I.getX(t) : t, Bv = I ? I.getX(t + 1) : t + 1, C = I ? I.getX(t + 2) : t + 2;
-          const tk = back[A] && back[Bv] && back[C] ? 1 : 0, bd = body[A] && body[Bv] && body[C] ? 2 : 0;
-          x.fillStyle = styles[tk + bd]; x.beginPath(); x.moveTo(UV.getX(A) * iw, UV.getY(A) * ih); x.lineTo(UV.getX(Bv) * iw, UV.getY(Bv) * ih); x.lineTo(UV.getX(C) * iw, UV.getY(C) * ih); x.closePath(); x.fill();
+          const tk = back[A] && back[Bv] && back[C] ? 1 : 0, bd = body[A] && body[Bv] && body[C] ? 2 : 0, nk = !bd && !tk && neck[A] && neck[Bv] && neck[C] ? 4 : 0;
+          x.fillStyle = styles[nk || tk + bd]; x.beginPath(); x.moveTo(UV.getX(A) * iw, UV.getY(A) * ih); x.lineTo(UV.getX(Bv) * iw, UV.getY(Bv) * ih); x.lineTo(UV.getX(C) * iw, UV.getY(C) * ih); x.closePath(); x.fill();
         }
-        const d = x.getImageData(0, 0, iw, ih).data, N = iw * ih, cv1 = new Uint8Array(N), st = new Uint8Array(N), tm = new Uint8Array(N), sm = new Uint8Array(N);
-        for (let i = 0, j = 0; i < N; i++, j += 4) { cv1[i] = d[j] > 0 ? 1 : 0; st[i] = d[j] > 128 ? 1 : 0; tm[i] = d[j + 1] > 100 ? 1 : 0; sm[i] = d[j + 2] > 100 ? 1 : 0; }   /* any touch counts as a patch (no hairline gaps between triangles); the masks want a real majority */
-        cache.cover = cv1; cache.strict = st; cache.tankMask = tm; cache.suitMask = padMask(sm, cv1, iw, ih);   /* the tank mask stays exact: padding it put glowing texels next to the suit patches */   /* strict: solid coverage only, keeps neighbouring patches apart when they're labelled */
+        const d = x.getImageData(0, 0, iw, ih).data, N = iw * ih, cv1 = new Uint8Array(N), st = new Uint8Array(N), tm = new Uint8Array(N), sm = new Uint8Array(N), nm = new Uint8Array(N);
+        for (let i = 0, j = 0; i < N; i++, j += 4) { cv1[i] = d[j] > 0 ? 1 : 0; st[i] = d[j] > 128 ? 1 : 0; tm[i] = d[j + 1] > 100 ? 1 : 0; sm[i] = d[j + 2] > 200 ? 1 : 0; nm[i] = d[j + 2] > 60 && d[j + 2] < 200 ? 1 : 0; }   /* any touch counts as a patch (no hairline gaps between triangles); the masks want a real majority */
+        cache.cover = cv1; cache.strict = st; cache.tankMask = tm; cache.suitMask = padMask(sm, cv1, iw, ih); cache.neckMask = padMask(nm, cv1, iw, ih);   /* the tank mask stays exact: padding it put glowing texels next to the suit patches */   /* strict: solid coverage only, keeps neighbouring patches apart when they're labelled */
       }
       cover = cache.cover; tankMask = cache.tankMask; suitMask = cache.suitMask; masks = cache;
       // the Exterminator King's crown, sitting on top of his cap
