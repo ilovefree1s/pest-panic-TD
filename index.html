@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="520">v1.018</div>
+    <div id="ver" data-b="521">v1.019</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2836,7 +2836,9 @@ function updateHose(h, endBone) {
   if (!h) return;
   const bB = endBone || h.bB;
   h.aB.updateWorldMatrix(true, false); bB.updateWorldMatrix(true, false); h.hipsB.updateWorldMatrix(true, false); h.parent.updateWorldMatrix(true, false);
-  const A = h.aB.localToWorld(HV[0].copy(h.a)), Bp = bB.localToWorld(HV[1].copy(h.b));
+  const A = h.aB.localToWorld(HV[0].copy(h.a));
+  /* the rod end: the grip in his hand, or, while the rod hangs on his belt, the hip itself (h.b is a hand-space offset, meaningless on another bone: applied there it threw the hose to a point below the floor, which drew as a long black string) */
+  const Bp = bB === h.bB ? bB.localToWorld(HV[1].copy(h.b)) : h.hipsB.localToWorld(HV[1].copy(h.sideL).multiplyScalar(0.18 * h.H / (h.sideL.length() || 1)));
   const o = h.hipsB.getWorldPosition(HV[2]), side = h.hipsB.localToWorld(HV[3].copy(h.sideL)).sub(o).normalize();
   const H = h.H, rest = h.restN * H, d = A.distanceTo(Bp), sag = 0.55 * Math.sqrt(Math.max(0, rest - d) * rest);   /* how far a hose this long droops between two points this far apart */
   /* the loose length hangs out round his right hip. Pulled tight (he's lifted, the rod up high) it still loops out sideways: seen from the
@@ -2844,7 +2846,8 @@ function updateHose(h, endBone) {
   const taut = Math.max(0, 1 - sag / (0.1 * H)), out = 0.2 * H + sag * 0.35 + taut * 0.22 * H;
   const mid = A.clone().add(Bp).multiplyScalar(0.5).addScaledVector(side, out); mid.y -= sag * 0.45 + taut * 0.1 * H;
   const q1 = A.clone().lerp(mid, 0.5).addScaledVector(side, out * 0.25), q2 = mid.clone().lerp(Bp, 0.5).addScaledVector(side, out * 0.25); q1.y -= sag * 0.2; q2.y -= sag * 0.2;
-  const pts = [A, q1, mid, q2, Bp].map(v => h.parent.worldToLocal(v.clone()));
+  const floorY = h.parent.getWorldPosition(HV[4]).y + 0.02 * H;   /* nothing dips below his boots */
+  const pts = [A, q1, mid, q2, Bp].map(v => { if (v.y < floorY) v.y = floorY; return h.parent.worldToLocal(v.clone()); });
   const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal'), r = 0.019 * H / (h.parent.getWorldScale(HV[4]).x || 1);   /* a rubber hose: the top-down camera foreshortens it, so thinner read as a string */
   const g = new THREE.TubeGeometry(curve, 20, r, 8, false); if (h.mesh.geometry) h.mesh.geometry.dispose(); h.mesh.geometry = g;
   h.f1.position.copy(pts[0]); h.f1.scale.setScalar(r * 1.25); h.f2.position.copy(pts[4]); h.f2.scale.setScalar(r * 1.15); h.f1.visible = h.f2.visible = true;
