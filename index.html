@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="526">v1.024</div>
+    <div id="ver" data-b="527">v1.025</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4182,6 +4182,8 @@ const TM = {
   cork: std({ color: '#b98a55', roughness: 0.9, envMapIntensity: 0.3 }), wood: std({ color: '#8a5a32', roughness: 0.6 }),
   steel: std({ color: '#c6ccd4', metalness: 0.9, roughness: 0.25 }), white: std({ color: '#f0ece2', roughness: 0.4 }),
   dark: std({ color: '#1c1d22', roughness: 0.4 }), gold: std({ color: '#f3c24a', metalness: 1, roughness: 0.2, emissive: '#6a4300', emissiveIntensity: 0.6 }),
+  /* level pips, coloured by what the tool can reach: brown for ground only, blue for air only, green for both */
+  pipGnd: std({ color: '#b5722e', metalness: 0.6, roughness: 0.35, emissive: '#4a2a08', emissiveIntensity: 0.6 }), pipAir: std({ color: '#4fc3ff', metalness: 0.6, roughness: 0.3, emissive: '#0c4a7a', emissiveIntensity: 0.7 }), pipBoth: std({ color: '#5fe06a', metalness: 0.6, roughness: 0.3, emissive: '#0f5a1a', emissiveIntensity: 0.7 }),
   pink: std({ color: '#ff6f9a', roughness: 0.3, emissive: '#5a0a20', emissiveIntensity: 0.4 }),
 };
 // every tool shows its level: a silver rim at level 2, gold at level 3, plus its own makeover
@@ -4645,7 +4647,9 @@ const BUILD = {
     return o;
   },
 };
-function makeTower(t) { const o = BUILD[t](); o.root.traverse(m => { if (m.isMesh && m.castShadow !== false) m.castShadow = true; }); o.setLevel(1); return o; }
+function makeTower(t) { const o = BUILD[t](); o.root.traverse(m => { if (m.isMesh && m.castShadow !== false) m.castShadow = true; }); o.setLevel(1);
+  if (o.pips && TT[t] && !TT[t].item && !TT[t].support) { const T = TT[t], m = T.fliesOnly ? TM.pipAir : T.air === false || !T.air ? TM.pipGnd : TM.pipBoth; o.pips.forEach(p => { p.material = m; }); }   /* pips colour-coded by reach (support tools keep gold: they hit nothing themselves) */
+  return o; }
 
 // placement ghosts, range ring, tile marker, grid
 const GHOST = {};
