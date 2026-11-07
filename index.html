@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="532">v1.030</div>
+    <div id="ver" data-b="533">v1.031</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2804,12 +2804,15 @@ function* extMipsGen(tex, mode, M, pix) {   /* pix: the sheet's pixels when the 
            loses a sliver of its own edge in the shrunken copies, which is invisible: a dark fleck on skin or cap doesn't register, a bright
            fleck on the suit does. */
         prev = o; cov = nc; isl = ni; cls = nk;   /* the next level shrinks from the unpadded copy, so the padding never compounds */
-        if (nw >= 16) { const shown = new Uint8ClampedArray(o);
-          for (let y = 0; y < nh; y++) for (let xx = 0; xx < nw; xx++) { const j = y * nw + xx; if (nk[j] === 2) continue;
-            let sr = 0, sg = 0, sb = 0, n = 0;
-            for (const d of [-1, 1, -nw, nw]) { const q = j + d; if (q < 0 || q >= nw * nh || (d === -1 && xx === 0) || (d === 1 && xx === nw - 1) || nk[q] !== 2) continue; sr += o[q * 4]; sg += o[q * 4 + 1]; sb += o[q * 4 + 2]; n++; }
-            if (n) { shown[j * 4] = sr / n; shown[j * 4 + 1] = sg / n; shown[j * 4 + 2] = sb / n; } }
-          out.data.set(shown); }
+        if (nw >= 16) { const passes = nw <= 256 && nw >= 64 ? 2 : 1;   /* two texels at the mid sizes he's drawn from at play zoom, one elsewhere */
+          let cur = o, curK = nk;
+          for (let ps = 0; ps < passes; ps++) { const shown = new Uint8ClampedArray(cur), k2 = new Uint8Array(curK);
+            for (let y = 0; y < nh; y++) for (let xx = 0; xx < nw; xx++) { const j = y * nw + xx; if (curK[j] === 2) continue;
+              let sr = 0, sg = 0, sb = 0, n = 0;
+              for (const d of [-1, 1, -nw, nw]) { const q = j + d; if (q < 0 || q >= nw * nh || (d === -1 && xx === 0) || (d === 1 && xx === nw - 1) || curK[q] !== 2) continue; sr += cur[q * 4]; sg += cur[q * 4 + 1]; sb += cur[q * 4 + 2]; n++; }
+              if (n) { shown[j * 4] = sr / n; shown[j * 4 + 1] = sg / n; shown[j * 4 + 2] = sb / n; k2[j] = 2; } }
+            cur = shown; curK = k2; }
+          out.data.set(cur); }
         x.putImageData(out, 0, 0);
       } else if (mode === 'min') {
         if (!prev) { if (pix && pix.length === w * h * 4) prev = pix; else { const sx = img.getContext ? img.getContext('2d') : null; prev = sx ? sx.getImageData(0, 0, w, h).data : null; yield; } }
