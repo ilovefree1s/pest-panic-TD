@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="528">v1.026</div>
+    <div id="ver" data-b="529">v1.027</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3058,6 +3058,30 @@ function extModelLoad() {
   try { new GLTFLoader().load('assets/exterminator.glb?h=f2f953ae', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); extFallback(); } }, undefined, () => extFallback()); } catch (err) { extFallback(); }
 }
 extModelLoad();
+/* ?diag=suit: a debugging view for texture bleeding. Draws, enlarged, the shrunken copies of the suit sheet exactly as this GPU holds them,
+   plus the CPU-built copies, so a screenshot shows where any flecks live (and whether this machine's GPU copy differs from the built one). */
+if (/[?&]diag=suit/.test(location.search)) setTimeout(() => {
+  const M = EXT.userData.mdl; if (!M) return;
+  const look = myLook(); extLook(EXT, look);
+  const go = () => { const T = M.T; if (!T || !T.map.mipmaps || M.look !== look.suit + '|' + look.tank) { setTimeout(go, 500); return; }
+    renderer.render(scene, camera);
+    const props = renderer.properties.get(T.map), gl = renderer.getContext(); if (!props || !props.__webglTexture) { setTimeout(go, 500); return; }
+    const box = document.createElement('div'); box.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;color:#fff;overflow:auto;font:14px monospace;padding:8px'; document.body.appendChild(box);
+    box.innerHTML = '<b>suit sheet diag</b> look=' + M.look + ' gpu=' + (renderer.capabilities.isWebGL2 ? 'webgl2' : 'webgl1') + ' ' + (gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info') ? gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '') + ' aniso=' + T.map.anisotropy + ' min=' + T.map.minFilter + ' levels=' + T.map.mipmaps.length + '<br>';
+    const fb = gl.createFramebuffer();
+    for (const lvl of [3, 4, 5]) {
+      const w = T.map.mipmaps[0].width >> lvl; const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;margin:6px 0;align-items:flex-start';
+      // GPU copy
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, props.__webglTexture, lvl);
+      const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE, px = new Uint8Array(w * w * 4); if (ok) gl.readPixels(0, 0, w, w, gl.RGBA, gl.UNSIGNED_BYTE, px); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      const c1 = document.createElement('canvas'); c1.width = c1.height = w; const x1 = c1.getContext('2d'), id = x1.createImageData(w, w); for (let y = 0; y < w; y++) id.data.set(px.subarray(((w - 1 - y) * w) * 4, ((w - y) * w) * 4), y * w * 4); x1.putImageData(id, 0, 0);
+      const c2 = T.map.mipmaps[lvl];
+      for (const [c, label] of [[c1, 'GPU level ' + lvl + (ok ? '' : ' (unreadable)')], [c2, 'built level ' + lvl]]) { const wrap = document.createElement('div'); const big = document.createElement('canvas'); big.width = big.height = 512; const bx = big.getContext('2d'); bx.imageSmoothingEnabled = false; bx.drawImage(c, 0, 0, 512, 512); wrap.appendChild(document.createTextNode(label)); wrap.appendChild(document.createElement('br')); wrap.appendChild(big); row.appendChild(wrap); }
+      box.appendChild(row);
+    }
+    const close = document.createElement('button'); close.textContent = 'close'; close.onclick = () => box.remove(); box.prepend(close);
+  }; go();
+}, 4000);
 /* ---- the modelled house cat (Meshy). One model; each level repaints its fur (orange, gray, black, tiger) and collar (red, blue, gold) */
 const CATM = { gltf: null, tex: {}, base: null, flip: false };
 function catTexture(look) {   // look: 'l1' | 'l2' | 'l3' | 'tiger'
