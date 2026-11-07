@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="544">v1.042</div>
+    <div id="ver" data-b="545">v1.043</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3184,9 +3184,10 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb?h=0a694301', len: 5.99 }, widow: { url: 'assets/boss_widow.glb?h=8a72c460', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb?h=307396bc', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb?h=e2d479f7', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb?h=7cf2cf34', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb?h=321d373a', len: 4.6, legs: 4, legTop: 0.34 }, herc: { url: 'assets/boss_herc.glb?h=944a4b6d', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
-function insectRig(geo, per = 3, top = 0.7) {   // top: how high up (share of height) a leg can reach before it's body
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb?h=0a694301', len: 5.99 }, widow: { url: 'assets/boss_widow.glb?h=8a72c460', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb?h=307396bc', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb?h=e2d479f7', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb?h=7cf2cf34', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb?h=321d373a', len: 4.6, legs: 4, legTop: 0.34, rig: { grow: true, top: 0.6 } }, herc: { url: 'assets/boss_herc.glb?h=944a4b6d', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */ };
+function insectRig(geo, per = 3, top = 0.7, opt = {}) {   // top: how high up (share of height) a leg can reach before it's body; opt.hipTop: a lower cut used only to find the hips (when the thighs sit up beside a wide belly); opt.zBand: a leg vertex must lie this close (share of length) to its hip's z, so the belly between the legs stays body
   if (geo.userData.rig) return geo.userData.rig;
+  if (opt.hipTop && opt.hipTop < top) { const g2 = geo.clone(); g2.userData = {}; const r0 = insectRig(g2, per, opt.hipTop); return insectRig(geo, per, top, { ...opt, hipTop: 0, hips: r0.hips, hipY: r0.hipY }); }   /* hips from the sure lower legs, weights from the full leg */
   geo.computeBoundingBox(); const bb = geo.boundingBox, P = geo.attributes.position, n = P.count, mn = bb.min.y, H = bb.max.y - mn, Wd = Math.max(-bb.min.x, bb.max.x);
   const body = Wd * 0.58, legSide = [[], []]; let hipSum = 0, hipN = 0;
   for (let i = 0; i < n; i++) { const x = P.getX(i), y = P.getY(i) - mn; if (Math.abs(x) > body && y < H * 0.4) legSide[x < 0 ? 0 : 1].push(P.getZ(i)); if (Math.abs(x) > body * 0.95 && Math.abs(x) < body * 1.15 && y < H * 0.7) { hipSum += y; hipN++; } }
@@ -3204,20 +3205,46 @@ function insectRig(geo, per = 3, top = 0.7) {   // top: how high up (share of he
   const cnt = {}; for (let i = 0; i < n; i++) if (isLeg[i]) { const r = find(i); cnt[r] = (cnt[r] || 0) + 1; }
   const hips = [];   /* one hip per leg: the biggest pieces on each side, in order along the body (fallback: spread evenly) */
   for (const sd of [0, 1]) { const big = Object.keys(root).filter(r => (root[r].x < 0) === (sd === 0)).sort((a, b) => (cnt[b] || 0) - (cnt[a] || 0)).slice(0, per).map(r => root[r].z).sort((a, b) => a - b); const zs = legSide[sd].sort((a, b) => a - b), q = k => zs.length ? zs[Math.floor(zs.length * k)] : 0; const fb = (per === 4 ? [0.12, 0.38, 0.62, 0.88] : [0.15, 0.5, 0.85]).map(q); for (let k = 0; k < per; k++) hips.push([sd ? body * 0.8 : -body * 0.8, big.length === per ? big[k] : fb[k]]); }
+  if (opt.hips) { hips.length = 0; hips.push(...opt.hips); }
   const boneOf = {}; for (const r in root) { const q = root[r]; let best = 0, bd = 1e9; hips.forEach(([hx, hz], k) => { if ((hx < 0) !== (q.x < 0)) return; const d = Math.abs(q.z - hz); if (d < bd) { bd = d; best = k; } }); boneOf[r] = 1 + best; }
   /* a leg built from separate pieces (Meshy often leaves the tip loose): a piece that doesn't reach the body borrows the bone of the nearest piece that does */
   const small = r => root[r].ax >= body * 1.2 || cnt[r] < 60;
   const bigV = []; for (let i = 0; i < n; i += 2) if (isLeg[i] && !small(find(i))) bigV.push(i);
   const order = Object.keys(root).filter(r => small(+r)).sort((a, b) => root[a].ax - root[b].ax);   /* nearest the body first, so a chain of loose pieces links up segment by segment */
   for (const r of order) { let top = -1, ty = -1e9; for (let i = 0; i < n; i++) if (isLeg[i] && find(i) === +r && P.getY(i) > ty) { ty = P.getY(i); top = i; } if (top < 0) continue; const x = P.getX(top), y = P.getY(top), z = P.getZ(top); let best = null, bd = 1e9; for (const j of bigV) { const d = (P.getX(j) - x) ** 2 + (P.getY(j) - y) ** 2 + (P.getZ(j) - z) ** 2; if (d < bd) { bd = d; best = j; } } if (best !== null) boneOf[r] = boneOf[find(best)]; for (let i = 0; i < n; i += 2) if (isLeg[i] && find(i) === +r) bigV.push(i); }   /* a loose piece joins at its top end, so that's where to look for its leg */
+  /* opt.grow: the thighs sit in beside a wide belly, where "far out to the side" can't tell leg from body. Grow each leg inward from its sure
+     lower part along the mesh, through vertices that are *thin* (another bit of surface close behind them, the way a tube's far wall is)
+     and still below the top cut; the belly is a big open shell with nothing behind it, so the growth stops at the body. */
+  let grown = null, gRoot = null;
+  if (opt.grow) {
+    const Nn = geo.attributes.normal, D = H * (opt.thin || 0.14), cs = D, cell = new Map(), ck = (x, y, z) => Math.floor(x / cs) + ',' + Math.floor(y / cs) + ',' + Math.floor(z / cs);
+    for (let i = 0; i < n; i++) { const k = ck(P.getX(i), P.getY(i), P.getZ(i)); const a = cell.get(k); if (a) a.push(i); else cell.set(k, [i]); }
+    const thin = new Uint8Array(n);
+    for (let i = 0; i < n; i++) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i), nx = Nn.getX(i), ny = Nn.getY(i), nz = Nn.getZ(i); if (y - mn > H * (opt.top || top) || Math.abs(x) < body * 0.45) continue;
+      let ok = false; for (let dx = -1; dx <= 1 && !ok; dx++) for (let dy = -1; dy <= 1 && !ok; dy++) for (let dz = -1; dz <= 1 && !ok; dz++) { const a = cell.get(ck(x + dx * cs, y + dy * cs, z + dz * cs)); if (!a) continue;
+        for (const j of a) { const ex = P.getX(j) - x, ey = P.getY(j) - y, ez = P.getZ(j) - z, d = Math.hypot(ex, ey, ez); if (d < D * 0.15 || d > D) continue; if ((ex * nx + ey * ny + ez * nz) / d < -0.6) { ok = true; break; } } }
+      thin[i] = ok ? 1 : 0; }
+    /* vertex adjacency through the triangles, with coincident vertices welded */
+    const q0 = 2000 / H, canon = new Map(), cid = new Int32Array(n); for (let i = 0; i < n; i++) { const k = Math.round(P.getX(i) * q0) + ',' + Math.round(P.getY(i) * q0) + ',' + Math.round(P.getZ(i) * q0); let c = canon.get(k); if (c === undefined) { c = i; canon.set(k, c); } cid[i] = c; }
+    const adj = new Map(), link = (a, b) => { a = cid[a]; b = cid[b]; if (a === b) return; let l = adj.get(a); if (!l) adj.set(a, l = []); l.push(b); l = adj.get(b); if (!l) adj.set(b, l = []); l.push(a); };
+    for (let t = 0; t < tri; t += 3) { const a = at(t), b2 = at(t + 1), c = at(t + 2); link(a, b2); link(b2, c); link(c, a); }
+    grown = new Int32Array(n); const dist = new Float32Array(n).fill(1e9), qq = [];
+    for (let i = 0; i < n; i++) if (isLeg[i] && ss(body * 0.8, body * 1.05, Math.abs(P.getX(i))) > 0.5) { const c = cid[i]; if (dist[c] < 1e9) continue; dist[c] = 0; grown[c] = boneOf[find(i)]; qq.push(c); }
+    const maxD = H * (opt.reach || 0.5);
+    for (let h = 0; h < qq.length; h++) { const c = qq[h], l = adj.get(c); if (!l) continue; for (const m of l) { if (dist[m] < 1e9 || !thin[m]) continue; const d = dist[c] + Math.hypot(P.getX(m) - P.getX(c), P.getY(m) - P.getY(c), P.getZ(m) - P.getZ(c)); if (d > maxD) continue; dist[m] = d; grown[m] = grown[c]; qq.push(m); } }
+    for (let i = 0; i < n; i++) if (cid[i] !== i) grown[i] = grown[cid[i]];
+    gRoot = {}; const gP = {}; for (let i = 0; i < n; i++) if (grown[i]) { const bn = grown[i], ax = Math.abs(P.getX(i)); if (gRoot[bn] === undefined || ax < gRoot[bn]) { gRoot[bn] = ax; gP[bn] = [P.getX(i), P.getY(i), P.getZ(i)]; } }
+    for (const bn in gP) { const h = hips[bn - 1]; if (h) { h[0] = gP[bn][0]; h[1] = gP[bn][2]; h[2] = gP[bn][1]; } }   /* the pivot moves to where the thigh actually leaves the body (per-leg height) */
+  }
   for (let i = 0; i < n; i++) {
     const x = P.getX(i), y = P.getY(i) - mn;
     let bone = 0, w = 0;
-    if (isLeg[i]) { w = ss(body * 0.8, body * 1.05, Math.abs(x)) * (1 - ss(H * (top - 0.15), H * top, y)); if (w > 0) bone = boneOf[find(i)]; }
+    if (grown && grown[i]) { bone = grown[i]; w = ss(gRoot[bone], gRoot[bone] + Wd * 0.1, Math.abs(x)); }
+    else if (isLeg[i]) { w = ss(body * 0.8, body * 1.05, Math.abs(x)) * (1 - ss(H * (top - 0.15), H * top, y)); if (w > 0) bone = boneOf[find(i)]; if (w > 0 && opt.zBand) { const hz = hips[bone - 1][1], L = bb.max.z - bb.min.z; w *= 1 - ss(L * opt.zBand * 0.7, L * opt.zBand, Math.abs(P.getZ(i) - hz)); } }
     J[i * 4] = bone; Wt[i * 4] = w; Wt[i * 4 + 1] = 1 - w;
   }
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
-  return (geo.userData.rig = { hips, hipY, mn, len: bb.max.z - bb.min.z, minY: mn });
+  return (geo.userData.rig = { hips, hipY: opt.hipY || hipY, mn, len: bb.max.z - bb.min.z, minY: mn });
 }
 /* clean a flat-coloured model's texture: snap every pixel to the model's handful of real colours (JPEG leaves in-between smudges
    along every patch edge, which show as light specks and lines on the model), then clear out stray single specks */
@@ -3297,9 +3324,9 @@ function buildModelBoss(t) {
     root.userData = { body, legs: [], wings, mats: [mat, wingMat], model: true, wingRest: M.wingRest || 0, wingTilt: M.wingTilt || 0 }; root.visible = false; scene.add(root);
     return root;
   }
-  const R = insectRig(src.geometry, M.legs || 3, M.legTop || 0.7), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const R = insectRig(src.geometry, M.legs || 3, M.legTop || 0.7, M.rig || {}), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.55, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [];
-  for (const [x, z] of R.hips) { const b = new THREE.Bone(); b.position.set(x, R.hipY, z); b.userData = { yaw: 0 }; bones[0].add(b); bones.push(b); legs.push(b); }
+  for (const [x, z, hy] of R.hips) { const b = new THREE.Bone(); b.position.set(x, hy ?? R.hipY, z); b.userData = { yaw: 0 }; bones[0].add(b); bones.push(b); legs.push(b); }
   const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.castShadow = true; sk.frustumCulled = false;
   const k = M.len / R.len; sk.scale.setScalar(k); sk.position.y = -R.minY * k; body.add(sk);
   root.userData = { body, legs, mats: [mat], model: true, gait: (M.legs || 3) === 4 ? 'tetra' : 'tripod' }; root.visible = false; scene.add(root);
@@ -3358,7 +3385,7 @@ function buildStinkModel() {
   let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
   const R = insectRig(src.geometry, 3), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.5, metalness: 0.05, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [];
-  for (const [x, z] of R.hips) { const b = new THREE.Bone(); b.position.set(x, R.hipY, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); }
+  for (const [x, z, hy] of R.hips) { const b = new THREE.Bone(); b.position.set(x, hy ?? R.hipY, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); }
   const sk = new THREE.SkinnedMesh(src.geometry, mat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
   const k = M.len / R.len; sk.scale.setScalar(k); sk.position.y = -R.minY * k; body.add(sk);
   u.legs = legs; u.gait = 'tripod'; u.mats = [mat]; u.shadow = 1.7; return root;
