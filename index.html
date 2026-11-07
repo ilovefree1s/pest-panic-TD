@@ -117,7 +117,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
   font-family:var(--display);font-size:20px;letter-spacing:.04em;text-shadow:0 2px 0 #000;font-variant-numeric:tabular-nums;line-height:1}
 .stat svg{width:26px;height:26px;flex:none}
 .stat b{font-weight:400}
-.st-lives b{color:var(--frost)} .st-coins b{color:var(--gold)} .st-wave{padding-left:12px} .st-wave b{color:var(--sky)}
+.st-lives b{color:var(--frost)} .st-coins b{color:var(--gold)} .st-wave{padding-left:12px} .st-wave b{color:var(--sky)} .st-race{padding-left:12px} .st-race b{color:#ffd447;font-variant-numeric:tabular-nums;min-width:4.2em;text-align:left}
 .stat.bump{animation:bump .25s}
 @keyframes bump{40%{transform:scale(1.12)}}
 .ctl{display:flex;gap:6px;pointer-events:auto}
@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="519">v1.017</div>
+    <div id="ver" data-b="520">v1.018</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -675,6 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
         <div class="stat st-coins" id="stCoins" title="Coins"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="17" fill="#b07a10"/><circle cx="24" cy="22" r="17" fill="#ffd447"/><circle cx="24" cy="22" r="12" fill="none" stroke="#e0a820" stroke-width="3"/><path d="M18 15a10 10 0 0 1 9-3" stroke="#fff6b0" stroke-width="3" fill="none" stroke-linecap="round"/></svg><b id="money">0</b></div>
         <div class="stat st-lic" id="stLic" hidden title="Exterminator License bonus"><svg viewBox="0 0 48 48"><rect x="4" y="10" width="40" height="28" rx="4" fill="#f4efe4"/><rect x="4" y="10" width="40" height="8" rx="4" fill="#3a86bd"/><circle cx="37" cy="31" r="6" fill="#ffcf4a"/></svg><b id="lic">+5%</b></div>
         <div class="stat st-wave">WAVE&nbsp;<b id="wave">0</b><span id="waveMax">/25</span></div>
+        <div class="stat st-race" id="stRace" hidden title="Race time (game time)">⏱&nbsp;<b id="raceT">0:00.0</b></div>
         <button class="stat st-foe" id="foe" type="button" hidden aria-label="Watch your friend's kitchen"></button>
       </div>
       <div class="ctl">
@@ -1288,7 +1289,9 @@ HOUSES[18] = { name: 'Castle Kitchen', bg: '#0b0a09',   // Level 12: grey stone 
   rooms: { living: '#5a4a3a', bed: '#4a3a4a', couch: '#6a2a2a', rug: '#7a1e22', blanket: '#c9a227', wood: '#3a2618', paint: '#7a7266', hall: '#4a3422' } };
 PROP_LAYOUT[18] = PROP_LAYOUT[4];
 // ---------------------------------------------------------------- Daily Kitchen: a fresh random kitchen every day, the same for everyone
-const DAILY_LV = 19, DAILY_LIVES = 10;
+const DAILY_LV = 19, DAILY_LIVES = 10, RACE_WAVES = 15, RACE_FROM = '2026-11-07';   /* Daily Kitchen is a race from 7 Nov: 15 waves, fastest perfect run wins (game time, so speed-up doesn't matter) */
+const isRace = day => day >= RACE_FROM;
+const fmtT = t => { t = Math.max(0, Math.round((t || 0) * 10)); const m = Math.floor(t / 600), sc = (t % 600) / 10; return m + ':' + (sc < 10 ? '0' : '') + sc.toFixed(1); };
 const etDate = t => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(t);   // YYYY-MM-DD in US Eastern time
 const dailyDay = () => etDate(new Date());   // one board for everyone, and the new kitchen arrives at midnight Eastern
 function dayHash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -1403,7 +1406,7 @@ function setupDaily(day = dailyDay()) {
   const BOSSES = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'].map(t => [t, r()]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   const early = BOSSES.slice(0, 4).sort((a, b) => BT[a].hp - BT[b].hp);
   const look = SOLO[Math.floor(r() * SOLO.length)];
-  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07 * (day >= '2026-11-06' ? 1.1 : 1), money: 210, cakeCol: cake, shift: 1,
+  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: isRace(day) ? 'Today\'s kitchen: the same for everyone. Clear 15 waves as fast as you can without losing a slice. Call waves early to save time!' : 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07 * (day >= '2026-11-06' ? 1.1 : 1), money: 210, cakeCol: cake, shift: 1,
     nb: [['hopper', 4, 2], ['centi', 7, 1], ['stink', 9, 1], ['moth', 11, 2], ['mantis', 14, 1]], bosses: [...early.map(t => [t]), [BOSSES[4], BOSSES[5]]], routes, look, day, twists, mystery: twists.includes('mystery') ? mysteryTools(day) : null };
   HOUSES[DAILY_LV] = { ...HOUSES[look] }; PROP_LAYOUT[DAILY_LV] = PROP_LAYOUT[look]; delete houseTex[DAILY_LV];
 }   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
@@ -4941,7 +4944,7 @@ function spawnBug(t, route = nextRoute()) {
 }
 const RUSH_BONUS = 20;
 const vsPaced = () => !!(S && S.vs && !S.vs.race);
-function canRush() { return S.mode === 'play' && S.active && !vsPaced() && LV !== DAILY_LV && (S.endless || S.wave < MAXW); }   // Daily Kitchen: no sending early, so a losing run can't pad its score
+function canRush() { return S.mode === 'play' && S.active && !vsPaced() && (LV !== DAILY_LV ? (S.endless || S.wave < MAXW) : !!(S.daily && S.daily.race && S.wave < RACE_WAVES)); }   // Daily Kitchen: no sending early, so a losing run can't pad its score
 function startWave(...a) { BN_FWD++; try { return startWave0(...a); } finally { BN_FWD--; } }
 function startWave0() {
   if (S.mode !== 'play' || S.over || (S.vs && S.vs.dead)) return;
@@ -4956,6 +4959,8 @@ function startWave0() {
   if (eb) { S.money += eb; if (S.p2) S.p2.money += eb; bumpStat('stCoins'); if (++S.earlyCalls >= 10) ACH.unlock('early10'); }
   if (S.endless && S.wave + 1 >= 30) ACH.unlock('end30');
   if (S.endless && S.wave + 1 >= 50) ACH.unlock('end50');
+  if (S.daily && S.daily.race && S.wave === 0) S.daily.t0 = S.gt;   /* the race clock starts as wave 1 is sent */
+  if (S.daily && S.daily.race && !rush) S.daily.wt0 = S.gt;   /* (a quit mid-wave resumes from the start of the wave, clock included) */
   if (!rush) { S.kills0 = S.kills || 0; S.bd0 = S.bossDmg || 0; S.waveEarn = 0; if (!S.resumeWave) { S.withhold = 0; S.owed0 = 0; } S.resumeWave = false; }
   S.wave++; S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
@@ -4986,7 +4991,7 @@ function startWave0() {
 const NEXT_WAIT = 10;
 const BELT_NAME = { ghop: 'Giant Grasshopper', gcenti: 'Giant Centipede', gstink: 'Giant Stink Bug', gmoth: 'Giant Moth', gmantis: 'Giant Mantis', hopper: 'Grasshoppers', centi: 'Centipedes', stink: 'Stink Bugs', moth: 'Moths', mantis: 'Praying Mantis', ant: 'Ants', fly: 'Flies', spider: 'Spiders', dung: 'Dung Beetles', bed: 'Bed Bug swarms', queen: 'Roach King', widow: 'Black Widow', hornet: 'Hornet Queen' };
 function showBelt() {
-  if (S.mode !== 'play' || (S.wave >= MAXW && !S.endless)) { hideBelt(); return; }
+  if (S.mode !== 'play' || (S.wave >= MAXW && !S.endless) || (S.daily && S.daily.race && S.wave >= RACE_WAVES)) { hideBelt(); return; }
   const n = S.wave + 1, q = makeWave(n, LEVELS[LV].shift), cnt = {};
   for (const t of q) cnt[t] = (cnt[t] || 0) + 1;
   const order = Object.keys(cnt).sort((a, b) => (BT[a].boss ? 1 : 0) - (BT[b].boss ? 1 : 0));
@@ -5550,6 +5555,7 @@ function update(dt) {
     S.active = false;
     for (const it of [...S.items]) { if ((it.t === 'bomb' || it.t === 'sticky') && !it.trig && it.waveEnd <= S.wave) it.waveEnd = S.wave + 1; if (it.t !== 'crumbs' && it.waveEnd <= S.wave) removeItem(it); }   // an unused Bug Bomb or untouched Sticky Trap waits for the next wave
     if (S.vs) S.vs.cl = S.wave;   // waves cleared (2v2 race: more is better)
+    if (S.daily && S.daily.race && S.wave >= RACE_WAVES) { S.daily.done = true; S.daily.time = S.gt - (S.daily.t0 || 0); gameOver(true); return; }   /* race over: time stops as the last bug of wave 15 goes down */
     if (S.wave >= MAXW && !S.endless) { if (S.vs) vsFinish(); else if (!S.cheered) gameOver(true); return; }   /* the cheer schedules its own results */
     const cl = S.clears && S.clears.length ? S.clears : [S.wave];
     const bonus = cl.reduce((a, w) => a + Math.round((25 + w * 3) * goldMul()), 0) + (S.vs ? S.vs.eco : 0); S.clears = null; S.money += bonus; if (S.p2) S.p2.money += bonus; bumpStat('stCoins');
@@ -6991,6 +6997,7 @@ function syncGo() {
   if (!S.active) go.classList.remove('armed', 'rush');
   if (S.active) { go.classList.add('busy'); go.innerHTML = goBusyText(S.queue.length + S.bugs.length); }
   else if (S.nextT > 0) { go.classList.remove('busy'); go.innerHTML = `Next wave early<small>+${earlyBonus()} coins · ${team ? 'you both tap · ' : ''}starts in ${Math.ceil(S.nextT)}s</small>`; }
+  else if (S.daily && S.daily.race && S.wave >= RACE_WAVES) { go.classList.add('busy'); go.innerHTML = `All ${RACE_WAVES} waves sent<small>Finish them off!</small>`; }
   else if (S.wave >= MAXW && !S.endless) { go.classList.add('busy'); go.innerHTML = `All ${MAXW} waves done<small>${S.mode === 'over' ? 'Level over' : 'Nice work!'}</small>`; }
   else { go.classList.remove('busy'); go.innerHTML = `Send bugs<small>Wave ${S.wave + 1}${S.endless ? ' · Endless' : ' of ' + MAXW}</small>`; }
 }
@@ -7013,6 +7020,7 @@ function syncHud() {
   const v = { lives: S.lives, money: S.money, wave: S.wave };
   if (shown.licN !== S.lic) { shown.licN = S.lic; $('stLic').hidden = !S.lic; $('lic').textContent = '+' + S.lic * 5 + '%'; renderShop(); }
   for (const k in v) if (shown[k] !== v[k]) { $(k).textContent = v[k]; shown[k] = v[k]; }
+  { const rc = !!(S.daily && S.daily.race); if (shown.race !== rc) { shown.race = rc; $('stRace').hidden = !rc; } if (rc) { const t = S.daily.done ? S.daily.time : S.daily.t0 == null ? 0 : S.gt - S.daily.t0, tx = fmtT(t); if (shown.raceT !== tx) { shown.raceT = tx; $('raceT').textContent = tx; } } }
   if (shown.money !== shown._m) { shown._m = shown.money; for (const el of shop.children) el.classList.toggle('poor', S.money < elCost(el)); if (S.pick) { const c = upCost(S.pick); $('bUp').disabled = S.pick.snuff ? S.pick.relightPending || S.money < 15 : (S.pick.lv >= 3 && (S.pick.perk || !PERK[S.pick.t])) || S.pick.pending || S.pick.upPending || S.money < c; } }
   if (S.qTotal && !$('queen').hidden) {
     let cur = S.net === 'guest' ? (S.qQueued || 0) : S.queue.filter(t => BT[t].boss).reduce((a, t) => a + bossHpAll(t), 0);
@@ -7068,7 +7076,7 @@ function runSavable() { return S && S.mode === 'play' && (LV !== DAILY_LV || !!S
 function saveRun() {
   if (!runSavable()) return;
   const mid = S.active;
-  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: mid ? S.kills0 ?? S.kills ?? 0 : S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(), daily: S.daily ? { day: S.daily.day, counts: !!S.daily.counts, bd: Math.round((mid ? S.bd0 ?? S.bossDmg : S.bossDmg) || 0) } : null,   /* mid-wave: kills and boss damage as the wave began (it gets replayed) */
+  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: mid ? S.kills0 ?? S.kills ?? 0 : S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(), daily: S.daily ? { day: S.daily.day, counts: !!S.daily.counts, bd: Math.round((mid ? S.bd0 ?? S.bossDmg : S.bossDmg) || 0), rt: S.daily.race ? +(((mid ? S.daily.wt0 : S.gt) || S.gt) - (S.daily.t0 || 0)).toFixed(1) : 0 } : null,   /* mid-wave: kills and boss damage as the wave began (it gets replayed) */
     towers: S.towers.map(t => [t.t, t.c, t.r, Math.min(3, t.lv + (t.upPending && t.lv < 3 ? 1 : 0)), t.perk || (t.upPending && t.lv >= 3) ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
   try { localStorage.setItem(runKey(), JSON.stringify(d)); } catch (e) {}
 }
@@ -7081,14 +7089,14 @@ function clearRun(key = RUN_KEY) { const d = loadRun(key); if (d && d.jarT && !(
 /* a saved Daily run from an earlier day that was never finished: its score still counts for that day */
 function settleOldDaily() {
   const d = loadRun(DRUN_KEY); if (!d || d.daily.day === dailyDay()) return;
-  const dd = d.daily; if (dd.counts && !dailyMine(dd.day)) { LS.set('ppd-daily-' + dd.day, JSON.stringify({ w: d.wave, k: d.kills || 0, bd: dd.bd || 0 })); bumpStreak(dd.day); lbSubmit(dd.day, d.wave, d.kills || 0, dd.bd || 0).catch(() => {}); }
+  const dd = d.daily, rc = isRace(dd.day); if (dd.counts && !dailyMine(dd.day)) { const kk = rc ? 0 : d.kills || 0, bd = rc ? -999999 : dd.bd || 0; LS.set('ppd-daily-' + dd.day, JSON.stringify({ w: d.wave, k: kk, bd, race: rc ? 1 : 0 })); bumpStreak(dd.day); lbSubmit(dd.day, d.wave, kk, bd).catch(() => {}); }
   clearRun(DRUN_KEY);
 }   /* a saved run being thrown away still counts as over: keep its shinies */
 function syncResume() { const d = loadRun(), b = $('resumeT'); if (!b) return; b.hidden = !d; if (d) $('resumeS').textContent = 'Level ' + soloNum(d.lv) + ' · ' + HOUSES[d.lv].name + ' · ' + (d.wave ? 'wave ' + d.wave + ' cleared' : 'start') + ' · ' + d.lives + ' slices'; }
 function resumeRun(key = RUN_KEY) {
   const d = loadRun(key); if (!d) return;
   RESUMING = true; try { startGame(d.lv); } finally { RESUMING = false; }
-  if (d.daily) { S.cakeK = 20 / (TWX('glass') ? 5 : DAILY_LIVES); S.daily = { day: d.daily.day, counts: d.daily.counts }; S.bossDmg = d.daily.bd || 0; S.endless = true; $('waveMax').textContent = ' ∞'; }
+  if (d.daily) { const race = isRace(d.daily.day); S.cakeK = 20 / (TWX('glass') ? 5 : DAILY_LIVES); S.daily = { day: d.daily.day, counts: d.daily.counts, race }; S.bossDmg = d.daily.bd || 0; S.endless = !race; $('waveMax').textContent = race ? '/' + RACE_WAVES : ' ∞'; if (race) { S.gt = 0; S.daily.t0 = -(d.daily.rt || 0); S.daily.wt0 = 0; } }   /* a race resumes with its clock where it was (at the start of the wave it was on) */
   const m0 = S.mode; S.mode = 'demo'; S.money = 1e9;
   for (const [t, c, r, lv, perk, dmg, kills, bonus, spent] of d.towers) {
     if (!TT[t]) continue;
@@ -8134,15 +8142,16 @@ async function lbSubmit(day, waves, kills, bd = 0) {   /* insert; if the table a
   try { const r = await fetch(LB_URL, { method: 'POST', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ day, pid: myPid(), name: cleanName(dailyName()), waves, kills, boss_dmg: bd }) });
     const why409 = r.status === 409 ? (await r.text()).slice(0, 160) : '';
     if (r.status === 409) {   /* this player already has a score today (another device with the same backup): keep the better one */
-      const u = await fetch(LB_URL + '?day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()) + '&or=(waves.lt.' + waves + ',and(waves.eq.' + waves + ',boss_dmg.lt.' + bd + '),and(waves.eq.' + waves + ',boss_dmg.eq.' + bd + ',kills.lt.' + kills + '))', { method: 'PATCH', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ waves, kills, boss_dmg: bd, name: cleanName(dailyName()) }) });
+      const worse = isRace(day) ? '&or=(kills.lt.' + kills + ',and(kills.eq.' + kills + ',waves.lt.' + waves + '),and(kills.eq.' + kills + ',waves.eq.' + waves + ',boss_dmg.lt.' + bd + '))' : '&or=(waves.lt.' + waves + ',and(waves.eq.' + waves + ',boss_dmg.lt.' + bd + '),and(waves.eq.' + waves + ',boss_dmg.eq.' + bd + ',kills.lt.' + kills + '))';
+      const u = await fetch(LB_URL + '?day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()) + worse, { method: 'PATCH', headers: { ...LB_H, Prefer: 'return=minimal' }, body: JSON.stringify({ waves, kills, boss_dmg: bd, name: cleanName(dailyName()) }) });
       if (!u.ok) { LB_ERR = u.status + ' ' + (await u.text()).slice(0, 160); return false; } }
     if (r.ok || r.status === 409) {
       const c = await fetch(LB_URL + '?select=waves&day=eq.' + day + '&pid=eq.' + encodeURIComponent(myPid()), { headers: LB_H, cache: 'no-store' });   /* make sure it's really on today's board before calling it sent */
       const rows = c.ok ? await c.json() : null; if (rows && !rows.length) { LB_ERR = 'refused ' + (why409 || r.status); return false; }
       const m = dailyMine(day); if (m) { m.sent = 3; LS.set('ppd-daily-' + day, JSON.stringify(m)); } return true; }
     LB_ERR = r.status + ' ' + (await r.text()).slice(0, 160); return false; } catch (e) { LB_ERR = String(e && e.message || e); return false; } }
-async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills,boss_dmg&day=eq.' + day + '&order=waves.desc,boss_dmg.desc,kills.desc,created_at.asc&limit=50', { headers: LB_H, cache: 'no-store' });   /* never a saved copy */ return r.ok ? await r.json() : null; } catch (e) { return null; } }
-async function lbRank(day, w, k, bd = 0) { try { const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',boss_dmg.gt.' + bd + '),and(waves.eq.' + w + ',boss_dmg.eq.' + bd + ',kills.gt.' + k + '))', { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
+async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills,boss_dmg&day=eq.' + day + (isRace(day) ? '&order=kills.desc,waves.desc,boss_dmg.desc,created_at.asc&limit=50' : '&order=waves.desc,boss_dmg.desc,kills.desc,created_at.asc&limit=50'), { headers: LB_H, cache: 'no-store' });   /* never a saved copy */ return r.ok ? await r.json() : null; } catch (e) { return null; } }
+async function lbRank(day, w, k, bd = 0) { try { const better = isRace(day) ? '&or=(kills.gt.' + k + ',and(kills.eq.' + k + ',waves.gt.' + w + '),and(kills.eq.' + k + ',waves.eq.' + w + ',boss_dmg.gt.' + bd + '))' : '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',boss_dmg.gt.' + bd + '),and(waves.eq.' + w + ',boss_dmg.eq.' + bd + ',kills.gt.' + k + '))'; const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + better, { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
 const fmtBd = n => { n = Math.round(n || 0); return n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'k' : n.toLocaleString('en-US'); };
 async function renderBoard(day) {
   const ol = $('dBoard'), you = $('dYou'), mine = dailyMine(day); ol.innerHTML = '<li><span class="nm">Loading…</span></li>'; you.textContent = '';
@@ -8152,16 +8161,20 @@ async function renderBoard(day) {
   const me = myPid();
   if (mine && mine.sent === 3 && top.length < 50 && !top.some(t => t.pid === me) && !renderBoard.healed) { renderBoard.healed = true; mine.sent = 0; LS.set('ppd-daily-' + day, JSON.stringify(mine)); return renderBoard(day); }   /* our score went missing from the board: send it again */
   if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
-  ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span><span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span></li>`).join('');
-  if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'; }
+  const row = t => isRace(day) ? (t.waves >= RACE_WAVES ? `<span class="wv">${t.kills ? '🏁 ' : ''}${fmtT(-t.boss_dmg / 10)}</span><span class="kl">${t.kills ? 'Perfect' : 'Lost cake'}</span>` : `<span class="wv">Wave ${t.waves}</span><span class="kl">Didn't finish</span>`) : `<span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span>`;
+  ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span>${row(t)}</li>`).join('');
+  if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + (isRace(day) ? (mine.w >= RACE_WAVES ? ' · ' + fmtT(mine.t) + (mine.p ? ' · perfect' : ' · lost cake') : ' · wave ' + mine.w) : ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'); }
 }
 function openDaily() {
   setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
-  $('dSub').textContent = day + ' · ' + HOUSES[L.look].name + ' look · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · ' + (L.twists.includes('glass') ? 5 : 10) + ' slices · endless waves';
+  const race = isRace(day);
+  $('dSub').textContent = day + ' · ' + HOUSES[L.look].name + ' look · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · ' + (L.twists.includes('glass') ? 5 : 10) + ' slices · ' + (race ? 'race to wave ' + RACE_WAVES : 'endless waves');
+  document.querySelector('#daily h2').textContent = race ? 'Daily Race' : 'Daily Kitchen';
+  $('dTie').textContent = race ? 'Clear ' + RACE_WAVES + ' waves as fast as you can. Perfect runs (no cake lost) rank above everyone else, then fastest time. The clock counts game time, so speed-up doesn\'t help: calling waves early does.' : 'Same wave? Whoever did more damage to bosses ranks higher.';
   const seen = LS.get('ppd-twseen') === day;   /* keep today's twists a surprise until the slot machine has rolled them */
   $('dTw').hidden = !L.twists.length; $('dTw').innerHTML = seen ? L.twists.map(k => `<span><b>${TWIST[k][1]} ${TWIST[k][2]}</b>${TWIST[k][3]}</span>`).join('') : `<button type="button" class="twSpin" id="twSpin"><b>🎰 Spin for today's twists</b>See them now without starting a run</button>`;
   if (!seen && $('twSpin')) $('twSpin').onclick = () => { SND.init(); slotMachine(L.twists, () => openDaily()); };   // reveal them right here, no run started
-  $('dMine').innerHTML = mine ? `Your score today<b>Wave ${mine.w}</b>` : 'Your score today<b>Not played</b>';
+  $('dMine').innerHTML = mine ? (race ? `Your run today<b>${mine.w >= RACE_WAVES ? fmtT(mine.t) + (mine.p ? ' 🏁' : '') : 'Wave ' + mine.w}</b>` : `Your score today<b>Wave ${mine.w}</b>`) : (race ? 'Your run today<b>Not raced</b>' : 'Your score today<b>Not played</b>');
   $('dStreak').innerHTML = `Daily streak<b>${dailyStreak()} 🔥</b>`;
   settleOldDaily(); const sv = loadRun(DRUN_KEY);
   $('dPlay').textContent = sv ? 'Continue (after wave ' + sv.wave + ', ' + sv.lives + ' slices)' : mine ? 'Practice (your score is in)' : 'Play today\'s kitchen';
@@ -8173,25 +8186,30 @@ function startDaily() {
   settleOldDaily(); if (loadRun(DRUN_KEY)) { resumeRun(DRUN_KEY); return; }   // quit earlier today: carry on where you left off
   startGame(DAILY_LV);
   const lives = TWX('glass') ? 5 : DAILY_LIVES;
-  S.daily = { day, counts: !dailyMine(day) }; S.lives = lives; S.cakeK = 20 / lives; setCake(lives); S.endless = true; $('waveMax').textContent = ' ∞';
+  const race = isRace(day);
+  S.daily = { day, counts: !dailyMine(day), race }; S.lives = lives; S.cakeK = 20 / lives; setCake(lives); S.endless = !race; $('waveMax').textContent = race ? '/' + RACE_WAVES : ' ∞';
   if (TWX('budget')) S.money = Math.round(S.money / 2);
   if (TWX('pro')) { S.proPack = true; setAbil(); }
   syncHud(); syncGo(); renderShop(); syncTray();
-  const tw = LEVELS[DAILY_LV].twists || [], go = () => banner('Daily Kitchen', S.daily.counts ? lives + ' slices, endless waves. This run goes on the leaderboard!' : 'Practice run: your score for today is already in', false, 2600);
+  const tw = LEVELS[DAILY_LV].twists || [], go = () => banner(race ? 'Daily Race' : 'Daily Kitchen', S.daily.counts ? (race ? RACE_WAVES + ' waves, fastest perfect run wins. The clock starts with wave 1!' : lives + ' slices, endless waves. This run goes on the leaderboard!') : 'Practice run: your score for today is already in', false, 2800);
   if (tw.length && LS.get('ppd-twseen') !== LEVELS[DAILY_LV].day) slotMachine(tw, go);   // already spun today (here or on the Daily screen): no second spin
   else if (tw.length) banner('Daily Kitchen', tw.map(k => TWIST[k][1] + ' ' + TWIST[k][2]).join(' + '), false, 2600);
   else go();
 }
 function dailyOver() {
-  const d = S.daily, waves = Math.max(0, S.wave - 1), kills = S.kills || 0, bd = Math.round(S.bossDmg || 0);
-  $('overt').textContent = 'Daily Kitchen over'; $('ostars').hidden = true; $('nextLv').hidden = true; $('endless').hidden = true; $('again').hidden = false; $('again').textContent = 'Practice again';
+  const d = S.daily, done = !!d.done, waves = done ? RACE_WAVES : Math.max(0, S.wave - 1), kills = S.kills || 0;
+  /* the race's numbers travel in the endless columns: boss_dmg = -time in tenths (so 'highest first' is fastest first), kills = 1 when perfect */
+  const full = TWX('glass') ? 5 : DAILY_LIVES, perfect = done && S.lives >= full, time = done ? d.time : 0;
+  const bd = d.race ? (done ? -Math.round(time * 10) : -999999) : Math.round(S.bossDmg || 0), kk = d.race ? (perfect ? 1 : 0) : kills;
+  $('overt').textContent = d.race ? (done ? (perfect ? 'Perfect race!' : 'Race finished') : 'Race over') : 'Daily Kitchen over'; $('ostars').hidden = true; $('nextLv').hidden = true; $('endless').hidden = true; $('again').hidden = false; $('again').textContent = 'Practice again';
   let line = '';
-  if (d.counts) { LS.set('ppd-daily-' + d.day, JSON.stringify({ w: waves, k: kills, bd })); const n = bumpStreak(d.day); line = `<dt>Damage to bosses</dt><dd>${fmtBd(bd)}</dd><dt>Daily streak</dt><dd>${n} 🔥</dd><dt>Today's rank</dt><dd id="oRank">Sending…</dd>`;
-    lbSubmit(d.day, waves, kills, bd).then(ok => lbRank(d.day, waves, kills, bd)).then(rk => { const el = $('oRank'); if (el) el.textContent = rk ? '#' + rk : 'Couldn\'t reach the leaderboard'; }); }
-  else line = '<dt>Practice run</dt><dd>Not on the leaderboard</dd>';
-  $('ores').innerHTML = `<dt>Waves survived</dt><dd>${waves}</dd><dt>Bugs squashed</dt><dd>${kills}</dd>` + line;
+  if (d.counts) { LS.set('ppd-daily-' + d.day, JSON.stringify({ w: waves, k: kk, bd, t: time, p: perfect ? 1 : 0, race: d.race ? 1 : 0 })); const n = bumpStreak(d.day);
+    line = (d.race ? `<dt>Time</dt><dd>${done ? fmtT(time) : 'Not finished'}</dd><dt>Cake</dt><dd>${perfect ? 'Perfect, nothing lost' : done ? 'Lost ' + (full - Math.max(0, S.lives)) + (full - S.lives === 1 ? ' slice' : ' slices') : 'Eaten'}</dd>` : `<dt>Damage to bosses</dt><dd>${fmtBd(bd)}</dd>`) + `<dt>Daily streak</dt><dd>${n} 🔥</dd><dt>Today's rank</dt><dd id="oRank">Sending…</dd>`;
+    lbSubmit(d.day, waves, kk, bd).then(ok => lbRank(d.day, waves, kk, bd)).then(rk => { const el = $('oRank'); if (el) el.textContent = rk ? '#' + rk : 'Couldn\'t reach the leaderboard'; }); }
+  else line = (d.race && done ? `<dt>Time</dt><dd>${fmtT(time)}</dd>` : '') + '<dt>Practice run</dt><dd>Not on the leaderboard</dd>';
+  $('ores').innerHTML = `<dt>${d.race ? 'Waves cleared' : 'Waves survived'}</dt><dd>${waves}${d.race ? ' / ' + RACE_WAVES : ''}</dd><dt>Bugs squashed</dt><dd>${kills}</dd>` + line;
   showStats(); ACH.save();
-  $('over').hidden = false; $('tip').hidden = true; $('queen').hidden = true; syncTray(); SND.play('lose');
+  $('over').hidden = false; $('tip').hidden = true; $('queen').hidden = true; syncTray(); SND.play(done ? 'win' : 'lose');
 }
 $('dailyT').addEventListener('click', () => { SND.init(); openDaily(); });
 $('dBack').addEventListener('click', () => { $('daily').hidden = true; $('title').hidden = false; });
