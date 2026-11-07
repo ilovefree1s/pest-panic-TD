@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="530">v1.028</div>
+    <div id="ver" data-b="531">v1.029</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3060,7 +3060,7 @@ function extModelLoad() {
 extModelLoad();
 /* ?diag=suit: a debugging view for texture bleeding. Draws, enlarged, the shrunken copies of the suit sheet exactly as this GPU holds them,
    plus the CPU-built copies, so a screenshot shows where any flecks live (and whether this machine's GPU copy differs from the built one). */
-if (/[?&]diag=suit/.test(location.search)) setTimeout(function wait() {
+function suitDiag() { setTimeout(function wait() {
   const M = EXT.userData.mdl; if (!M) { setTimeout(wait, 500); return; }
   const look = myLook(); extLook(EXT, look);
   const note = document.createElement('div'); note.style.cssText = 'position:fixed;top:4px;left:4px;z-index:99998;background:#000;color:#ff0;font:13px monospace;padding:4px'; document.body.appendChild(note); let n = 0;
@@ -3082,7 +3082,10 @@ if (/[?&]diag=suit/.test(location.search)) setTimeout(function wait() {
     }
     const close = document.createElement('button'); close.textContent = 'close'; close.onclick = () => box.remove(); box.prepend(close);
   }; go();
-}, 4000);
+}, 100); }
+if (/[?&]diag=suit/.test(location.search)) suitDiag();
+/* or: hold the version number in the corner for 2 seconds (the app drops the URL's query when it updates itself) */
+{ let hold = 0; const v = $('ver'); if (v) { v.style.pointerEvents = 'auto'; for (const ev of ['pointerdown', 'touchstart']) v.addEventListener(ev, () => { clearTimeout(hold); hold = setTimeout(suitDiag, 2000); }); for (const ev of ['pointerup', 'pointercancel', 'touchend', 'pointerleave']) v.addEventListener(ev, () => clearTimeout(hold)); } }
 /* ---- the modelled house cat (Meshy). One model; each level repaints its fur (orange, gray, black, tiger) and collar (red, blue, gold) */
 const CATM = { gltf: null, tex: {}, base: null, flip: false };
 function catTexture(look) {   // look: 'l1' | 'l2' | 'l3' | 'tiger'
