@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="543">v1.041</div>
+    <div id="ver" data-b="544">v1.042</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3043,7 +3043,7 @@ function poseExtModel(u, e, dt, st) {
   for (const a of [M.legsF, M.legsB]) if (a && a !== legs && a.isRunning()) { u.legT = a.time; a.stop(); }   /* remember where the stride was */
   if (moving && M.walk) { if (!M.walk.isRunning()) M.walk.reset().play(); M.walk.timeScale = e.held ? 1.8 : 1.3; M.mixer.update(dt); }
   else { if (M.walk && M.walk.isRunning()) M.walk.stop(); for (const [b, p, q, sc] of M.rest) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(sc); }
-    if (legs) { if (!legs.isRunning()) { legs.reset().play(); legs.time = u.legT || 0; } legs.timeScale = clamp(st.mv / 18, 0.3, 1.8);   /* resumes mid-stride: restarting the clip made a flurry of tiny first steps */   /* the same stride-per-distance as his normal walk (1.3 at full speed) */ M.mixer.update(dt); } }
+    if (legs) { if (!legs.isRunning()) { legs.reset().play(); legs.time = u.legT || 0; } legs.timeScale = clamp(0.6 + st.mv / 8, 0.8, 1.6);   /* a real, unhurried stride while he keeps pace (slower just left the planted foot looking stuck); resumes mid-stride rather than restarting the clip */   /* the same stride-per-distance as his normal walk (1.3 at full speed) */ M.mixer.update(dt); } }
   M.cont.rotation.x = st.work ? 0.3 : st.spray ? 0.1 : 0;
   M.cont.position.y = st.work ? -0.08 : (!moving ? Math.sin(t * 2) * 0.015 : 0);
   if (moving && !e.held && !st.spray) { updateHose(M.hose, M.holster ? M.holster.wb : null); return; }   // walking: the clip does it all
