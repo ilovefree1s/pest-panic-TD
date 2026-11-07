@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="521">v1.019</div>
+    <div id="ver" data-b="522">v1.020</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2634,7 +2634,7 @@ function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), xf = x - x
    the current look until the new one is ready. */
 const OUTFIT_Q = []; let OUTFIT_PUMP = false;
 function outfitTextures(M, suit, red, toxic, cb) {
-  const key = suit + '|' + (red ? 1 : 0) + '|' + (toxic ? 1 : 0); M.cache ||= {}; M.jobs ||= {};
+  const key = suit + '|' + (red ? 1 : 0) + '|' + (toxic ? 1 : 0); const sh = M.masks; sh.cache ||= {}; sh.jobs ||= {}; M.cache = sh.cache; M.jobs = sh.jobs;   /* shared by every model built from this sheet: one build per outfit, not one per player */
   if (M.cache[key]) { if (cb) cb(M.cache[key]); return M.cache[key]; }
   if (M.jobs[key]) { if (cb) M.jobs[key].cbs.push(cb); return null; }
   const job = { gen: outfitGen(M, suit, red, toxic), cbs: cb ? [cb] : [] }; M.jobs[key] = job; OUTFIT_Q.push({ M, key, job });
@@ -2716,6 +2716,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
   const mk = function* (c, mode, pix) { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; yield* extMipsGen(t, mode || 'cover', M, pix); return t; };
   let glow = null; if (gcv) { gcv.getContext('2d').putImageData(GD, 0, 0); yield; glow = yield* mk(gcv, 'min', ga); }
   let mr = null; if (mcv) { mcv.getContext('2d').putImageData(MD, 0, 0); yield; mr = yield* mk(mcv, null, ma); mr.colorSpace = THREE.NoColorSpace; }
+  M.painted = painted;   /* which texels the outfit covers: the shrink step keeps suit and not-suit apart */
   const map = yield* mk(cv, null, a);
   return { map, glow, mr, toxic, gold };
 }
@@ -2752,19 +2753,21 @@ function padMask(mask, cover, W, H) {
    scattered texels and sparkled with specks. The copies are built here, on the CPU, and handed to the GPU ready-made: some phone graphics
    drivers build them badly (colour noise in the small levels), and a ready-made chain leaves them nothing to get wrong. */
 function extMips(tex, mode, M, pix) { const g = extMipsGen(tex, mode, M, pix); while (!g.next().done); return tex; }   /* all at once (used where a stall doesn't matter) */
-function* extMipsGen(tex, mode, M, pix) {   /* pix: the sheet's pixels when the caller already has them (saves a slow read-back) */   /* mode 'min': a glow sheet shrinks by taking the darkest of each 2x2, so a glow can only pull in toward its patch, never spread onto the next one.
+function* extMipsGen(tex, mode, M, pix) {   /* pix: the sheet's pixels when the caller already has them (saves a slow read-back) */
+  const painted = mode === 'cover' && M && M.painted && tex.image && M.painted.length === tex.image.width * tex.image.height ? M.painted : null;   /* mode 'min': a glow sheet shrinks by taking the darkest of each 2x2, so a glow can only pull in toward its patch, never spread onto the next one.
    mode 'cover' (with the model's patch-coverage mask): each shrunken texel averages only the texels that belong to a painted patch, so the gaps between
    patches, and the neighbouring patches beyond them, never blend into a patch's edge at a distance (that blend showed as pale seam lines all over him). */
   if (!tex || !tex.image || !tex.image.width) return tex;
   let img = tex.image, w = img.width, h = img.height; const chain = [img], cover = M && M.cover;
   if ((w & (w - 1)) === 0 && (h & (h - 1)) === 0) {   /* power-of-two sheets only (the loader may hand over a bitmap; drawImage copes with it) */
-    let prev = null, cov = null, isl = null;
+    let prev = null, cov = null, isl = null, cls = null;
     if (mode === 'cover' && cover && cover.length === w * h) {
       if (pix && pix.length === w * h * 4) prev = pix;
       else { let sx = img.getContext ? img.getContext('2d') : null;
         if (!sx) { const c0 = document.createElement('canvas'); c0.width = w; c0.height = h; sx = c0.getContext('2d'); sx.drawImage(img, 0, 0); }
         prev = sx.getImageData(0, 0, w, h).data; yield; }
       cov = new Float32Array(w * h); for (let i = 0; i < cov.length; i++) cov[i] = cover[i] ? 1 : 0;
+      cls = new Uint8Array(w * h); for (let i = 0; i < cls.length; i++) cls[i] = cover[i] ? (painted && painted[i] ? 2 : 1) : 0;   /* 2: the outfit, 1: skin/cap/leather, 0: a gap between patches */
       /* label the patches (islands of covered texels), so a shrunken texel never averages two different patches together. Once per model. */
       if (!M.masks.isl) {
         const L = new Int32Array(w * h), q = new Int32Array(w * h), cs = M.masks.strict || cover; let nid = 0, work = 0;
@@ -2779,19 +2782,24 @@ function* extMipsGen(tex, mode, M, pix) {   /* pix: the sheet's pixels when the 
       const nw = Math.max(1, w >> 1), nh = Math.max(1, h >> 1), c = document.createElement('canvas'); c.width = nw; c.height = nh;
       const x = c.getContext('2d');
       if (mode === 'cover') {
-        const out = x.createImageData(nw, nh), o = out.data, nc = new Float32Array(nw * nh), ni = new Int32Array(nw * nh), W2 = w, P4 = [0, 0, 0, 0], C4 = [0, 0, 0, 0];
+        const out = x.createImageData(nw, nh), o = out.data, nc = new Float32Array(nw * nh), ni = new Int32Array(nw * nh), nk = new Uint8Array(nw * nh), W2 = w, P4 = [0, 0, 0, 0], C4 = [0, 0, 0, 0];
         for (let y = 0; y < nh; y++) { if (nw >= 256 && (y & 63) === 63) yield;
           for (let xx = 0; xx < nw; xx++) {
             P4[0] = (y * 2) * W2 + xx * 2; P4[1] = P4[0] + 1; P4[2] = P4[0] + W2; P4[3] = P4[2] + 1; const j = y * nw + xx;
-            /* the patch with the most coverage among the four children wins; only its children are averaged */
+            /* the material (outfit / not outfit) and then the patch with the most coverage among the four children win; only matching children are
+               averaged. Meshy fuses the shirt with the skin, cap and belt pieces next to it into one patch, so the patch alone can't keep them apart. */
+            /* the outfit wins the block if it has any real presence in it: the suit is the big surface, and a cap- or skin-coloured texel on the
+               suit's rim shows as a fleck, where a dark texel on the cap's rim is invisible */
+            let bc = 0, bcW = 0, w2 = 0; for (let k = 0; k < 4; k++) { const c = cls[P4[k]]; if (!c) continue; if (c === 2) w2 += cov[P4[k]]; let wsum = 0; for (let m = 0; m < 4; m++) if (cls[P4[m]] === c) wsum += cov[P4[m]]; if (wsum > bcW || (wsum === bcW && c > bc)) { bcW = wsum; bc = c; } }
+            if (w2 >= 0.25 && bc !== 2) { bc = 2; bcW = w2; }
             let best = 0, bestW = 0;
-            for (let k = 0; k < 4; k++) { const id = isl[P4[k]]; if (!id) continue; let wsum = 0; for (let m = 0; m < 4; m++) if (isl[P4[m]] === id) wsum += cov[P4[m]]; if (wsum > bestW) { bestW = wsum; best = id; } }
+            for (let k = 0; k < 4; k++) { const id = isl[P4[k]]; if (!id || cls[P4[k]] !== bc) continue; let wsum = 0; for (let m = 0; m < 4; m++) if (isl[P4[m]] === id && cls[P4[m]] === bc) wsum += cov[P4[m]]; if (wsum > bestW) { bestW = wsum; best = id; } }
             let t = 0;
-            for (let k = 0; k < 4; k++) { C4[k] = best ? (isl[P4[k]] === best ? cov[P4[k]] : 0) : 1; t += C4[k]; }
+            for (let k = 0; k < 4; k++) { C4[k] = best ? (isl[P4[k]] === best && cls[P4[k]] === bc ? cov[P4[k]] : 0) : 1; t += C4[k]; }
             for (let k = 0; k < 3; k++) o[j * 4 + k] = (prev[P4[0] * 4 + k] * C4[0] + prev[P4[1] * 4 + k] * C4[1] + prev[P4[2] * 4 + k] * C4[2] + prev[P4[3] * 4 + k] * C4[3]) / t;
-            o[j * 4 + 3] = 255; nc[j] = best ? bestW : 0; ni[j] = best;
+            o[j * 4 + 3] = 255; nc[j] = best ? bestW : 0; ni[j] = best; nk[j] = bc;
           } }
-        x.putImageData(out, 0, 0); prev = o; cov = nc; isl = ni;
+        x.putImageData(out, 0, 0); prev = o; cov = nc; isl = ni; cls = nk;
       } else if (mode === 'min') {
         if (!prev) { if (pix && pix.length === w * h * 4) prev = pix; else { const sx = img.getContext ? img.getContext('2d') : null; prev = sx ? sx.getImageData(0, 0, w, h).data : null; yield; } }
         const out = x.createImageData(nw, nh), o = out.data, W2 = w, dark = nw <= 128;   /* at the far-away sizes the glow is switched off altogether: its patches sit a texel from the suit's there and the filtering would smear it across */
@@ -2967,7 +2975,7 @@ function fitExtModel(root, gltf, red) {
     });
   } catch (err) { console.warn('outfit setup', err); }
   if (map) { map.generateMipmaps = true; map.minFilter = THREE.LinearMipmapLinearFilter; map.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); map.needsUpdate = true; }   /* quick GPU mipmaps for the first frames; the proper sheet arrives from the outfit pump */
-  u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, cover, masks: masks || {}, hose, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, suitMask, crown, red, look: '' };
+  u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, cover, masks: masks || (gltf.userData.extMasks ||= {}), hose, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, suitMask, crown, red, look: '' };
   u.tip = tip;
 }
 function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points the given way (in the model's own space: +z forward, +y up) */
