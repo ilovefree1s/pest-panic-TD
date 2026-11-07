@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="525">v1.023</div>
+    <div id="ver" data-b="526">v1.024</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6316,11 +6316,13 @@ function drawTowers(dt, t) {
     } else if (tw.t === 'spray') {
       o.can.rotation.x = a < 0.35 ? Math.sin(a / 0.35 * Math.PI) * 0.22 : 0;
     } else if (tw.t === 'fan') {   // blades spin, the head sweeps side to side, breeze streaks stream out; a gust makes them rush
-      const gust = a < 0.4 ? 1 - a / 0.4 : 0, on = tw.blow && !tw.pending;
-      o.rotor.rotation.z -= dt * (on ? 24 + gust * 30 : 4); o.head.rotation.y = Math.sin(t * 1.3 + tw.id) * 0.5;
-      const reach = TT.fan.range[tw.lv - 1] * PR(tw) / (o.root.scale.x || 1);
-      o.wind.visible = on; o.wm.opacity = (tw.perk ? 0.5 : 0.35) + gust * 0.35;
-      if (on) o.streaks.forEach(st => { st.userData.k = (st.userData.k + dt * (0.5 + gust * 1.5)) % 1; st.position.z = 0.4 + st.userData.k * (reach - 0.8); st.scale.y = 0.6 + gust; });
+      /* idle: a calm breeze, half the streaks at half strength. Flies in reach: the full effect. A gust: a surge on top. */
+      const gust = a < 0.4 ? 1 - a / 0.4 : 0, on = tw.blow && !tw.pending, idle = !tw.pending && !on;
+      tw.breeze = (tw.breeze ?? (on ? 1 : 0)) + ((on ? 1 : 0) - (tw.breeze ?? 0)) * Math.min(1, dt * 4);   /* eases between calm and full */
+      o.rotor.rotation.z -= dt * (on ? 24 + gust * 30 : 9); o.head.rotation.y = 0;   /* the head holds still (it faces the trail now) */
+      const reach = TT.fan.range[tw.lv - 1] * PR(tw) / (o.root.scale.x || 1), k = tw.breeze;
+      o.wind.visible = !tw.pending; o.wm.opacity = ((tw.perk ? 0.5 : 0.35) * (0.5 + 0.5 * k)) + gust * 0.35;
+      o.streaks.forEach((st, i) => { st.visible = k > 0.5 || i % 2 === 0; st.userData.k = (st.userData.k + dt * (0.25 + 0.25 * k + gust * 1.5)) % 1; st.position.z = 0.4 + st.userData.k * (reach - 0.8); st.scale.y = (0.4 + 0.2 * k) + gust; });
     } else if (tw.t === 'fogger') {
       o.kick.position.z = 0.05 - (a < 0.3 ? (1 - a / 0.3) * 0.3 : 0);
     } else if (tw.t === 'broom') {
