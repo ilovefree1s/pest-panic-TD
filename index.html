@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="533">v1.031</div>
+    <div id="ver" data-b="534">v1.032</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2650,6 +2650,17 @@ function outfitPump() {
   }
   if (OUTFIT_Q.length) setTimeout(outfitPump, 0); else OUTFIT_PUMP = false;
 }
+/* split his triangles into two draw groups, suit and body, by where their texels fall on the outfit mask. Reorders the index once per model. */
+function splitExt(M, painted) {
+  if (!painted || M.split) return; M.split = true;
+  M.m.traverse(o => { if (!o.isSkinnedMesh) return; const g = o.geometry, UV = g.attributes.uv, I = g.index, n = I ? I.count : g.attributes.position.count, W = M.baseImg.width, H = M.baseImg.height;
+    const tri = t => I ? I.getX(t) : t, A = [], B = [];
+    for (let t = 0; t < n; t += 3) { let k = 0; for (let j = 0; j < 3; j++) { const v = tri(t + j), u = UV.getX(v), w = UV.getY(v); const px = Math.min(W - 1, Math.max(0, (u * W) | 0)), py = Math.min(H - 1, Math.max(0, (w * H) | 0));   /* the masks were painted at UV.y * height directly */ if (painted[py * W + px]) k++; }
+      (k >= 2 ? A : B).push(tri(t), tri(t + 1), tri(t + 2)); }
+    if (!I) { /* unindexed: build an index that reorders */ const idx = new Uint32Array(A.length + B.length); idx.set(A); idx.set(B, A.length); g.setIndex(new THREE.BufferAttribute(idx, 1)); }
+    else { const arr = I.array.constructor === Uint16Array && n > 65535 ? new Uint32Array(n) : new I.array.constructor(n); arr.set(A); arr.set(B, A.length); g.setIndex(new THREE.BufferAttribute(arr, 1)); }
+    g.clearGroups(); g.addGroup(0, A.length, 0); g.addGroup(A.length, B.length, 1); });
+}
 function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the pump above
   const im = M.baseImg, W = im.width, H = im.height, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
   if (!M.masks.basePix) {   /* the sheet's pixels, read once per model file, a band at a time (one big read-back stalled for a second on a phone) */
@@ -2716,9 +2727,25 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
   const mk = function* (c, mode, pix) { const t = new THREE.CanvasTexture(c); t.flipY = M.baseFlip; t.colorSpace = THREE.SRGBColorSpace; yield* extMipsGen(t, mode || 'cover', M, pix); return t; };
   let glow = null; if (gcv) { gcv.getContext('2d').putImageData(GD, 0, 0); yield; glow = yield* mk(gcv, 'min', ga); }
   let mr = null; if (mcv) { mcv.getContext('2d').putImageData(MD, 0, 0); yield; mr = yield* mk(mcv, null, ma); mr.colorSpace = THREE.NoColorSpace; }
-  M.painted = painted;   /* which texels the outfit covers: the shrink step keeps suit and not-suit apart */
-  const map = yield* mk(cv, null, a);
-  return { map, glow, mr, toxic, gold };
+  M.painted = painted;
+  /* Two sheets, one per half of him. On the suit sheet every texel that isn't suit is flooded with the nearest suit colour; on the body sheet
+     every suit texel is flooded with the nearest body colour. His mesh is drawn as two groups (suit triangles, body triangles), each from its
+     own sheet, so no border on either sheet ever has a contrasting neighbour: however the GPU blends or shrinks it, a suit edge reads suit
+     and a cap edge reads cap. (No per-level rim tricks needed, and they're gone.) */
+  let map, mapB = null;
+  if (painted) {
+    const flood = function* (seedIsPainted) { const W2 = W, N = W * H, q = new Int32Array(N), seen = new Uint8Array(N), dst = new Uint8ClampedArray(a); let h = 0, t = 0;
+      for (let p = 0; p < N; p++) if (!!painted[p] === seedIsPainted && M.cover[p]) { seen[p] = 1; q[t++] = p; }
+      let work = 0;
+      while (h < t) { const p = q[h++], px = p % W2; if (++work % 400000 === 0) yield;
+        for (const d of [-1, 1, -W2, W2]) { const n = p + d; if (n < 0 || n >= N || (d === -1 && px === 0) || (d === 1 && px === W2 - 1) || seen[n]) continue; seen[n] = 1; q[t++] = n; dst[n * 4] = dst[p * 4]; dst[n * 4 + 1] = dst[p * 4 + 1]; dst[n * 4 + 2] = dst[p * 4 + 2]; dst[n * 4 + 3] = 255; } }
+      return dst; };
+    const suitPix = yield* flood(true); yield; const bodyPix = yield* flood(false); yield;
+    const cS = document.createElement('canvas'); cS.width = W; cS.height = H; const dS = cS.getContext('2d').createImageData(W, H); dS.data.set(suitPix); cS.getContext('2d').putImageData(dS, 0, 0); yield;
+    const cB = document.createElement('canvas'); cB.width = W; cB.height = H; const dB = cB.getContext('2d').createImageData(W, H); dB.data.set(bodyPix); cB.getContext('2d').putImageData(dB, 0, 0); yield;
+    map = yield* mk(cS, 'plain', suitPix); mapB = yield* mk(cB, 'plain', bodyPix);
+  } else map = yield* mk(cv, null, a);
+  return { map, mapB, glow, mr, toxic, gold };
 }
 function extRedTexture(tex) {
   const im = tex.image, cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
@@ -2778,10 +2805,17 @@ function* extMipsGen(tex, mode, M, pix) {   /* pix: the sheet's pixels when the 
       }
       isl = M.masks.isl;
     } else if (mode === 'cover') mode = null;
+    if (mode === 'plain' && pix && pix.length === w * h * 4) prev = pix;
     while (w > 1 || h > 1) {
       const nw = Math.max(1, w >> 1), nh = Math.max(1, h >> 1), c = document.createElement('canvas'); c.width = nw; c.height = nh;
       const x = c.getContext('2d');
-      if (mode === 'cover') {
+      if (mode === 'plain' && prev) {
+        const out = x.createImageData(nw, nh), o = out.data, W2 = w;
+        for (let y = 0; y < nh; y++) { if (nw >= 256 && (y & 63) === 63) yield;
+          for (let xx = 0; xx < nw; xx++) { const i0 = ((y * 2) * W2 + xx * 2) * 4, i1 = i0 + 4, i2 = i0 + W2 * 4, i3 = i2 + 4, j = (y * nw + xx) * 4;
+            for (let k = 0; k < 3; k++) o[j + k] = (prev[i0 + k] + prev[i1 + k] + prev[i2 + k] + prev[i3 + k]) * 0.25; o[j + 3] = 255; } }
+        x.putImageData(out, 0, 0); prev = o;
+      } else if (mode === 'cover') {
         const out = x.createImageData(nw, nh), o = out.data, nc = new Float32Array(nw * nh), ni = new Int32Array(nw * nh), nk = new Uint8Array(nw * nh), W2 = w, P4 = [0, 0, 0, 0], C4 = [0, 0, 0, 0];
         for (let y = 0; y < nh; y++) { if (nw >= 256 && (y & 63) === 63) yield;
           for (let xx = 0; xx < nw; xx++) {
@@ -2803,16 +2837,7 @@ function* extMipsGen(tex, mode, M, pix) {   /* pix: the sheet's pixels when the 
            and nudges across patch borders on slanted surfaces; this way whatever it reads next to the suit is suit colour. The non-suit side
            loses a sliver of its own edge in the shrunken copies, which is invisible: a dark fleck on skin or cap doesn't register, a bright
            fleck on the suit does. */
-        prev = o; cov = nc; isl = ni; cls = nk;   /* the next level shrinks from the unpadded copy, so the padding never compounds */
-        if (nw >= 16) { const passes = nw <= 256 && nw >= 64 ? 2 : 1;   /* two texels at the mid sizes he's drawn from at play zoom, one elsewhere */
-          let cur = o, curK = nk;
-          for (let ps = 0; ps < passes; ps++) { const shown = new Uint8ClampedArray(cur), k2 = new Uint8Array(curK);
-            for (let y = 0; y < nh; y++) for (let xx = 0; xx < nw; xx++) { const j = y * nw + xx; if (curK[j] === 2) continue;
-              let sr = 0, sg = 0, sb = 0, n = 0;
-              for (const d of [-1, 1, -nw, nw]) { const q = j + d; if (q < 0 || q >= nw * nh || (d === -1 && xx === 0) || (d === 1 && xx === nw - 1) || curK[q] !== 2) continue; sr += cur[q * 4]; sg += cur[q * 4 + 1]; sb += cur[q * 4 + 2]; n++; }
-              if (n) { shown[j * 4] = sr / n; shown[j * 4 + 1] = sg / n; shown[j * 4 + 2] = sb / n; k2[j] = 2; } }
-            cur = shown; curK = k2; }
-          out.data.set(cur); }
+        prev = o; cov = nc; isl = ni; cls = nk;
         x.putImageData(out, 0, 0);
       } else if (mode === 'min') {
         if (!prev) { if (pix && pix.length === w * h * 4) prev = pix; else { const sx = img.getContext ? img.getContext('2d') : null; prev = sx ? sx.getImageData(0, 0, w, h).data : null; yield; } }
@@ -2880,7 +2905,8 @@ function fitExtModel(root, gltf, red) {
   let geo0 = null; m.traverse(o => { if (o.isSkinnedMesh && !geo0) geo0 = o.geometry; });
   const map = tex;   /* player 2's colours come from the outfit system (no 4-million-texel pass at load) */
   const mat = new THREE.MeshStandardMaterial({ map, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0, color: new THREE.Color(0.62, 0.62, 0.62), roughness: 0.8, metalness: 0 });   /* the kitchen is brightly lit: tone the texture down so the colours don't wash out */
-  m.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; o.receiveShadow = false; o.frustumCulled = false;   /* no shadows ON him: the shadow map drew faint lines along every edge of the hat and suit */ if (o.isSkinnedMesh) o.geometry = o.geometry.clone(); } });   /* own copy: the wand split below rewrites its bone weights */
+  const matB = mat.clone();   /* the body half (cap, skin, belt, tank): its own sheet once an outfit is built */
+  m.traverse(o => { if (o.isMesh) { o.material = [mat, matB]; o.castShadow = true; o.receiveShadow = false; o.frustumCulled = false;   /* no shadows ON him: the shadow map drew faint lines along every edge of the hat and suit */ if (o.isSkinnedMesh) { o.geometry = o.geometry.clone(); o.geometry.clearGroups(); o.geometry.addGroup(0, Infinity, 0); } } });   /* one group until the outfit arrives and splits him */   /* own copy: the wand split below rewrites its bone weights */
   m.updateMatrixWorld(true);
   const box = new THREE.Box3();   /* measure him as actually skinned (the skeleton carries a 0.01 scale) */
   m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox(); box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
@@ -2989,7 +3015,7 @@ function fitExtModel(root, gltf, red) {
     });
   } catch (err) { console.warn('outfit setup', err); }
   if (map) { map.generateMipmaps = false; map.minFilter = THREE.LinearFilter; map.magFilter = THREE.LinearFilter; map.anisotropy = 1; map.needsUpdate = true; }   /* the first frames use the full-size sheet with no shrinking at all (driver-made mipmaps bleed); the proper sheet with its clean mip chain arrives from the outfit pump within a second */
-  u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, cover, masks: masks || (gltf.userData.extMasks ||= {}), hose, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, suitMask, crown, red, look: '' };
+  u.mdl = { cont, m, mixer, walk, run, legsF, legsB, bones, cover, matB, masks: masks || (gltf.userData.extMasks ||= {}), hose, skel, rest, tip, tank, holster, mat, geo: geo0, baseImg: tex && tex.image, baseFlip: tex ? tex.flipY : false, tankMask, suitMask, crown, red, look: '' };
   u.tip = tip;
 }
 function aimBone(cont, bone, child, dx, dy, dz) {   /* turn a bone so it points the given way (in the model's own space: +z forward, +y up) */
@@ -3036,8 +3062,8 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
   const M = EXT.userData.mdl; if (!EXT_GLTF || !M) { cv.hidden = true; return; } cv.hidden = false;
   if (!LKP) {
     const sc = new THREE.Scene(); sc.environment = scene.environment;   /* reflections, so the gold suit and crown look like metal */ sc.add(new THREE.HemisphereLight('#ffffff', '#4a5260', 1.3)); const d = new THREE.DirectionalLight('#fff1dc', 2.4); d.position.set(3, 5, 6); sc.add(d); const d2 = new THREE.DirectionalLight('#9fd0ff', 1.1); d2.position.set(-5, 3, -4); sc.add(d2);
-    const m = SkeletonUtils.clone(EXT_GLTF.scene), mat = new THREE.MeshStandardMaterial({ map: M.mat.map, color: new THREE.Color(0.8, 0.8, 0.8), roughness: 0.7, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0 });
-    m.traverse(o => { if (o.isMesh) { o.material = mat; o.frustumCulled = false; } }); sc.add(m);
+    const m = SkeletonUtils.clone(EXT_GLTF.scene), mat = new THREE.MeshStandardMaterial({ map: M.mat.map, color: new THREE.Color(0.8, 0.8, 0.8), roughness: 0.7, emissive: new THREE.Color('#ffffff'), emissiveIntensity: 0 }), matB = mat.clone();
+    m.traverse(o => { if (o.isMesh) { o.material = [mat, matB]; o.frustumCulled = false; if (o.isSkinnedMesh) { o.geometry = o.geometry.clone(); o.geometry.clearGroups(); o.geometry.addGroup(0, Infinity, 0); } } }); sc.add(m);
     /* his own model pose: standing tall, arms out, wand up (the walk clip's first frame hunched him over) */
     m.updateMatrixWorld(true); const box = new THREE.Box3(); m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox(); box.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
     const c = box.getCenter(new V3()), h = box.max.y - box.min.y; m.rotation.y = 0;   /* facing the camera, straight on */
@@ -3053,7 +3079,7 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
     r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setClearColor(0x000000, 0);
     cam.aspect = (cv.clientWidth || 180) / (cv.clientHeight || 210); cam.updateProjectionMatrix();
     const lkB = n => m.getObjectByName('mixamorig' + n) || m.getObjectByName('mixamorig:' + n), lkHose = M.hose ? makeHose(m, sc, lkB, M.hose) : null;
-    LKP = { sc, m, mat, cam, crown, r, c: c.clone(), yaw: 0, tilt: 0, dist: h * 3.3, hose: lkHose };
+    LKP = { sc, m, mat, matB, cam, crown, r, c: c.clone(), yaw: 0, tilt: 0, dist: h * 3.3, hose: lkHose };
     /* drag with a finger (or mouse) to turn him around and look from above or below */
     let drag = null;
     cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (_) {} e.preventDefault(); });
@@ -3063,7 +3089,8 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
     lkpCam();
   }
   let sync = true; const look = myLook(), T = outfitTextures(M, look.suit, false, look.tank === 'toxic', () => { if (!sync && LKP && !$('shinies').hidden) lockerPreview(); }); sync = false;   /* not built yet: draw again when it is */
-  if (T) { LKP.mat.map = T.map; LKP.mat.emissiveMap = T.glow; LKP.mat.emissiveIntensity = T.glow ? (T.toxic ? 1.0 : 0.55) : 0; LKP.mat.roughnessMap = LKP.mat.metalnessMap = T.mr; LKP.mat.roughness = T.mr ? 1 : 0.8; LKP.mat.metalness = T.mr ? 1 : 0; LKP.mat.needsUpdate = true; } if (LKP.crown) LKP.crown.visible = !!look.crown;
+  if (T) { if (!LKP.split && M.painted) { LKP.split = true; splitExt({ m: LKP.m, baseImg: M.baseImg, baseFlip: M.baseFlip }, M.painted); } LKP.mat.map = T.map; LKP.mat.emissiveMap = T.glow; LKP.mat.emissiveIntensity = T.glow ? (T.toxic ? 1.0 : 0.55) : 0; LKP.mat.roughnessMap = LKP.mat.metalnessMap = T.mr; LKP.mat.roughness = T.mr ? 1 : 0.8; LKP.mat.metalness = T.mr ? 1 : 0; LKP.mat.needsUpdate = true;
+    LKP.matB.map = T.mapB || T.map; LKP.matB.emissiveMap = T.glow; LKP.matB.emissiveIntensity = LKP.mat.emissiveIntensity; LKP.matB.needsUpdate = true; } if (LKP.crown) LKP.crown.visible = !!look.crown;
   { const w = cv.clientWidth || 180, h = cv.clientHeight || 210, sz = LKP.r.getSize(new THREE.Vector2()); if (sz.x !== w || sz.y !== h) { LKP.r.setSize(w, h, false); LKP.cam.aspect = w / h; LKP.cam.updateProjectionMatrix(); } }
   updateHose(LKP.hose); LKP.r.render(LKP.sc, LKP.cam);
 }
@@ -3768,9 +3795,10 @@ function extLook(EXTM, look) {   /* put an outfit on a modelled exterminator (re
   if (!M) return;
   const key = look.suit + '|' + look.tank;
   if (M.want !== key && M.baseImg) { M.want = key;   /* built in slices; he keeps his current look until the new one is ready */
-    outfitTextures(M, look.suit, M.red, look.tank === 'toxic', T => { if (M.want !== key) return; M.look = key; try { const v = $('ver'); if (v && !M.red) v.dataset.outfit = key + (T.map.mipmaps && T.map.mipmaps.length > 1 ? ' mips' : ' nomips'); } catch (e) {} M.T = T; M.mat.map = T.map; M.mat.emissiveMap = T.glow; M.mat.emissiveIntensity = T.glow ? 0.9 : 0;
-      M.mat.roughnessMap = M.mat.metalnessMap = T.mr; M.mat.roughness = T.mr ? 1 : 0.8; M.mat.metalness = T.mr ? 1 : 0; M.mat.needsUpdate = true; }); }   /* gold suit: metal and shine where the suit is */
-  if (M.mat.emissiveMap) { const t = performance.now(); M.mat.emissiveIntensity = M.T && M.T.toxic ? 0.95 + Math.sin(t / 260) * 0.35 : 0.5 + Math.sin(t / 700) * 0.12; }   // the toxic tank pulses; gold shimmers softly
+    outfitTextures(M, look.suit, M.red, look.tank === 'toxic', T => { if (M.want !== key) return; M.look = key; try { const v = $('ver'); if (v && !M.red) v.dataset.outfit = key + (T.map.mipmaps && T.map.mipmaps.length > 1 ? ' mips' : ' nomips'); } catch (e) {} M.T = T; splitExt(M, M.painted); M.mat.map = T.map; M.mat.emissiveMap = T.glow; M.mat.emissiveIntensity = T.glow ? 0.9 : 0;
+      M.mat.roughnessMap = M.mat.metalnessMap = T.mr; M.mat.roughness = T.mr ? 1 : 0.8; M.mat.metalness = T.mr ? 1 : 0; M.mat.needsUpdate = true;
+      if (M.matB) { M.matB.map = T.mapB || T.map; M.matB.emissiveMap = T.glow; M.matB.emissiveIntensity = T.glow ? 0.9 : 0; M.matB.roughnessMap = M.matB.metalnessMap = null; M.matB.roughness = 0.8; M.matB.metalness = 0; M.matB.needsUpdate = true; } }); }   /* gold suit: metal and shine where the suit is */
+  if (M.mat.emissiveMap) { const t = performance.now(); M.mat.emissiveIntensity = M.T && M.T.toxic ? 0.95 + Math.sin(t / 260) * 0.35 : 0.5 + Math.sin(t / 700) * 0.12; if (M.matB) M.matB.emissiveIntensity = M.mat.emissiveIntensity; }   // the toxic tank pulses; gold shimmers softly
   if (M.crown && M.crown.userData.glow) M.crown.userData.glow.emissiveIntensity = 0.85 + Math.sin(performance.now() / 500) * 0.25;
   if (M.crown) M.crown.visible = !!look.crown;
   if (M.tank) M.tank.visible = false;
