@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="529">v1.027</div>
+    <div id="ver" data-b="530">v1.028</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3060,10 +3060,11 @@ function extModelLoad() {
 extModelLoad();
 /* ?diag=suit: a debugging view for texture bleeding. Draws, enlarged, the shrunken copies of the suit sheet exactly as this GPU holds them,
    plus the CPU-built copies, so a screenshot shows where any flecks live (and whether this machine's GPU copy differs from the built one). */
-if (/[?&]diag=suit/.test(location.search)) setTimeout(() => {
-  const M = EXT.userData.mdl; if (!M) return;
+if (/[?&]diag=suit/.test(location.search)) setTimeout(function wait() {
+  const M = EXT.userData.mdl; if (!M) { setTimeout(wait, 500); return; }
   const look = myLook(); extLook(EXT, look);
-  const go = () => { const T = M.T; if (!T || !T.map.mipmaps || M.look !== look.suit + '|' + look.tank) { setTimeout(go, 500); return; }
+  const note = document.createElement('div'); note.style.cssText = 'position:fixed;top:4px;left:4px;z-index:99998;background:#000;color:#ff0;font:13px monospace;padding:4px'; document.body.appendChild(note); let n = 0;
+  const go = () => { const T = M.T; note.textContent = 'diag: waiting for outfit ' + (++n) + ' want=' + M.want + ' look=' + M.look + ' jobs=' + Object.keys(M.jobs || {}).join(',') + ' cache=' + Object.keys(M.cache || {}).join(','); if (!T || !T.map.mipmaps || M.look !== look.suit + '|' + look.tank) { setTimeout(go, 500); return; } note.remove();
     renderer.render(scene, camera);
     const props = renderer.properties.get(T.map), gl = renderer.getContext(); if (!props || !props.__webglTexture) { setTimeout(go, 500); return; }
     const box = document.createElement('div'); box.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;color:#fff;overflow:auto;font:14px monospace;padding:8px'; document.body.appendChild(box);
