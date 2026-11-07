@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="542">v1.040</div>
+    <div id="ver" data-b="543">v1.041</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3038,12 +3038,12 @@ function poseExtModel(u, e, dt, st) {
   extHolster(u.mdl, !!(st.work || st.pet || (st.walk && e.job && e.job.kind !== 'shelf' && e.job.kind !== 'item')));   /* the rod goes on his belt for the whole job, walk over included: he arrives hammer-ready, no sprayer-to-hammer swap on the spot */
   const M = u.mdl, Bn = M.bones, t = clock, R = -1, L = 1;   // the model's right arm is on its -x side
   const moving = st.walk || e.held;
-  const stepping = !moving && st.spray && st.mv > 0.6 && (st.back ? M.legsB : M.legsF);   /* spraying on the move: only the legs walk (backwards when he backs up) */
+  const stepping = !moving && st.spray && st.mv > (u.stepping ? 0.4 : 1.2) && (st.back ? M.legsB : M.legsF); u.stepping = !!stepping;   /* (hysteresis: no stutter-stepping as his speed hovers near the threshold) */   /* spraying on the move: only the legs walk (backwards when he backs up) */
   const legs = stepping ? (st.back ? M.legsB : M.legsF) : null;
-  for (const a of [M.legsF, M.legsB]) if (a && a !== legs && a.isRunning()) a.stop();
+  for (const a of [M.legsF, M.legsB]) if (a && a !== legs && a.isRunning()) { u.legT = a.time; a.stop(); }   /* remember where the stride was */
   if (moving && M.walk) { if (!M.walk.isRunning()) M.walk.reset().play(); M.walk.timeScale = e.held ? 1.8 : 1.3; M.mixer.update(dt); }
   else { if (M.walk && M.walk.isRunning()) M.walk.stop(); for (const [b, p, q, sc] of M.rest) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(sc); }
-    if (legs) { if (!legs.isRunning()) legs.reset().play(); legs.timeScale = clamp(st.mv / 18, 0.35, 1.8);   /* the same stride-per-distance as his normal walk (1.3 at full speed) */ M.mixer.update(dt); } }
+    if (legs) { if (!legs.isRunning()) { legs.reset().play(); legs.time = u.legT || 0; } legs.timeScale = clamp(st.mv / 18, 0.3, 1.8);   /* resumes mid-stride: restarting the clip made a flurry of tiny first steps */   /* the same stride-per-distance as his normal walk (1.3 at full speed) */ M.mixer.update(dt); } }
   M.cont.rotation.x = st.work ? 0.3 : st.spray ? 0.1 : 0;
   M.cont.position.y = st.work ? -0.08 : (!moving ? Math.sin(t * 2) * 0.015 : 0);
   if (moving && !e.held && !st.spray) { updateHose(M.hose, M.holster ? M.holster.wb : null); return; }   // walking: the clip does it all
@@ -3707,7 +3707,7 @@ function abilUpdate(e, dt) {
     if (gx !== null) { mx = gx - e.x; mz = gz - e.z; md = Math.hypot(mx, mz); }
     a.far = md > ABIL.range * 0.6 || ld > lreach;   // the front of the pack is somewhere else, or still out of reach: run there first, don't waste spray on stragglers
     if (a.far && (gx === null || md <= 0.3) && ld > lreach * 0.8) { mx = lead.x - e.x; mz = lead.z - e.z; md = ld; }   /* no spot beside the trail, or the spot's still too far from the bug: head straight for it instead of standing there (he used to freeze here) */
-    if (md > 0.3) { const sp = a.far ? ABIL.speed : Math.min(ABIL.speed * 0.45, 1.5 + md * 3), step = Math.min(md, sp * dt); e.x += mx / md * step; e.z += mz / md * step; e.phase += dt * (a.far ? 20 : 12); if (a.far) e.yaw = Math.atan2(mx, mz); }   /* keeping pace: ease along at the pack's speed, not in sprints (his feet were a blur while he barely moved) */
+    if (md > (a.far ? 0.3 : 0.02)) { const sp = a.far ? ABIL.speed : Math.min(ABIL.speed * 0.45, md * 2.5), step = Math.min(md, sp * dt); e.x += mx / md * step; e.z += mz / md * step; e.phase += dt * (a.far ? 20 : 12); if (a.far) e.yaw = Math.atan2(mx, mz); }   /* keeping pace: ease along at the pack's speed, not in sprints (his feet were a blur while he barely moved) */
   } else a.far = false;
   // aim at the bug closest to the cake that he can reach, else the nearest one
   const reach = b => ABIL.range * (bugY(b) > 0.3 ? 1.45 : 1);   // a bug climbing the counter is up and away from the floor: he sprays up at it from a bit further
