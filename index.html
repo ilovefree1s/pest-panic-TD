@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="539">v1.037</div>
+    <div id="ver" data-b="540">v1.038</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3942,7 +3942,7 @@ const PERK = {
   spray:  { name: 'Extra Strength', icon: '☠️', d: 'Three bright orange cans with toxic green fumes. Poison burns twice as hard and lasts 5 seconds instead of 3.' },
   paper:  { name: 'Sunday Edition', icon: '📰', range: 1.5, amp: 0.25, d: 'A giant rolled-up paper: 50% bigger slam and 25% more damage.' },
   lens:   { name: 'Wildfire', icon: '🔥', d: 'The bug it burns sets fire to bugs right next to it.' },
-  zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'The bolt hops to twice as many bugs.' },
+  zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'Two heads: both fire at once, each with its own full chain.' },
   broom:  { name: 'Push Broom', icon: '🧹', range: 1.15, d: 'A wide push broom: 15% more reach and sweeps bugs 25% further back.' },
   fan:    { name: 'Hurricane Fan', icon: '🌀', range: 1.15, d: 'Gunmetal with icy blades: 15% more reach, gusts blow 25% further, gusted flies spin dizzy and stop for a moment, and the gust gives crawling bugs a light push too.' },
   candle: { name: 'Bonfire Candle', icon: '🕯️', range: 1.5, d: 'A big bonfire jar: 50% bigger glow, +10% more damage boost, and it scorches harder.' },
@@ -4724,7 +4724,8 @@ const BUILD = {
       stand.position.y = -top.position.y; }   /* built in floor space, parented under the top group */
     const heads = new THREE.Group(); heads.position.y = Hs + 0.05 - top.position.y; orb.add(heads); const coils2 = [];
     for (const sgn of [-1, 1]) { const h = new THREE.Group(); h.position.set(sgn * 0.5, 0.6, 0); h.rotation.z = -sgn * 0.42; h.scale.setScalar(0.85); heads.add(h); coils2.push(mkHead(h).coil); }
-    const o = { root: g, top, glow, coil, rim, pips: pips(g), orb, coils2, stormY: Hs + 0.05 - top.position.y + 0.6 + 0.85 * 1.2 };
+    const mz = [-1, 1].map(sgn => new V3(sgn * (0.5 + Math.sin(0.42) * 1.02), heads.position.y + 0.6 + Math.cos(0.42) * 1.02, 0));   /* each head's coil tip, in top space */
+    const o = { root: g, top, glow, coil, rim, pips: pips(g), orb, coils2, muzzles: mz };
     o.setPerk = () => { o.perk = true; o.setLevel(3); };
     o.setLevel = lv => {
       rimLevel(o, lv);
@@ -5569,8 +5570,12 @@ function towerAct(tw, dt) {
     SND.play('sweep');
   } else if (tw.t === 'zap') {
     // the bolt hits the first bug, then hops from bug to bug one at a time so you can watch it travel
-    const z = { from: new V3(tw.x, tw.o.top.position.y + (tw.o.orb && tw.o.orb.visible ? tw.o.stormY : tw.lv >= 3 ? 1.45 : 0), tw.z), last: null, next: tg, hit: new Set(), left: T.chain[L] * (tw.perk ? 2 : 1), dmg: T.dmg[L] * (1 + CUR_AMP), t: 0, own: S.cur || 0, tw, amp: CUR_AMP };
-    S.zaps.push(z); zapHop(z);
+    const mk = (from, first, t0) => { const z = { from, last: null, next: first, hit: new Set(), left: T.chain[L], dmg: T.dmg[L] * (1 + CUR_AMP), t: t0, own: S.cur || 0, tw, amp: CUR_AMP }; S.zaps.push(z); zapHop(z); return z; };
+    if (tw.perk && tw.o.muzzles) {   /* Storm Zapper: both heads fire, each its own full chain; the second starts on a different bug when there is one */
+      const ty = tw.o.top.position.y, m = tw.o.muzzles; let tg2 = null, nd = ZAP_JUMP * ZAP_JUMP;
+      for (const c of S.bugs) { if (c.dead || c === tg || !canHit(tw, c) || Math.hypot(c.x - tw.x, c.z - tw.z) > T.range[L] + 0.5) continue; const d = (c.x - tg.x) ** 2 + (c.z - tg.z) ** 2; if (d < nd) { nd = d; tg2 = c; } }
+      mk(new V3(tw.x + m[0].x, ty + m[0].y, tw.z + m[0].z), tg, 0); mk(new V3(tw.x + m[1].x, ty + m[1].y, tw.z + m[1].z), tg2 || tg, -0.05);
+    } else mk(new V3(tw.x, tw.o.top.position.y + (tw.lv >= 3 ? 1.45 : 0), tw.z), tg, 0);
   }
 }
 function update(dt) {
