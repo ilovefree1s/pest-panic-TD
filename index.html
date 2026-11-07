@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="522">v1.020</div>
+    <div id="ver" data-b="523">v1.021</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4664,7 +4664,11 @@ function ghostFor(t) {
 }
 const rangeDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 64), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.12, depthWrite: false }));
 const rangeRing = new THREE.Mesh(new THREE.RingGeometry(0.975, 1, 96), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85, depthWrite: false }));
-for (const m of [rangeDisc, rangeRing]) { m.rotation.x = -Math.PI / 2; m.position.y = 0.06; m.renderOrder = 6; m.visible = false; scene.add(m); }
+/* a second, dashed ring outside the first: how far the tool would reach after its next upgrade */
+const nextRing = new THREE.Mesh(new THREE.RingGeometry(0.982, 1, 96), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, depthWrite: false }));
+{ const g = nextRing.geometry, pos = g.attributes.position, n = pos.count, a = new Float32Array(n); for (let i = 0; i < n; i++) { const ang = Math.atan2(pos.getY(i), pos.getX(i)); a[i] = Math.floor((ang + Math.PI) / (Math.PI * 2) * 36) % 2 ? 1 : 0; } g.setAttribute('dash', new THREE.BufferAttribute(a, 1));
+  nextRing.material.onBeforeCompile = sh => { sh.vertexShader = 'attribute float dash; varying float vDash;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvDash = dash;'); sh.fragmentShader = 'varying float vDash;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\nif (vDash > 0.5) discard;'); }; }
+for (const m of [rangeDisc, rangeRing, nextRing]) { m.rotation.x = -Math.PI / 2; m.position.y = 0.06; m.renderOrder = 6; m.visible = false; scene.add(m); }
 const tileMark = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7ddc5a' }));
 tileMark.rotation.x = -Math.PI / 2; tileMark.position.y = 0.07; tileMark.renderOrder = 7; tileMark.visible = false; scene.add(tileMark);
 const gridMesh = new THREE.Mesh(new THREE.PlaneGeometry(42, 30), new THREE.MeshBasicMaterial({ map: TEX.grid, transparent: true, depthWrite: false }));
@@ -6364,7 +6368,7 @@ function drawPlacement(t) {
   const sel = S.placing, cell = previewCell();
   gridMesh.visible = !!sel || S.mode === 'build';
   for (const k in GHOST) GHOST[k].root.visible = false;
-  tileMark.visible = false; rangeDisc.visible = rangeRing.visible = false;
+  tileMark.visible = false; rangeDisc.visible = rangeRing.visible = nextRing.visible = false;
   if (sel) {
     if (cell) {
       const ok = cellOk(sel, cell.c, cell.r) && S.money >= costOf(sel), x = ccx(cell.c), z = ccz(cell.r), col = ok ? '#ffffff' : '#ff5248';
@@ -6374,7 +6378,9 @@ function drawPlacement(t) {
       if (cellOk(sel, cell.c, cell.r)) { const g = ghostFor(sel); g.root.visible = true; g.root.position.set(x, 0, z); }
     }
   } else if (S.pick && !TT[S.pick.t].counter) {   /* the flytrap calls flies from the whole kitchen: no circle */
-    const tw = S.pick; showRange(tw.x, tw.z, TT[tw.t].range[tw.lv - 1] * (1 + (tw.rmul || 0)) * PR(tw), tw.perk ? '#ff9a3c' : '#ffc93c', 0.1);
+    const tw = S.pick, TTt = TT[tw.t], mul = (1 + (tw.rmul || 0)) * PR(tw); showRange(tw.x, tw.z, TTt.range[tw.lv - 1] * mul, tw.perk ? '#ff9a3c' : '#ffc93c', 0.1);
+    if (tw.lv < 3 && TTt.range[tw.lv] > TTt.range[tw.lv - 1] && !tw.upPending) {   /* the next level's reach, as a dashed ring outside the solid one */
+      nextRing.visible = true; nextRing.position.x = tw.x; nextRing.position.z = tw.z; nextRing.scale.setScalar(TTt.range[tw.lv] * mul); nextRing.material.color.set('#ffc93c'); nextRing.material.opacity = 0.45 + Math.sin(t * 3) * 0.15; }
   }
 }
 const BAR_Y = { ant: 1.35, fly: 1.55, spider: 1.6, bed: 0.85, dung: 1.8, baby: 1.05, hopper: 1.5, centi: 0.9, stink: 1.3, moth: 1.2, mantis: 2.3 };
