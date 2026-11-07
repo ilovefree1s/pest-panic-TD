@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="524">v1.022</div>
+    <div id="ver" data-b="525">v1.023</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5884,7 +5884,7 @@ function aim(sx = 0, sz = 0) {
 /* time of day: a game starts in the morning, runs through midday and sunset, and the last waves are played at night under the kitchen light.
    Keyframes by how far through the 25 waves you are; the look eases toward the target so it changes gradually during a wave. */
 const MOOD_KEYS = [
-  { p: 0.0,  sun: [1, 0.96, 0.86], si: 3.0, sp: [-34, 26, -16], hs: [0.9, 0.95, 1], hg: [0.29, 0.33, 0.41], hi: 1.0, ex: 1.1, ov: [1, 1, 1], oa: 0, bg: 0, lamp: 0 },
+  { p: 0.0,  sun: [1, 0.96, 0.86], si: 2.6, sp: [-34, 26, -16], hs: [0.9, 0.95, 1], hg: [0.29, 0.33, 0.41], hi: 0.95, ex: 1.04, ov: [1, 1, 1], oa: 0, bg: 0, lamp: 0 },
   { p: 0.35, sun: [1, 0.94, 0.85], si: 2.4, sp: [-18, 40, 14], hs: [1, 0.95, 0.89], hg: [0.17, 0.19, 0.22], hi: 0.75, ex: 1.0, ov: [1, 1, 1], oa: 0, bg: 0, lamp: 0 },
   { p: 0.66, sun: [1, 0.5, 0.2], si: 3.4, sp: [-44, 12, 4], hs: [1, 0.72, 0.52], hg: [0.16, 0.09, 0.19], hi: 0.6, ex: 1.0, ov: [0.6, 0.22, 0.08], oa: 0.26, bg: 0.6, bgc: [0.42, 0.2, 0.26], lamp: 0 },
   { p: 0.9,  sun: [0.5, 0.6, 1], si: 0.5, sp: [10, 30, 20], hs: [0.32, 0.38, 0.6], hg: [0.02, 0.02, 0.05], hi: 0.3, ex: 0.98, ov: [0.02, 0.04, 0.14], oa: 0.5, bg: 1, bgc: [0.03, 0.04, 0.09], lamp: 240 },
@@ -6671,7 +6671,7 @@ function renderShop() {
     const armText = t === 'license' ? '+5% all damage' : 'Spray 2× damage';
     const extra = armed ? `<em class="armTag">${armText}</em>` : ownsUnique(t) ? `<em class="used">${t === 'fogger' ? 'One per kitchen · tap yours to move it' : 'One per kitchen'}</em>` : TT[t].roam ? `<em class="buyTag">Buy</em>` : t === 'frog' ? `<em class="buyTag">Buy &amp; place</em>` : t === 'pack' && S && S.proPack ? `<em class="used">Owned</em>` : used ? `<em class="used">Used this wave</em>` : isNew ? `<em class="newtag">NEW</em>` : t === 'license' && S && S.lic ? `<em>Owned ${S.lic}/3 · +${S.lic * 5}%</em>` : '';
     if (TT[t].roam && ownsUnique(t)) return `<button class="tc owned1" type="button" data-t="${t}"><span><b>1 per house</b><em class="used">Tap yours to upgrade</em></span></button>`;   /* the cat: once you have him, his tile just says so */
-    const reach = TT[t].fliesOnly ? '<i class="ht reach air">Flies & moths</i>' : TT[t].air === false ? '<i class="ht reach gnd">Ground</i>' : '';
+    const reach = TT[t].fliesOnly ? '<i class="ht reach air">Air</i>' : TT[t].air === false ? '<i class="ht reach gnd">Ground</i>' : '';
     return `<button class="tc${used ? ' spent' : ''}${armed ? ' armed' : ''}" type="button" data-t="${t}">${i + off <= 10 ? `<kbd>${(i + off) % 10}</kbd>` : ''}<i class="ic">${ICON[t]}<small class="pr">${armed ? 'Tap again' : c === Infinity ? 'Max' : c}</small></i><span><b>${TT[t].abbr ? `<u class="full">${TT[t].short || TT[t].name}</u><u class="abbr">${TT[t].abbr}</u>` : TT[t].short || TT[t].name}</b><span class="tags">${hitTag(t, true)}${reach}</span>${extra}</span></button>`;   /* the price sits under the picture on phones */
   }).join('');
   for (const b of document.querySelectorAll('.stabs button')) b.classList.toggle('on', b.dataset.tab === shopTab);
@@ -7152,7 +7152,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   if (!RESUMING) clearRun(runKey(lv));
   $('rsAsk').hidden = true;
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
-  clearBoard(); loadLevel(lv); S = newState('play'); shown = {}; lastTray = ''; shopTab = 'tools'; requestAnimationFrame(syncBeltPos);
+  clearBoard(); loadLevel(lv); S = newState('play'); MOOD.cur = null;   /* the light snaps to the game's morning instead of easing in from the title's midday glare (a dark floor flashed white for a few seconds) */ shown = {}; lastTray = ''; shopTab = 'tools'; requestAnimationFrame(syncBeltPos);
   if (LEVELS[lv].team) {
     S.ext.x = ccx(4); S.ext.z = ccz(9);
     if (net) {
