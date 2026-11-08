@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="550">v1.048</div>
+    <div id="ver" data-b="551">v1.049</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1406,7 +1406,7 @@ function setupDaily(day = dailyDay()) {
   const BOSSES = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'].map(t => [t, r()]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   const early = BOSSES.slice(0, 4).sort((a, b) => BT[a].hp - BT[b].hp);
   const look = SOLO[Math.floor(r() * SOLO.length)];
-  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: isRace(day) ? 'Today\'s kitchen: the same for everyone. Clear 15 waves as fast as you can without losing a slice. Call waves early to save time!' : 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07 * (day >= '2026-11-06' ? 1.1 : 1), money: 210, cakeCol: cake, shift: 1,
+  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: isRace(day) ? 'Today\'s kitchen: the same for everyone. Clear 15 waves as fast as you can without losing a slice. Call waves early to save time!' : 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07 * (day >= '2026-11-06' ? 1.1 : 1) * (day >= '2026-11-08' ? 0.92 : 1),   /* 8% off from Nov 8: the first race day ran a little too hard */ money: 210, cakeCol: cake, shift: 1,
     nb: [['hopper', 4, 2], ['centi', 7, 1], ['stink', 9, 1], ['moth', 11, 2], ['mantis', 14, 1]], bosses: [...early.map(t => [t]), [BOSSES[4], BOSSES[5]]], routes, look, day, twists, mystery: twists.includes('mystery') ? mysteryTools(day) : null };
   HOUSES[DAILY_LV] = { ...HOUSES[look] }; PROP_LAYOUT[DAILY_LV] = PROP_LAYOUT[look]; delete houseTex[DAILY_LV];
 }   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
