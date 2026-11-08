@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="552">v1.050</div>
+    <div id="ver" data-b="553">v1.051</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1362,7 +1362,8 @@ function twistsFor(day) {
     const k = d.toISOString().slice(0, 10);
     if (!TW_MEMO[k]) {
       const r = rng(dayHash('ppd-twist-' + k)); r(); r(); r();   /* (the first few rolls from a fresh seed are too alike day to day) */
-      const pick = () => { for (let i = 0; i < 80; i++) { const t = TWISTS[Math.floor(r() * TWISTS.length)][0]; if (!prev.includes(t)) return t; } return TWISTS.find(t => !prev.includes(t[0]))[0]; };
+      const gone = t => t === 'shiny' && k >= '2026-11-09';   /* Shiny Rush retired once the Daily became a 10-wave race (kept in TWISTS so earlier days' draws don't shift) */
+      const pick = () => { for (let i = 0; i < 80; i++) { const t = TWISTS[Math.floor(r() * TWISTS.length)][0]; if (!prev.includes(t) && !gone(t)) return t; } return TWISTS.find(t => !prev.includes(t[0]) && !gone(t[0]))[0]; };
       const a = pick(); let out = [a];
       for (let i = 0; i < 50; i++) { const b = pick(); if (b !== a && !TWIST_CLASH.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) { out = [a, b]; break; } }
       TW_MEMO[k] = out;
