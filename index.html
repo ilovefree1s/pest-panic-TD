@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="551">v1.049</div>
+    <div id="ver" data-b="552">v1.050</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1289,7 +1289,7 @@ HOUSES[18] = { name: 'Castle Kitchen', bg: '#0b0a09',   // Level 12: grey stone 
   rooms: { living: '#5a4a3a', bed: '#4a3a4a', couch: '#6a2a2a', rug: '#7a1e22', blanket: '#c9a227', wood: '#3a2618', paint: '#7a7266', hall: '#4a3422' } };
 PROP_LAYOUT[18] = PROP_LAYOUT[4];
 // ---------------------------------------------------------------- Daily Kitchen: a fresh random kitchen every day, the same for everyone
-const DAILY_LV = 19, DAILY_LIVES = 10, RACE_WAVES = 15, RACE_FROM = '2026-11-07';   /* Daily Kitchen is a race from 7 Nov: 15 waves, fastest perfect run wins (game time, so speed-up doesn't matter) */
+const DAILY_LV = 19, DAILY_LIVES = 10, RACE_WAVES = 10, RACE_FROM = '2026-11-07', raceWaves = day => day < '2026-11-08' ? 15 : RACE_WAVES;   /* (the first race day was 15 waves) */   /* Daily Kitchen is a race from 7 Nov: 15 waves, fastest perfect run wins (game time, so speed-up doesn't matter) */
 const isRace = day => day >= RACE_FROM;
 const fmtT = t => { t = Math.max(0, Math.round((t || 0) * 10)); const m = Math.floor(t / 600), sc = (t % 600) / 10; return m + ':' + (sc < 10 ? '0' : '') + sc.toFixed(1); };
 const etDate = t => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(t);   // YYYY-MM-DD in US Eastern time
@@ -1406,7 +1406,7 @@ function setupDaily(day = dailyDay()) {
   const BOSSES = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'].map(t => [t, r()]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   const early = BOSSES.slice(0, 4).sort((a, b) => BT[a].hp - BT[b].hp);
   const look = SOLO[Math.floor(r() * SOLO.length)];
-  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: isRace(day) ? 'Today\'s kitchen: the same for everyone. Clear 15 waves as fast as you can without losing a slice. Call waves early to save time!' : 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07 * (day >= '2026-11-06' ? 1.1 : 1) * (day >= '2026-11-08' ? 0.92 : 1),   /* 8% off from Nov 8: the first race day ran a little too hard */ money: 210, cakeCol: cake, shift: 1,
+  LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: isRace(day) ? 'Today\'s kitchen: the same for everyone. Clear ' + RACE_WAVES + ' waves as fast as you can without losing a slice. Call waves early to save time!' : 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07 * (day >= '2026-11-06' ? 1.1 : 1) * (day >= '2026-11-08' ? 0.92 : 1),   /* 8% off from Nov 8: the first race day ran a little too hard */ money: 210, cakeCol: cake, shift: 1,
     nb: [['hopper', 4, 2], ['centi', 7, 1], ['stink', 9, 1], ['moth', 11, 2], ['mantis', 14, 1]], bosses: [...early.map(t => [t]), [BOSSES[4], BOSSES[5]]], routes, look, day, twists, mystery: twists.includes('mystery') ? mysteryTools(day) : null };
   HOUSES[DAILY_LV] = { ...HOUSES[look] }; PROP_LAYOUT[DAILY_LV] = PROP_LAYOUT[look]; delete houseTex[DAILY_LV];
 }   // Snake Pit: bakery look   // Back to Back: pizza parlor look   // Mirror Maze: diner look on the wide team board
@@ -8384,9 +8384,9 @@ async function renderBoard(day) {
   const me = myPid();
   if (mine && mine.sent === 3 && top.length < 50 && !top.some(t => t.pid === me) && !renderBoard.healed) { renderBoard.healed = true; mine.sent = 0; LS.set('ppd-daily-' + day, JSON.stringify(mine)); return renderBoard(day); }   /* our score went missing from the board: send it again */
   if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
-  const row = t => isRace(day) ? (t.waves >= RACE_WAVES ? `<span class="wv">${t.kills ? '🏁 ' : ''}${fmtT(-t.boss_dmg / 10)}</span><span class="kl">${t.kills ? 'Perfect' : 'Lost cake'}</span>` : `<span class="wv">Wave ${t.waves}</span><span class="kl">Didn't finish</span>`) : `<span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span>`;
+  const row = t => isRace(day) ? (t.waves >= raceWaves(day) ? `<span class="wv">${t.kills ? '🏁 ' : ''}${fmtT(-t.boss_dmg / 10)}</span><span class="kl">${t.kills ? 'Perfect' : 'Lost cake'}</span>` : `<span class="wv">Wave ${t.waves}</span><span class="kl">Didn't finish</span>`) : `<span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span>`;
   ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span>${row(t)}</li>`).join('');
-  if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + (isRace(day) ? (mine.w >= RACE_WAVES ? ' · ' + fmtT(mine.t) + (mine.p ? ' · perfect' : ' · lost cake') : ' · wave ' + mine.w) : ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'); }
+  if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + (isRace(day) ? (mine.w >= raceWaves(day) ? ' · ' + fmtT(mine.t) + (mine.p ? ' · perfect' : ' · lost cake') : ' · wave ' + mine.w) : ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'); }
 }
 function openDaily() {
   setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
