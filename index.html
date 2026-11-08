@@ -666,7 +666,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="548">v1.046</div>
+    <div id="ver" data-b="549">v1.047</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2783,6 +2783,33 @@ function extRedTexture(tex) {
   x.putImageData(d, 0, 0);
   const t = new THREE.CanvasTexture(cv); t.flipY = tex.flipY; t.colorSpace = tex.colorSpace; t.wrapS = tex.wrapS; t.wrapT = tex.wrapT; return t;
 }
+/* Cutting Meshy's hose off the exterminator left the bottom of his tank open (you could see up into him from below). Close every hole in a
+   given region of the mesh: find the open edge loops (edges owned by one triangle, counted with the UV-seam duplicates welded) and fan each
+   one shut around its centre, copying the rim's texture coordinates and bone weights so the lid is painted and skinned like the rim. */
+function capHoles(geo, inZone) {
+  const P = geo.attributes.position, I = geo.index; if (!I || geo.userData.capped) return 0; geo.userData.capped = true;
+  const n = P.count, q = 1e4, canon = new Map(), cid = new Int32Array(n);
+  for (let i = 0; i < n; i++) { const k = Math.round(P.getX(i) * q) + ',' + Math.round(P.getY(i) * q) + ',' + Math.round(P.getZ(i) * q); let c = canon.get(k); if (c === undefined) { c = i; canon.set(k, c); } cid[i] = c; }
+  const ec = new Map(), rep = new Map();   /* canonical edge -> triangle count; and one real (a,b) vertex pair for it, in that triangle's winding */
+  for (let t = 0; t < I.count; t += 3) for (let j = 0; j < 3; j++) { const a = I.getX(t + j), b = I.getX(t + (j + 1) % 3), ca = cid[a], cb = cid[b]; if (ca === cb) continue; const k = ca < cb ? ca + ',' + cb : cb + ',' + ca; ec.set(k, (ec.get(k) || 0) + 1); if (!rep.has(k)) rep.set(k, [a, b]); }
+  const next = new Map(); for (const [k, c] of ec) if (c === 1) { const [a, b] = rep.get(k); next.set(cid[a], [a, b]); }   /* open edges, kept in their triangle's direction: following them walks each hole's rim */
+  const loops = [], used = new Set();
+  for (const start of next.keys()) { if (used.has(start)) continue; const L = []; let c = start; for (let g2 = 0; g2 < 5000; g2++) { if (used.has(c)) break; used.add(c); const e = next.get(c); if (!e) break; L.push(e[0]); c = cid[e[1]]; if (c === start) break; } const last = next.get(cid[L[L.length - 1]]); if (L.length >= 3 && last && cid[last[1]] === start) loops.push(L); }
+  const pick = loops.filter(L => { const c = new V3(); for (const v of L) c.add(new V3(P.getX(v), P.getY(v), P.getZ(v))); c.divideScalar(L.length); return inZone(c, L.length); });
+  if (!pick.length) return 0;
+  /* every lid gets its own copy of the rim plus a centre, all on ONE texel of the rim (a lid stretched across the rim's texture showed a smear of it) */
+  const add = pick.reduce((a, L) => a + L.length + 1, 0), names = Object.keys(geo.attributes), fresh = {}, gc = (A, i, k) => k === 0 ? A.getX(i) : k === 1 ? A.getY(i) : k === 2 ? A.getZ(i) : A.getW(i);
+  for (const nm of names) { const A = geo.attributes[nm], sz = A.itemSize, arr = new A.array.constructor((n + add) * sz); for (let i = 0; i < n; i++) for (let k = 0; k < sz; k++) arr[i * sz + k] = gc(A, i, k); fresh[nm] = new THREE.BufferAttribute(arr, sz, A.normalized); }   /* (component by component: the loader may hand over interleaved attributes) */
+  const tri = []; let vn = n;
+  for (const L of pick) { const c = new V3(); for (const v of L) c.add(new V3(P.getX(v), P.getY(v), P.getZ(v))); c.divideScalar(L.length);
+    const put = (dst, src, pos) => { for (const nm of names) { const A = geo.attributes[nm], F = fresh[nm]; for (let k = 0; k < A.itemSize; k++) F.array[dst * A.itemSize + k] = gc(A, nm === 'uv' ? L[0] : src, k); } if (pos) { const F = fresh.position; F.array[dst * 3] = pos.x; F.array[dst * 3 + 1] = pos.y; F.array[dst * 3 + 2] = pos.z; } };
+    const vc = vn++; put(vc, L[0], c); const ring = L.map(v => { const d = vn++; put(d, v, null); return d; });   /* rim copies keep their bones, take the one texel */
+    /* the open edges run in their triangles' winding, so (rim i, rim i+1, centre) faces the opposite way to the neighbouring triangles: flip it */
+    for (let i = 0; i < L.length; i++) tri.push(ring[(i + 1) % L.length], ring[i], vc); }
+  for (const nm of names) geo.setAttribute(nm, fresh[nm]);
+  const total = I.count + tri.length, big = n + add > 65535, idx = big ? new Uint32Array(total) : new Uint16Array(total); for (let i = 0; i < I.count; i++) idx[i] = I.getX(i); idx.set(tri, I.count); geo.setIndex(new THREE.BufferAttribute(idx, 1));
+  console.log('capped', pick.length, 'hole(s) of', loops.length, 'open loop(s)'); return pick.length;
+}
 function smoothModel(g, crease = 1.05) {   /* Meshy models come in with hard edges on every low-poly face, which reads as lines/cracks: smooth the shading across edges flatter than ~60 degrees */
   g.scene.traverse(n => { if (n.isMesh && !n.geometry.userData.smooth) { try { const sg = toCreasedNormals(n.geometry, crease); sg.userData.smooth = true; n.geometry = sg; } catch (e) { console.warn('smooth', e); } } });
 }
@@ -3122,7 +3149,7 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
 }
 function extFallback() { for (const r of [EXT, EXT2]) if (r && !r.userData.mdl) { r.userData.body.visible = true; r.userData.wand.visible = true; } }
 function extModelLoad() {
-  try { new GLTFLoader().load('assets/exterminator.glb?h=f2f953ae', g => { smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); extFallback(); } }, undefined, () => extFallback()); } catch (err) { extFallback(); }
+  try { new GLTFLoader().load('assets/exterminator.glb?h=f2f953ae', g => { try { g.scene.traverse(o => { if (o.isSkinnedMesh) capHoles(o.geometry, (c, len) => len >= 6 && c.y > 0.35 && c.y < 0.9 && c.z < -0.15); }); } catch (e) { console.warn('cap', e); }   /* the tank's open bottom (model space: behind the spine, belt height) */ smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); extFallback(); } }, undefined, () => extFallback()); } catch (err) { extFallback(); }
 }
 extModelLoad();
 /* ?diag=suit: a debugging view for texture bleeding. Draws, enlarged, the shrunken copies of the suit sheet exactly as this GPU holds them,
