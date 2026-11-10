@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="560">v1.058</div>
+    <div id="ver" data-b="561">v1.059</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1341,7 +1341,7 @@ function trailRoute(cells, tail) {   // cells run cake -> door; the game wants d
 /* ---- Daily twists: two rules for the day, the same for everyone, rolled on a slot machine when the run starts (from 4 Nov 2026) */
 const TWISTS = [
   ['speed', '🏃', 'Speed Day', 'Bugs move 20% faster, but every squash pays double.'],
-  ['armor', '🛡️', 'Armored Day', 'Every regular bug has +2 armor. Poison and fog burn right through it.'],
+  ['armor', '🛡️', 'Armored Day', 'Every regular bug has +2 armor but 20% less health. Poison and fog burn right through armor.'],
   ['flyers', '🪰', 'Flyer Frenzy', 'Half of every wave is flies and moths.'],
   ['giant', '🦣', 'Giant Day', 'Half as many bugs, but each is bigger, slower, twice as tough and pays double.'],
   ['shiny', '✨', 'Shiny Rush', 'Shiny bugs are twice as common today.'],
@@ -3080,7 +3080,7 @@ function fitExtModel(root, gltf, red) {
       /* the clothes' patch of the texture: everything but the head, hands and feet (so an outfit recolours the shirt but never the orange cap) */
       const skip = new Set(['Neck', 'Head', 'HeadTop_End', 'Bone_016', 'headfront', 'LeftHand', 'RightHand', 'LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'].map(n => sk.bones.indexOf(B(n))).filter(k => k >= 0)); sk.bones.forEach((bn, k) => { if (/Hand(Thumb|Middle|Index|Ring|Pinky)|Bone_04/.test(bn.name)) skip.add(k); });
       const neckP = B('Neck').getWorldPosition(new V3()), headK = sk.bones.indexOf(B('Head')), body = new Uint8Array(P.count), neck = new Uint8Array(P.count), legs = new Uint8Array(P.count);   /* legs: from the boot tops to above the knees, well under the belt pouches */ for (let i = 0; i < P.count; i++) { let best = -1, bw = 0; for (let c = 0; c < 4; c++) if (W.getComponent(i, c) > bw) { bw = W.getComponent(i, c); best = J.getComponent(i, c); } body[i] = skip.has(best) ? 0 : 1;
-        if (!/Hand|Foot|Toe|Bone_04/.test(sk.bones[best].name)) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.y > bb.min.y + Hh * 0.13 && v.y < bb.min.y + Hh * 0.3) legs[i] = 1; const rad = Math.hypot(v.x - neckP.x, v.z - neckP.z); if (v.y > neckY - Hh * 0.11 && v.y < neckY + Hh * (best === headK && rad > Hh * 0.16 ? 0.03 : v.z < hz + Hh * 0.18 && rad < Hh * 0.17 ? 0.1 : 0.06) && rad > Hh * 0.075) neck[i] = (v.z > hz + Hh * 0.05 ? Math.abs(v.x - neckP.x) < Hh * 0.18 && v.y > neckY - Math.abs(v.x - neckP.x) * 0.5 - Hh * 0.01 : v.y > neckY - Hh * 0.04) ? 2 : 1;   /* 2 = the collar itself (in front a wide V from the throat out toward each shoulder; behind, the ring round the neck), 1 = the shirt under it */   /* the flaps: a wide V that runs from the throat down and out toward each shoulder (everything above that line is collar) */ }   /* (the flaps themselves, not the shirt front below them) */   /* (outside the neck itself, and the taller part of the band only close around it: the ring climbs under his hair there, while his cheeks and beard sit further out; and never on the head bone itself, which carries the cheeks) */   /* (the band reaches higher behind the face, where the collar ring climbs under his hair and there are no lips to catch) */ }   /* the collar band: a slice of him at neck height (the shirt's collar ring rides on the head bone, so the clothes mask misses it); 2 = the collar flaps at the front */
+        if (!/Hand|Foot|Toe|Bone_04/.test(sk.bones[best].name)) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.y > bb.min.y + Hh * 0.13 && v.y < bb.min.y + Hh * 0.3) legs[i] = 1; const rad = Math.hypot(v.x - neckP.x, v.z - neckP.z); if (v.y > neckY - Hh * 0.11 && v.y < neckY + Hh * (best === headK && rad > Hh * 0.16 ? 0.03 : v.z < hz + Hh * 0.18 && rad < Hh * 0.17 ? 0.1 : 0.06) && rad > Hh * 0.075) neck[i] = rad < Hh * 0.115 && (v.z > hz + Hh * 0.05 ? v.y > neckY - Hh * 0.035 - Math.abs(v.x - neckP.x) * 0.75 : v.y > neckY - Hh * 0.04) ? 2 : 1;   /* (and never further from the neck than the collar's tips: the shoulder yoke is shirt) */   /* 2 = the collar itself (in front a wide V from the throat out toward each shoulder; behind, the ring round the neck), 1 = the shirt under it */   /* the flaps: a wide V that runs from the throat down and out toward each shoulder (everything above that line is collar) */ }   /* (the flaps themselves, not the shirt front below them) */   /* (outside the neck itself, and the taller part of the band only close around it: the ring climbs under his hair there, while his cheeks and beard sit further out; and never on the head bone itself, which carries the cheeks) */   /* (the band reaches higher behind the face, where the collar ring climbs under his hair and there are no lips to catch) */ }   /* the collar band: a slice of him at neck height (the shirt's collar ring rides on the head bone, so the clothes mask misses it); 2 = the collar flaps at the front */
       /* All three masks (every patch, the tank's, the clothes') are painted in ONE pass over the triangles, one colour channel each, and read back
          once: three passes with strokes took a second or two on a phone and froze the game as he loaded. Shared by both players' models. */
       const cache = gltf.userData.extMasks ||= {};
@@ -5305,7 +5305,7 @@ function startWave0() {
   S.wave++; if (KIT.signs && KIT.signs.length) setDoorSigns(); S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
   if (!rush && !LEVELS[LV].team) S.routeN = (LONG_R - 1 + ROUTES.length) % ROUTES.length;   // the wave opens on the longest trail   // every wave in this push pays its clear bonus at the end
-  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1) * (LEVELS[LV].team ? 1.2 : 1) * (LV === DAILY_LV && TWX('quick') ? 0.75 : 1); for (const tw of S.towers) { tw.wdmg = 0; tw.wbonus = 0; } if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%; Team Kitchen bugs are 20% tougher
+  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1) * (LEVELS[LV].team ? 1.2 : 1) * (LV === DAILY_LV && TWX('quick') ? 0.75 : 1) * (LV === DAILY_LV && TWX('armor') ? 0.8 : 1); for (const tw of S.towers) { tw.wdmg = 0; tw.wbonus = 0; } if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%; Team Kitchen bugs are 20% tougher
   // endless: past the last wave every wave gets another 6% tougher on top, and they pour out faster
   if (S.wave > MAXW) { S.hpMul *= 1.06 ** (S.wave - MAXW); S.gap = Math.max(0.24, 0.34 - (S.wave - MAXW) * 0.005); }
   S.trio = new Set(S.queue.filter(t => BT[t].boss)).size > 1;
@@ -8150,7 +8150,7 @@ function aiStartWave(n) {
   const A = S.vs.bot; if (A.fin || A.lives <= 0) return;
   A.wave = n; A.active = true; A.queue = makeWave(n, LEVELS[LV].shift); A.spawnT = 0; A.routeN = LONG_R;
   A.gap = Math.max(0.34, 0.9 - n * 0.026);
-  A.hpMul = hpCurve(n) * LEVELS[LV].hp * (n === 6 || n === 7 ? 0.9 : 1) * (LV === DAILY_LV && TWX('quick') ? 0.75 : 1);
+  A.hpMul = hpCurve(n) * LEVELS[LV].hp * (n === 6 || n === 7 ? 0.9 : 1) * (LV === DAILY_LV && TWX('quick') ? 0.75 : 1) * (LV === DAILY_LV && TWX('armor') ? 0.8 : 1);
   A.trio = new Set(A.queue.filter(t => BT[t].boss)).size > 1;
   aiStatus();
 }
