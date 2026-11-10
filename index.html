@@ -179,7 +179,12 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .setbox label b{font:400 17px var(--display);color:var(--gold)}
 .setbox label span{text-align:left}
 .setbox input{grid-column:1/3;width:100%;height:28px;accent-color:#ffc23a;cursor:pointer}
-.setbox select{font:800 16px var(--body,inherit);color:#fff;background:#1b2027;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:8px 12px;cursor:pointer}
+.setbox .trk{display:grid;gap:8px;text-align:left;font-weight:800;font-size:16px}
+.setbox .trk small{font-weight:600;font-size:12px;opacity:.65}
+.setbox .trk #setTrk{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.setbox .trk #setTrk label{display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px;background:#1b2027;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:7px 10px;cursor:pointer}
+.setbox .trk #setTrk label.on{border-color:#ffc23a;background:#2a2410}
+.setbox .trk #setTrk input{grid-column:auto;width:18px;height:18px;margin:0;accent-color:#ffc23a}
 #sideways{z-index:32;background:rgba(8,10,12,.82)} .swCard{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:340px;padding:22px 20px;border-radius:22px;background:#12171c;box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 16px 40px rgba(0,0,0,.5)} .swCard .t{font-size:28px;line-height:1.05} .swCard p{margin:0;font-size:15px;font-weight:700;color:#d9d3c6;line-height:1.4} .swPhone{width:84px;height:84px;color:var(--gold);animation:swTurn 2.4s ease-in-out infinite} .swPhone svg{width:100%;height:100%} @keyframes swTurn{0%,35%{transform:rotate(0)}55%,80%{transform:rotate(-90deg)}100%{transform:rotate(0)}} @media (prefers-reduced-motion:reduce){.swPhone{animation:none}}
 #moodOv{position:absolute;inset:0;pointer-events:none;z-index:0}
 #settings{z-index:30;background:rgba(8,10,12,.9);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}   /* dark enough that the title buttons behind don't compete */ #backup{z-index:31;background:#0d1013} #backup #bakCode{width:min(520px,92vw);max-width:100%;font:600 12px/1.3 ui-monospace,Menlo,monospace;color:#d9d3c6;background:#0e1317;border:2px solid #2a333c;border-radius:12px;padding:8px;resize:none;word-break:break-all} #backup .bakRow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center} #backup .lstat{max-width:52ch}
@@ -667,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="557">v1.055</div>
+    <div id="ver" data-b="558">v1.056</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -814,7 +819,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
       <div class="setbox">
         <label><span>Sound effects</span><b id="setSfxV">100%</b><input type="range" id="setSfx" min="0" max="100" step="5" value="100"></label>
         <label><span>Music</span><b id="setMusV">100%</b><input type="range" id="setMus" min="0" max="100" step="5" value="100"></label>
-        <label><span>Soundtrack</span><select id="setTrk"></select></label>
+        <div class="trk"><span>Soundtracks</span><div id="setTrk"></div><small>Tick more than one and they take turns, a few minutes each.</small></div>
       </div>
       <button class="btn dark" id="setTut" type="button">Replay tutorial</button>
       <button class="btn dark" id="setUpd" type="button">Check for updates</button>
@@ -1351,9 +1356,15 @@ const TWISTS = [
   ['lights', '🌙', 'Lights Out', 'The kitchen is dark. Candles light up 35% wider and scorch 50% harder.'],
   ['slippery', '🧊', 'Slippery Floor', 'Bugs on the floor slide 50% further when the broom or a gust pushes them. Flyers are unaffected.'],
   ['doors', '🚪', 'Two Doors', 'Both doors are open from wave 1 (the second usually opens at wave 5).'],
+  /* race-era twists (from 11 Nov) */
+  ['hot', '🔥', 'Hot Start', '50% more starting coins, but wave 1 is sent 3 seconds after you press play.'],
+  ['sudden', '💀', 'Sudden Death', 'Lose a single slice of cake and the race is over. Every bug pays double.'],
+  ['quick', '⚡', 'Quick Critters', 'Bugs move 30% faster but have 25% less health.'],
+  ['spender', '💸', 'Big Spender', 'Upgrades cost half. New tools cost double.'],
 ];
+const TWISTS_V1 = 16;   /* how many twists the pool held before 11 Nov (the draws of earlier days must not shift) */
 const TWIST = Object.fromEntries(TWISTS.map(t => [t[0], t]));
-const TWIST_CLASH = [['court', 'parade'], ['giant', 'flyers']];
+const TWIST_CLASH = [['court', 'parade'], ['giant', 'flyers'], ['sudden', 'glass'], ['quick', 'speed'], ['quick', 'giant'], ['hot', 'budget']];
 const TW_MEMO = {};
 function twistsFor(day) {
   if (!(day >= '2026-11-04') || !/^\d{4}-\d\d-\d\d$/.test(day)) return [];
@@ -1364,8 +1375,9 @@ function twistsFor(day) {
     const k = d.toISOString().slice(0, 10);
     if (!TW_MEMO[k]) {
       const r = rng(dayHash('ppd-twist-' + k)); r(); r(); r();   /* (the first few rolls from a fresh seed are too alike day to day) */
-      const gone = t => t === 'shiny' && k >= '2026-11-09';   /* Shiny Rush retired once the Daily became a 10-wave race (kept in TWISTS so earlier days' draws don't shift) */
-      const pick = () => { for (let i = 0; i < 80; i++) { const t = TWISTS[Math.floor(r() * TWISTS.length)][0]; if (!prev.includes(t) && !gone(t)) return t; } return TWISTS.find(t => !prev.includes(t[0]) && !gone(t[0]))[0]; };
+      const gone = t => (t === 'shiny' && k >= '2026-11-09') || (t === 'slippery' && k >= '2026-11-11');   /* retired twists (kept in TWISTS so earlier days' draws don't shift) */
+      const pool = k >= '2026-11-11' ? TWISTS : TWISTS.slice(0, TWISTS_V1);
+      const pick = () => { for (let i = 0; i < 80; i++) { const t = pool[Math.floor(r() * pool.length)][0]; if (!prev.includes(t) && !gone(t)) return t; } return pool.find(t => !prev.includes(t[0]) && !gone(t[0]))[0]; };
       const a = pick(); let out = [a];
       for (let i = 0; i < 50; i++) { const b = pick(); if (b !== a && !TWIST_CLASH.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) { out = [a, b]; break; } }
       TW_MEMO[k] = out;
@@ -3592,7 +3604,7 @@ function finishJob(j) {
   if (S.pick === o) syncTray();
 }
 // full gold for the opening 5 waves, then the 15% cut kicks in
-function goldMul(w = S.wave) { return (w <= 5 ? 1 : w <= 10 ? 0.85 : w <= 15 ? 0.42 : 0.33) * (LV === DAILY_LV ? (TWX('speed') ? 2 : 1) * (TWX('glass') ? 2 : 1) * (TWX('giant') ? 2 : 1) * (TWX('budget') ? 1.25 : 1) * (TWX('swarm') ? 0.5 : 1) : 1); }   /* Swarm Day: twice the bugs, so each pays half (it was doubling everyone's income) */
+function goldMul(w = S.wave) { return (w <= 5 ? 1 : w <= 10 ? 0.85 : w <= 15 ? 0.42 : 0.33) * (LV === DAILY_LV ? (TWX('speed') ? 2 : 1) * (TWX('glass') ? 2 : 1) * (TWX('giant') ? 2 : 1) * (TWX('budget') ? 1.25 : 1) * (TWX('swarm') ? 0.5 : 1) * (TWX('sudden') ? 2 : 1) : 1); }   /* Swarm Day: twice the bugs, so each pays half (it was doubling everyone's income) */
 const payAt = (t, w) => Math.max(1, Math.round((BT[t].gold + Math.floor(w / 3)) * goldMul(w)));   // what one squash of t pays on wave w   // late waves pay less so gold doesn't pile up unspent
 // ---- special move: backpack spray. He sprints to the front of the swarm, turns around and fogs everything coming at him.
 const ABIL = { cd: 60, cost: 0, dot: 12, dur: 3.2, range: 7.5, cone: 0.78, dps: 26, speed: 26, bossPct: 0.10 };   // a full spray takes 10% off a boss
@@ -4044,7 +4056,7 @@ function itemWave() { return S.active ? S.wave : S.wave + 1; }
 function itemUsed(t) { return !!(TT[t] && TT[t].item && S && S.itemUsed && S.itemUsed[t] === itemWave()); }
 function markUsed(t) { (S.itemUsed ||= {})[t] = itemWave(); renderShop(); }
 function elCost(el) { return el.dataset.send != null ? SENDS[+el.dataset.send].cost : costOf(el.dataset.t); }
-function costOf(t) { if (t === 'pack') return S && S.proPack ? Infinity : TT.pack.cost; return t === 'license' ? (S.lic >= 3 ? Infinity : TT.license.costs[S.lic]) : TT[t].cost; }
+function costOf(t) { if (t === 'pack') return S && S.proPack ? Infinity : TT.pack.cost; return t === 'license' ? (S.lic >= 3 ? Infinity : TT.license.costs[S.lic]) : TT[t].cost * (LV === DAILY_LV && TWX('spender') ? 2 : 1); }   /* Big Spender: new tools cost double */
 // perks: once a tool is level 3 it can buy one special power (a big upgrade with its own look)
 const PERK = {
   swat:   { name: 'Electrified Swatter', icon: '⚡', amp: 0.8, d: 'Turns gunmetal black with lightning crackling across it. +80% damage, and every smack zaps the bug, stunning it for a moment.' },
@@ -4062,7 +4074,7 @@ const PERK = {
 };
 const perkCost = tw => Math.round(TT[tw.t].cost * 1.6);
 const PR = tw => ((tw.perk && PERK[tw.t].range) || 1) * (tw.t === 'candle' && TWX('lights') ? 1.35 : 1);   // perk range bonus
-const upCost = tw => tw.lv >= 3 ? (tw.perk || !PERK[tw.t] ? Infinity : perkCost(tw)) : Math.round(TT[tw.t].cost * [0.8, 1.3][tw.lv - 1]);
+const upCost = tw => tw.lv >= 3 ? (tw.perk || !PERK[tw.t] ? Infinity : perkCost(tw)) : Math.round(TT[tw.t].cost * [0.8, 1.3][tw.lv - 1] * (LV === DAILY_LV && TWX('spender') ? 0.5 : 1));   /* Big Spender: upgrades cost half */
 // money spent since the last wave started comes back in full; older money at 60%
 const sellVal = tw => tw.pending ? tw.spent : (tw.fresh || 0) + Math.floor((tw.spent - (tw.fresh || 0)) * 0.6);
 const ICON = {
@@ -4975,7 +4987,9 @@ const SND = (() => {
 // switches between them on the bar line. "classic" is the original pair; the others run on a small data-driven sequencer.
 const MUSIC = (() => {
   let ac = null, bus = null, echo = null, noise = null, timer = 0, next = 0, step = 0, loop = 0, track = 'calm', want = 'calm', style = 'classic';
-  let off = false, mvol = 1; try { off = localStorage.getItem('ppd-music') === '0'; const v = localStorage.getItem('ppd-mvol'); if (v !== null) mvol = +v; const st = localStorage.getItem('ppd-mtrack'); if (st) style = st; } catch (e) {}
+  let picks = ['classic'], rotT = 0;   /* the soundtracks ticked in Settings; with more than one, the band changes tune every few minutes (on a bar line) */
+  const ROTATE = 150;   /* seconds per soundtrack when several are picked */
+  let off = false, mvol = 1; try { off = localStorage.getItem('ppd-music') === '0'; const v = localStorage.getItem('ppd-mvol'); if (v !== null) mvol = +v; const st = localStorage.getItem('ppd-mtrack'); if (st) { picks = st.split(',').filter(Boolean); style = picks[0] || 'classic'; } } catch (e) {}
   const mf = m => 440 * 2 ** ((m - 69) / 12);
   const TR = {   /* the original pair */
     calm: { bpm: 112, chords: [48, 45, 41, 43], third: [4, 3, 4, 4],
@@ -5106,11 +5120,12 @@ const MUSIC = (() => {
   function play(t) { const st = STYLES[style]; if (!st || !st[track]) return playClassic(t); playSpec(st[track], t); }
   function tick() {
     if (!ac) return;
-    const now = ac.currentTime;
+    const now = ac.currentTime; if (bus && bus.gain.value > 0.001 && !document.hidden) rotT -= 0.025;   /* (only counts while the music is actually playing) */
     if (next < now - 0.3) next = now + 0.05;
     while (next < now + 0.14) {
       const bars = STYLES[style] && STYLES[style][track] ? 8 : 4;
       if (step % 16 === 0 && want !== track) { track = want; step = 0; }
+      if (step % 16 === 0 && picks.length > 1 && rotT <= 0) { style = picks[(picks.indexOf(style) + 1) % picks.length]; step = 0; loop = 0; rotT = ROTATE; sync(); }
       play(next);
       next += 60 / curBpm() / 4; step++; if (step % (16 * bars) === 0) loop++;
     }
@@ -5133,8 +5148,9 @@ const MUSIC = (() => {
   return {
     set(t) { want = t; },
     get off() { return off; }, get vol() { return off ? 0 : mvol; },
-    get style() { return style; }, get styles() { return Object.keys(STYLES).map(k => [k, STYLES[k].name]); },
-    setStyle(k) { if (!STYLES[k]) return; style = k; step = 0; loop = 0; try { localStorage.setItem('ppd-mtrack', k); } catch (e) {} sync(); },
+    get style() { return style; }, get styles() { return Object.keys(STYLES).map(k => [k, STYLES[k].name]); }, get picks() { return picks.slice(); },
+    setPicks(list) { picks = list.filter(k => STYLES[k]); if (!picks.length) picks = ['classic']; if (!picks.includes(style)) { style = picks[0]; step = 0; loop = 0; } rotT = ROTATE; try { localStorage.setItem('ppd-mtrack', picks.join(',')); } catch (e) {} sync(); },
+    setStyle(k) { this.setPicks([k]); },
     setVol(v) { mvol = v; off = false; try { localStorage.setItem('ppd-mvol', String(v)); localStorage.setItem('ppd-music', '1'); } catch (e) {} sync(); },
     toggle() { off = !off; try { localStorage.setItem('ppd-music', off ? '0' : '1'); } catch (e) {} sync(); },
     /* offline render of one tune (for previews and tests): returns an AudioBuffer */
@@ -5289,7 +5305,7 @@ function startWave0() {
   S.wave++; if (KIT.signs && KIT.signs.length) setDoorSigns(); S.queue = rush ? S.queue.concat(makeWave(S.wave, LEVELS[LV].shift)) : makeWave(S.wave, LEVELS[LV].shift); S.gap = Math.max(0.34, 0.9 - S.wave * 0.026);
   S.clears = rush ? [...(S.clears || []), S.wave] : [S.wave];
   if (!rush && !LEVELS[LV].team) S.routeN = (LONG_R - 1 + ROUTES.length) % ROUTES.length;   // the wave opens on the longest trail   // every wave in this push pays its clear bonus at the end
-  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1) * (LEVELS[LV].team ? 1.2 : 1); for (const tw of S.towers) { tw.wdmg = 0; tw.wbonus = 0; } if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%; Team Kitchen bugs are 20% tougher
+  S.hpMul = hpCurve(S.wave) * LEVELS[LV].hp * (S.wave === 6 || S.wave === 7 ? 0.9 : 1) * (LEVELS[LV].team ? 1.2 : 1) * (LV === DAILY_LV && TWX('quick') ? 0.75 : 1); for (const tw of S.towers) { tw.wdmg = 0; tw.wbonus = 0; } if (!rush) S.spawnT = 0; S.active = true;   // waves 6-7 eased 10%; Team Kitchen bugs are 20% tougher
   // endless: past the last wave every wave gets another 6% tougher on top, and they pour out faster
   if (S.wave > MAXW) { S.hpMul *= 1.06 ** (S.wave - MAXW); S.gap = Math.max(0.24, 0.34 - (S.wave - MAXW) * 0.005); }
   S.trio = new Set(S.queue.filter(t => BT[t].boss)).size > 1;
@@ -5425,6 +5441,7 @@ function kill(b) {
 function biteCake(n) {
   S.biteAcc = (S.biteAcc || 0) + n; n = Math.floor(S.biteAcc + 1e-6); S.biteAcc -= n;
   if (!n) { SND.play('squish'); return; }
+  if (LV === DAILY_LV && TWX('sudden') && S.mode === 'play') { n = S.lives; banner('Sudden Death!', 'One bite was all it took.', true, 2600); }   /* Sudden Death: the first bite takes the whole cake */
   for (let i = 0; i < n && S.lives > 0; i++) {
     S.lives--; const k = S.cakeK || 1; for (let j = 0; j < k; j++) { const s = cake.slices[Math.round(S.lives * k) + j]; if (s && s.visible) cake.biting.push({ s, t: 0 }); }   // cakeK: on a 10-slice cake each slice is 2 pieces
   }
@@ -5791,6 +5808,7 @@ function towerAct(tw, dt) {
 }
 function update(dt) {
   S.gt = (S.gt || 0) + dt;
+  if (S.daily && S.daily.hot > 0 && S.mode === 'play' && S.wave === 0 && !S.active && $('slot').hidden) { const was = S.daily.hot; S.daily.hot -= dt; if (Math.ceil(S.daily.hot) < Math.ceil(was) || was === 3) banner('Hot Start!', 'Wave 1 in ' + Math.max(1, Math.ceil(S.daily.hot)) + '…', false, 900); if (S.daily.hot <= 0) { S.daily.hot = 0; startWave(); } }
   if (S.mode === 'title') {
     S.demoT -= dt; if (S.demoT <= 0) { S.demoT = 0.9 + Math.random() * 0.6; spawnBug(Math.random() < 0.25 ? 'fly' : Math.random() < 0.15 ? 'spider' : 'ant'); }
   } else if (S.active && S.queue.length) {
@@ -5815,7 +5833,7 @@ function update(dt) {
       if (Math.random() < dt * 6) FX.smoke.spawn({ x: b.x, y: bugY(b) + 0.6, z: b.z, vy: 1.2, life: 0.5, s0: 0.25, s1: 0.6, c: [0.6, 1, 0.5], a0: 0.6 });
     } else b.psnD = 0;
     if (b.dead) continue;
-    let sp = bt.spd * (b.stuck > 0 && !bt.heavy ? b.slowF : 1) * (b.glueT > 0 && !bt.heavy ? b.glueF : 1) * (b.psnT > 0 && !bt.heavy ? 0.75 : 1) * (b.angry ? 1.45 : 1) * (LV === DAILY_LV ? (TWX('speed') ? 1.2 : 1) * (b.giant ? 0.8 : 1) * (bt.boss && TWX('enraged') && b.hp < b.max / 2 ? 1.4 : 1) : 1);
+    let sp = bt.spd * (b.stuck > 0 && !bt.heavy ? b.slowF : 1) * (b.glueT > 0 && !bt.heavy ? b.glueF : 1) * (b.psnT > 0 && !bt.heavy ? 0.75 : 1) * (b.angry ? 1.45 : 1) * (LV === DAILY_LV ? (TWX('speed') ? 1.2 : 1) * (TWX('quick') ? 1.3 : 1) * (b.giant ? 0.8 : 1) * (bt.boss && TWX('enraged') && b.hp < b.max / 2 ? 1.4 : 1) : 1);
     if (b.glueT > 0) b.glueT -= dt; if (b.fireT > 0) b.fireT -= dt;
     if (b.ball) b.ball.flash -= dt;
     if (b.eatT > 0) { b.eatT -= dt; sp = 0; b.walk += dt * 6; if (Math.random() < dt * 5) FX.goo.spawn({ x: b.x, y: b.y0 + 0.5, z: b.z, vx: (Math.random() - 0.5) * 2, vy: 2.5, vz: (Math.random() - 0.5) * 2, grav: 14, life: 0.4, s0: 0.14, s1: 0.08, c: [0.75, 0.5, 0.28], a0: 1, a1: 1 }); }
@@ -7079,7 +7097,8 @@ let setPausedBy = false;
 function syncSettings() {
   const sv = SND.muted ? 0 : Math.round(SND.vol * 100), mv = Math.round(MUSIC.vol * 100);
   $('setSfx').value = sv; $('setSfxV').textContent = sv + '%'; $('setMus').value = mv; $('setMusV').textContent = mv + '%';
-  const sel = $('setTrk'); if (!sel.options.length) for (const [k, nm] of MUSIC.styles) { const o = document.createElement('option'); o.value = k; o.textContent = nm; sel.appendChild(o); } sel.value = MUSIC.style;
+  const box = $('setTrk'); if (!box.children.length) for (const [k, nm] of MUSIC.styles) { const l = document.createElement('label'); l.innerHTML = '<input type="checkbox" value="' + k + '"> ' + nm; box.appendChild(l); }
+  const on = MUSIC.picks; for (const l of box.children) { const c = l.firstChild; c.checked = on.includes(c.value); l.classList.toggle('on', c.checked); }
 }
 function openSettings() {
   if (S.mode === 'play' && !S.paused) { setPaused(true); setPausedBy = true; $('paused').hidden = true; }
@@ -7092,7 +7111,7 @@ function closeSettings() {
 $('setSfx').addEventListener('input', e => { if (SND.muted) SND.toggle(); SND.setVol(e.target.value / 100); $('setSfxV').textContent = e.target.value + '%'; });
 $('setSfx').addEventListener('change', () => { SND.init(); SND.play('swat'); });
 $('setMus').addEventListener('input', e => { SND.init(); MUSIC.setVol(e.target.value / 100); $('setMusV').textContent = e.target.value + '%'; });
-$('setTrk').addEventListener('change', e => { SND.init(); MUSIC.setStyle(e.target.value); if (MUSIC.vol === 0) { MUSIC.setVol(0.6); syncSettings(); } });
+$('setTrk').addEventListener('change', () => { SND.init(); const on = [...$('setTrk').querySelectorAll('input')].filter(c => c.checked).map(c => c.value); MUSIC.setPicks(on); if (MUSIC.vol === 0) MUSIC.setVol(0.6); syncSettings(); });
 $('setDone').addEventListener('click', closeSettings);
 // field guide and achievements share one screen with two tabs
 function syncGTabs() { for (const b of document.querySelectorAll('.gtabs button')) b.classList.toggle('on', !$(b.dataset.g).hidden); }
@@ -8131,7 +8150,7 @@ function aiStartWave(n) {
   const A = S.vs.bot; if (A.fin || A.lives <= 0) return;
   A.wave = n; A.active = true; A.queue = makeWave(n, LEVELS[LV].shift); A.spawnT = 0; A.routeN = LONG_R;
   A.gap = Math.max(0.34, 0.9 - n * 0.026);
-  A.hpMul = hpCurve(n) * LEVELS[LV].hp * (n === 6 || n === 7 ? 0.9 : 1);
+  A.hpMul = hpCurve(n) * LEVELS[LV].hp * (n === 6 || n === 7 ? 0.9 : 1) * (LV === DAILY_LV && TWX('quick') ? 0.75 : 1);
   A.trio = new Set(A.queue.filter(t => BT[t].boss)).size > 1;
   aiStatus();
 }
@@ -8538,6 +8557,7 @@ function startDaily() {
   const race = isRace(day);
   S.daily = { day, counts: !dailyMine(day), race }; S.lives = lives; S.cakeK = 20 / lives; setCake(lives); S.endless = !race; setDoorSigns(); $('waveMax').textContent = race ? '/' + RACE_WAVES : ' ∞';
   if (TWX('budget')) S.money = Math.round(S.money / 2);
+  if (TWX('hot')) { S.money = Math.round(S.money * 1.5); S.daily.hot = 3; }   /* Hot Start: the fuse is lit as soon as the kitchen is yours (the twist banner must be gone first) */
   if (TWX('pro')) { S.proPack = true; setAbil(); }
   syncHud(); syncGo(); renderShop(); syncTray();
   const tw = LEVELS[DAILY_LV].twists || [], go = () => banner(race ? 'Daily Race' : 'Daily Kitchen', S.daily.counts ? (race ? RACE_WAVES + ' waves, fastest perfect run wins. The clock starts with wave 1!' : lives + ' slices, endless waves. This run goes on the leaderboard!') : 'Practice run: your score for today is already in', false, 2800);
