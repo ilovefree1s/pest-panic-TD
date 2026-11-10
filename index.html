@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="561">v1.059</div>
+    <div id="ver" data-b="562">v1.060</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2744,7 +2744,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
     while (h < t) { const p = q[h++], d = dist[p]; if (d > far) continue; const px = p % W;
       const nb = [px > 0 ? p - 1 : -1, px < W - 1 ? p + 1 : -1, p >= W ? p - W : -1, p < W * (H - 1) ? p + W : -1];
       for (const n of nb) { if (n < 0 || dist[n] || painted[n] || !M.cover[n] || (mask && mask[n]) || !isOr2(n * 4)) continue; dist[n] = d + 1; q[t++] = n;
-        if (suit === 'camo') painted[n] = 1; else { const i = n * 4, lum = Math.max(src[i], src[i + 1], src[i + 2]) / 255; paint(i, lum * 0.78); } } }
+        if (suit === 'camo' && M.masks.neckMask[n] === 2) painted[n] = 1; else { const i = n * 4, lum = Math.max(src[i], src[i + 1], src[i + 2]) / 255; paint(i, lum * 0.78); } } }   /* (camo keeps only the painted collar orange) */
     yield;
   }
   /* The cloth also carries faded-denim highlights, dirt stains and worn patches that aren't blue or orange enough to be recognised
@@ -3094,6 +3094,8 @@ function fitExtModel(root, gltf, red) {
         }
         const d = x.getImageData(0, 0, iw, ih).data, N = iw * ih, cv1 = new Uint8Array(N), st = new Uint8Array(N), tm = new Uint8Array(N), sm = new Uint8Array(N), nm = new Uint8Array(N), lg = new Uint8Array(N);
         for (let i = 0, j = 0; i < N; i++, j += 4) { cv1[i] = d[j] > 0 ? 1 : 0; st[i] = d[j] > 128 ? 1 : 0; tm[i] = d[j + 1] > 200 ? 1 : 0; lg[i] = d[j + 1] > 100 && d[j + 1] <= 200 ? 1 : 0; sm[i] = d[j + 2] > 100 ? 1 : 0; nm[i] = d[j + 1] > 12 && d[j + 1] <= 100 ? (d[j + 1] < 48 ? 2 : 1) : 0; }   /* (the tank threshold is as it always was: raising it let the tank's edge texels slip into the clothes mask and take the suit colour) */   /* any touch counts as a patch (no hairline gaps between triangles); the masks want a real majority */
+        /* the hand-painted collar replaces the guessed one: white in collar_mask.png is collar (2); whatever geometry guessed as collar but the painting left out is plain shirt (1) */
+        if (gltf.userData.collarImg) { const ci = gltf.userData.collarImg, cc = document.createElement('canvas'); cc.width = iw; cc.height = ih; const cx2 = cc.getContext('2d'); cx2.drawImage(ci, 0, 0, iw, ih); const cd = cx2.getImageData(0, 0, iw, ih).data; for (let i = 0; i < N; i++) { if (cd[i * 4] > 127) nm[i] = 2; else if (nm[i] === 2) nm[i] = 1; } }
         cache.cover = cv1; cache.strict = st; cache.tankMask = tm; cache.suitMask = padMask(sm, cv1, iw, ih); cache.neckMask = nm; cache.legMask = padMask(lg, cv1, iw, ih);
         /* a looser tank mask for recolouring the canister only: everything behind the spine below the neck (the face of the tank against his back
            sits forward of the strict cut and stayed white on the toxic tank). It's only ever applied to white/grey texels, so his shirt back is safe. */
@@ -3194,7 +3196,9 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
 }
 function extFallback() { for (const r of [EXT, EXT2]) if (r && !r.userData.mdl) { r.userData.body.visible = true; r.userData.wand.visible = true; } }
 function extModelLoad() {
-  try { new GLTFLoader().load('assets/exterminator.glb?h=f2f953ae', g => { try { g.scene.traverse(o => { if (o.isSkinnedMesh) capHoles(o.geometry, (c, len) => len >= 6 && c.y > 0.35 && c.y < 0.9 && c.z < -0.15); }); } catch (e) { console.warn('cap', e); }   /* the tank's open bottom (model space: behind the spine, belt height) */ smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); extFallback(); } }, undefined, () => extFallback()); } catch (err) { extFallback(); }
+  /* the collar, as hand-painted in paint.html (white = collar, in the texture's own space) */
+  const COLLAR = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'assets/collar_mask.png?h=7135382e'; });
+  try { new GLTFLoader().load('assets/exterminator.glb?h=f2f953ae', g => COLLAR.then(cm => { g.userData.collarImg = cm; try { g.scene.traverse(o => { if (o.isSkinnedMesh) capHoles(o.geometry, (c, len) => len >= 6 && c.y > 0.35 && c.y < 0.9 && c.z < -0.15); }); } catch (e) { console.warn('cap', e); }   /* the tank's open bottom (model space: behind the spine, belt height) */ smoothModel(g); EXT_GLTF = g; try { fitExtModel(EXT, g, false); fitExtModel(EXT2, g, true); } catch (err) { console.warn('exterminator model', err); extFallback(); } }), undefined, () => extFallback()); } catch (err) { extFallback(); }
 }
 extModelLoad();
 /* ?diag=suit: a debugging view for texture bleeding. Draws, enlarged, the shrunken copies of the suit sheet exactly as this GPU holds them,
