@@ -179,6 +179,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .setbox label b{font:400 17px var(--display);color:var(--gold)}
 .setbox label span{text-align:left}
 .setbox input{grid-column:1/3;width:100%;height:28px;accent-color:#ffc23a;cursor:pointer}
+.setbox select{font:800 16px var(--body,inherit);color:#fff;background:#1b2027;border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:8px 12px;cursor:pointer}
 #sideways{z-index:32;background:rgba(8,10,12,.82)} .swCard{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:340px;padding:22px 20px;border-radius:22px;background:#12171c;box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 16px 40px rgba(0,0,0,.5)} .swCard .t{font-size:28px;line-height:1.05} .swCard p{margin:0;font-size:15px;font-weight:700;color:#d9d3c6;line-height:1.4} .swPhone{width:84px;height:84px;color:var(--gold);animation:swTurn 2.4s ease-in-out infinite} .swPhone svg{width:100%;height:100%} @keyframes swTurn{0%,35%{transform:rotate(0)}55%,80%{transform:rotate(-90deg)}100%{transform:rotate(0)}} @media (prefers-reduced-motion:reduce){.swPhone{animation:none}}
 #moodOv{position:absolute;inset:0;pointer-events:none;z-index:0}
 #settings{z-index:30;background:rgba(8,10,12,.9);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}   /* dark enough that the title buttons behind don't compete */ #backup{z-index:31;background:#0d1013} #backup #bakCode{width:min(520px,92vw);max-width:100%;font:600 12px/1.3 ui-monospace,Menlo,monospace;color:#d9d3c6;background:#0e1317;border:2px solid #2a333c;border-radius:12px;padding:8px;resize:none;word-break:break-all} #backup .bakRow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center} #backup .lstat{max-width:52ch}
@@ -666,7 +667,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="556">v1.054</div>
+    <div id="ver" data-b="557">v1.055</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -813,6 +814,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
       <div class="setbox">
         <label><span>Sound effects</span><b id="setSfxV">100%</b><input type="range" id="setSfx" min="0" max="100" step="5" value="100"></label>
         <label><span>Music</span><b id="setMusV">100%</b><input type="range" id="setMus" min="0" max="100" step="5" value="100"></label>
+        <label><span>Soundtrack</span><select id="setTrk"></select></label>
       </div>
       <button class="btn dark" id="setTut" type="button">Replay tutorial</button>
       <button class="btn dark" id="setUpd" type="button">Check for updates</button>
@@ -4969,32 +4971,101 @@ const SND = (() => {
   };
 })();
 // ---------------------------------------------------------------- music: a little synth band, made on the fly (no audio files)
-// "calm" = bouncy kitchen tune in C major; "boss" = faster, tense tune in A minor. Switches on the bar line.
+// Several soundtracks to pick from in Settings. Each has a "calm" tune (kitchen) and a "boss" tune (faster, minor); the band
+// switches between them on the bar line. "classic" is the original pair; the others run on a small data-driven sequencer.
 const MUSIC = (() => {
-  let ac = null, bus = null, noise = null, timer = 0, next = 0, step = 0, loop = 0, track = 'calm', want = 'calm';
-  let off = false, mvol = 1; try { off = localStorage.getItem('ppd-music') === '0'; const v = localStorage.getItem('ppd-mvol'); if (v !== null) mvol = +v; } catch (e) {}
+  let ac = null, bus = null, echo = null, noise = null, timer = 0, next = 0, step = 0, loop = 0, track = 'calm', want = 'calm', style = 'classic';
+  let off = false, mvol = 1; try { off = localStorage.getItem('ppd-music') === '0'; const v = localStorage.getItem('ppd-mvol'); if (v !== null) mvol = +v; const st = localStorage.getItem('ppd-mtrack'); if (st) style = st; } catch (e) {}
   const mf = m => 440 * 2 ** ((m - 69) / 12);
-  const TR = {
+  const TR = {   /* the original pair */
     calm: { bpm: 112, chords: [48, 45, 41, 43], third: [4, 3, 4, 4],
       mel: [[0, , 4, , 7, , 4, , 12, , 11, , 7, , , ,], [9, , 12, , 16, , 12, , 9, , 7, , 4, , , ,], [5, , 9, , 12, , 9, , 14, , 12, , 9, , 7, ,], [7, , 11, , 14, , 11, , 7, , 5, , 2, , , ,]],
       mel2: [[12, , , 11, 12, , 7, , 4, , 7, , , , , ,], [9, , , 7, 9, , 12, , 16, , 14, , 12, , , ,], [17, , 16, , 14, , 12, , 9, , 12, , 14, , , ,], [11, , 14, , 19, , 17, , 14, , 11, , 7, , , ,]] },
     boss: { bpm: 134, chords: [45, 41, 43, 40], third: [3, 4, 4, 4],
       mel: [[12, 15, 19, 15, 12, 15, 19, 24, 12, 15, 19, 15, 22, 19, 15, 12], [8, 12, 17, 12, 8, 12, 17, 20, 8, 12, 17, 12, 15, 12, 8, 5], [10, 14, 19, 14, 10, 14, 19, 22, 10, 14, 19, 14, 17, 14, 10, 7], [7, 11, 16, 11, 7, 11, 16, 19, 20, 19, 16, 14, 11, 8, 7, 4]] },
   };
-  function tone(type, f, t, dur, vol, cut) {
+  const _ = undefined;
+  /* the new soundtracks: bpm, swing (how late every odd 16th lands, as a share of a 16th), 8-bar chord loop (bass roots as MIDI notes, the
+     chord's third and seventh above), a bass pattern (semitone offsets from the root per 16th; 't' = the chord's third, 'n' = a walk toward the
+     next root), two 8-bar melodies (semitones above the lead's base note, alternating each pass), an optional arpeggio, pads and the drum kit */
+  const STYLES = {
+    classic: { name: 'Kitchen Classic' },
+    swing: { name: 'Swing Shift',
+      calm: { bpm: 118, swing: 0.3, bass: { roots: [41, 38, 46, 48, 41, 45, 46, 48], third: [4, 3, 4, 4, 4, 3, 4, 4], sev: [11, 10, 11, 10, 11, 10, 11, 10], pat: [0, _, _, _, 't', _, _, _, 7, _, _, _, 'n', _, _, _], type: 'triangle', vol: 0.34, cut: 700, dur: 3.2 },
+        lead: { base: 65, type: 'square', vol: 0.045, cut: 2400, dur: 1.9, echo: 0.22 },
+        mel: [[0, _, 4, _, 7, _, 9, _, _, 7, _, 4, _, 2, _, _], [2, _, 5, _, 9, _, _, 7, _, _, 5, _, 2, _, 0, _], [-3, _, 2, _, 5, _, 7, _, _, 5, _, 2, _, _, _, _], [4, _, 7, _, 11, _, _, 9, _, 7, _, 4, _, _, _, _],
+              [12, _, _, 11, _, 9, _, _, 7, _, _, 4, _, 7, _, _], [9, _, _, 7, _, 4, _, _, 2, _, 0, _, 2, _, 4, _], [5, _, _, 9, _, 12, _, _, 11, _, 9, _, 5, _, _, _], [7, _, 4, _, 2, _, 0, _, _, _, _, _, _, _, _, _]],
+        mel2: [[12, _, 11, _, 9, _, 7, _, _, 9, _, 12, _, _, _, _], [14, _, 12, _, 9, _, _, 7, _, _, 5, _, _, _, _, _], [5, _, 7, _, 9, _, 12, _, _, 9, _, 7, _, 5, _, _], [4, _, 2, _, 0, _, _, -1, _, 0, _, 2, _, 4, _, _],
+               [7, _, _, 9, _, 12, _, _, 16, _, 14, _, 12, _, _, _], [9, _, _, 12, _, 9, _, _, 7, _, 4, _, _, _, _, _], [5, _, 9, _, 12, _, 14, _, _, 12, _, 9, _, _, _, _], [7, _, _, _, 4, _, _, _, 0, _, _, _, _, _, _, _]],
+        pad: { type: 'sine', vol: 0.03, oct: 12 },
+        drums: { kick: [0, 8], snare: [4, 12], snareVol: 0.1, hat: 'swing', hatVol: 0.05, fill: true } },
+      boss: { bpm: 150, swing: 0.28, bass: { roots: [38, 43, 46, 45, 38, 43, 41, 45], third: [3, 3, 4, 4, 3, 3, 4, 4], sev: [10, 10, 11, 10, 10, 10, 11, 10], pat: [0, _, 0, _, 7, _, 0, _, 10, _, 0, _, 7, _, 'n', _], type: 'sawtooth', vol: 0.13, cut: 900, dur: 1.4 },
+        lead: { base: 62, type: 'square', vol: 0.04, cut: 2300, dur: 0.95, echo: 0.16 },
+        mel: [[0, _, 3, 5, _, 7, _, 5, 3, _, 0, _, -2, _, 0, _], [5, _, 8, 10, _, 12, _, 10, 8, _, 5, _, 3, _, 5, _], [8, _, 12, _, 15, _, 12, _, 10, _, 8, _, 7, _, 5, _], [7, _, 11, _, 14, _, 12, _, 11, _, 7, _, 4, _, 7, _],
+              [12, _, _, 10, _, 8, _, 7, _, 5, _, 3, _, 0, _, _], [8, _, _, 7, _, 5, _, 3, _, _, 2, _, 3, _, 5, _], [3, _, _, 5, _, 7, _, 8, _, _, 10, _, 12, _, _, _], [7, _, _, _, 4, _, _, _, 0, _, _, _, _, _, _, _]],
+        pad: { type: 'sawtooth', vol: 0.018, oct: 0, cut: 1200 },
+        drums: { kick: [0, 8], snare: [4, 12], snareVol: 0.16, hat: 'swing', hatVol: 0.06, fill: true } } },
+    arcade: { name: 'Arcade',
+      calm: { bpm: 140, swing: 0, bass: { roots: [36, 33, 41, 43, 36, 40, 41, 43], third: [4, 3, 4, 4, 4, 3, 4, 4], pat: [0, _, 0, _, 12, _, 0, _, 0, _, 7, _, 12, _, 7, _], type: 'square', vol: 0.09, cut: 600, dur: 0.9 },
+        lead: { base: 72, type: 'square', vol: 0.04, cut: 4000, dur: 0.8, echo: 0 },
+        mel: [[0, _, 4, _, 7, _, 12, _, 7, _, 4, _, 0, _, 4, 7], [9, _, 12, _, 16, _, 12, _, 9, 7, _, 4, _, _, _, _], [5, _, 9, _, 12, _, 9, _, 5, _, 4, _, 2, _, 0, _], [2, _, 7, _, 11, _, 7, _, 2, _, 4, _, 7, _, 11, 12],
+              [12, _, _, 11, 12, _, 14, _, 16, _, _, 12, _, 9, _, 7], [4, _, 7, _, 9, _, _, 7, _, 4, _, 0, _, _, _, _], [5, _, _, 9, _, _, 12, _, 14, _, 12, _, 9, _, 5, _], [7, _, 11, _, 14, _, 12, _, 7, _, 4, _, 0, _, _, _]],
+        mel2: [[12, _, 12, _, 11, _, 12, _, 16, _, _, 14, _, 12, _, _], [9, _, 9, _, 7, _, 9, _, 12, _, _, 16, _, 14, _, 12], [5, _, 9, _, 12, _, 17, _, 16, _, 14, _, 12, _, 9, _], [7, _, 11, _, 14, _, 19, _, 17, _, 14, _, 11, _, 7, _],
+               [12, _, _, _, 16, _, _, _, 19, _, 17, _, 16, _, 14, _], [12, _, 11, _, 12, _, 9, _, 7, _, _, _, 4, _, _, _], [5, _, 7, _, 9, _, 12, _, _, 14, _, 12, _, 9, _, 7], [7, _, _, _, 11, _, _, _, 12, _, _, _, _, _, _, _]],
+        arp: { type: 'square', vol: 0.02, oct: 12, pat: [0, 't', 7, 12] },
+        drums: { kick: [0, 8, 10], snare: [4, 12], snareVol: 0.09, hat: 'all', hatVol: 0.035, fill: false } },
+      boss: { bpm: 160, swing: 0, bass: { roots: [36, 32, 39, 43, 36, 32, 41, 43], third: [3, 4, 4, 4, 3, 4, 3, 4], pat: [0, 0, 12, 0, 0, 12, 0, 0, 0, 12, 0, 0, 7, 0, 10, 12], type: 'square', vol: 0.09, cut: 700, dur: 0.6 },
+        lead: { base: 72, type: 'square', vol: 0.038, cut: 3800, dur: 0.6, echo: 0 },
+        mel: [[0, 0, _, 3, _, 5, _, 6, _, 5, 3, _, 0, _, _, _], [8, 8, _, 7, _, 5, _, 3, _, 5, _, 7, 8, _, 10, _], [3, _, 7, _, 10, _, 7, _, 3, _, 2, _, 0, _, _, _], [7, _, 11, _, 14, _, 11, _, 7, _, 5, _, 3, _, 2, _],
+              [12, _, _, 10, _, 8, _, 7, _, _, 5, _, 3, _, 0, _], [8, _, 10, _, 8, _, 7, _, 5, _, 3, _, 2, _, 0, _], [5, _, 8, _, 12, _, 8, _, 5, _, 8, _, 12, _, 15, _], [7, _, _, _, 11, _, _, _, 14, _, _, _, 12, _, _, _]],
+        arp: { type: 'square', vol: 0.018, oct: 12, pat: [0, 't', 7, 't'] },
+        drums: { kick: [0, 4, 8, 12], snare: [4, 12], snareVol: 0.12, hat: 'all', hatVol: 0.04, fill: true } } },
+    spy: { name: 'Spy Kitchen',
+      calm: { bpm: 132, swing: 0, bass: { roots: [40, 40, 45, 43, 40, 40, 47, 47], third: [3, 3, 3, 4, 3, 3, 4, 4], pat: [0, _, 0, _, 3, _, 5, _, 6, _, 5, _, 3, _, 0, _], type: 'sawtooth', vol: 0.12, cut: 800, dur: 1.1 },
+        lead: { base: 64, type: 'sawtooth', vol: 0.03, cut: 1800, dur: 2.4, echo: 0.3, vib: 5.5 },
+        mel: [[12, _, _, _, 11, _, _, _, 12, _, _, 15, _, 14, _, 12], [_, _, _, _, 7, _, _, _, 8, _, _, _, 7, _, 5, _], [5, _, _, _, 8, _, _, _, 12, _, _, _, 11, _, 8, _], [7, _, _, _, _, _, _, _, 10, _, _, _, 7, _, _, _],
+              [12, _, _, _, _, _, 15, _, _, _, 14, _, _, 12, _, _], [11, _, _, _, _, _, 12, _, _, _, _, _, _, _, _, _], [14, _, _, _, _, _, _, _, 15, _, _, _, 14, _, 11, _], [12, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]],
+        mel2: [[19, _, _, _, 17, _, _, _, 15, _, _, 14, _, 12, _, _], [_, _, _, _, 15, _, _, _, 14, _, _, _, 12, _, 11, _], [12, _, _, _, 15, _, _, _, 17, _, _, _, 15, _, 12, _], [14, _, _, _, _, _, 11, _, 10, _, _, _, 7, _, _, _],
+               [12, _, _, _, 14, _, _, _, 15, _, _, _, 19, _, _, _], [17, _, _, _, _, _, 15, _, _, _, 14, _, _, _, _, _], [11, _, _, _, _, _, 12, _, 14, _, _, _, 15, _, 14, _], [12, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]],
+        pad: null,
+        drums: { kick: [0, 8, 11], snare: [4, 12], snareVol: 0.12, hat: 'eighths', hatVol: 0.045, fill: true } },
+      boss: { bpm: 156, swing: 0, bass: { roots: [40, 41, 40, 38, 40, 41, 43, 47], third: [3, 4, 3, 4, 3, 4, 4, 4], pat: [0, _, 0, 0, 3, _, 5, _, 6, _, 6, 5, 3, _, 0, 0], type: 'sawtooth', vol: 0.13, cut: 1000, dur: 0.8 },
+        lead: { base: 64, type: 'sawtooth', vol: 0.03, cut: 2000, dur: 1.1, echo: 0.2, vib: 6 },
+        mel: [[12, _, 15, _, 12, _, 11, _, 12, _, _, _, 15, _, 17, _], [13, _, 17, _, 13, _, 12, _, 13, _, _, _, 12, _, 11, _], [12, _, 15, _, 12, _, 11, _, 12, _, _, _, 19, _, 17, _], [14, _, _, _, 17, _, 14, _, 10, _, _, _, 7, _, _, _],
+              [12, _, _, 15, _, _, 19, _, 18, _, _, 19, _, _, 15, _], [13, _, _, 17, _, _, 20, _, 17, _, _, _, 13, _, _, _], [15, _, _, 14, _, _, 15, _, 19, _, _, 17, _, _, 15, _], [14, _, _, _, 11, _, _, _, 12, _, _, _, _, _, _, _]],
+        pad: null,
+        drums: { kick: [0, 6, 8, 14], snare: [4, 12], snareVol: 0.16, hat: 'all', hatVol: 0.05, fill: true } } },
+    lofi: { name: 'Lo-fi Lounge',
+      calm: { bpm: 84, swing: 0.22, bass: { roots: [41, 40, 38, 36, 41, 40, 38, 43], third: [4, 3, 3, 4, 4, 3, 3, 4], sev: [11, 10, 10, 11, 11, 10, 10, 10], pat: [0, _, _, _, _, _, 0, _, _, _, 7, _, _, _, _, _], type: 'sine', vol: 0.45, cut: 400, dur: 4 },
+        lead: { base: 65, type: 'triangle', vol: 0.09, cut: 1600, dur: 2.6, echo: 0.33, vib: 4.5 },
+        mel: [[_, _, _, _, 12, _, _, 9, _, _, _, 7, _, _, _, _], [_, _, _, _, 7, _, _, 4, _, _, _, 2, _, _, _, _], [_, _, _, _, 5, _, _, _, 2, _, _, _, 0, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
+              [_, _, _, _, 12, _, _, _, 14, _, _, 12, _, _, _, _], [_, _, _, _, 11, _, _, _, 9, _, _, 7, _, _, _, _], [_, _, _, _, 9, _, _, _, 7, _, _, 5, _, _, _, _], [_, _, _, _, _, _, _, _, 4, _, _, _, _, _, _, _]],
+        mel2: [[_, _, 16, _, _, _, 14, _, _, _, 12, _, _, _, _, _], [_, _, 14, _, _, _, 12, _, _, _, 11, _, _, _, _, _], [_, _, 12, _, _, _, 9, _, _, _, 7, _, _, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, 4, _, 7, _],
+               [_, _, 9, _, _, _, 12, _, _, _, 16, _, _, _, _, _], [_, _, 14, _, _, _, 12, _, _, _, 11, _, _, _, _, _], [_, _, 9, _, _, _, 12, _, _, _, 14, _, _, _, _, _], [_, _, _, _, _, _, _, _, 12, _, _, _, _, _, _, _]],
+        pad: { type: 'sine', vol: 0.05, oct: 12, nine: true },
+        drums: { kick: [0, 7, 10], snare: [4, 12], snareVol: 0.08, hat: 'swing', hatVol: 0.03, fill: false, crackle: true } },
+      boss: { bpm: 100, swing: 0.2, bass: { roots: [38, 36, 34, 33, 38, 36, 34, 31], third: [3, 4, 4, 3, 3, 4, 4, 3], sev: [10, 11, 11, 10, 10, 11, 11, 10], pat: [0, _, _, 0, _, _, 7, _, 0, _, _, 10, _, _, 7, _], type: 'sine', vol: 0.45, cut: 500, dur: 1.6 },
+        lead: { base: 62, type: 'triangle', vol: 0.09, cut: 1800, dur: 1.4, echo: 0.28, vib: 5 },
+        mel: [[12, _, _, 10, _, _, 8, _, _, _, 7, _, _, _, _, _], [8, _, _, 7, _, _, 5, _, _, _, 3, _, _, _, _, _], [5, _, _, 7, _, _, 8, _, _, _, 10, _, _, _, 12, _], [7, _, _, _, _, _, 3, _, _, _, _, _, 0, _, _, _],
+              [12, _, _, 15, _, _, 12, _, _, _, 10, _, _, _, 8, _], [7, _, _, 8, _, _, 10, _, _, _, 12, _, _, _, _, _], [15, _, _, 14, _, _, 12, _, _, _, 10, _, _, _, 8, _], [7, _, _, _, _, _, _, _, 3, _, _, _, _, _, _, _]],
+        pad: { type: 'sine', vol: 0.05, oct: 12, nine: true },
+        drums: { kick: [0, 6, 10], snare: [4, 12], snareVol: 0.12, hat: 'eighths', hatVol: 0.04, fill: true, crackle: true } } },
+  };
+  function tone(type, f, t, dur, vol, cut, out, vib) {
     const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     let n = o; if (cut) { const fl = ac.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = cut; o.connect(fl); n = fl; }
-    n.connect(g).connect(bus); o.start(t); o.stop(t + dur + 0.02);
+    if (vib) { const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = vib; lg.gain.value = f * 0.006; l.connect(lg).connect(o.frequency); l.start(t + 0.12); l.stop(t + dur + 0.02); }
+    n.connect(g).connect(out || bus); o.start(t); o.stop(t + dur + 0.02);
   }
   function hit(kind, t, vol) {
     if (kind === 'kick') { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); o.connect(g).connect(bus); o.start(t); o.stop(t + 0.2); return; }
     const sN = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); sN.buffer = noise;
-    if (kind === 'hat') { f.type = 'highpass'; f.frequency.value = 7000; } else { f.type = 'bandpass'; f.frequency.value = kind === 'tom' ? 400 : 1800; f.Q.value = 0.8; }
-    const d = kind === 'hat' ? 0.04 : kind === 'tom' ? 0.16 : 0.12;
+    if (kind === 'hat') { f.type = 'highpass'; f.frequency.value = 7000; } else if (kind === 'crackle') { f.type = 'highpass'; f.frequency.value = 3000; } else { f.type = 'bandpass'; f.frequency.value = kind === 'tom' ? 400 : kind === 'tom2' ? 260 : 1800; f.Q.value = 0.8; }
+    const d = kind === 'hat' ? 0.04 : kind === 'crackle' ? 0.012 : kind.startsWith('tom') ? 0.16 : 0.12;
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); sN.connect(f).connect(g).connect(bus); sN.start(t, Math.random() * 0.3); sN.stop(t + d + 0.02);
   }
-  function play(t) {
+  function playClassic(t) {
     const T = TR[track], bar = Math.floor(step / 16) % 4, k = step % 16, root = T.chords[bar], sp = 60 / T.bpm / 4;
     if (track === 'calm') {
       if (k === 0 || k === 8) hit('kick', t, 0.5);
@@ -5016,31 +5087,63 @@ const MUSIC = (() => {
       if (k === 0) for (const iv of [0, T.third[bar], 7]) tone('sawtooth', mf(root + iv), t, sp * 15, 0.02, 1200);
     }
   }
+  function playSpec(T, t) {   /* the data-driven band: one 16th step of an 8-bar loop */
+    const bar = Math.floor(step / 16) % 8, k = step % 16, sp = 60 / T.bpm / 4, B = T.bass, root = B.roots[bar], third = B.third[bar], nextRoot = B.roots[(bar + 1) % 8];
+    if (T.swing && k % 2) t += sp * T.swing;
+    const D = T.drums, last = bar === 7;
+    if (D.kick.includes(k)) hit('kick', t, 0.5);
+    if (D.snare.includes(k)) hit('clap', t, D.snareVol);
+    if (D.hat === 'all' || (D.hat === 'eighths' && k % 2 === 0) || (D.hat === 'swing' && (k % 2 === 0 || k % 4 === 3))) hit('hat', t, D.hatVol * (k % 4 === 0 ? 1 : 0.7));
+    if (D.fill && last && k >= 12) hit(k >= 14 ? 'tom2' : 'tom', t, 0.22);
+    if (D.crackle && Math.random() < 0.35) hit('crackle', t + Math.random() * sp, 0.012 + Math.random() * 0.02);
+    const bp = B.pat[k];
+    if (bp !== undefined) { const n = bp === 't' ? root + third : bp === 'n' ? (nextRoot > root ? nextRoot - 1 : nextRoot + 1) : root + bp; tone(B.type, mf(n), t, sp * B.dur, B.vol, B.cut); }
+    if (T.pad && k === 0) { const iv = [0, third, 7]; if (B.sev) iv.push(B.sev[bar]); if (T.pad.nine) iv.push(14); for (const v of iv) tone(T.pad.type, mf(root + T.pad.oct + v), t, sp * 15, T.pad.vol, T.pad.cut); }
+    if (T.arp) { const a = T.arp.pat[k % T.arp.pat.length], n = root + T.arp.oct + (a === 't' ? third : a); tone(T.arp.type, mf(n), t, sp * 0.9, T.arp.vol, 3000); }
+    const M = (loop % 2 && T.mel2) ? T.mel2 : T.mel, m = M[bar][k];
+    if (m !== undefined) { const L = T.lead; tone(L.type, mf(L.base + m), t, sp * L.dur, L.vol, L.cut, L.echo ? echo.in : null, L.vib); }
+  }
+  function play(t) { const st = STYLES[style]; if (!st || !st[track]) return playClassic(t); playSpec(st[track], t); }
   function tick() {
     if (!ac) return;
     const now = ac.currentTime;
     if (next < now - 0.3) next = now + 0.05;
     while (next < now + 0.14) {
+      const bars = STYLES[style] && STYLES[style][track] ? 8 : 4;
       if (step % 16 === 0 && want !== track) { track = want; step = 0; }
       play(next);
-      next += 60 / TR[track].bpm / 4; step++; if (step % 64 === 0) loop++;
+      next += 60 / curBpm() / 4; step++; if (step % (16 * bars) === 0) loop++;
     }
   }
+  function curBpm() { const st = STYLES[style]; return st && st[track] ? st[track].bpm : TR[track].bpm; }
+  function wire(ctx) {   /* master bus plus an echo send for the leads: a dotted-eighth feedback delay, quietly */
+    ac = ctx; bus = ac.createGain(); bus.gain.value = 0; bus.connect(ac.destination);
+    const inp = ac.createGain(), dl = ac.createDelay(1), fb = ac.createGain(), wet = ac.createGain(), lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200;
+    fb.gain.value = 0.32; wet.gain.value = 0.5; inp.connect(bus); inp.connect(dl); dl.connect(lp).connect(fb).connect(dl); dl.connect(wet).connect(bus); echo = { in: inp, dl };
+    noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
   function level() { return off || SND.muted ? 0 : 0.16 * mvol; }
-  function sync() { if (bus) bus.gain.setTargetAtTime(document.hidden ? 0 : level(), ac.currentTime, 0.25); }
+  function sync() { if (bus) bus.gain.setTargetAtTime(document.hidden ? 0 : level(), ac.currentTime, 0.25); if (echo) echo.dl.delayTime.value = 60 / curBpm() * 0.75; }
   function start() {
     if (ac || !SND.ctx) return;
-    ac = SND.ctx; bus = ac.createGain(); bus.gain.value = 0; bus.connect(ac.destination);
-    noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    next = ac.currentTime + 0.1; timer = setInterval(tick, 25); sync();
+    wire(SND.ctx); next = ac.currentTime + 0.1; timer = setInterval(tick, 25); sync();
   }
   document.addEventListener('visibilitychange', sync);
   setInterval(() => { if (!ac) start(); else sync(); }, 300);
   return {
     set(t) { want = t; },
     get off() { return off; }, get vol() { return off ? 0 : mvol; },
+    get style() { return style; }, get styles() { return Object.keys(STYLES).map(k => [k, STYLES[k].name]); },
+    setStyle(k) { if (!STYLES[k]) return; style = k; step = 0; loop = 0; try { localStorage.setItem('ppd-mtrack', k); } catch (e) {} sync(); },
     setVol(v) { mvol = v; off = false; try { localStorage.setItem('ppd-mvol', String(v)); localStorage.setItem('ppd-music', '1'); } catch (e) {} sync(); },
     toggle() { off = !off; try { localStorage.setItem('ppd-music', off ? '0' : '1'); } catch (e) {} sync(); },
+    /* offline render of one tune (for previews and tests): returns an AudioBuffer */
+    async render(sty, trk, secs) {
+      const keep = { ac, bus, echo, noise, step, loop, track, style };
+      const octx = new OfflineAudioContext(1, Math.ceil(44100 * secs), 44100); wire(octx); bus.gain.value = 0.16; style = sty; track = trk; step = 0; loop = 0; if (echo) echo.dl.delayTime.value = 60 / curBpm() * 0.75;
+      let t = 0.05; while (t < secs) { play(t); t += 60 / curBpm() / 4; step++; const bars = STYLES[style] && STYLES[style][track] ? 8 : 4; if (step % (16 * bars) === 0) loop++; }
+      const buf = await octx.startRendering(); ({ ac, bus, echo, noise, step, loop, track, style } = keep); return buf;
+    },
   };
 })();
 
@@ -6976,6 +7079,7 @@ let setPausedBy = false;
 function syncSettings() {
   const sv = SND.muted ? 0 : Math.round(SND.vol * 100), mv = Math.round(MUSIC.vol * 100);
   $('setSfx').value = sv; $('setSfxV').textContent = sv + '%'; $('setMus').value = mv; $('setMusV').textContent = mv + '%';
+  const sel = $('setTrk'); if (!sel.options.length) for (const [k, nm] of MUSIC.styles) { const o = document.createElement('option'); o.value = k; o.textContent = nm; sel.appendChild(o); } sel.value = MUSIC.style;
 }
 function openSettings() {
   if (S.mode === 'play' && !S.paused) { setPaused(true); setPausedBy = true; $('paused').hidden = true; }
@@ -6988,6 +7092,7 @@ function closeSettings() {
 $('setSfx').addEventListener('input', e => { if (SND.muted) SND.toggle(); SND.setVol(e.target.value / 100); $('setSfxV').textContent = e.target.value + '%'; });
 $('setSfx').addEventListener('change', () => { SND.init(); SND.play('swat'); });
 $('setMus').addEventListener('input', e => { SND.init(); MUSIC.setVol(e.target.value / 100); $('setMusV').textContent = e.target.value + '%'; });
+$('setTrk').addEventListener('change', e => { SND.init(); MUSIC.setStyle(e.target.value); if (MUSIC.vol === 0) { MUSIC.setVol(0.6); syncSettings(); } });
 $('setDone').addEventListener('click', closeSettings);
 // field guide and achievements share one screen with two tabs
 function syncGTabs() { for (const b of document.querySelectorAll('.gtabs button')) b.classList.toggle('on', !$(b.dataset.g).hidden); }
