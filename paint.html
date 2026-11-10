@@ -13,10 +13,13 @@
   #msg b{color:#ffc23a}
 </style></head><body>
 <div id="msg">Loading…</div>
+<svg id="lasso" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none"><polyline fill="rgba(255,194,58,.18)" stroke="#ffc23a" stroke-width="3" stroke-dasharray="8 6" points=""/></svg>
 <div id="ui">
   <button id="mOrbit" class="on">Rotate / zoom</button>
   <button id="mPaint">Paint collar</button>
   <button id="mErase">Erase</button>
+  <button id="mLasso">Outline → paint</button>
+  <button id="mLassoE">Outline → erase</button>
   <label>Brush <input type="range" id="brush" min="1" max="12" value="4"></label>
   <button id="undo">Undo</button>
   <button id="clear">Clear</button>
@@ -45,7 +48,7 @@ new GLTFLoader().load('assets/exterminator.glb', g => {
   sc.add(g.scene); g.scene.updateMatrixWorld(true); mesh.skeleton.update();
   const bb = new THREE.Box3().setFromObject(g.scene), c = bb.getCenter(new THREE.Vector3()), h = bb.max.y - bb.min.y;
   ctl.target.set(c.x, bb.min.y + h * 0.78, c.z); cam.position.set(c.x, bb.min.y + h * 0.9, c.z + h * 1.6); ctl.update();
-  msg('<b>Rotate / zoom</b> with one finger / pinch. Switch to <b>Paint collar</b> and drag over the collar (front and back). <b>Save mask</b> when done and send me the file.');
+  msg('<b>Rotate / zoom</b> with one finger / pinch. <b>Outline → paint</b>: trace a loop around the collar and everything inside it is painted (do the front, then spin round for the back). Brush and Erase for touch-ups. <b>Save mask</b> when done and send me the file.');
 });
 function tint() { for (let i = 0; i < mark.length; i++) { const m = mark[i]; col[i * 3] = 1; col[i * 3 + 1] = m ? 0.25 : 1; col[i * 3 + 2] = m ? 0.25 : 1; } mesh.geometry.attributes.color.needsUpdate = true; try { const a = []; for (let i = 0; i < mark.length; i++) if (mark[i]) a.push(i); localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} }
 const ray = new THREE.Raycaster(), v = new THREE.Vector3(), nv = new THREE.Vector3(), cdir = new THREE.Vector3(); let painting = false, stroke = null;
@@ -58,12 +61,20 @@ function hitPaint(x, y) {
     if (mark[i] !== val) { if (!stroke.has(i)) stroke.set(i, mark[i]); mark[i] = val; changed = true; } }
   if (changed) tint();
 }
-const el = R.domElement;
-el.addEventListener('pointerdown', e => { if (mode === 'orbit') return; painting = true; stroke = new Map(); el.setPointerCapture(e.pointerId); hitPaint(e.clientX, e.clientY); });
-el.addEventListener('pointermove', e => { if (painting) hitPaint(e.clientX, e.clientY); });
-el.addEventListener('pointerup', () => { if (painting && stroke.size) hist.push(stroke); painting = false; stroke = null; });
-function setMode(m) { mode = m; ctl.enabled = m === 'orbit'; for (const [k, id] of [['orbit', 'mOrbit'], ['paint', 'mPaint'], ['erase', 'mErase']]) $(id).classList.toggle('on', k === m); }
-$('mOrbit').onclick = () => setMode('orbit'); $('mPaint').onclick = () => setMode('paint'); $('mErase').onclick = () => setMode('erase');
+const el = R.domElement, poly = $('lasso').firstElementChild; let pts = [];
+function inPoly(x, y) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+function lassoFill() {   /* everything facing you whose screen position lies inside the loop */
+  if (pts.length < 3) return; const val = mode === 'lasso' ? 1 : 0; cam.getWorldDirection(cdir); stroke = new Map(); const sp = new THREE.Vector3();
+  for (let i = 0; i < P.count; i++) { nv.fromBufferAttribute(N, i).transformDirection(mesh.matrixWorld); if (nv.dot(cdir) > 0.2) continue;
+    mesh.getVertexPosition(i, sp).applyMatrix4(mesh.matrixWorld).project(cam); const x = (sp.x + 1) / 2 * innerWidth, y = (1 - sp.y) / 2 * innerHeight; if (sp.z > 1 || !inPoly(x, y)) continue;
+    /* hidden behind another part of him? check with a ray */ ray.setFromCamera(new THREE.Vector2(sp.x, sp.y), cam); const hs = ray.intersectObject(mesh, false); if (hs.length && hs[0].distance < cam.position.distanceTo(mesh.getVertexPosition(i, v).applyMatrix4(mesh.matrixWorld)) - 0.02) continue;
+    if (mark[i] !== val) { stroke.set(i, mark[i]); mark[i] = val; } }
+  if (stroke.size) { hist.push(stroke); tint(); } stroke = null; }
+el.addEventListener('pointerdown', e => { if (mode === 'orbit') return; painting = true; el.setPointerCapture(e.pointerId); if (mode.startsWith('lasso')) { pts = [[e.clientX, e.clientY]]; poly.setAttribute('points', pts.map(q => q.join(',')).join(' ')); return; } stroke = new Map(); hitPaint(e.clientX, e.clientY); });
+el.addEventListener('pointermove', e => { if (!painting) return; if (mode.startsWith('lasso')) { pts.push([e.clientX, e.clientY]); poly.setAttribute('points', pts.map(q => q.join(',')).join(' ')); return; } hitPaint(e.clientX, e.clientY); });
+el.addEventListener('pointerup', () => { if (!painting) return; painting = false; if (mode.startsWith('lasso')) { lassoFill(); pts = []; poly.setAttribute('points', ''); return; } if (stroke && stroke.size) hist.push(stroke); stroke = null; });
+function setMode(m) { mode = m; ctl.enabled = m === 'orbit'; for (const [k, id] of [['orbit', 'mOrbit'], ['paint', 'mPaint'], ['erase', 'mErase'], ['lasso', 'mLasso'], ['lassoE', 'mLassoE']]) $(id).classList.toggle('on', k === m); }
+$('mOrbit').onclick = () => setMode('orbit'); $('mPaint').onclick = () => setMode('paint'); $('mErase').onclick = () => setMode('erase'); $('mLasso').onclick = () => setMode('lasso'); $('mLassoE').onclick = () => setMode('lassoE');
 $('undo').onclick = () => { const s = hist.pop(); if (!s) return; for (const [i, val] of s) mark[i] = val; tint(); };
 $('clear').onclick = () => { if (!confirm('Clear all paint?')) return; hist.push(new Map([...mark].map((m, i) => [i, m]).filter(([, m]) => m))); mark.fill(0); tint(); };
 $('save').onclick = () => {
