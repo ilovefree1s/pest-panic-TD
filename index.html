@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="565">v1.063</div>
+    <div id="ver" data-b="566">v1.064</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1258,7 +1258,7 @@ function buildCounterProps() {
   add(g, cyl(0.44, 0.44, 0.12, 16), dark, 0, 1.95, 0);
   // cookie jars
   g = P.jars = new THREE.Group(); g.userData.pieces = [];   // three separate jars: the cat knocks them off one at a time
-  for (const [x, h, c] of [[-0.55, 1.0, '#c8945a'], [0, 1.3, '#f4efe4'], [0.55, 0.85, '#ffd447']]) {
+  for (const [x, h, c] of [[-0.8, 1.0, '#b57a3c'], [0, 1.3, '#f4efe4'], [0.8, 0.85, '#f2c230']]) {   /* spaced so they read as three jars, not one lump */
     const j = new THREE.Group(); j.position.x = x; g.add(j); g.userData.pieces.push(j);
     add(j, cyl(0.26, 0.26, h, 16), glass, 0, h / 2, 0);
     add(j, cyl(0.22, 0.22, h * 0.6, 14), std({ color: c, roughness: 0.8 }), 0, h * 0.3, 0);
@@ -1272,7 +1272,7 @@ function buildCounterProps() {
   const mug = c => { const g = new THREE.Group(), m = std({ color: c, roughness: 0.35 }); add(g, cyl(0.3, 0.27, 0.62, 16), m, 0, 0.31, 0); add(g, cyl(0.25, 0.25, 0.02, 14), std({ color: '#4a2a14', roughness: 0.2 }), 0, 0.58, 0); add(g, new THREE.TorusGeometry(0.16, 0.05, 8, 14), m, 0.32, 0.32, 0, 0, 0, 0); return g; };
   const cup = () => { const g = new THREE.Group(); add(g, cyl(0.42, 0.42, 0.04, 18), china, 0, 0.02, 0); add(g, cyl(0.26, 0.18, 0.32, 16), china, 0, 0.2, 0); add(g, new THREE.TorusGeometry(0.1, 0.035, 6, 12), china, 0.27, 0.22, 0); return g; };
   const tumbler = () => { const g = new THREE.Group(); add(g, cyl(0.24, 0.2, 0.7, 16), glass, 0, 0.35, 0); add(g, cyl(0.21, 0.18, 0.4, 14), std({ color: '#9fd8ff', transparent: true, opacity: 0.55, roughness: 0.1 }), 0, 0.22, 0); return g; };
-  const shakers = () => { const g = new THREE.Group(); for (const [x, c] of [[-0.2, '#f6f2ea'], [0.2, '#2a2a2e']]) { add(g, cyl(0.13, 0.15, 0.5, 12), glass, x, 0.25, 0); add(g, cyl(0.11, 0.12, 0.3, 10), std({ color: c, roughness: 0.9 }), x, 0.16, 0); add(g, new THREE.SphereGeometry(0.13, 10, 6, 0, TAU, 0, Math.PI / 2), silver, x, 0.5, 0); } return g; };
+  const shakers = () => { const g = new THREE.Group(); g.userData.pieces = []; for (const [x, c] of [[-0.3, '#f6f2ea'], [0.3, '#2a2a2e']]) { const j = new THREE.Group(); j.position.x = x; g.add(j); g.userData.pieces.push(j); j.userData.home = j.position.clone(); add(j, cyl(0.13, 0.15, 0.5, 12), glass, 0, 0.25, 0); add(j, cyl(0.11, 0.12, 0.3, 10), std({ color: c, roughness: 0.9 }), 0, 0.16, 0); add(j, new THREE.SphereGeometry(0.13, 10, 6, 0, TAU, 0, Math.PI / 2), silver, 0, 0.5, 0); } return g; };   /* salt and pepper: two pieces, knocked off one at a time */
   const bowl = () => { const g = new THREE.Group(); add(g, new THREE.SphereGeometry(0.42, 18, 8, 0, TAU, Math.PI / 2, Math.PI / 2), std({ color: '#8ab8d8', roughness: 0.3, side: THREE.DoubleSide }), 0, 0.42, 0); return g; };
   const bottle = () => { const g = new THREE.Group(), m = std({ color: '#d42a1e', roughness: 0.3 }); add(g, cyl(0.18, 0.2, 0.75, 14), m, 0, 0.37, 0); add(g, cyl(0.08, 0.16, 0.2, 12), m, 0, 0.84, 0); add(g, cyl(0.06, 0.06, 0.12, 8), std({ color: '#f2f2f2', roughness: 0.5 }), 0, 1.0, 0); return g; };
   Object.assign(P, { sm_spoon1: spoon(), sm_fork1: fork(), sm_mug1: mug('#e8533c'), sm_cup: cup(), sm_glass: tumbler(), sm_spoon2: spoon(), sm_shakers: shakers(), sm_mug2: mug('#3a8fd4'), sm_fork2: fork(), sm_bowl: bowl(), sm_bottle: bottle() });
