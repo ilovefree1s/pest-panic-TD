@@ -21,6 +21,7 @@
   <button id="mLasso">Outline → paint</button>
   <button id="mLassoE">Outline → erase</button>
   <label>Brush <input type="range" id="brush" min="1" max="12" value="4"></label>
+  <button id="view">Grey model</button>
   <button id="undo">Undo</button>
   <button id="clear">Clear</button>
   <button id="save">Save mask</button>
@@ -36,13 +37,15 @@ const sc = new THREE.Scene(); sc.background = new THREE.Color('#2b3038');
 sc.add(new THREE.HemisphereLight('#ffffff', '#556', 1.6)); const dl = new THREE.DirectionalLight('#fff', 2); dl.position.set(-3, 6, 5); sc.add(dl);
 const cam = new THREE.PerspectiveCamera(32, 1, 0.01, 100); const ctl = new OrbitControls(cam, R.domElement); ctl.enableDamping = true;
 function size() { R.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); } addEventListener('resize', size); size();
+let grey = true, maps = [];
 let mesh = null, P = null, N = null, UV = null, I = null, col = null, mark = null, hist = [], mode = 'orbit', W = 0, H = 0;
 const KEY = 'ppd-collar-paint';
 new GLTFLoader().load('assets/exterminator.glb', g => {
   g.scene.traverse(o => { if (o.isSkinnedMesh && !mesh) mesh = o; });
   mesh.frustumCulled = false; const geo = mesh.geometry; P = geo.attributes.position; N = geo.attributes.normal; UV = geo.attributes.uv; I = geo.index;
   const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]; const img = mats[0].map && mats[0].map.image; W = img ? img.width : 2048; H = img ? img.height : 2048;
-  for (const m of mats) { m.vertexColors = true; m.metalness = 0; m.roughness = 0.9; m.needsUpdate = true; }
+  for (const m of mats) { maps.push(m.map); m.vertexColors = true; m.metalness = 0; m.roughness = 0.9; m.emissiveMap = null; m.emissive.set(0); m.needsUpdate = true; }
+  applyView();
   col = new Float32Array(P.count * 3).fill(1); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); mark = new Uint8Array(P.count);
   try { const s = localStorage.getItem(KEY); if (s) { const a = JSON.parse(s); for (const i of a) if (i < P.count) mark[i] = 1; tint(); } } catch (e) {}
   sc.add(g.scene); g.scene.updateMatrixWorld(true); mesh.skeleton.update();
@@ -50,7 +53,8 @@ new GLTFLoader().load('assets/exterminator.glb', g => {
   ctl.target.set(c.x, bb.min.y + h * 0.78, c.z); cam.position.set(c.x, bb.min.y + h * 0.9, c.z + h * 1.6); ctl.update();
   msg('<b>Rotate / zoom</b> with one finger / pinch. <b>Outline → paint</b>: trace a loop around the collar and everything inside it is painted (do the front, then spin round for the back). Brush and Erase for touch-ups. <b>Save mask</b> when done and send me the file.');
 });
-function tint() { for (let i = 0; i < mark.length; i++) { const m = mark[i]; col[i * 3] = 1; col[i * 3 + 1] = m ? 0.25 : 1; col[i * 3 + 2] = m ? 0.25 : 1; } mesh.geometry.attributes.color.needsUpdate = true; try { const a = []; for (let i = 0; i < mark.length; i++) if (mark[i]) a.push(i); localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} }
+function applyView() { const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]; mats.forEach((m, k) => { m.map = grey ? null : maps[k]; m.needsUpdate = true; }); $('view').textContent = grey ? 'Show texture' : 'Grey model'; if (mark) tint(); }
+function tint() { for (let i = 0; i < mark.length; i++) { const m = mark[i]; if (grey) { col[i * 3] = m ? 1 : 0.72; col[i * 3 + 1] = m ? 0.5 : 0.74; col[i * 3 + 2] = m ? 0.08 : 0.78; } else { col[i * 3] = 1; col[i * 3 + 1] = m ? 0.25 : 1; col[i * 3 + 2] = m ? 0.25 : 1; } } mesh.geometry.attributes.color.needsUpdate = true; try { const a = []; for (let i = 0; i < mark.length; i++) if (mark[i]) a.push(i); localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} }
 const ray = new THREE.Raycaster(), v = new THREE.Vector3(), nv = new THREE.Vector3(), cdir = new THREE.Vector3(); let painting = false, stroke = null;
 function hitPaint(x, y) {
   ray.setFromCamera(new THREE.Vector2(x / innerWidth * 2 - 1, -(y / innerHeight * 2 - 1)), cam); const hs = ray.intersectObject(mesh, false); if (!hs.length) return;
@@ -75,6 +79,7 @@ el.addEventListener('pointermove', e => { if (!painting) return; if (mode.starts
 el.addEventListener('pointerup', () => { if (!painting) return; painting = false; if (mode.startsWith('lasso')) { lassoFill(); pts = []; poly.setAttribute('points', ''); return; } if (stroke && stroke.size) hist.push(stroke); stroke = null; });
 function setMode(m) { mode = m; ctl.enabled = m === 'orbit'; for (const [k, id] of [['orbit', 'mOrbit'], ['paint', 'mPaint'], ['erase', 'mErase'], ['lasso', 'mLasso'], ['lassoE', 'mLassoE']]) $(id).classList.toggle('on', k === m); }
 $('mOrbit').onclick = () => setMode('orbit'); $('mPaint').onclick = () => setMode('paint'); $('mErase').onclick = () => setMode('erase'); $('mLasso').onclick = () => setMode('lasso'); $('mLassoE').onclick = () => setMode('lassoE');
+$('view').onclick = () => { grey = !grey; applyView(); };
 $('undo').onclick = () => { const s = hist.pop(); if (!s) return; for (const [i, val] of s) mark[i] = val; tint(); };
 $('clear').onclick = () => { if (!confirm('Clear all paint?')) return; hist.push(new Map([...mark].map((m, i) => [i, m]).filter(([, m]) => m))); mark.fill(0); tint(); };
 $('save').onclick = () => {
