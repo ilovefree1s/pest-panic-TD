@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="559">v1.057</div>
+    <div id="ver" data-b="560">v1.058</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1375,7 +1375,7 @@ function twistsFor(day) {
     const k = d.toISOString().slice(0, 10);
     if (!TW_MEMO[k]) {
       const r = rng(dayHash('ppd-twist-' + k)); r(); r(); r();   /* (the first few rolls from a fresh seed are too alike day to day) */
-      const gone = t => (t === 'shiny' && k >= '2026-11-09') || (t === 'slippery' && k >= '2026-11-11');   /* retired twists (kept in TWISTS so earlier days' draws don't shift) */
+      const gone = t => (t === 'shiny' && k >= '2026-11-09') || (t === 'slippery' && k >= '2026-11-10');   /* retired twists (kept in TWISTS so earlier days' draws don't shift) */
       const pool = k >= '2026-11-11' ? TWISTS : TWISTS.slice(0, TWISTS_V1);
       const pick = () => { for (let i = 0; i < 80; i++) { const t = pool[Math.floor(r() * pool.length)][0]; if (!prev.includes(t) && !gone(t)) return t; } return pool.find(t => !prev.includes(t[0]) && !gone(t[0]))[0]; };
       const a = pick(); let out = [a];
