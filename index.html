@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="562">v1.060</div>
+    <div id="ver" data-b="563">v1.061</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2726,7 +2726,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
       const isOr = g > r * 0.22 && ((r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45)) || (r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35));   /* (g > 0.22 r: orange, not the red fittings) */
       const nk = sc && M.masks.neckMask ? M.masks.neckMask[p] : 0;
       if (orange && suit === 'camo' && nk === 2) { painted[p] = 1; continue; }   /* the camo suit keeps its orange collar flaps (still on the suit sheet) */
-      if (sc && !orange && isOr && nk) {   /* (the ring's paler lit side is skin-coloured: it's only reached by walking out from sure collar on the sheet, below) */   /* the shirt's collar ring at his neck rides on the head bone, outside the clothes mask: it's part of the outfit too (camo keeps it orange, but it still belongs to the suit sheet) */
+      if (sc && !orange && isOr && nk === 2) {   /* only the painted collar: anything else orange near the neck is left exactly as the model has it */   /* (the ring's paler lit side is skin-coloured: it's only reached by walking out from sure collar on the sheet, below) */   /* the shirt's collar ring at his neck rides on the head bone, outside the clothes mask: it's part of the outfit too (camo keeps it orange, but it still belongs to the suit sheet) */
         if (suit === 'camo' && nk === 2) painted[p] = 1; else paint(i, lum * 0.78);   /* camo keeps the collar itself orange, not the shirt under it */
         continue; }
       if ((blue || orange) && !inTank) {   // suit and boots
@@ -2743,7 +2743,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
     for (let p = 0; p < W * H; p++) if (painted[p] && M.masks.neckMask[p]) { dist[p] = 1; q[t++] = p; }
     while (h < t) { const p = q[h++], d = dist[p]; if (d > far) continue; const px = p % W;
       const nb = [px > 0 ? p - 1 : -1, px < W - 1 ? p + 1 : -1, p >= W ? p - W : -1, p < W * (H - 1) ? p + W : -1];
-      for (const n of nb) { if (n < 0 || dist[n] || painted[n] || !M.cover[n] || (mask && mask[n]) || !isOr2(n * 4)) continue; dist[n] = d + 1; q[t++] = n;
+      for (const n of nb) { if (n < 0 || dist[n] || painted[n] || !M.cover[n] || (mask && mask[n]) || M.masks.neckMask[n] !== 2 || !isOr2(n * 4)) continue; dist[n] = d + 1; q[t++] = n;
         if (suit === 'camo' && M.masks.neckMask[n] === 2) painted[n] = 1; else { const i = n * 4, lum = Math.max(src[i], src[i + 1], src[i + 2]) / 255; paint(i, lum * 0.78); } } }   /* (camo keeps only the painted collar orange) */
     yield;
   }
