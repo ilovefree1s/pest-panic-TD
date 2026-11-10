@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="564">v1.062</div>
+    <div id="ver" data-b="565">v1.063</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4991,9 +4991,10 @@ const SND = (() => {
 // switches between them on the bar line. "classic" is the original pair; the others run on a small data-driven sequencer.
 const MUSIC = (() => {
   let ac = null, bus = null, echo = null, noise = null, timer = 0, next = 0, step = 0, loop = 0, track = 'calm', want = 'calm', style = 'classic';
+  const STYLES_KEYS = ['classic', 'polka', 'arcade', 'spy', 'lofi'];
   let picks = ['classic'], rotT = 0;   /* the soundtracks ticked in Settings; with more than one, the band changes tune every few minutes (on a bar line) */
   const ROTATE = 150;   /* seconds per soundtrack when several are picked */
-  let off = false, mvol = 1; try { off = localStorage.getItem('ppd-music') === '0'; const v = localStorage.getItem('ppd-mvol'); if (v !== null) mvol = +v; const st = localStorage.getItem('ppd-mtrack'); if (st) { picks = st.split(',').filter(Boolean); style = picks[0] || 'classic'; } } catch (e) {}
+  let off = false, mvol = 1; try { off = localStorage.getItem('ppd-music') === '0'; const v = localStorage.getItem('ppd-mvol'); if (v !== null) mvol = +v; const st = localStorage.getItem('ppd-mtrack'); if (st) { picks = st.split(',').filter(k => STYLES_KEYS.includes(k)); if (!picks.length) picks = ['classic']; style = picks[0]; } } catch (e) {}
   const mf = m => 440 * 2 ** ((m - 69) / 12);
   const TR = {   /* the original pair */
     calm: { bpm: 112, chords: [48, 45, 41, 43], third: [4, 3, 4, 4],
@@ -5008,79 +5009,112 @@ const MUSIC = (() => {
      next root), two 8-bar melodies (semitones above the lead's base note, alternating each pass), an optional arpeggio, pads and the drum kit */
   const STYLES = {
     classic: { name: 'Kitchen Classic' },
-    swing: { name: 'Swing Shift',
-      calm: { bpm: 118, swing: 0.3, bass: { roots: [41, 38, 46, 48, 41, 45, 46, 48], third: [4, 3, 4, 4, 4, 3, 4, 4], sev: [11, 10, 11, 10, 11, 10, 11, 10], pat: [0, _, _, _, 't', _, _, _, 7, _, _, _, 'n', _, _, _], type: 'triangle', vol: 0.34, cut: 700, dur: 3.2 },
-        lead: { base: 65, type: 'square', vol: 0.045, cut: 2400, dur: 1.9, echo: 0.22 },
-        mel: [[0, _, 4, _, 7, _, 9, _, _, 7, _, 4, _, 2, _, _], [2, _, 5, _, 9, _, _, 7, _, _, 5, _, 2, _, 0, _], [-3, _, 2, _, 5, _, 7, _, _, 5, _, 2, _, _, _, _], [4, _, 7, _, 11, _, _, 9, _, 7, _, 4, _, _, _, _],
-              [12, _, _, 11, _, 9, _, _, 7, _, _, 4, _, 7, _, _], [9, _, _, 7, _, 4, _, _, 2, _, 0, _, 2, _, 4, _], [5, _, _, 9, _, 12, _, _, 11, _, 9, _, 5, _, _, _], [7, _, 4, _, 2, _, 0, _, _, _, _, _, _, _, _, _]],
-        mel2: [[12, _, 11, _, 9, _, 7, _, _, 9, _, 12, _, _, _, _], [14, _, 12, _, 9, _, _, 7, _, _, 5, _, _, _, _, _], [5, _, 7, _, 9, _, 12, _, _, 9, _, 7, _, 5, _, _], [4, _, 2, _, 0, _, _, -1, _, 0, _, 2, _, 4, _, _],
-               [7, _, _, 9, _, 12, _, _, 16, _, 14, _, 12, _, _, _], [9, _, _, 12, _, 9, _, _, 7, _, 4, _, _, _, _, _], [5, _, 9, _, 12, _, 14, _, _, 12, _, 9, _, _, _, _], [7, _, _, _, 4, _, _, _, 0, _, _, _, _, _, _, _]],
-        pad: { type: 'sine', vol: 0.03, oct: 12 },
-        drums: { kick: [0, 8], snare: [4, 12], snareVol: 0.1, hat: 'swing', hatVol: 0.05, fill: true } },
-      boss: { bpm: 150, swing: 0.28, bass: { roots: [38, 43, 46, 45, 38, 43, 41, 45], third: [3, 3, 4, 4, 3, 3, 4, 4], sev: [10, 10, 11, 10, 10, 10, 11, 10], pat: [0, _, 0, _, 7, _, 0, _, 10, _, 0, _, 7, _, 'n', _], type: 'sawtooth', vol: 0.13, cut: 900, dur: 1.4 },
-        lead: { base: 62, type: 'square', vol: 0.04, cut: 2300, dur: 0.95, echo: 0.16 },
-        mel: [[0, _, 3, 5, _, 7, _, 5, 3, _, 0, _, -2, _, 0, _], [5, _, 8, 10, _, 12, _, 10, 8, _, 5, _, 3, _, 5, _], [8, _, 12, _, 15, _, 12, _, 10, _, 8, _, 7, _, 5, _], [7, _, 11, _, 14, _, 12, _, 11, _, 7, _, 4, _, 7, _],
-              [12, _, _, 10, _, 8, _, 7, _, 5, _, 3, _, 0, _, _], [8, _, _, 7, _, 5, _, 3, _, _, 2, _, 3, _, 5, _], [3, _, _, 5, _, 7, _, 8, _, _, 10, _, 12, _, _, _], [7, _, _, _, 4, _, _, _, 0, _, _, _, _, _, _, _]],
-        pad: { type: 'sawtooth', vol: 0.018, oct: 0, cut: 1200 },
-        drums: { kick: [0, 8], snare: [4, 12], snareVol: 0.16, hat: 'swing', hatVol: 0.06, fill: true } } },
-    arcade: { name: 'Arcade',
-      calm: { bpm: 140, swing: 0, bass: { roots: [36, 33, 41, 43, 36, 40, 41, 43], third: [4, 3, 4, 4, 4, 3, 4, 4], pat: [0, _, 0, _, 12, _, 0, _, 0, _, 7, _, 12, _, 7, _], type: 'square', vol: 0.09, cut: 600, dur: 0.9 },
-        lead: { base: 72, type: 'square', vol: 0.04, cut: 4000, dur: 0.8, echo: 0 },
+    polka: { name: 'Polka Pest',   /* oompah: tuba on the beat, accordion chords off it, a cheeky accordion tune on top */
+      calm: { bpm: 126, swing: 0, bass: { roots: [41, 41, 48, 48, 41, 41, 48, 41], third: [4, 4, 4, 4, 4, 4, 4, 4], pat: [0, _, _, _, 7, _, _, _, 0, _, _, _, 7, _, _, _], type: 'tuba', vol: 0.5, dur: 0.9 },
+        comp: { type: 'accordion', vol: 0.05, oct: 12, pat: [2, 6, 10, 14], dur: 0.9 },
+        lead: { base: 65, type: 'accordion', vol: 0.07, dur: 1.1 },
+        mel: [[0, _, 4, _, 7, _, 12, _, 11, _, 12, _, 7, _, _, _], [9, _, 7, _, 5, _, 4, _, 2, _, 4, _, 5, _, _, _], [0, _, 4, _, 7, _, 12, _, 11, _, 12, _, 14, _, _, _], [12, 11, 9, 7, 5, 4, 2, 0, -1, _, 2, _, 0, _, _, _],
+              [7, _, 7, _, 9, _, 11, _, 12, _, _, _, 7, _, _, _], [5, _, 5, _, 7, _, 9, _, 11, _, _, _, 7, _, _, _], [12, _, 11, _, 12, _, 14, _, 12, _, 11, _, 9, _, 7, _], [5, _, 4, _, 2, _, -1, _, 0, _, _, _, _, _, _, _]],
+        mel2: [[12, _, _, 11, 12, _, 16, _, 14, _, 12, _, 11, _, _, _], [9, _, _, 7, 9, _, 12, _, 11, _, 9, _, 7, _, _, _], [12, _, _, 11, 12, _, 16, _, 19, _, 17, _, 16, _, _, _], [14, _, 12, _, 11, _, 9, _, 7, _, _, _, _, _, _, _],
+               [16, _, 14, _, 12, _, 11, _, 12, _, _, _, 7, _, _, _], [14, _, 12, _, 11, _, 9, _, 11, _, _, _, 5, _, _, _], [12, _, 16, _, 19, _, 16, _, 12, _, 11, _, 9, _, 7, _], [5, _, 4, _, 2, _, -1, _, 0, _, _, _, _, _, _, _]],
+        drums: { kick: [0, 8], snare: [4, 12], snareVol: 0.1, hat: 'eighths', hatVol: 0.02, fill: false, snareKind: 'rim' } },
+      boss: { bpm: 150, swing: 0, bass: { roots: [38, 38, 45, 45, 38, 38, 41, 45], third: [3, 3, 4, 4, 3, 3, 4, 4], pat: [0, _, _, _, 7, _, _, _, 0, _, _, _, 7, _, 0, _], type: 'tuba', vol: 0.5, dur: 0.7 },
+        comp: { type: 'accordion', vol: 0.05, oct: 12, pat: [2, 6, 10, 14], dur: 0.7 },
+        lead: { base: 62, type: 'accordion', vol: 0.07, dur: 0.8 },
+        mel: [[0, _, 3, _, 7, _, 12, _, 11, _, 12, _, 7, _, 3, _], [8, _, 7, _, 5, _, 3, _, 2, _, 3, _, 5, _, _, _], [0, _, 3, _, 7, _, 12, _, 15, _, 12, _, 7, _, 3, _], [12, 11, 8, 7, 5, 3, 2, 0, -1, _, 2, _, 0, _, _, _],
+              [7, _, 8, _, 10, _, 12, _, 15, _, _, _, 12, _, _, _], [5, _, 7, _, 8, _, 10, _, 12, _, _, _, 7, _, _, _], [15, _, 14, _, 15, _, 17, _, 15, _, 14, _, 12, _, 10, _], [8, _, 7, _, 5, _, 2, _, 0, _, _, _, _, _, _, _]],
+        drums: { kick: [0, 8], snare: [4, 12], snareVol: 0.14, hat: 'eighths', hatVol: 0.03, fill: true, snareKind: 'rim' } } },
+    arcade: { name: 'Arcade',   /* NES: thin pulse waves, a 16th-note arpeggio instead of chords, noise-only drums */
+      calm: { bpm: 150, swing: 0, bass: { roots: [36, 33, 41, 43, 36, 40, 41, 43], third: [4, 3, 4, 4, 4, 3, 4, 4], pat: [0, 12, 0, 12, 0, 12, 7, 12, 0, 12, 0, 12, 7, 12, 10, 12], type: 'pulse50', vol: 0.07, dur: 0.5 },
+        lead: { base: 72, type: 'pulse25', vol: 0.045, dur: 0.7, echo: 0 },
         mel: [[0, _, 4, _, 7, _, 12, _, 7, _, 4, _, 0, _, 4, 7], [9, _, 12, _, 16, _, 12, _, 9, 7, _, 4, _, _, _, _], [5, _, 9, _, 12, _, 9, _, 5, _, 4, _, 2, _, 0, _], [2, _, 7, _, 11, _, 7, _, 2, _, 4, _, 7, _, 11, 12],
               [12, _, _, 11, 12, _, 14, _, 16, _, _, 12, _, 9, _, 7], [4, _, 7, _, 9, _, _, 7, _, 4, _, 0, _, _, _, _], [5, _, _, 9, _, _, 12, _, 14, _, 12, _, 9, _, 5, _], [7, _, 11, _, 14, _, 12, _, 7, _, 4, _, 0, _, _, _]],
         mel2: [[12, _, 12, _, 11, _, 12, _, 16, _, _, 14, _, 12, _, _], [9, _, 9, _, 7, _, 9, _, 12, _, _, 16, _, 14, _, 12], [5, _, 9, _, 12, _, 17, _, 16, _, 14, _, 12, _, 9, _], [7, _, 11, _, 14, _, 19, _, 17, _, 14, _, 11, _, 7, _],
                [12, _, _, _, 16, _, _, _, 19, _, 17, _, 16, _, 14, _], [12, _, 11, _, 12, _, 9, _, 7, _, _, _, 4, _, _, _], [5, _, 7, _, 9, _, 12, _, _, 14, _, 12, _, 9, _, 7], [7, _, _, _, 11, _, _, _, 12, _, _, _, _, _, _, _]],
-        arp: { type: 'square', vol: 0.02, oct: 12, pat: [0, 't', 7, 12] },
-        drums: { kick: [0, 8, 10], snare: [4, 12], snareVol: 0.09, hat: 'all', hatVol: 0.035, fill: false } },
-      boss: { bpm: 160, swing: 0, bass: { roots: [36, 32, 39, 43, 36, 32, 41, 43], third: [3, 4, 4, 4, 3, 4, 3, 4], pat: [0, 0, 12, 0, 0, 12, 0, 0, 0, 12, 0, 0, 7, 0, 10, 12], type: 'square', vol: 0.09, cut: 700, dur: 0.6 },
-        lead: { base: 72, type: 'square', vol: 0.038, cut: 3800, dur: 0.6, echo: 0 },
+        arp: { type: 'pulse12', vol: 0.03, oct: 12, pat: [0, 't', 7, 12, 't', 7] },
+        drums: { kick: [0, 8, 10], snare: [4, 12], snareVol: 0.07, hat: 'all', hatVol: 0.03, fill: false, kickKind: 'chip', snareKind: 'chip' } },
+      boss: { bpm: 172, swing: 0, bass: { roots: [36, 32, 39, 43, 36, 32, 41, 43], third: [3, 4, 4, 4, 3, 4, 3, 4], pat: [0, 0, 12, 0, 0, 12, 0, 0, 0, 12, 0, 0, 7, 0, 10, 12], type: 'pulse50', vol: 0.07, dur: 0.4 },
+        lead: { base: 72, type: 'pulse25', vol: 0.045, dur: 0.55, echo: 0 },
         mel: [[0, 0, _, 3, _, 5, _, 6, _, 5, 3, _, 0, _, _, _], [8, 8, _, 7, _, 5, _, 3, _, 5, _, 7, 8, _, 10, _], [3, _, 7, _, 10, _, 7, _, 3, _, 2, _, 0, _, _, _], [7, _, 11, _, 14, _, 11, _, 7, _, 5, _, 3, _, 2, _],
               [12, _, _, 10, _, 8, _, 7, _, _, 5, _, 3, _, 0, _], [8, _, 10, _, 8, _, 7, _, 5, _, 3, _, 2, _, 0, _], [5, _, 8, _, 12, _, 8, _, 5, _, 8, _, 12, _, 15, _], [7, _, _, _, 11, _, _, _, 14, _, _, _, 12, _, _, _]],
-        arp: { type: 'square', vol: 0.018, oct: 12, pat: [0, 't', 7, 't'] },
-        drums: { kick: [0, 4, 8, 12], snare: [4, 12], snareVol: 0.12, hat: 'all', hatVol: 0.04, fill: true } } },
-    spy: { name: 'Spy Kitchen',
-      calm: { bpm: 132, swing: 0, bass: { roots: [40, 40, 45, 43, 40, 40, 47, 47], third: [3, 3, 3, 4, 3, 3, 4, 4], pat: [0, _, 0, _, 3, _, 5, _, 6, _, 5, _, 3, _, 0, _], type: 'sawtooth', vol: 0.12, cut: 800, dur: 1.1 },
-        lead: { base: 64, type: 'sawtooth', vol: 0.03, cut: 1800, dur: 2.4, echo: 0.3, vib: 5.5 },
+        arp: { type: 'pulse12', vol: 0.028, oct: 12, pat: [0, 't', 7, 't'] },
+        drums: { kick: [0, 4, 8, 12], snare: [4, 12], snareVol: 0.1, hat: 'all', hatVol: 0.035, fill: true, kickKind: 'chip', snareKind: 'chip' } } },
+    spy: { name: 'Spy Kitchen',   /* twangy plucked guitar over a prowling bass, snare rimshots */
+      calm: { bpm: 128, swing: 0, bass: { roots: [40, 40, 45, 43, 40, 40, 47, 47], third: [3, 3, 3, 4, 3, 3, 4, 4], pat: [0, _, 0, _, 3, _, 5, _, 6, _, 5, _, 3, _, 0, _], type: 'pluck', vol: 0.5, dur: 1 },
+        lead: { base: 64, type: 'pluck', vol: 0.42, dur: 2, echo: 0.3 },
         mel: [[12, _, _, _, 11, _, _, _, 12, _, _, 15, _, 14, _, 12], [_, _, _, _, 7, _, _, _, 8, _, _, _, 7, _, 5, _], [5, _, _, _, 8, _, _, _, 12, _, _, _, 11, _, 8, _], [7, _, _, _, _, _, _, _, 10, _, _, _, 7, _, _, _],
               [12, _, _, _, _, _, 15, _, _, _, 14, _, _, 12, _, _], [11, _, _, _, _, _, 12, _, _, _, _, _, _, _, _, _], [14, _, _, _, _, _, _, _, 15, _, _, _, 14, _, 11, _], [12, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]],
         mel2: [[19, _, _, _, 17, _, _, _, 15, _, _, 14, _, 12, _, _], [_, _, _, _, 15, _, _, _, 14, _, _, _, 12, _, 11, _], [12, _, _, _, 15, _, _, _, 17, _, _, _, 15, _, 12, _], [14, _, _, _, _, _, 11, _, 10, _, _, _, 7, _, _, _],
                [12, _, _, _, 14, _, _, _, 15, _, _, _, 19, _, _, _], [17, _, _, _, _, _, 15, _, _, _, 14, _, _, _, _, _], [11, _, _, _, _, _, 12, _, 14, _, _, _, 15, _, 14, _], [12, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]],
-        pad: null,
-        drums: { kick: [0, 8, 11], snare: [4, 12], snareVol: 0.12, hat: 'eighths', hatVol: 0.045, fill: true } },
-      boss: { bpm: 156, swing: 0, bass: { roots: [40, 41, 40, 38, 40, 41, 43, 47], third: [3, 4, 3, 4, 3, 4, 4, 4], pat: [0, _, 0, 0, 3, _, 5, _, 6, _, 6, 5, 3, _, 0, 0], type: 'sawtooth', vol: 0.13, cut: 1000, dur: 0.8 },
-        lead: { base: 64, type: 'sawtooth', vol: 0.03, cut: 2000, dur: 1.1, echo: 0.2, vib: 6 },
+        comp: { type: 'pluck', vol: 0.16, oct: 12, pat: [4, 12], dur: 0.6, strum: true },
+        drums: { kick: [0, 8, 11], snare: [4, 12], snareVol: 0.12, hat: 'eighths', hatVol: 0.035, fill: true, snareKind: 'rim', hatKind: 'shaker' } },
+      boss: { bpm: 152, swing: 0, bass: { roots: [40, 41, 40, 38, 40, 41, 43, 47], third: [3, 4, 3, 4, 3, 4, 4, 4], pat: [0, _, 0, 0, 3, _, 5, _, 6, _, 6, 5, 3, _, 0, 0], type: 'pluck', vol: 0.5, dur: 0.6 },
+        lead: { base: 64, type: 'pluck', vol: 0.42, dur: 1, echo: 0.22 },
         mel: [[12, _, 15, _, 12, _, 11, _, 12, _, _, _, 15, _, 17, _], [13, _, 17, _, 13, _, 12, _, 13, _, _, _, 12, _, 11, _], [12, _, 15, _, 12, _, 11, _, 12, _, _, _, 19, _, 17, _], [14, _, _, _, 17, _, 14, _, 10, _, _, _, 7, _, _, _],
               [12, _, _, 15, _, _, 19, _, 18, _, _, 19, _, _, 15, _], [13, _, _, 17, _, _, 20, _, 17, _, _, _, 13, _, _, _], [15, _, _, 14, _, _, 15, _, 19, _, _, 17, _, _, 15, _], [14, _, _, _, 11, _, _, _, 12, _, _, _, _, _, _, _]],
-        pad: null,
-        drums: { kick: [0, 6, 8, 14], snare: [4, 12], snareVol: 0.16, hat: 'all', hatVol: 0.05, fill: true } } },
-    lofi: { name: 'Lo-fi Lounge',
-      calm: { bpm: 84, swing: 0.22, bass: { roots: [41, 40, 38, 36, 41, 40, 38, 43], third: [4, 3, 3, 4, 4, 3, 3, 4], sev: [11, 10, 10, 11, 11, 10, 10, 10], pat: [0, _, _, _, _, _, 0, _, _, _, 7, _, _, _, _, _], type: 'sine', vol: 0.45, cut: 400, dur: 4 },
-        lead: { base: 65, type: 'triangle', vol: 0.09, cut: 1600, dur: 2.6, echo: 0.33, vib: 4.5 },
-        mel: [[_, _, _, _, 12, _, _, 9, _, _, _, 7, _, _, _, _], [_, _, _, _, 7, _, _, 4, _, _, _, 2, _, _, _, _], [_, _, _, _, 5, _, _, _, 2, _, _, _, 0, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
-              [_, _, _, _, 12, _, _, _, 14, _, _, 12, _, _, _, _], [_, _, _, _, 11, _, _, _, 9, _, _, 7, _, _, _, _], [_, _, _, _, 9, _, _, _, 7, _, _, 5, _, _, _, _], [_, _, _, _, _, _, _, _, 4, _, _, _, _, _, _, _]],
-        mel2: [[_, _, 16, _, _, _, 14, _, _, _, 12, _, _, _, _, _], [_, _, 14, _, _, _, 12, _, _, _, 11, _, _, _, _, _], [_, _, 12, _, _, _, 9, _, _, _, 7, _, _, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, 4, _, 7, _],
-               [_, _, 9, _, _, _, 12, _, _, _, 16, _, _, _, _, _], [_, _, 14, _, _, _, 12, _, _, _, 11, _, _, _, _, _], [_, _, 9, _, _, _, 12, _, _, _, 14, _, _, _, _, _], [_, _, _, _, _, _, _, _, 12, _, _, _, _, _, _, _]],
-        pad: { type: 'sine', vol: 0.05, oct: 12, nine: true },
-        drums: { kick: [0, 7, 10], snare: [4, 12], snareVol: 0.08, hat: 'swing', hatVol: 0.03, fill: false, crackle: true } },
-      boss: { bpm: 100, swing: 0.2, bass: { roots: [38, 36, 34, 33, 38, 36, 34, 31], third: [3, 4, 4, 3, 3, 4, 4, 3], sev: [10, 11, 11, 10, 10, 11, 11, 10], pat: [0, _, _, 0, _, _, 7, _, 0, _, _, 10, _, _, 7, _], type: 'sine', vol: 0.45, cut: 500, dur: 1.6 },
-        lead: { base: 62, type: 'triangle', vol: 0.09, cut: 1800, dur: 1.4, echo: 0.28, vib: 5 },
-        mel: [[12, _, _, 10, _, _, 8, _, _, _, 7, _, _, _, _, _], [8, _, _, 7, _, _, 5, _, _, _, 3, _, _, _, _, _], [5, _, _, 7, _, _, 8, _, _, _, 10, _, _, _, 12, _], [7, _, _, _, _, _, 3, _, _, _, _, _, 0, _, _, _],
-              [12, _, _, 15, _, _, 12, _, _, _, 10, _, _, _, 8, _], [7, _, _, 8, _, _, 10, _, _, _, 12, _, _, _, _, _], [15, _, _, 14, _, _, 12, _, _, _, 10, _, _, _, 8, _], [7, _, _, _, _, _, _, _, 3, _, _, _, _, _, _, _]],
-        pad: { type: 'sine', vol: 0.05, oct: 12, nine: true },
-        drums: { kick: [0, 6, 10], snare: [4, 12], snareVol: 0.12, hat: 'eighths', hatVol: 0.04, fill: true, crackle: true } } },
+        comp: { type: 'pluck', vol: 0.16, oct: 12, pat: [4, 12], dur: 0.4, strum: true },
+        drums: { kick: [0, 6, 8, 14], snare: [4, 12], snareVol: 0.16, hat: 'all', hatVol: 0.04, fill: true, snareKind: 'rim', hatKind: 'shaker' } } },
+    lofi: { name: 'Lo-fi Lounge',   /* slow electric-piano chords, a soft round bass, rain and vinyl crackle, hardly any melody */
+      calm: { bpm: 76, swing: 0.25, bass: { roots: [41, 40, 38, 36, 41, 40, 38, 43], third: [4, 3, 3, 4, 4, 3, 3, 4], sev: [11, 10, 10, 11, 11, 10, 10, 10], pat: [0, _, _, _, _, _, _, _, _, _, 7, _, _, _, _, _], type: 'subbass', vol: 0.6, dur: 5 },
+        comp: { type: 'ep', vol: 0.09, oct: 12, pat: [0, 10], dur: 7, chord: true },
+        lead: { base: 77, type: 'ep', vol: 0.08, dur: 3, echo: 0.35 },
+        mel: [[_, _, _, _, _, _, _, _, 12, _, _, _, 9, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _], [_, _, _, _, _, _, 5, _, _, _, 2, _, _, _, 0, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _],
+              [_, _, _, _, _, _, _, _, 14, _, _, _, 12, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _], [_, _, _, _, _, _, 9, _, _, _, 7, _, _, _, 5, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]],
+        mel2: [[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _], [_, _, _, _, 7, _, _, _, 4, _, _, _, _, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _], [_, _, _, _, _, _, 0, _, _, _, 4, _, _, _, 7, _],
+               [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _], [_, _, _, _, 11, _, _, _, 9, _, _, _, _, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _], [_, _, _, _, _, _, 4, _, _, _, _, _, _, _, _, _]],
+        drums: { kick: [0, 10], snare: [4, 12], snareVol: 0.07, hat: 'swing', hatVol: 0.022, fill: false, crackle: true, rain: true, kickKind: 'soft', snareKind: 'soft' } },
+      boss: { bpm: 90, swing: 0.22, bass: { roots: [38, 36, 34, 33, 38, 36, 34, 31], third: [3, 4, 4, 3, 3, 4, 4, 3], sev: [10, 11, 11, 10, 10, 11, 11, 10], pat: [0, _, _, _, _, _, 0, _, _, _, 7, _, _, _, _, _], type: 'subbass', vol: 0.6, dur: 3 },
+        comp: { type: 'ep', vol: 0.09, oct: 12, pat: [0, 10], dur: 5, chord: true },
+        lead: { base: 74, type: 'ep', vol: 0.08, dur: 2, echo: 0.3 },
+        mel: [[12, _, _, _, _, _, 10, _, _, _, _, _, 8, _, _, _], [_, _, _, _, _, _, _, _, 7, _, _, _, _, _, _, _], [5, _, _, _, _, _, 7, _, _, _, _, _, 8, _, _, _], [_, _, _, _, _, _, _, _, 3, _, _, _, _, _, _, _],
+              [12, _, _, _, _, _, 15, _, _, _, _, _, 12, _, _, _], [_, _, _, _, _, _, _, _, 10, _, _, _, _, _, _, _], [15, _, _, _, _, _, 14, _, _, _, _, _, 12, _, _, _], [_, _, _, _, _, _, _, _, 7, _, _, _, _, _, _, _]],
+        drums: { kick: [0, 6, 10], snare: [4, 12], snareVol: 0.1, hat: 'swing', hatVol: 0.03, fill: true, crackle: true, rain: true, kickKind: 'soft', snareKind: 'soft' } } },
   };
+  /* ---- instruments. tone() picks a voice by type: the plain oscillators, or one of the built sounds below */
+  const WAVES = {};
+  function pulseWave(duty) {   /* an NES-style pulse of the given duty, as a PeriodicWave (Fourier series, 24 harmonics) */
+    const k = 'p' + duty; if (WAVES[k]) return WAVES[k]; const n = 24, re = new Float32Array(n), im = new Float32Array(n);
+    for (let h = 1; h < n; h++) { re[h] = Math.sin(Math.PI * h * duty) * 2 / (Math.PI * h) * Math.cos(Math.PI * h * duty); im[h] = Math.sin(Math.PI * h * duty) * 2 / (Math.PI * h) * Math.sin(Math.PI * h * duty); }
+    return (WAVES[k] = ac.createPeriodicWave(re, im, { disableNormalization: false }));
+  }
+  const PLUCKS = {};
+  function pluckBuf(f) {   /* a plucked string (Karplus-Strong), built once per pitch */
+    const k = Math.round(f); if (PLUCKS[k]) return PLUCKS[k]; const sr = ac.sampleRate, N = Math.max(2, Math.round(sr / f)), len = Math.ceil(sr * 2.2), buf = ac.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    const ring = new Float32Array(N); for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+    let p = 0, prev = 0; for (let i = 0; i < len; i++) { const cur = ring[p]; const nx = 0.5 * (cur + ring[(p + 1) % N]) * 0.996; ring[p] = nx; d[i] = (cur + prev) * 0.5; prev = cur; p = (p + 1) % N; }
+    return (PLUCKS[k] = buf);
+  }
   function tone(type, f, t, dur, vol, cut, out, vib) {
-    const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+    out = out || bus;
+    if (type === 'pluck') { const src = ac.createBufferSource(); src.buffer = pluckBuf(f); const g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.setValueAtTime(vol, t + Math.max(0.05, dur - 0.08)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); const fl = ac.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = cut || 3200; src.connect(fl).connect(g).connect(out); src.start(t); src.stop(t + dur + 0.05); return; }
+    if (type === 'ep') {   /* electric piano: a sine with a brighter sine an octave up that fades first, slow tremolo */
+      const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(vol * 0.5, t + Math.min(dur, 0.6)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      const tr = ac.createGain(); tr.gain.value = 1; const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 4.5; lg.gain.value = 0.18; lfo.connect(lg).connect(tr.gain); lfo.start(t); lfo.stop(t + dur + 0.05);
+      for (const [mul, v, dk] of [[1, 1, dur], [2, 0.35, dur * 0.35], [1.003, 0.5, dur]]) { const o = ac.createOscillator(), og = ac.createGain(); o.type = 'sine'; o.frequency.value = f * mul; og.gain.setValueAtTime(v, t); og.gain.exponentialRampToValueAtTime(0.001, t + dk); o.connect(og).connect(tr); o.start(t); o.stop(t + dur + 0.05); }
+      tr.connect(g).connect(out); return; }
+    if (type === 'accordion') {   /* three reeds slightly out of tune, a bit of bellows swell */
+      const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.06); g.gain.setValueAtTime(vol, t + Math.max(0.07, dur - 0.05)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      const fl = ac.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.value = 1500; fl.Q.value = 0.5;
+      for (const det of [-7, 0, 7]) { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; o.connect(fl); o.start(t); o.stop(t + dur + 0.05); }
+      fl.connect(g).connect(out); return; }
+    if (type === 'tuba') { const o = ac.createOscillator(), g = ac.createGain(), fl = ac.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 0.97, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05); fl.type = 'lowpass'; fl.frequency.setValueAtTime(900, t); fl.frequency.exponentialRampToValueAtTime(300, t + dur); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(fl).connect(g).connect(out); o.start(t); o.stop(t + dur + 0.05); return; }
+    if (type === 'subbass') { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.setValueAtTime(vol, t + dur * 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.05); return; }
+    const o = ac.createOscillator(), g = ac.createGain();
+    if (type.startsWith('pulse')) o.setPeriodicWave(pulseWave(+type.slice(5) / 100)); else o.type = type;
+    o.frequency.setValueAtTime(f, t);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     let n = o; if (cut) { const fl = ac.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = cut; o.connect(fl); n = fl; }
     if (vib) { const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = vib; lg.gain.value = f * 0.006; l.connect(lg).connect(o.frequency); l.start(t + 0.12); l.stop(t + dur + 0.02); }
-    n.connect(g).connect(out || bus); o.start(t); o.stop(t + dur + 0.02);
+    n.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.02);
   }
   function hit(kind, t, vol) {
     if (kind === 'kick') { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); o.connect(g).connect(bus); o.start(t); o.stop(t + 0.2); return; }
+    if (kind === 'softkick') { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.2); g.gain.setValueAtTime(vol * 0.9, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3); o.connect(g).connect(bus); o.start(t); o.stop(t + 0.32); return; }
+    if (kind === 'chipkick') { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(50, t + 0.06); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09); o.connect(g).connect(bus); o.start(t); o.stop(t + 0.1); return; }
+    if (kind === 'rim') { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'square'; o.frequency.setValueAtTime(1800, t); o.frequency.exponentialRampToValueAtTime(600, t + 0.02); g.gain.setValueAtTime(vol * 0.6, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05); o.connect(g).connect(bus); o.start(t); o.stop(t + 0.06); }
     const sN = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); sN.buffer = noise;
-    if (kind === 'hat') { f.type = 'highpass'; f.frequency.value = 7000; } else if (kind === 'crackle') { f.type = 'highpass'; f.frequency.value = 3000; } else { f.type = 'bandpass'; f.frequency.value = kind === 'tom' ? 400 : kind === 'tom2' ? 260 : 1800; f.Q.value = 0.8; }
-    const d = kind === 'hat' ? 0.04 : kind === 'crackle' ? 0.012 : kind.startsWith('tom') ? 0.16 : 0.12;
+    if (kind === 'hat') { f.type = 'highpass'; f.frequency.value = 7000; } else if (kind === 'shaker') { f.type = 'bandpass'; f.frequency.value = 5000; f.Q.value = 1.5; } else if (kind === 'crackle') { f.type = 'highpass'; f.frequency.value = 3000; } else if (kind === 'rain') { f.type = 'bandpass'; f.frequency.value = 2500 + Math.random() * 3000; f.Q.value = 6; } else if (kind === 'chipsnare') { f.type = 'highpass'; f.frequency.value = 1200; } else if (kind === 'softsnare') { f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 0.6; } else { f.type = 'bandpass'; f.frequency.value = kind === 'tom' ? 400 : kind === 'tom2' ? 260 : kind === 'rim' ? 2200 : 1800; f.Q.value = kind === 'rim' ? 3 : 0.8; }
+    const d = kind === 'hat' ? 0.04 : kind === 'shaker' ? 0.07 : kind === 'crackle' ? 0.012 : kind === 'rain' ? 0.03 : kind === 'rim' ? 0.03 : kind === 'chipsnare' ? 0.09 : kind === 'softsnare' ? 0.16 : kind.startsWith('tom') ? 0.16 : 0.12;
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d); sN.connect(f).connect(g).connect(bus); sN.start(t, Math.random() * 0.3); sN.stop(t + d + 0.02);
   }
   function playClassic(t) {
@@ -5109,15 +5143,17 @@ const MUSIC = (() => {
     const bar = Math.floor(step / 16) % 8, k = step % 16, sp = 60 / T.bpm / 4, B = T.bass, root = B.roots[bar], third = B.third[bar], nextRoot = B.roots[(bar + 1) % 8];
     if (T.swing && k % 2) t += sp * T.swing;
     const D = T.drums, last = bar === 7;
-    if (D.kick.includes(k)) hit('kick', t, 0.5);
-    if (D.snare.includes(k)) hit('clap', t, D.snareVol);
-    if (D.hat === 'all' || (D.hat === 'eighths' && k % 2 === 0) || (D.hat === 'swing' && (k % 2 === 0 || k % 4 === 3))) hit('hat', t, D.hatVol * (k % 4 === 0 ? 1 : 0.7));
+    if (D.kick.includes(k)) hit(D.kickKind === 'chip' ? 'chipkick' : D.kickKind === 'soft' ? 'softkick' : 'kick', t, 0.5);
+    if (D.snare.includes(k)) hit(D.snareKind === 'rim' ? 'rim' : D.snareKind === 'chip' ? 'chipsnare' : D.snareKind === 'soft' ? 'softsnare' : 'clap', t, D.snareVol);
+    if (D.hat === 'all' || (D.hat === 'eighths' && k % 2 === 0) || (D.hat === 'swing' && (k % 2 === 0 || k % 4 === 3))) hit(D.hatKind === 'shaker' ? 'shaker' : 'hat', t, D.hatVol * (k % 4 === 0 ? 1 : 0.7));
+    if (D.rain) for (let r = 0; r < 3; r++) if (Math.random() < 0.5) hit('rain', t + Math.random() * sp, 0.006 + Math.random() * 0.01);
     if (D.fill && last && k >= 12) hit(k >= 14 ? 'tom2' : 'tom', t, 0.22);
     if (D.crackle && Math.random() < 0.35) hit('crackle', t + Math.random() * sp, 0.012 + Math.random() * 0.02);
     const bp = B.pat[k];
     if (bp !== undefined) { const n = bp === 't' ? root + third : bp === 'n' ? (nextRoot > root ? nextRoot - 1 : nextRoot + 1) : root + bp; tone(B.type, mf(n), t, sp * B.dur, B.vol, B.cut); }
     if (T.pad && k === 0) { const iv = [0, third, 7]; if (B.sev) iv.push(B.sev[bar]); if (T.pad.nine) iv.push(14); for (const v of iv) tone(T.pad.type, mf(root + T.pad.oct + v), t, sp * 15, T.pad.vol, T.pad.cut); }
     if (T.arp) { const a = T.arp.pat[k % T.arp.pat.length], n = root + T.arp.oct + (a === 't' ? third : a); tone(T.arp.type, mf(n), t, sp * 0.9, T.arp.vol, 3000); }
+    if (T.comp && T.comp.pat.includes(k)) { const C = T.comp, iv = [0, third, 7]; if (C.chord && B.sev) iv.push(B.sev[bar]); iv.forEach((v2, j) => tone(C.type, mf(root + C.oct + v2), t + (C.strum ? j * 0.02 : 0), sp * C.dur, C.vol)); }   /* chord stabs (comping) */
     const M = (loop % 2 && T.mel2) ? T.mel2 : T.mel, m = M[bar][k];
     if (m !== undefined) { const L = T.lead; tone(L.type, mf(L.base + m), t, sp * L.dur, L.vol, L.cut, L.echo ? echo.in : null, L.vib); }
   }
