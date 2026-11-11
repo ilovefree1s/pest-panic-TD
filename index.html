@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="578">v1.076</div>
+    <div id="ver" data-b="579">v1.077</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1079,7 +1079,7 @@ LEVELS[18] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugM
   };
   for (const k in LINEUP) LEVELS[k].bosses = LINEUP[k];
   LEVELS[17].bossMulW = { ...(LEVELS[17].bossMulW || {}), 5: { gant: 0.8 } };   // Level 11 Farmhouse: wave 5 Ant Queen 20% less health
-  LEVELS[18].bossMulW = { ...(LEVELS[18].bossMulW || {}), 5: { gbed: 0.95 } };   // Level 12 Last Stand: wave 5 Bed Bug Mother 5% less health
+  LEVELS[18].bossMulW = { ...(LEVELS[18].bossMulW || {}), 5: { gbed: 0.95 }, 10: { gfly: 0.65 } };   // Level 12 Last Stand: wave 5 Bed Bug Mother 5% less health, wave 10 Giant Housefly 35% less
 }
 const CAMPAIGN = 5, TEAM0 = 5, TEAM_MAPS = [5, 6, 7, 13, 14, 15, 16], TEAMN = TEAM_MAPS.length;
 const teamNext = lv => { const k = TEAM_MAPS.indexOf(lv); return k >= 0 && k < TEAM_MAPS.length - 1 ? TEAM_MAPS[k + 1] : null; };
