@@ -285,8 +285,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .tsmall button[hidden]{display:none}
 .tsmall svg{width:24px;height:24px}
 #daily{z-index:30;justify-content:flex-start;overflow-y:auto;padding-block:20px;background:rgba(10,12,16,.84)}
-.dKit{display:flex;gap:12px;align-items:center;width:min(420px,92vw);background:rgba(255,255,255,.07);border-radius:16px;padding:10px 12px;box-sizing:border-box} .dKit canvas{width:84px;height:64px;border-radius:10px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)} .dKitB{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px} .dKitB b{font-weight:900;font-size:16px} .dKitB span{font-size:12px;font-weight:700;color:var(--dim)}
-.dInfo{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:none;color:var(--dim);font:900 13px var(--body);cursor:pointer;padding:0} .dInfo.on{border-color:var(--gold);color:var(--gold)} .dTie{width:min(420px,92vw);margin:-4px 0 0;text-align:left;background:rgba(0,0,0,.3);border-radius:12px;padding:8px 12px;box-sizing:border-box} .dTie b{color:#e6c8ff}
+.dKit{display:flex;gap:12px;align-items:center;width:min(420px,92vw);background:rgba(255,255,255,.07);border-radius:16px;padding:10px 12px;box-sizing:border-box} .dKit canvas{width:72px;height:55px;border-radius:10px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)} .dKitB{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left} .dKitB b{font-weight:900;font-size:16px} .dKitB span{font-size:11.5px;font-weight:700;color:var(--dim)}
+.dInfo{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:none;color:var(--dim);font:900 13px var(--body);cursor:pointer;padding:0} .dInfo.on{border-color:var(--gold);color:var(--gold)} .dTie{width:min(420px,92vw);margin:-4px 0 0;text-align:left;background:rgba(0,0,0,.3);border-radius:12px;padding:8px 12px;box-sizing:border-box} .dTie b{color:#e6c8ff}
 .dRes{width:min(420px,92vw);background:rgba(255,255,255,.07);border-radius:16px;padding:10px 12px;box-sizing:border-box;text-align:center;font-weight:800;font-size:13px;color:var(--dim)} .dRes em{font-style:normal;color:var(--gold)} .dRes b{display:block;font:400 44px var(--display);color:var(--gold);line-height:1.05;margin:2px 0 4px} .dRes b.sm{font-size:30px} .dRes .cr{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text);font-size:13px;flex-wrap:wrap} .dRes .cake{display:inline-flex;gap:2px} .dRes .cake i{width:11px;height:11px;border-radius:2px;background:var(--gold)} .dRes .cake i.l{background:rgba(255,255,255,.18)}
 .dLbh{width:min(420px,92vw);text-align:left;display:flex;align-items:baseline;gap:8px} .dLbh small{font:800 11px var(--body);color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
 .dFoot{display:flex;gap:10px;width:min(420px,92vw);align-items:stretch} .dFoot .btn{flex:1;margin:0} .dName{flex:1;display:flex;position:relative} .dName i{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--dim);pointer-events:none} .dName input{font:800 14px var(--body);padding:6px 10px;border-radius:12px;border:2px solid rgba(255,255,255,.2);background:#1a1d22;color:var(--text);text-align:center;width:100%;box-sizing:border-box}
@@ -296,7 +296,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .teamBtn small{display:block;font:900 11px var(--body);opacity:.75}
 #lobby{z-index:30}
 .lsub{margin:-6px 0 4px;font-weight:800;color:var(--dim);text-align:center;max-width:90vw}
-#dTw{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px} #dTw span{background:rgba(160,90,255,.16);box-shadow:inset 0 0 0 1px rgba(190,140,255,.45);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:900;color:#e6c8ff;white-space:nowrap}
+#dTw{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;justify-content:flex-start} #dTw span{background:rgba(160,90,255,.16);box-shadow:inset 0 0 0 1px rgba(190,140,255,.45);border-radius:999px;padding:2px 7px;font-size:11px;font-weight:900;color:#e6c8ff;white-space:nowrap}
 #dTw .twSpin{flex:1 1 100%;border:0;cursor:pointer;border-radius:14px;padding:6px 10px;font:700 12px var(--body);color:#e8dcff;background:linear-gradient(170deg,#4a2a78,#2a1648);box-shadow:inset 0 0 0 2px #ffd34a,0 4px 0 #1a0d2e} #dTw .twSpin:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px #ffd34a,0 2px 0 #1a0d2e} #dTw .twSpin b{font-size:19px;color:var(--gold)}
 /* the Daily twist slot machine */
 #slot{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(6,8,12,.72);backdrop-filter:blur(3px)} #slot[hidden]{display:none}
@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="582">v1.080</div>
+    <div id="ver" data-b="583">v1.081</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8625,7 +8625,7 @@ function openDaily() {
   const cakeBar = left => `<span class="cake">${Array.from({ length: full }, (_, i) => `<i class="${i < left ? '' : 'l'}"></i>`).join('')}</span>`;
   const left = mine && mine.k >= 2 ? Math.min(full, mine.k - 2) : mine && mine.p ? full : null;
   $('dMine').innerHTML = (race ? 'Your run today' : 'Your score today') + ' <em id="dRank"></em>' + (mine ? (race ? `<b class="${mine.w >= RACE_WAVES ? '' : 'sm'}">${mine.w >= RACE_WAVES ? fmtT(mine.t) + (mine.p ? ' 🏁' : '') : 'Wave ' + mine.w}</b>` : `<b>Wave ${mine.w}</b>`) : `<b class="sm">${race ? 'Not raced yet' : 'Not played yet'}</b>`)
-    + `<div class="cr">${mine && race && left != null ? cakeBar(left) + `<span>${left >= full ? 'Perfect' : left + '/' + full + ' cake'}</span>` : mine && race ? '<span>Cake eaten</span>' : ''}<span>${dailyStreak()} 🔥 streak</span></div>`;
+    + `<div class="cr">${mine && race && left != null ? cakeBar(left) + `<span>${left >= full ? 'Perfect' : left + '/' + full + ' cake'}</span>` : mine && race ? '<span>' + (mine.w >= RACE_WAVES ? 'Lost cake' : 'Cake eaten') + '</span>' : ''}<span>${dailyStreak()} 🔥 streak</span></div>`;
   settleOldDaily(); const sv = loadRun(DRUN_KEY);
   $('dPlay').textContent = sv ? 'Continue (after wave ' + sv.wave + ', ' + sv.lives + ' slices)' : mine ? 'Practice again' : 'Play today\'s kitchen';
   $('dName').value = dailyName();
