@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="590">v1.088</div>
+    <div id="ver" data-b="591">v1.089</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3677,7 +3677,7 @@ function setLook(slot, val) {
 }
 function unlockedList() { const out = []; for (const [, , opts] of LOCKER) for (const o of opts) if (o[2] && lockOpen(o[2])) out.push(o[1]); return out; }
 function dexRaw() { try { return JSON.parse(localStorage.getItem('ppd-shinydex') || '{}') || {}; } catch (e) { return {}; } }
-function dexGet() { try { const d = dexRaw(); if (lockAll()) { const all = {}; for (const t of [...DEX_REG, ...DEX_BOSS]) all[t] = d[t] || { n: 0, d: 'preview' }; return all; } return d; } catch (e) { return {}; } }   /* the owner's unlock-all also shows every shiny (as a preview, nothing is saved) */
+function dexGet() { return dexRaw(); }
 function dexTypes() { const d = dexGet(); return DEX_REG.filter(t => d[t]).length; }
 function dexAdd(t) {
   const d = dexRaw(), first = !d[t], before = unlockedList();
@@ -3714,7 +3714,7 @@ $('shinyP').addEventListener('click', () => openShinies('paused'));   /* mid-gam
 $('locker').addEventListener('click', ev => { const b = ev.target.closest('.lk'); if (!b || b.disabled) return; SND.play('tap'); setLook(b.dataset.slot, b.dataset.v); });
 /* secret: hold Back for 5 seconds to unlock (or re-lock) every Locker outfit. A normal tap still just goes back */
 let shHold = null, shHeld = false;
-$('shBack').addEventListener('pointerdown', () => { shHeld = false; clearTimeout(shHold); shHold = setTimeout(() => { shHeld = true; const on = !lockAll(); try { localStorage.setItem('ppd-lkall', on ? '1' : '0'); } catch (e) {} renderLocker(); lockerPreview(); SND.play(on ? 'clear' : 'tap'); const c = $('shCount'); c.textContent = on ? '🔓 All outfits and shinies unlocked (hold Back again to undo)' : '🔒 Back to normal'; setTimeout(renderDex, 3500); }, 5000); });
+$('shBack').addEventListener('pointerdown', () => { shHeld = false; clearTimeout(shHold); shHold = setTimeout(() => { shHeld = true; const on = !lockAll(); try { localStorage.setItem('ppd-lkall', on ? '1' : '0'); } catch (e) {} renderLocker(); lockerPreview(); SND.play(on ? 'clear' : 'tap'); const c = $('shCount'); c.textContent = on ? '🔓 All Locker outfits unlocked (hold Back again to undo)' : '🔒 Locker outfits back to normal'; setTimeout(renderDex, 3500); }, 5000); });
 for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('shBack').addEventListener(ev, () => clearTimeout(shHold));
 $('shBack').addEventListener('contextmenu', e => e.preventDefault());
 $('shBack').addEventListener('click', () => { if (shHeld) { shHeld = false; return; } SND.play('tap'); $('shinies').hidden = true; $(shinyFrom).hidden = false; });
