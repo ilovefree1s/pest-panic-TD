@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="576">v1.074</div>
+    <div id="ver" data-b="577">v1.075</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4678,14 +4678,14 @@ const BUILD = {
     const brist = mesh(new THREE.BoxGeometry(1.9, 0.42, 0.36), pbristM); brist.position.y = 0.21; phead.add(brist);
     const fringe = mesh(new THREE.BoxGeometry(1.94, 0.12, 0.42), pbristM, false); fringe.position.y = 0.06; phead.add(fringe);
     const block = mesh(new THREE.BoxGeometry(2.0, 0.2, 0.44), woodM); block.position.y = 0.52; phead.add(block);
-    const pband = mesh(new THREE.BoxGeometry(0.5, 0.24, 0.5), bandM); pband.position.y = 0.52; phead.add(pband);
-    const sock = mesh(cyl(0.13, 0.1, 0.4, 12), bandM); sock.position.y = 0.72; sock.visible = false; broIn.add(sock);
+    const pbandM = std({ color: '#1c1d22', roughness: 0.4 }), pband = mesh(new THREE.BoxGeometry(0.5, 0.24, 0.5), pbandM); pband.position.y = 0.52; phead.add(pband);   /* the push broom's own black bracket */
+    const sock = mesh(cyl(0.13, 0.1, 0.4, 12), pbandM); sock.position.y = 0.72; sock.visible = false; broIn.add(sock);
     const o = { root: g, bro, head, handle, capk, rim, pips: pips(g) };
     o.setLevel = lv => {
       rimLevel(o, lv);
       head.scale.set([1, 1.2, 1.45][lv - 1], [1, 1.08, 1.15][lv - 1], 1);
-      bandM.color.set(['#c0392b', '#2b6cd4', '#f3c24a'][lv - 1]); bandM.metalness = lv >= 3 ? 1 : 0; bandM.roughness = lv >= 3 ? 0.25 : 0.45;
-      handM.color.set(['#b07a44', '#6b4425', '#f3c24a'][lv - 1]); handM.metalness = lv >= 3 ? 0.9 : 0; handM.roughness = lv >= 3 ? 0.25 : 0.55;
+      bandM.color.set(['#c0392b', '#2b6cd4', '#8a3fd1'][lv - 1]); bandM.metalness = 0; bandM.roughness = 0.45;   /* red, blue, purple like the other tools (the gold read as black under the kitchen lights) */
+      handM.color.set(['#b07a44', '#6b4425', '#3a2414'][lv - 1]); handM.metalness = 0; handM.roughness = 0.55;
       ferr.visible = lv >= 2 && !o.hBase;
     };
     o.setPerk = () => { head.visible = false; ferr.visible = false; phead.visible = true; sock.visible = true; handle.position.y = 0.6; o.phead = phead; o.hBase = 0.6; };
