@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="575">v1.073</div>
+    <div id="ver" data-b="576">v1.074</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4635,12 +4635,12 @@ const BUILD = {
     const o = { root: g, turn, tip: beam, core, spot, rim, pips: pips(g), beamW: 0.62, lensC: rimG };
     o.setLevel = lv => {
       rimLevel(o, lv);
-      lens2.visible = lv >= 2; ruby.visible = lv >= 3; cap.visible = lv < 3;
+      lens2.visible = lv >= 3; ruby.visible = lv >= 3; cap.visible = lv < 3;   /* the second lens arrives with gold at level 3 */
       /* fittings wood -> bronze -> silver -> gold; the handle takes the rank colour (red, blue, purple; black for the perk) */
       const fit = o.perk ? 3 : lv - 1;   /* fittings: wood, bronze, silver, gold */
       brass.color.set(['#7a4a22', '#b2763a', '#cfd4da', '#ffd24a'][fit]); brass.metalness = fit === 0 ? 0.05 : 0.95; brass.roughness = fit === 0 ? 0.6 : 0.22; brass.emissive.set(fit === 3 ? '#3a2400' : '#000000'); brass.emissiveIntensity = fit === 3 ? 0.3 : 0;
       wood.color.set(o.perk ? '#1a1a1e' : ['#c8342a', '#2b6cd4', '#8a3fd1'][lv - 1]); wood.roughness = 0.35;
-      head.scale.setScalar([1, 1.07, 1.14][lv - 1]); o.beamW = [0.62, 0.72, 0.85][lv - 1];
+      head.scale.setScalar([0.9, 1.04, 1.14][lv - 1]); o.beamW = [0.62, 0.72, 0.85][lv - 1];   /* a small glass at 1, growing */
       if (o.perk) { glassM.color.set('#ffb347'); glassM.emissive = new THREE.Color('#ff9a3a'); glassM.emissiveIntensity = 0.7; glassM.opacity = 0.4; }   /* Wildfire: the glass glows hot */
     };
     o.setPerk = () => { o.perk = true; o.baseScale = 1.1; o.setLevel(3); };
