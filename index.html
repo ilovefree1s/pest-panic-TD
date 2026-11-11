@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="571">v1.069</div>
+    <div id="ver" data-b="572">v1.070</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4453,7 +4453,7 @@ const BUILD = {
     for (const off of [0, -0.15, 0.15]) {
       const bg = new THREE.Group(); bg.position.x = off; kick.add(bg);
       const barrel = mesh(cyl(0.09, 0.13, 1, 14), dark); barrel.rotation.x = Math.PI / 2 - 0.12; bg.add(barrel);
-      const mouth = mesh(cyl(0.2, 0.12, 0.25, 14), dark); mouth.rotation.x = Math.PI / 2 - 0.12; bg.add(mouth);
+      const mouth = mesh(cyl(0.17, 0.13, 0.14, 14), dark); mouth.rotation.x = Math.PI / 2 - 0.12; bg.add(mouth);   /* a short lip at the muzzle */
       barrels.push({ bg, barrel, mouth });
     }
     const hose = mesh(new THREE.TorusGeometry(0.33, 0.05, 8, 20, Math.PI), dark); hose.position.set(0.3, 1.2, -0.3); turn.add(hose);
