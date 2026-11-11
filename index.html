@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="579">v1.077</div>
+    <div id="ver" data-b="580">v1.078</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2130,7 +2130,7 @@ function doorSignTex(n, sub, dim) { const c = document.createElement('canvas'); 
 function setDoorSigns() {
   for (const sp of KIT.signs || []) { scene.remove(sp); sp.material.map?.dispose(); sp.material.dispose(); } KIT.signs = [];
   let st = null; try { st = S; } catch (e) { return; }   /* (the first level loads before the game state exists) */
-  if (!st || !(LV === DAILY_LV && S && S.daily && S.daily.day >= '2026-11-09' && ROUTES.length === 2)) return;
+  if (!st || !(LV === DAILY_LV && S && S.daily && S.daily.day >= '2026-11-09' && ROUTES.length === 2) || S.wave >= 1) return;   /* door signs only before the first wave */
   const order = [LONG_R, 1 - LONG_R], open = dailyStagger() ? doorsOpen() : order;
   order.forEach((ri, k) => { const R = ROUTES[ri], [c0, r0] = R.wp[0], side = c0 < 0 ? -1 : c0 > COLS - 1 ? 1 : 0; let x, z;
     if (floorDoor(R.wp[0])) { x = ccx(c0); z = ccz(r0); } else if (side) { x = side * (BOARD.ex - 1.3); z = ccz(r0); } else if (r0 > ROWS - 1) { x = ccx(c0); z = 13.6; } else { x = ccx(c0); z = -13.6; }
