@@ -209,8 +209,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #shinies{background:radial-gradient(ellipse at 50% 0%,#1d2530 0%,#0b0e12 70%)}
 #shinies .sh.yes{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a2028,#0e1216);box-shadow:inset 0 0 0 2px #c9d2dc,0 6px 16px rgba(0,0,0,.45)}
 #shinies .sh.yes.boss{box-shadow:inset 0 0 0 2px #ffd34a,0 0 18px rgba(255,200,60,.25),0 6px 16px rgba(0,0,0,.45)}
-.sh.yes .shimg{animation:none!important;filter:grayscale(1) brightness(1.25) contrast(1.15) sepia(1) hue-rotate(calc(var(--hue) - 40deg)) saturate(3.2) drop-shadow(0 0 8px hsl(var(--hue) 100% 60% / .7))}
-.sh.yes.boss .shimg{filter:grayscale(1) contrast(1.35) brightness(1.2) sepia(1) hue-rotate(var(--bh)) saturate(4) drop-shadow(0 0 3px #fff) drop-shadow(0 0 12px hsl(calc(var(--bh) + 40deg) 100% 60% / .8))}   /* bosses: each its own deep jewel colour */
+.sh.yes .shimg{animation:none!important;filter:brightness(1.1) drop-shadow(0 0 4px hsl(var(--hue) 100% 70% / .9)) drop-shadow(0 0 12px hsl(var(--hue) 100% 60% / .8)) drop-shadow(0 0 24px hsl(var(--hue) 100% 55% / .5))}   /* the bug in its own colours, the shiny colour as the glow around it */
+.sh.yes.boss .shimg{filter:brightness(1.1) drop-shadow(0 0 3px #fff) drop-shadow(0 0 10px hsl(calc(var(--bh) + 40deg) 100% 65% / .9)) drop-shadow(0 0 26px hsl(calc(var(--bh) + 40deg) 100% 55% / .6))}   /* bosses: each its own deep jewel colour */
 .sh.yes::after{content:'';position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.28) 48%,rgba(255,255,255,.05) 52%,transparent 60%);transform:translateX(-60%);animation:shSheen 4.5s ease-in-out infinite;animation-delay:calc(var(--hue) / 360deg * -4.5s);pointer-events:none}
 .sh.yes.boss::after{background:linear-gradient(115deg,transparent 40%,rgba(255,236,170,.4) 48%,rgba(255,220,120,.06) 52%,transparent 60%)}
 @keyframes shSheen{0%,55%{transform:translateX(-60%)}85%,100%{transform:translateX(60%)}}
@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="588">v1.086</div>
+    <div id="ver" data-b="589">v1.087</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
