@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="570">v1.068</div>
+    <div id="ver" data-b="571">v1.069</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4440,7 +4440,7 @@ const BUILD = {
   fogger() {
     const g = new THREE.Group(), rim = coaster(g);
     const turn = new THREE.Group(); turn.scale.setScalar(1.35); g.add(turn);
-    const tankM = std({ color: '#c8342a', roughness: 0.38, metalness: 0.2 }), yel = std({ color: '#f2c53d', roughness: 0.4 }), dark = std({ color: '#1c1d22', roughness: 0.5 });
+    const tankM = std({ color: '#c8342a', roughness: 0.38, metalness: 0.2 }), yel = std({ color: '#f2c53d', roughness: 0.4 }), dark = std({ color: '#1c1d22', roughness: 0.5 }), tipM = std({ color: '#d42a1e', roughness: 0.4 });
     const base = mesh(new THREE.BoxGeometry(1.0, 0.16, 1.5), dark); base.position.y = 0.42; turn.add(base);
     for (const sx of [-0.42, 0.42]) for (const sz of [-0.55, 0.55]) { const w = mesh(cyl(0.24, 0.24, 0.14, 16), dark); w.rotation.z = Math.PI / 2; w.position.set(sx, 0.24, sz); turn.add(w); const hub = mesh(cyl(0.1, 0.1, 0.16, 10), TM.steel, false); hub.rotation.z = Math.PI / 2; hub.position.set(sx, 0.24, sz); turn.add(hub); }
     const tank = mesh(cyl(0.42, 0.42, 1.1, 20), tankM); tank.rotation.x = Math.PI / 2; tank.position.set(0, 0.95, -0.15); turn.add(tank);
@@ -4460,13 +4460,13 @@ const BUILD = {
     const o = { root: g, turn, kick, rim, pips: pips(g) };
     o.setLevel = lv => {
       rimLevel(o, lv);
-      const L = [1.3, 1.6, 1.8][lv - 1], m = lv >= 3 ? TM.gold : lv === 2 ? TM.steel : dark;
+      const L = [1.3, 1.6, 1.8][lv - 1];   /* the barrels stay black with red tips at every level; the tank goes red -> blue -> purple like the other tools */
       barrels.forEach(({ bg, barrel, mouth }, i) => {
         bg.visible = lv >= 3 ? i > 0 : i === 0;
-        barrel.scale.set(1, L, 1); barrel.position.set(0, Math.sin(0.12) * L / 2, L / 2); barrel.material = m;
-        mouth.position.set(0, Math.sin(0.12) * L, L + 0.05); mouth.material = m;
+        barrel.scale.set(1, L, 1); barrel.position.set(0, Math.sin(0.12) * L / 2, L / 2); barrel.material = dark;
+        mouth.position.set(0, Math.sin(0.12) * L, L + 0.05); mouth.material = tipM;
       });
-      tankM.color.set(lv >= 3 ? '#2b2f36' : '#c8342a');
+      tankM.color.set(['#c8342a', '#2b6cd4', '#8a3fd1'][lv - 1]); yel.color.set(['#f2c53d', '#f2c53d', '#f3c24a'][lv - 1]);
     };
     o.setPerk = () => {   /* Industrial Fogger: a bigger rig that looks like a real chemical sprayer */
       o.perk = true; o.baseScale = 1.12;
@@ -4477,7 +4477,7 @@ const BUILD = {
         band.material = std({ map: tx, roughness: 0.45 }); band.scale.set(1, 2.6, 1);
         gauge.material = glowG; tankM.color.set('#1e2126'); tankM.metalness = 0.6; tankM.roughness = 0.28;
       }
-      barrels.forEach(({ barrel, mouth }) => { barrel.material = TM.gold; mouth.material = glowG; });
+      barrels.forEach(({ barrel, mouth }) => { barrel.material = dark; mouth.material = glowG; });   /* black barrels, toxic-green tips */
       g.scale.setScalar(o.baseScale);
     };
     return o;
