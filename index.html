@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="585">v1.083</div>
+    <div id="ver" data-b="586">v1.084</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8612,7 +8612,8 @@ async function renderBoard(day) {
   if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + (isRace(day) ? (mine.w >= raceWaves(day) ? ' · ' + fmtT(mine.t) + ' · ' + raceCake(mine.k, day).txt.toLowerCase() : ' · wave ' + mine.w) : ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'); }
 }
 function openDaily() {
-  setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
+  setupDaily(); const L = LEVELS[DAILY_LV], day = L.day; let mine = dailyMine(day);
+  if (day === '2026-11-11' && mine && mine.w >= RACE_WAVES && mine.k < 2 && myName() === 'mrfree1') { mine.k = 11; mine.sent = 0; LS.set('ppd-daily-' + day, JSON.stringify(mine)); }   /* one-off: the run posted before slices-left were stored (9/10 that day) */
   const race = isRace(day);
   const full = L.twists.includes('glass') ? 5 : 10;
   $('dKitN').textContent = HOUSES[L.look].name; $('dSub').textContent = day.slice(5).replace('-', '/') + ' · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · ' + full + ' slices · ' + (race ? 'race to wave ' + RACE_WAVES : 'endless waves'); drawDailyMap(L);
