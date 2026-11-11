@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="569">v1.067</div>
+    <div id="ver" data-b="570">v1.068</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4741,8 +4741,8 @@ const BUILD = {
       head.scale.setScalar(1.15); heads.push({ base, head, U, L: Lw });
     }
     const o = { root: g, rim, pips: pips(g), heads };
-    o.setPerk = () => { o.perk = true; heads.forEach(h => h.base.scale.setScalar(1.15)); o.baseScale = 0.98; g.scale.setScalar(0.98); green.color.set('#2fd04a'); green.emissive = new THREE.Color('#0a5a10'); green.emissiveIntensity = 0.4; };
-    o.setLevel = lv => { rimLevel(o, lv); heads.forEach((h, k) => h.base.visible = k < lv); o.baseScale = [0.82, 0.88, 0.93][lv - 1]; g.scale.setScalar(o.baseScale);   /* starts small and grows a little each upgrade; a head per level */ green.color.set(['#5cbf3a', '#3caa6a', '#9a4ad0'][lv - 1]); potM.color.set(['#c8642e', '#c8642e', '#c9a227'][lv - 1]); };
+    o.setPerk = () => { o.perk = true; heads.forEach(h => h.base.scale.setScalar(1.15)); o.baseScale = 0.98; g.scale.setScalar(0.98); green.color.set('#1c6a1a'); stemM.color.set('#1a5c18'); green.emissive = new THREE.Color('#0a3a0a'); green.emissiveIntensity = 0.35; };   /* the perk: deepest green with a faint glow */
+    o.setLevel = lv => { rimLevel(o, lv); heads.forEach((h, k) => h.base.visible = k < lv); o.baseScale = [0.82, 0.88, 0.93][lv - 1]; g.scale.setScalar(o.baseScale);   /* starts small and grows a little each upgrade; a head per level */ green.color.set(['#6fd244', '#44b02e', '#2a8a22'][lv - 1]); stemM.color.set(['#58b538', '#3d9628', '#277a1e'][lv - 1]); potM.color.set(['#c8642e', '#c8642e', '#c9a227'][lv - 1]); };   /* green, darker each level */
     return o;
   },
   cat() {   // the cat is the whole thing: no tile, it roams the kitchen
