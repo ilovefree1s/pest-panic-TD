@@ -672,7 +672,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="580">v1.078</div>
+    <div id="ver" data-b="581">v1.079</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8580,6 +8580,8 @@ async function lbSubmit(day, waves, kills, bd = 0) {   /* insert; if the table a
       const rows = c.ok ? await c.json() : null; if (rows && !rows.length) { LB_ERR = 'refused ' + (why409 || r.status); return false; }
       const m = dailyMine(day); if (m) { m.sent = 3; LS.set('ppd-daily-' + day, JSON.stringify(m)); } return true; }
     LB_ERR = r.status + ' ' + (await r.text()).slice(0, 160); return false; } catch (e) { LB_ERR = String(e && e.message || e); return false; } }
+const raceFull = day => twistsFor(day).includes('glass') ? 5 : DAILY_LIVES;
+function raceCake(k, day) { const full = raceFull(day); if (k >= 2) { const left = Math.min(full, k - 2); return { perfect: left >= full, txt: left >= full ? 'Perfect' : left + '/' + full + ' cake' }; } return { perfect: k === 1, txt: k === 1 ? 'Perfect' : 'Lost cake' }; }   /* leaderboard label from the kills column */
 async function lbTop(day) { try { const r = await fetch(LB_URL + '?select=pid,name,waves,kills,boss_dmg&day=eq.' + day + (isRace(day) ? '&order=kills.desc,waves.desc,boss_dmg.desc,created_at.asc&limit=50' : '&order=waves.desc,boss_dmg.desc,kills.desc,created_at.asc&limit=50'), { headers: LB_H, cache: 'no-store' });   /* never a saved copy */ return r.ok ? await r.json() : null; } catch (e) { return null; } }
 async function lbRank(day, w, k, bd = 0) { try { const better = isRace(day) ? '&or=(kills.gt.' + k + ',and(kills.eq.' + k + ',waves.gt.' + w + '),and(kills.eq.' + k + ',waves.eq.' + w + ',boss_dmg.gt.' + bd + '))' : '&or=(waves.gt.' + w + ',and(waves.eq.' + w + ',boss_dmg.gt.' + bd + '),and(waves.eq.' + w + ',boss_dmg.eq.' + bd + ',kills.gt.' + k + '))'; const r = await fetch(LB_URL + '?select=pid&day=eq.' + day + better, { headers: { ...LB_H, Prefer: 'count=exact', Range: '0-0' } }); if (!r.ok) return null; const cr = r.headers.get('content-range') || ''; const n = +cr.split('/')[1]; return Number.isFinite(n) ? n + 1 : null; } catch (e) { return null; } }
 const fmtBd = n => { n = Math.round(n || 0); return n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'k' : n.toLocaleString('en-US'); };
@@ -8591,9 +8593,9 @@ async function renderBoard(day) {
   const me = myPid();
   if (mine && mine.sent === 3 && top.length < 50 && !top.some(t => t.pid === me) && !renderBoard.healed) { renderBoard.healed = true; mine.sent = 0; LS.set('ppd-daily-' + day, JSON.stringify(mine)); return renderBoard(day); }   /* our score went missing from the board: send it again */
   if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
-  const row = t => isRace(day) ? (t.waves >= raceWaves(day) ? `<span class="wv">${t.kills ? '🏁 ' : ''}${fmtT(-t.boss_dmg / 10)}</span><span class="kl">${t.kills ? 'Perfect' : 'Lost cake'}</span>` : `<span class="wv">Wave ${t.waves}</span><span class="kl">Didn't finish</span>`) : `<span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span>`;
+  const row = t => isRace(day) ? (t.waves >= raceWaves(day) ? `<span class="wv">${raceCake(t.kills, day).perfect ? '🏁 ' : ''}${fmtT(-t.boss_dmg / 10)}</span><span class="kl">${raceCake(t.kills, day).txt}</span>` : `<span class="wv">Wave ${t.waves}</span><span class="kl">Didn't finish</span>`) : `<span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span>`;
   ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span>${row(t)}</li>`).join('');
-  if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + (isRace(day) ? (mine.w >= raceWaves(day) ? ' · ' + fmtT(mine.t) + (mine.p ? ' · perfect' : ' · lost cake') : ' · wave ' + mine.w) : ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'); }
+  if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + (isRace(day) ? (mine.w >= raceWaves(day) ? ' · ' + fmtT(mine.t) + ' · ' + raceCake(mine.k, day).txt.toLowerCase() : ' · wave ' + mine.w) : ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'); }
 }
 function openDaily() {
   setupDaily(); const L = LEVELS[DAILY_LV], day = L.day, mine = dailyMine(day);
@@ -8631,7 +8633,7 @@ function dailyOver() {
   const d = S.daily, done = !!d.done, waves = done ? RACE_WAVES : Math.max(0, S.wave - 1), kills = S.kills || 0;
   /* the race's numbers travel in the endless columns: boss_dmg = -time in tenths (so 'highest first' is fastest first), kills = 1 when perfect */
   const full = TWX('glass') ? 5 : DAILY_LIVES, perfect = done && S.lives >= full, time = done ? d.time : 0;
-  const bd = d.race ? (done ? -Math.round(time * 10) : -999999) : Math.round(S.bossDmg || 0), kk = d.race ? (perfect ? 1 : 0) : kills;
+  const bd = d.race ? (done ? -Math.round(time * 10) : -999999) : Math.round(S.bossDmg || 0), kk = d.race ? (done ? 2 + Math.max(0, Math.min(full, Math.ceil(S.lives))) : 0) : kills;   /* race: kills = 2 + slices left (fewer slices lost ranks first, then time); older rows used 1 = perfect, 0 = lost cake */
   $('overt').textContent = d.race ? (done ? (perfect ? 'Perfect race!' : 'Race finished') : 'Race over') : 'Daily Kitchen over'; $('ostars').hidden = true; $('nextLv').hidden = true; $('endless').hidden = true; $('again').hidden = false; $('again').textContent = 'Practice again';
   let line = '';
   if (d.counts) { LS.set('ppd-daily-' + d.day, JSON.stringify({ w: waves, k: kk, bd, t: time, p: perfect ? 1 : 0, race: d.race ? 1 : 0 })); const n = bumpStreak(d.day);
