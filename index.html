@@ -285,18 +285,18 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .tsmall button[hidden]{display:none}
 .tsmall svg{width:24px;height:24px}
 #daily{z-index:30;justify-content:flex-start;overflow-y:auto;padding-block:20px;background:rgba(10,12,16,.84)}
-.dKit{display:flex;gap:12px;align-items:center;width:min(420px,92vw);background:rgba(255,255,255,.07);border-radius:16px;padding:10px 12px;box-sizing:border-box} .dKit canvas{width:72px;height:55px;border-radius:10px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)} .dKitB{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left} .dKitB b{font-weight:900;font-size:16px} .dKitB span{font-size:11.5px;font-weight:700;color:var(--dim)}
+.dKit{display:flex;flex-direction:column;gap:8px;width:min(420px,92vw);background:rgba(255,255,255,.07);border-radius:16px;padding:10px 12px;box-sizing:border-box} .dKitTop{display:flex;gap:12px;align-items:center} .dKit canvas{width:84px;height:64px;border-radius:10px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)} .dKitB{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left} .dKitB b{font-weight:900;font-size:16px} .dKitB span{font-size:12px;font-weight:700;color:var(--dim)}
 .dInfo{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:none;color:var(--dim);font:900 13px var(--body);cursor:pointer;padding:0} .dInfo.on{border-color:var(--gold);color:var(--gold)} .dTie{width:min(420px,92vw);margin:-4px 0 0;text-align:left;background:rgba(0,0,0,.3);border-radius:12px;padding:8px 12px;box-sizing:border-box} .dTie b{color:#e6c8ff}
 .dRes{width:min(420px,92vw);background:rgba(255,255,255,.07);border-radius:16px;padding:10px 12px;box-sizing:border-box;text-align:center;font-weight:800;font-size:13px;color:var(--dim)} .dRes em{font-style:normal;color:var(--gold)} .dRes b{display:block;font:400 44px var(--display);color:var(--gold);line-height:1.05;margin:2px 0 4px} .dRes b.sm{font-size:30px} .dRes .cr{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--text);font-size:13px;flex-wrap:wrap} .dRes .cake{display:inline-flex;gap:2px} .dRes .cake i{width:11px;height:11px;border-radius:2px;background:var(--gold)} .dRes .cake i.l{background:rgba(255,255,255,.18)}
 .dLbh{width:min(420px,92vw);text-align:left;display:flex;align-items:baseline;gap:8px} .dLbh small{font:800 11px var(--body);color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
-.dFoot{display:flex;gap:10px;width:min(420px,92vw);align-items:stretch} .dFoot .btn{flex:1;margin:0} .dName{flex:1;display:flex;position:relative} .dName i{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--dim);pointer-events:none} .dName input{font:800 14px var(--body);padding:6px 10px;border-radius:12px;border:2px solid rgba(255,255,255,.2);background:#1a1d22;color:var(--text);text-align:center;width:100%;box-sizing:border-box}
-.dBoard{list-style:none;margin:0;padding:0;width:min(420px,92vw);display:flex;flex-direction:column;gap:4px} .dBoard li{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.06);border-radius:10px;padding:6px 12px;font-weight:800} .dBoard li.me{background:rgba(255,200,60,.18);box-shadow:inset 0 0 0 1px var(--gold)} .dBoard .rk{width:28px;color:var(--gold)} .dBoard .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .dBoard .wv{color:var(--text)} .dBoard .kl{color:var(--dim);font-size:12px;width:70px;text-align:right}
+.setbox .nm{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;font-weight:800;font-size:16px;text-align:left} .setbox .nm small{grid-column:1/3;font-weight:700;font-size:12px;color:var(--dim)} .setbox .nm input{grid-column:auto;height:auto;font:800 15px var(--body);padding:6px 10px;border-radius:10px;border:2px solid rgba(255,255,255,.2);background:#1a1d22;color:var(--text);text-align:center;width:150px;accent-color:auto}
+.dBoard{list-style:none;margin:0;padding:0;width:min(420px,92vw);display:flex;flex-direction:column;gap:5px} .dBoard li{display:grid;grid-template-columns:36px 1fr 82px 64px;gap:5px;font-weight:800;font-size:15px} .dBoard li>span{display:block;background:rgba(12,14,20,.75);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22);border-radius:9px;padding:7px 8px;text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .dBoard li.one{display:flex} .dBoard li.one>span{flex:1;white-space:normal} .dBoard li.hd>span{background:none;box-shadow:none;padding:0 0 1px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)} .dBoard .rk{color:var(--gold)} .dBoard li.me .nm{box-shadow:inset 0 0 0 2px var(--gold);color:var(--gold)} .dBoard .wv{color:var(--text)} .dBoard .kl{color:var(--dim);font-size:12px}
 #solo{z-index:30;justify-content:flex-start;overflow-y:auto;padding-block:20px}
 .btn.teamBtn{background:linear-gradient(#7fd8ff,#3a9ad8);box-shadow:0 6px 0 #1f5f8e,0 12px 24px rgba(0,0,0,.4);color:#08243a}
 .teamBtn small{display:block;font:900 11px var(--body);opacity:.75}
 #lobby{z-index:30}
 .lsub{margin:-6px 0 4px;font-weight:800;color:var(--dim);text-align:center;max-width:90vw}
-#dTw{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;justify-content:flex-start} #dTw span{background:rgba(160,90,255,.16);box-shadow:inset 0 0 0 1px rgba(190,140,255,.45);border-radius:999px;padding:2px 7px;font-size:11px;font-weight:900;color:#e6c8ff;white-space:nowrap}
+#dTw{display:flex;flex-wrap:wrap;gap:6px;justify-content:center} #dTw span{background:rgba(160,90,255,.16);box-shadow:inset 0 0 0 1px rgba(190,140,255,.45);border-radius:999px;padding:4px 11px;font-size:13px;font-weight:900;color:#e6c8ff;white-space:nowrap}
 #dTw .twSpin{flex:1 1 100%;border:0;cursor:pointer;border-radius:14px;padding:6px 10px;font:700 12px var(--body);color:#e8dcff;background:linear-gradient(170deg,#4a2a78,#2a1648);box-shadow:inset 0 0 0 2px #ffd34a,0 4px 0 #1a0d2e} #dTw .twSpin:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px #ffd34a,0 2px 0 #1a0d2e} #dTw .twSpin b{font-size:19px;color:var(--gold)}
 /* the Daily twist slot machine */
 #slot{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(6,8,12,.72);backdrop-filter:blur(3px)} #slot[hidden]{display:none}
@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="583">v1.081</div>
+    <div id="ver" data-b="585">v1.083</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -726,14 +726,14 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     </div>
     <div class="screen" id="daily" hidden>
       <h2 class="t">Daily Kitchen</h2>
-      <div class="dKit"><canvas id="dMap" width="168" height="128"></canvas><div class="dKitB"><b id="dKitN"></b><span id="dSub"></span><div id="dTw" hidden></div></div><button type="button" class="dInfo" id="dInfo" aria-label="How it works">i</button></div>
+      <div class="dKit"><div class="dKitTop"><canvas id="dMap" width="168" height="128"></canvas><div class="dKitB"><b id="dKitN"></b><span id="dSub"></span></div><button type="button" class="dInfo" id="dInfo" aria-label="How it works">i</button></div><div id="dTw" hidden></div></div>
       <p class="hint dTie" id="dTie" hidden></p>
       <div class="dRes" id="dMine"></div>
       <button class="btn" id="dPlay" type="button">Play today's kitchen</button>
       <h3 class="lhead2 dLbh">Leaderboard <small id="dRule"></small></h3>
       <ol class="dBoard" id="dBoard"></ol>
       <p class="hint" id="dYou"></p>
-      <div class="dFoot"><label class="dName" title="Your name on the board"><input id="dName" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Your name on the board"><i>✎</i></label><button class="btn dark" id="dBack" type="button">Back</button></div>
+      <button class="btn dark" id="dBack" type="button">Back</button>
     </div>
     <div class="screen" id="solo" hidden>
       <h2 class="t">Solo</h2>
@@ -821,6 +821,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
         <label><span>Sound effects</span><b id="setSfxV">100%</b><input type="range" id="setSfx" min="0" max="100" step="5" value="100"></label>
         <label><span>Music</span><b id="setMusV">100%</b><input type="range" id="setMus" min="0" max="100" step="5" value="100"></label>
         <div class="trk"><span>Soundtracks</span><div id="setTrk"></div><small>Tick more than one and they take turns, a few minutes each.</small></div>
+        <label class="nm"><span>Your name</span><input id="dName" maxlength="16" autocomplete="off" spellcheck="false"><small>On the Daily leaderboard and in online games.</small></label>
       </div>
       <button class="btn dark" id="setTut" type="button">Replay tutorial</button>
       <button class="btn dark" id="setUpd" type="button">Check for updates</button>
@@ -7165,7 +7166,7 @@ function syncSettings() {
 }
 function openSettings() {
   if (S.mode === 'play' && !S.paused) { setPaused(true); setPausedBy = true; $('paused').hidden = true; }
-  syncSettings(); $('settings').hidden = false;
+  syncSettings(); $('dName').value = dailyName(); $('settings').hidden = false;
 }
 function closeSettings() {
   $('settings').hidden = true;
@@ -8598,15 +8599,15 @@ function drawDailyMap(L) {   /* little floor plan: tiles, trails from each door,
   const ck = L.cakeCol ?? BOARD.cakeCol; g.fillStyle = '#ff6fa0'; g.beginPath(); g.arc(px(ck), py(-0.2), sx * 0.75, 0, 7); g.fill(); g.fillStyle = '#fff2b0'; g.beginPath(); g.arc(px(ck), py(-0.2), sx * 0.35, 0, 7); g.fill();
 }
 async function renderBoard(day) {
-  const ol = $('dBoard'), you = $('dYou'), mine = dailyMine(day); ol.innerHTML = '<li><span class="nm">Loading…</span></li>'; you.textContent = '';
+  const ol = $('dBoard'), you = $('dYou'), mine = dailyMine(day); ol.innerHTML = '<li class="one"><span class="nm">Loading…</span></li>'; you.textContent = '';
   if (mine && mine.sent !== 3 && !(await lbSubmit(day, mine.w, mine.k, mine.bd || 0))) you.textContent = 'Your score hasn\'t reached the board yet (' + LB_ERR + '). It will try again next time.';   /* a run that couldn't be sent gets another go */
   const top = await lbTop(day);
-  if (!top) { ol.innerHTML = '<li><span class="nm">The leaderboard isn\'t reachable right now.</span></li>'; return; }
+  if (!top) { ol.innerHTML = '<li class="one"><span class="nm">The leaderboard isn\'t reachable right now.</span></li>'; return; }
   const me = myPid();
   if (mine && mine.sent === 3 && top.length < 50 && !top.some(t => t.pid === me) && !renderBoard.healed) { renderBoard.healed = true; mine.sent = 0; LS.set('ppd-daily-' + day, JSON.stringify(mine)); return renderBoard(day); }   /* our score went missing from the board: send it again */
-  if (!top.length) { ol.innerHTML = '<li><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
-  const row = t => isRace(day) ? (t.waves >= raceWaves(day) ? `<span class="wv">${raceCake(t.kills, day).perfect ? '🏁 ' : ''}${fmtT(-t.boss_dmg / 10)}</span><span class="kl">${raceCake(t.kills, day).txt}</span>` : `<span class="wv">Wave ${t.waves}</span><span class="kl">—</span>`) : `<span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span>`;
-  ol.innerHTML = top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span>${row(t)}</li>`).join('');
+  if (!top.length) { ol.innerHTML = '<li class="one"><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
+  const row = t => isRace(day) ? (t.waves >= raceWaves(day) ? `<span class="wv">${raceCake(t.kills, day).perfect ? '🏁 ' : ''}${fmtT(-t.boss_dmg / 10)}</span><span class="kl">${raceCake(t.kills, day).txt.replace(' cake', '')}</span>` : `<span class="wv">Wave ${t.waves}</span><span class="kl">—</span>`) : `<span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span>`;
+  ol.innerHTML = `<li class="hd"><span>#</span><span>Player</span><span>${isRace(day) ? 'Time' : 'Wave'}</span><span>${isRace(day) ? 'Cake' : 'Boss dmg'}</span></li>` + top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span>${row(t)}</li>`).join('');
   { const i = top.findIndex(t => t.pid === me), el = $('dRank'); if (el && i >= 0) el.textContent = '· #' + (i + 1) + (top.length < 50 ? ' of ' + top.length : ''); }
   if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + (isRace(day) ? (mine.w >= raceWaves(day) ? ' · ' + fmtT(mine.t) + ' · ' + raceCake(mine.k, day).txt.toLowerCase() : ' · wave ' + mine.w) : ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'); }
 }
@@ -8628,7 +8629,6 @@ function openDaily() {
     + `<div class="cr">${mine && race && left != null ? cakeBar(left) + `<span>${left >= full ? 'Perfect' : left + '/' + full + ' cake'}</span>` : mine && race ? '<span>' + (mine.w >= RACE_WAVES ? 'Lost cake' : 'Cake eaten') + '</span>' : ''}<span>${dailyStreak()} 🔥 streak</span></div>`;
   settleOldDaily(); const sv = loadRun(DRUN_KEY);
   $('dPlay').textContent = sv ? 'Continue (after wave ' + sv.wave + ', ' + sv.lives + ' slices)' : mine ? 'Practice again' : 'Play today\'s kitchen';
-  $('dName').value = dailyName();
   $('title').hidden = true; $('daily').hidden = false; renderBoard(day);
 }
 function startDaily() {
@@ -8664,7 +8664,7 @@ function dailyOver() {
 }
 $('dailyT').addEventListener('click', () => { SND.init(); openDaily(); });
 $('dBack').addEventListener('click', () => { $('daily').hidden = true; $('title').hidden = false; });
-$('dPlay').addEventListener('click', () => { SND.init(); LS.set('ppd-name', cleanName($('dName').value)); $('daily').hidden = true; startDaily(); });
+$('dPlay').addEventListener('click', () => { SND.init(); $('daily').hidden = true; startDaily(); });
 $('dName').addEventListener('change', () => LS.set('ppd-name', cleanName($('dName').value)));
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
 $('soloBack').addEventListener('click', () => { $('solo').hidden = true; $('title').hidden = false; });
