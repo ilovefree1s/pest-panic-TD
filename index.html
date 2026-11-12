@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="620">v1.118</div>
+    <div id="ver" data-b="621">v1.119</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5365,7 +5365,7 @@ function newState(mode) {
 const tmpP = { x: 0, z: 0, dx: 0, dz: 0 };
 const DOOR2_WAVE = 5, dailyStagger = () => LV === DAILY_LV && !!S && !!S.daily && S.daily.day >= '2026-11-09' && ROUTES.length === 2 && !TWX('doors');   /* a two-door Daily: door 1 alone until wave 5 */
 function doorsOpen() {   // solo kitchens with 3+ doors open them up over time: 1 door for waves 1-5, a 2nd from wave 6, the rest from wave 11; a two-door Daily opens its second at wave 5
-  const n = dailyStagger() ? (S.wave < DOOR2_WAVE ? 1 : 2) : S.wave <= 5 ? 1 : S.wave <= 10 ? 2 : ROUTES.length, order = [LONG_R]; for (let i = 0; i < ROUTES.length; i++) if (i !== LONG_R) order.push(i); return order.slice(0, n); }
+  const n = TWX('doors') ? ROUTES.length : dailyStagger() ? (S.wave < DOOR2_WAVE ? 1 : 2) : S.wave <= 5 ? 1 : S.wave <= 10 ? 2 : ROUTES.length, order = [LONG_R];   /* Two Doors twist: every door open from wave 1 */ for (let i = 0; i < ROUTES.length; i++) if (i !== LONG_R) order.push(i); return order.slice(0, n); }
 function nextRoute() {
   if (S && LEVELS[LV] && !LEVELS[LV].team && !S.vs && (ROUTES.length > 2 || dailyStagger())) { const open = doorsOpen(); S.routeK = ((S.routeK || 0) + 1) % open.length; return (S.routeN = open[S.routeK]); }
   S.routeN = ((S.routeN || 0) + 1) % ROUTES.length; return S.routeN; }
