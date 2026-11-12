@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="612">v1.110</div>
+    <div id="ver" data-b="613">v1.111</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3446,7 +3446,7 @@ function buildModelBoss(t) {
   return root;
 }
 /* ---- modelled regular bugs (also used, scaled up, for their Giant boss): the mantis */
-const CENTI_M = { head: null, seg: null, headYaw: 0, segYaw: 0 };   /* the centipede is a chain: the front piece is the head model, every other piece a body ring */
+const CENTI_M = { head: null, seg: null, headLo: null, segLo: null, headYaw: 0, segYaw: 0 };   /* the centipede is a chain: the front piece is the head model, every other piece a body ring */
 const BUG_MODELS = { mantis: { url: 'assets/mantis.glb?h=271dbe40', hgt: 1.9 }, hopper: { url: 'assets/hopper.glb?h=6a49c023', len: 2.3 }, stink: { url: 'assets/stink.glb?h=85200e6d', len: 1.55 }, moth: { url: 'assets/moth.glb?h=dd55f923', wid: 2.6, pitch: 0.35 } };
 function mantisRig(geo) {   // 4 walking legs (2 a side) and the two big grabbing arms
   if (geo.userData.rig) return geo.userData.rig;
@@ -3484,7 +3484,7 @@ function hopperRig(geo) {   // 4 walking legs and the 2 big jumping legs at the 
 }
 function buildHopperModel() {
   const M = BUG_MODELS.hopper, root = newBugRoot(), u = root.userData, body = u.body;
-  let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
+  let src = null; loGltf(M).scene.traverse(n => { if (n.isMesh && !src) src = n; });
   const R = hopperRig(src.geometry), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.6, metalness: 0, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [], back = [];
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); });
@@ -3495,7 +3495,7 @@ function buildHopperModel() {
 }
 function buildStinkModel(paint) {   /* paint: a different colour/finish and length for the same model (the dung beetle) */
   const M = BUG_MODELS.stink, root = newBugRoot(), u = root.userData, body = u.body;
-  let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
+  let src = null; loGltf(M).scene.traverse(n => { if (n.isMesh && !src) src = n; });
   const R = insectRig(src.geometry, 3), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: paint ? paint.roughness : 0.5, metalness: paint ? paint.metalness : 0.05, color: paint ? paint.color : new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [];
   for (const [x, z, hy] of R.hips) { const b = new THREE.Bone(); b.position.set(x, hy ?? R.hipY, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); }
@@ -3505,7 +3505,7 @@ function buildStinkModel(paint) {   /* paint: a different colour/finish and leng
 }
 function buildMothModel() {   /* wings bones flap; the model's wings rest raised, so they are lowered a bit while flying */
   const M = BUG_MODELS.moth, root = newBugRoot(), u = root.userData, body = u.body;
-  let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
+  let src = null; loGltf(M).scene.traverse(n => { if (n.isMesh && !src) src = n; });
   const R = wingRig(src.geometry), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.7, metalness: 0, color: new THREE.Color(0.9, 0.9, 0.9), side: THREE.DoubleSide });
   const bones = [new THREE.Bone()], wings = [];
   R.wings.forEach(([x, y, z], k) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { s: k ? 1 : -1 }; bones[0].add(b); bones.push(b); wings.push(b); });
@@ -3521,10 +3521,12 @@ function segRig(geo) {   // the body ring: one leg each side hanging below it
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(J, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Wt, 4));
   return (geo.userData.rig = { hips: [[-Wd * 0.4, mn + H * 0.42, 0], [Wd * 0.4, mn + H * 0.42, 0]], mn, H, D: bb.max.z - bb.min.z, cz: (bb.max.z + bb.min.z) / 2, W: bb.max.x - bb.min.x, cx: (bb.max.x + bb.min.x) / 2 });
 }
+let BUILD_LO = false;   /* true while a regular (non-boss) bug is being built: the builders then use the low-poly cut of the model */
+const loGltf = M => (BUILD_LO && M.lo && M.lo.gltf) || M.gltf;
 function buildCentiModel() {
   const root = newBugRoot(), u = root.userData, B = u.body;
   const first = g => { let m = null; g.scene.traverse(n => { if (n.isMesh && !m) m = n; }); return m; };
-  const sm = first(CENTI_M.seg), hm = first(CENTI_M.head), R = segRig(sm.geometry);
+  const sm = first(BUILD_LO && CENTI_M.segLo || CENTI_M.seg), hm = first(BUILD_LO && CENTI_M.headLo || CENTI_M.head), R = segRig(sm.geometry);
   const segMat = std({ map: seamSafeMips(sm.material.map, sm.geometry), roughness: 0.6, color: new THREE.Color(0.6, 0.47, 0.6) }), headMat = std({ map: seamSafeMips(hm.material.map, hm.geometry), roughness: 0.6, color: new THREE.Color(0.68, 0.68, 0.72) });   /* both pulled darker, the body toward the head's red */
   const bones = [new THREE.Bone()];
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); u.cLegs = (u.cLegs || []).concat(b); });   /* moved by their own little paddle, not the bug walk (which bends ring segments) */
@@ -3546,7 +3548,7 @@ function buildCentiModel() {
 }
 function buildMantisModel() {
   const M = BUG_MODELS.mantis, root = newBugRoot(), u = root.userData, body = u.body;
-  let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; });
+  let src = null; loGltf(M).scene.traverse(n => { if (n.isMesh && !src) src = n; });
   const R = mantisRig(src.geometry), mat = std({ map: seamSafeMips(src.material.map, src.geometry), roughness: 0.6, metalness: 0, color: new THREE.Color(0.85, 0.85, 0.85) });
   const bones = [new THREE.Bone()], legs = [], arms = [];
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); legs.push(b); });
@@ -3556,7 +3558,8 @@ function buildMantisModel() {
   u.legs = legs; u.arms = arms; u.mats = [mat]; u.shadow = 2.0; u.stride = true; return root;
 }
 { let n = 0; const done = () => { if (++n < 2) return; const old = MODEL_BUILD.centi; MODEL_BUILD.centi = () => { try { return buildCentiModel(); } catch (e) { console.warn('centipede model', e); return old(); } }; };
-  try { new GLTFLoader().load('assets/centi_head.glb?h=ec52de6f', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb?h=e22316e5', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
+  try { new GLTFLoader().load('assets/centi_head.glb?h=ec52de6f', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb?h=e22316e5', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_head_lo.glb?h=cacc7d5a', g => { CENTI_M.headLo = g; }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg_lo.glb?h=bd07a93e', g => { CENTI_M.segLo = g; MODEL_POOL.centi = (MODEL_POOL.centi || []).filter(m => { if (m.visible) return true; scene.remove(m); return false; }); }, undefined, () => {}); } catch (e) {} }
+for (const t of ['hopper', 'stink', 'moth', 'mantis']) { BUG_MODELS[t].lo = { url: 'assets/' + t + '_lo.glb' }; try { new GLTFLoader().load(BUG_MODELS[t].lo.url, g => { BUG_MODELS[t].lo.gltf = g; MODEL_POOL[t] = (MODEL_POOL[t] || []).filter(m => { if (m.visible) return true; scene.remove(m); return false; }); }, undefined, () => {}); } catch (e) {} }   /* low-poly cuts for the regular bugs; idle pooled hi-poly copies are dropped so new ones build light */
 for (const [t, fn] of [['stink', () => buildStinkModel()], ['moth', () => buildMothModel()]]) try { new GLTFLoader().load(BUG_MODELS[t].url, g => { BUG_MODELS[t].gltf = g; const old = MODEL_BUILD[t]; MODEL_BUILD[t] = () => { try { return fn(); } catch (e) { console.warn(t + ' model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.hopper.url, g => { BUG_MODELS.hopper.gltf = g; const old = MODEL_BUILD.hopper; MODEL_BUILD.hopper = () => { try { return buildHopperModel(); } catch (e) { console.warn('hopper model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.mantis.url, g => { BUG_MODELS.mantis.gltf = g; const old = MODEL_BUILD.mantis; MODEL_BUILD.mantis = () => { try { return buildMantisModel(); } catch (e) { console.warn('mantis model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
@@ -4256,7 +4259,7 @@ const REG_MODEL_OK = t => t === 'dung' && DUNG_LOOK === 'stink' ? !!BUG_MODELS.s
 for (const t of ['ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis']) BOSS_BUILD[t] = giantBuild(t);
 function getModel(t) {
   const pool = MODEL_POOL[t] ||= [];
-  let q = pool.find(m => !m.visible); if (!q) { q = compactModel(MODEL_BUILD[t]()); pool.push(q); scene.add(q); }
+  let q = pool.find(m => !m.visible); if (!q) { BUILD_LO = true; try { q = compactModel(MODEL_BUILD[t]()); } finally { BUILD_LO = false; } q.traverse(o => { if (o.isMesh) o.castShadow = false; }); pool.push(q); scene.add(q); }   /* regular bugs use the blob shadows, not shadow maps: there can be dozens */
   q.visible = true; q.scale.setScalar({ mantis: 1.6, stink: 1.25, hopper: 1.25, centi: 0.85, moth: 1.1 }[t] || 1); return q;
 }
 function hideBug(b) { if (b.mesh) b.mesh.visible = false; if (b.mdl) { b.mdl.visible = false; b.mdl = null; } }
