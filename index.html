@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="616">v1.114</div>
+    <div id="ver" data-b="617">v1.115</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -798,7 +798,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
           <p class="shnote">Rare: about 1 bug in 2,000 comes out shiny (a whole bed bug swarm or centipede counts as one).</p>
           <div class="shgrid" id="shGrid"></div></section>
         <section class="shCol"><h3 class="lhead2">Boss trophies</h3>
-          <p class="shnote">Super rare: about 1 boss in 10,000 comes out shiny.</p>
+          <p class="shnote">Super rare: about 1 boss in 5,000 comes out shiny.</p>
           <div class="shgrid boss" id="shBoss"></div></section>
         <section class="shCol shLock"><h3 class="lhead2">Locker</h3>
           <p class="shnote">Catch shinies to unlock gear. Everyone in your game sees what you wear.</p>
@@ -3659,7 +3659,7 @@ const SHINY_CHANCE = 0.0005;
 const BUG_NAME = { ant: 'Ant', fly: 'Fly', spider: 'Spider', bed: 'Bed Bug', dung: 'Dung Beetle', baby: 'Baby Spider', hopper: 'Grasshopper', centi: 'Centipede', stink: 'Stink Bug', moth: 'Moth', mantis: 'Praying Mantis' };
 const shinyName = b => 'shiny ' + (BUG_NAME[b.t] || (BT[b.t] && BT[b.t].name) || 'bug');
 // ---- the Shiny Collection: every type you've caught and kept to the end of a game (one sold from the jar doesn't count)
-const SHINY_BOSS = 0.0001;
+const SHINY_BOSS = 0.0002;
 const DEX_REG = ['ant', 'fly', 'spider', 'bed', 'dung', 'baby', 'hopper', 'centi', 'stink', 'moth', 'mantis'];
 const DEX_BOSS = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'];
 /* the Locker: what you've earned, and what you're wearing. reg = regular shiny types caught, boss = boss shiny types caught */
