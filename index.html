@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="615">v1.113</div>
+    <div id="ver" data-b="616">v1.114</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3706,7 +3706,8 @@ function dexAdd(t) {
   if (n >= DEX_REG.length) ACH.unlock('shiny11');
 }
 const dexSvg = t => BUGICON[t] || (BT[t] && BUGICON[BT[t].base]) || BUGICON.spider;
-const dexIcon = t => `<img class="shimg" src="assets/bugs/${t}.png" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{innerHTML:this.dataset.svg}).firstChild)" data-svg="${dexSvg(t).replace(/"/g, '&quot;')}">`;   /* a real picture of the in-game bug */
+const DEX_V = 'assets/bugs/dung.png?h=9b2cd285';   /* stamped by the build: its hash doubles as a version for every icon URL */
+const dexIcon = t => `<img class="shimg" src="assets/bugs/${t}.png?v=${(DEX_V.split('?h=')[1] || '0')}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{innerHTML:this.dataset.svg}).firstChild)" data-svg="${dexSvg(t).replace(/"/g, '&quot;')}">`;   /* a real picture of the in-game bug */
 const dexName = t => BUG_NAME[t] || (BT[t] && BT[t].name) || t;
 function renderLocker() {
   const look = myLook(), el = $('locker'); if (!el) return;
