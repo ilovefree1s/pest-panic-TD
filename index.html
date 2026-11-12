@@ -345,9 +345,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #rsAsk div{display:flex;gap:8px} #rsAsk button{border:0;border-radius:12px;padding:8px 16px;font:900 15px var(--body);cursor:pointer} #rsYes{background:#3fae5a;color:#fff} #rsNo{background:rgba(255,255,255,.14);color:var(--text)}
 #netWarn{position:absolute;left:50%;top:150px;transform:translateX(-50%);z-index:35;background:#5a1010;color:#fff;font-weight:800;padding:8px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
 #netWarn[hidden]{display:none}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+.screen{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   padding:16px;text-align:center;background:radial-gradient(ellipse at center,rgba(8,10,12,.3),rgba(8,10,12,.8))}
-#paused{z-index:10}   /* over the HUD, wave belt and spray button */
 /* game over: the tool tray is useless here, so the results get the whole screen; if it still doesn't fit, it scrolls instead of cutting off top and bottom */
 body:has(#over:not([hidden])) #tray{display:none}
 #over{justify-content:flex-start;overflow-y:auto} #over>:first-child{margin-top:auto} #over>:last-child{margin-bottom:auto}
@@ -586,7 +585,7 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   .logo{font-size:clamp(40px,10vh,72px)}
   /* pause menu on a sideways phone: Resume on top, the rest two per row, so nothing scrolls */
   #paused #restart.warn{background:linear-gradient(#ff7a5a,#e0482a)!important;color:#fff!important;box-shadow:0 5px 0 #8a2412!important}
-#paused{z-index:10;display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:center;align-content:center;gap:10px 12px;padding:10px 16px}   /* over the HUD, wave belt and spray button */
+#paused{display:grid;grid-template-columns:repeat(2,minmax(0,260px));justify-content:center;align-content:center;gap:10px 12px;padding:10px 16px}   /* over the HUD, wave belt and spray button */
   #paused .t{grid-column:1 / -1;font-size:clamp(28px,7vh,40px);margin-bottom:2px}
   #paused #resume{grid-column:1 / -1;justify-self:center;min-width:60%}
   #paused .btn{font-size:clamp(16px,3.6vh,22px);padding:10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -676,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="619">v1.117</div>
+    <div id="ver" data-b="620">v1.118</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
