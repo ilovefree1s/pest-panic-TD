@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="594">v1.092</div>
+    <div id="ver" data-b="595">v1.093</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5526,6 +5526,7 @@ function kill(b) {
   SND.play('squish');
 }
 function biteCake(n) {
+  if (S.showcase) return;   /* bug viewer: the cake is safe */
   S.biteAcc = (S.biteAcc || 0) + n; n = Math.floor(S.biteAcc + 1e-6); S.biteAcc -= n;
   if (!n) { SND.play('squish'); return; }
   if (LV === DAILY_LV && TWX('sudden') && S.mode === 'play') { n = S.lives; banner('Sudden Death!', 'One bite was all it took.', true, 2600); }   /* Sudden Death: the first bite takes the whole cake */
@@ -9441,6 +9442,8 @@ setInterval(placeStageTag, 400); addEventListener('resize', placeStageTag);
 syncSnd();
 toTitle();
 resize();
+/* bug viewer for testing: open the game with #show=centi,gcenti (any bug keys) and it drops you in Grandma's with those bugs strolling in every 15 s, no waves, cake can't be eaten */
+if (/^#show=/.test(location.hash)) { const keys = location.hash.slice(6).split(',').filter(k => BT[k]); if (keys.length) setTimeout(() => { startGame(0); S.money = 9999; S.lives = 99; S.showcase = 1; const go = () => { if (!S || S.showcase !== 1) return; S.active = true; keys.forEach((k, i) => setTimeout(() => spawnEntry(k, LONG_R), i * 2500)); }; go(); setInterval(go, 15000); }, 800); }
 requestAnimationFrame(frame);
 </script>
 
