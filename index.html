@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="597">v1.095</div>
+    <div id="ver" data-b="598">v1.096</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3525,7 +3525,7 @@ function buildCentiModel() {
   const root = newBugRoot(), u = root.userData, B = u.body;
   const first = g => { let m = null; g.scene.traverse(n => { if (n.isMesh && !m) m = n; }); return m; };
   const sm = first(CENTI_M.seg), hm = first(CENTI_M.head), R = segRig(sm.geometry);
-  const segMat = std({ map: seamSafeMips(sm.material.map, sm.geometry), roughness: 0.5, color: new THREE.Color(0.85, 0.85, 0.85) }), headMat = std({ map: seamSafeMips(hm.material.map, hm.geometry), roughness: 0.5, color: new THREE.Color(0.85, 0.85, 0.85) });
+  const segMat = std({ map: seamSafeMips(sm.material.map, sm.geometry), roughness: 0.6, color: new THREE.Color(0.6, 0.47, 0.6) }), headMat = std({ map: seamSafeMips(hm.material.map, hm.geometry), roughness: 0.6, color: new THREE.Color(0.68, 0.68, 0.72) });   /* both pulled darker, the body toward the head's red */
   const bones = [new THREE.Bone()];
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); u.cLegs = (u.cLegs || []).concat(b); });   /* moved by their own little paddle, not the bug walk (which bends ring segments) */
   const sk = new THREE.SkinnedMesh(sm.geometry, segMat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
@@ -4245,7 +4245,7 @@ for (const t of ['ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis']) BOSS_BUILD[t] 
 function getModel(t) {
   const pool = MODEL_POOL[t] ||= [];
   let q = pool.find(m => !m.visible); if (!q) { q = compactModel(MODEL_BUILD[t]()); pool.push(q); scene.add(q); }
-  q.visible = true; q.scale.setScalar({ mantis: 1.6, stink: 1.25, hopper: 1.25, centi: 1.15, moth: 1.1 }[t] || 1); return q;
+  q.visible = true; q.scale.setScalar({ mantis: 1.6, stink: 1.25, hopper: 1.25, centi: 0.85, moth: 1.1 }[t] || 1); return q;
 }
 function hideBug(b) { if (b.mesh) b.mesh.visible = false; if (b.mdl) { b.mdl.visible = false; b.mdl = null; } }
 function psnBubble(b, k) { FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.6 * k, y: bugY(b) + 0.4 * k + Math.random() * 0.3, z: b.z + (Math.random() - 0.5) * 0.6 * k, vy: 0.9, life: 0.7, s0: 0.12 + 0.06 * k, s1: 0.22 + 0.08 * k, c: [0.45, 1, 0.3], a0: 0.8 }); }
@@ -5259,7 +5259,7 @@ const BT = {
   bed:    { hp: 7,    spd: 3.8, gold: 1,   lives: 0.25, goo: [0.55, 0.12, 0.08], swarm: 12 },
   dung:   { hp: 90,   spd: 2.2, gold: 9,   lives: 1, ball: 75, goo: [0.3, 0.26, 0.2] },
   hopper: { hp: 40,   spd: 3.0, gold: 6,   lives: 1, goo: [0.45, 0.72, 0.2] },
-  centi:  { hp: 22,   spd: 4.0, gold: 2,   lives: 0.34, goo: [0.5, 0.24, 0.12], segs: 8 },
+  centi:  { hp: 15,   spd: 4.0, gold: 2,   lives: 0.23, goo: [0.5, 0.24, 0.12], segs: 12, gap: 0.46 },   /* twelve smaller segments: about the same total health and cake bite as the old eight */
   stink:  { hp: 110,  spd: 2.1, gold: 9,   lives: 1, armor: 2, goo: [0.45, 0.4, 0.22] },
   moth:   { hp: 28,   spd: 3.6, gold: 6,   lives: 1, fly: true, goo: [0.62, 0.56, 0.46] },
   mantis: { hp: 260,  spd: 1.9, gold: 16,  lives: 2, armor: 1, goo: [0.42, 0.76, 0.26] },
