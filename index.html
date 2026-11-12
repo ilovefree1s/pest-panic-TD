@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="595">v1.093</div>
+    <div id="ver" data-b="596">v1.094</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3446,7 +3446,7 @@ function buildModelBoss(t) {
   return root;
 }
 /* ---- modelled regular bugs (also used, scaled up, for their Giant boss): the mantis */
-const CENTI_M = { head: null, seg: null, headYaw: Math.PI / 2, segYaw: 0 };   /* the centipede is a chain: the front piece is the head model, every other piece a body ring */
+const CENTI_M = { head: null, seg: null, headYaw: 0, segYaw: 0 };   /* the centipede is a chain: the front piece is the head model, every other piece a body ring */
 const BUG_MODELS = { mantis: { url: 'assets/mantis.glb?h=271dbe40', hgt: 1.9 }, hopper: { url: 'assets/hopper.glb?h=6a49c023', len: 2.3 }, stink: { url: 'assets/stink.glb?h=85200e6d', len: 1.55 }, moth: { url: 'assets/moth.glb?h=dd55f923', wid: 2.6, pitch: 0.35 } };
 function mantisRig(geo) {   // 4 walking legs (2 a side) and the two big grabbing arms
   if (geo.userData.rig) return geo.userData.rig;
@@ -3530,7 +3530,7 @@ function buildCentiModel() {
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); u.cLegs = (u.cLegs || []).concat(b); });   /* moved by their own little paddle, not the bug walk (which bends ring segments) */
   const sk = new THREE.SkinnedMesh(sm.geometry, segMat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
   const segYaw = CENTI_M.segYaw || 0, k = 0.6 / (segYaw ? R.W : R.D), seg = new THREE.Group(); sk.scale.set(k, k, k); sk.rotation.y = segYaw; sk.position.set(segYaw ? -R.cz * k : 0, -R.mn * k, segYaw ? R.cx * k : -R.cz * k); seg.add(sk); B.add(seg);   /* the Meshy pieces face +x, the game walks along +z */
-  hm.geometry.computeBoundingBox(); const hb = hm.geometry.boundingBox, kh = 1.7 / (hb.max.z - hb.min.z), head = new THREE.Group();
+  hm.geometry.computeBoundingBox(); const hb = hm.geometry.boundingBox, kh = 1.5 / (hb.max.z - hb.min.z), head = new THREE.Group();
   const hmesh = new THREE.Mesh(hm.geometry, headMat); hmesh.scale.setScalar(kh); hmesh.rotation.y = CENTI_M.headYaw || 0; hmesh.position.set(0, -hb.min.y * kh, 0.15 - (hb.max.z + hb.min.z) / 2 * kh); head.add(hmesh); B.add(head);
   u.head = head; u.seg = seg; u.mats = [segMat, headMat]; u.shadow = 1.0; return root;
 }
