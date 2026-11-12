@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="613">v1.111</div>
+    <div id="ver" data-b="614">v1.112</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3294,7 +3294,7 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
   return { sk, legs: bones.slice(1, 5), tail, head };
 }
 /* ---- modelled bosses (Meshy). Each gets a code-built skeleton: the legs that stick out to the sides become 3 bones a side that the walk cycle swings */
-const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb?h=0a694301', len: 5.99 }, widow: { url: 'assets/boss_widow.glb?h=8a72c460', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb?h=307396bc', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb?h=e2d479f7', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb?h=7cf2cf34', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb?h=321d373a', len: 4.6, legs: 4, legTop: 0.34, rig: { grow: true, top: 0.6 } }, herc: { url: 'assets/boss_herc.glb?h=944a4b6d', len: 4.21 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */,
+const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb?h=0a694301', len: 5.99 }, widow: { url: 'assets/boss_widow.glb?h=8a72c460', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb?h=307396bc', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb?h=e2d479f7', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb?h=7cf2cf34', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb?h=321d373a', len: 4.6, legs: 4, legTop: 0.34, rig: { grow: true, top: 0.6 } }, herc: { url: 'assets/boss_herc.glb?h=944a4b6d', len: 5.05 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */,
   /* the regular bugs wear low-poly cuts of the same models (the ant without her crown) */
   m_ant: { url: 'assets/bug_ant.glb?h=e5cbe1bf', len: 2.1, reg: 'ant' }, m_fly: { url: 'assets/bug_fly.glb?h=ca232665', wid: 1.35, wings: true, pitch: 0.45, wingRest: 0.35, wingTilt: -1.1, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 }, reg: 'fly' },
   m_spider: { url: 'assets/bug_spider.glb?h=e9270299', len: 2.2, legs: 4, reg: 'spider' }, m_bed: { url: 'assets/bug_bed.glb?h=aaeed3ff', len: 1.1, legs: 4, legTop: 0.34, rig: { grow: true, top: 0.6 }, reg: 'bed' }, m_dung: { url: 'assets/bug_dung.glb?h=5a4db8a9', len: 1.5, reg: 'dung' } };
@@ -5289,7 +5289,7 @@ const BT = {
   gcenti: { hp: 125, spd: 2.3, gold: 10, lives: 0.4, boss: true, base: 'centi', size: 1.94, segs: 14, gap: 1.1, name: 'Giant Centipede', sub: 'Fourteen segments, and an armored head', goo: [0.5, 0.24, 0.12] },
   gstink: { hp: 1500, spd: 1.2, gold: 140, lives: 5, armor: 3, boss: true, base: 'stink', size: 2.59, name: 'Giant Stink Bug', sub: 'It leaves stink clouds behind as it walks', goo: [0.45, 0.4, 0.22] },
   gmoth:  { hp: 1300, spd: 1.5, gold: 130, lives: 5, fly: true, boss: true, base: 'moth', size: 2.43, name: 'Giant Moth', sub: 'Its wingbeats blow out candles as it flies past', goo: [0.62, 0.56, 0.46] },
-  gmantis:{ hp: 1900, spd: 1.3, gold: 170, lives: 6, armor: 2, boss: true, base: 'mantis', size: 2.11, noPush: true, name: 'Giant Mantis', sub: 'Eats other bugs to heal', goo: [0.42, 0.76, 0.26] },
+  gmantis:{ hp: 1900, spd: 1.3, gold: 170, lives: 6, armor: 2, boss: true, base: 'mantis', size: 2.49, noPush: true, name: 'Giant Mantis', sub: 'Eats other bugs to heal', goo: [0.42, 0.76, 0.26] },
   gant:   { hp: 1600, spd: 1.15, gold: 150, lives: 5, armor: 2, boss: true, name: 'Ant Queen', sub: 'Her Royal Guard shields her: squash the soldier ants first', goo: [0.62, 0.16, 0.1] },
   gfly:   { hp: 2200, spd: 1.6, gold: 150, lives: 5, fly: true, boss: true, name: 'Giant Housefly', sub: 'She zig-zags, so swats and tongues can miss', goo: [0.5, 0.82, 0.22] },
   gbed:   { hp: 1800, spd: 1.4, gold: 150, lives: 5, armor: 1, boss: true, name: 'Bed Bug Mother', sub: 'Tools she walks past get itchy and swing wild', goo: [0.55, 0.12, 0.08] },
