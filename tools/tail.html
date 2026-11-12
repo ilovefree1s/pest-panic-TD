@@ -16,7 +16,7 @@ small{color:#999}
 <div id="v"></div>
 <div id="p">
 <h2>Centipede tail</h2>
-<small>Drag to orbit, wheel to zoom. Set the cap and stinger, hit Copy, paste the text to Claude.</small>
+<small>Drag to orbit, wheel to zoom. Set the round cap and the two tail legs, hit Copy, paste the text to Claude.</small>
 <div id="ctl"></div>
 <button id="copy">Copy settings</button>
 <textarea id="out" readonly></textarea>
@@ -30,12 +30,13 @@ const cam = new THREE.PerspectiveCamera(35, 1, 0.01, 100); cam.position.set(-2.2
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshStandardMaterial({ color: '#8a6a48' })); floor.rotation.x = -Math.PI / 2; sc.add(floor);
 function resize() { R.setSize(V.clientWidth, V.clientHeight); cam.aspect = V.clientWidth / V.clientHeight; cam.updateProjectionMatrix(); } addEventListener('resize', resize); resize();
 /* same numbers as the game: ring 0.6 long, tinted (0.6,0.47,0.6), three rings 0.46 apart, the last one wears the tail */
-const P = { capR: 0.96, capZ: 0.55, capStretch: 1.35, capY: 0, stingLen: 0.9, stingR: 0.22, stingZ: 1.0, stingY: 0.15, stingTilt: 0.3 };
+const P = { capR: 0.96, capZ: 0.55, capStretch: 1.35, capY: 0, legLen: 1.6, legR: 0.14, legX: 0.45, legY: -0.1, legZ: 0.6, legSpread: 0.45, legDroop: 0.15, legBend: 0.5, tipLen: 0.5 };
 const DEF = [['capR', 'Cap size (× ring radius)', 0.5, 1.4, 0.01], ['capZ', 'Cap centre (0 = at the flat face, + = inside ring)', -0.5, 1.2, 0.01], ['capStretch', 'Cap stretch back', 0.6, 2.2, 0.01], ['capY', 'Cap up/down', -0.4, 0.4, 0.01],
-  ['stingLen', 'Stinger length (× r)', 0.2, 2.5, 0.01], ['stingR', 'Stinger thickness (× r)', 0.05, 0.5, 0.01], ['stingZ', 'Stinger back (× r)', 0, 2.5, 0.01], ['stingY', 'Stinger up/down (× r)', -0.6, 0.8, 0.01], ['stingTilt', 'Stinger tilt up (rad)', -0.8, 1.2, 0.01]];
+  ['legLen', 'Tail legs length (× r)', 0.3, 4, 0.01], ['legR', 'Tail legs thickness (× r)', 0.04, 0.4, 0.01], ['legX', 'Tail legs apart at the root (× r)', 0, 1.2, 0.01], ['legY', 'Tail legs up/down (× r)', -0.8, 0.8, 0.01], ['legZ', 'Tail legs root back (× r)', -0.5, 2, 0.01],
+  ['legSpread', 'Tail legs spread out (rad)', -0.3, 1.5, 0.01], ['legDroop', 'Tail legs droop down (rad)', -0.8, 1.2, 0.01], ['legBend', 'Knee bend (rad)', -1, 1.5, 0.01], ['tipLen', 'Dark tip share', 0.05, 0.9, 0.01]];
 const C = document.getElementById('ctl');
 for (const [k, name, a, b, st] of DEF) { const l = document.createElement('label'); l.innerHTML = `<div class="row">${name}<span id="s_${k}">${P[k]}</span></div>`; const i = document.createElement('input'); i.type = 'range'; i.min = a; i.max = b; i.step = st; i.value = P[k]; i.oninput = () => { P[k] = +i.value; document.getElementById('s_' + k).textContent = P[k]; build(); }; l.appendChild(i); C.appendChild(l); }
-const tcol = new THREE.MeshStandardMaterial({ color: '#b8401a', roughness: 0.6 }), stingM = new THREE.MeshStandardMaterial({ color: '#2e1309', roughness: 0.5 });
+const tcol = new THREE.MeshStandardMaterial({ color: '#b8401a', roughness: 0.6 }), legM = new THREE.MeshStandardMaterial({ color: '#c84a1c', roughness: 0.55 }), tipM = new THREE.MeshStandardMaterial({ color: '#2e1309', roughness: 0.5 });
 let ring = null, sb = null, tail = new THREE.Group(); sc.add(tail);
 new GLTFLoader().load('../assets/centi_seg.glb', g => { let m = null; g.scene.traverse(n => { if (n.isMesh && !m) m = n; }); const geo = m.geometry; geo.computeBoundingBox(); const bb = geo.boundingBox, D = bb.max.z - bb.min.z, k = 0.6 / D;
   const mat = new THREE.MeshStandardMaterial({ map: m.material.map, roughness: 0.6, color: new THREE.Color(0.6, 0.47, 0.6) });
@@ -43,7 +44,11 @@ new GLTFLoader().load('../assets/centi_seg.glb', g => { let m = null; g.scene.tr
   build(); });
 function build() { if (!sb) return; while (tail.children.length) tail.remove(tail.children[0]); const r = (sb.max.z - sb.min.z) / 2 * 0.95, cy = sb.max.y - r;
   const cap = new THREE.Mesh(new THREE.SphereGeometry(r * P.capR, 24, 18), tcol); cap.scale.set(1, 1, P.capStretch); cap.position.set(0, cy + r * P.capY, sb.min.z + r * P.capZ); tail.add(cap);
-  const st = new THREE.Mesh(new THREE.ConeGeometry(r * P.stingR, r * P.stingLen, 12), stingM); st.rotation.x = -Math.PI / 2 - P.stingTilt; st.position.set(0, cy + r * P.stingY, sb.min.z - r * P.stingZ); tail.add(st);
+  for (const s of [-1, 1]) { const g = new THREE.Group(); g.position.set(s * r * P.legX, cy + r * P.legY, sb.min.z - r * P.legZ); g.rotation.set(P.legDroop, s * P.legSpread, 0, 'YXZ'); tail.add(g);   /* each tail leg: two joints, pointing back (-z) */
+    const L = r * P.legLen, l1 = L * (1 - P.tipLen), l2 = L * P.tipLen, th = r * P.legR;
+    const a = new THREE.Mesh(new THREE.CylinderGeometry(th * 0.7, th, l1, 10), legM); a.rotation.x = -Math.PI / 2; a.position.z = -l1 / 2; g.add(a);
+    const knee = new THREE.Group(); knee.position.z = -l1; knee.rotation.set(P.legBend, s * 0.15, 0); g.add(knee);
+    const b = new THREE.Mesh(new THREE.ConeGeometry(th * 0.7, l2, 10), tipM); b.rotation.x = -Math.PI / 2; b.position.z = -l2 / 2; knee.add(b); }
   document.getElementById('out').value = 'centipede tail: ' + JSON.stringify(P); }
 document.getElementById('copy').onclick = () => { const t = document.getElementById('out'); t.select(); navigator.clipboard?.writeText(t.value); document.getElementById('copy').textContent = 'Copied!'; setTimeout(() => document.getElementById('copy').textContent = 'Copy settings', 1200); };
 (function loop() { requestAnimationFrame(loop); oc.update(); R.render(sc, cam); })();
