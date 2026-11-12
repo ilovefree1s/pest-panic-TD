@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="596">v1.094</div>
+    <div id="ver" data-b="597">v1.095</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3530,7 +3530,7 @@ function buildCentiModel() {
   R.hips.forEach(([x, y, z]) => { const b = new THREE.Bone(); b.position.set(x, y, z); b.userData = { yaw: 0, s: x < 0 ? -1 : 1 }; bones[0].add(b); bones.push(b); u.cLegs = (u.cLegs || []).concat(b); });   /* moved by their own little paddle, not the bug walk (which bends ring segments) */
   const sk = new THREE.SkinnedMesh(sm.geometry, segMat); sk.add(bones[0]); sk.bind(new THREE.Skeleton(bones)); sk.frustumCulled = false;
   const segYaw = CENTI_M.segYaw || 0, k = 0.6 / (segYaw ? R.W : R.D), seg = new THREE.Group(); sk.scale.set(k, k, k); sk.rotation.y = segYaw; sk.position.set(segYaw ? -R.cz * k : 0, -R.mn * k, segYaw ? R.cx * k : -R.cz * k); seg.add(sk); B.add(seg);   /* the Meshy pieces face +x, the game walks along +z */
-  hm.geometry.computeBoundingBox(); const hb = hm.geometry.boundingBox, kh = 1.5 / (hb.max.z - hb.min.z), head = new THREE.Group();
+  hm.geometry.computeBoundingBox(); const hb = hm.geometry.boundingBox, kh = 1.25 / (hb.max.z - hb.min.z), head = new THREE.Group();
   const hmesh = new THREE.Mesh(hm.geometry, headMat); hmesh.scale.setScalar(kh); hmesh.rotation.y = CENTI_M.headYaw || 0; hmesh.position.set(0, -hb.min.y * kh, 0.15 - (hb.max.z + hb.min.z) / 2 * kh); head.add(hmesh); B.add(head);
   u.head = head; u.seg = seg; u.mats = [segMat, headMat]; u.shadow = 1.0; return root;
 }
@@ -3546,7 +3546,7 @@ function buildMantisModel() {
   u.legs = legs; u.arms = arms; u.mats = [mat]; u.shadow = 2.0; u.stride = true; return root;
 }
 { let n = 0; const done = () => { if (++n < 2) return; const old = MODEL_BUILD.centi; MODEL_BUILD.centi = () => { try { return buildCentiModel(); } catch (e) { console.warn('centipede model', e); return old(); } }; };
-  try { new GLTFLoader().load('assets/centi_head.glb?h=1f00f7e6', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb?h=7ae4adc2', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
+  try { new GLTFLoader().load('assets/centi_head.glb?h=f121062a', g => { CENTI_M.head = g; done(); }, undefined, () => {}); new GLTFLoader().load('assets/centi_seg.glb?h=e22316e5', g => { CENTI_M.seg = g; done(); }, undefined, () => {}); } catch (e) {} }
 for (const [t, fn] of [['stink', () => buildStinkModel()], ['moth', () => buildMothModel()]]) try { new GLTFLoader().load(BUG_MODELS[t].url, g => { BUG_MODELS[t].gltf = g; const old = MODEL_BUILD[t]; MODEL_BUILD[t] = () => { try { return fn(); } catch (e) { console.warn(t + ' model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.hopper.url, g => { BUG_MODELS.hopper.gltf = g; const old = MODEL_BUILD.hopper; MODEL_BUILD.hopper = () => { try { return buildHopperModel(); } catch (e) { console.warn('hopper model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
 try { new GLTFLoader().load(BUG_MODELS.mantis.url, g => { BUG_MODELS.mantis.gltf = g; const old = MODEL_BUILD.mantis; MODEL_BUILD.mantis = () => { try { return buildMantisModel(); } catch (e) { console.warn('mantis model', e); return old(); } }; }, undefined, () => {}); } catch (e) {}
