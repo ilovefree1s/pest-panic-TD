@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="601">v1.099</div>
+    <div id="ver" data-b="602">v1.100</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3532,10 +3532,16 @@ function buildCentiModel() {
   const segYaw = CENTI_M.segYaw || 0, k = 0.6 / (segYaw ? R.W : R.D), seg = new THREE.Group(); sk.scale.set(k, k, k); sk.rotation.y = segYaw; sk.position.set(segYaw ? -R.cz * k : 0, -R.mn * k, segYaw ? R.cx * k : -R.cz * k); seg.add(sk); B.add(seg);   /* the Meshy pieces face +x, the game walks along +z */
   hm.geometry.computeBoundingBox(); const hb = hm.geometry.boundingBox, kh = 1.25 / (hb.max.z - hb.min.z), head = new THREE.Group();
   const hmesh = new THREE.Mesh(hm.geometry, headMat); hmesh.scale.setScalar(kh); hmesh.rotation.y = CENTI_M.headYaw || 0; hmesh.position.set(0, -hb.min.y * kh, 0.15 - (hb.max.z + hb.min.z) / 2 * kh); head.add(hmesh); B.add(head);
-  const tail = new THREE.Group(), tcol = std({ color: '#b8401a', roughness: 0.6 }), stingM = std({ color: '#2e1309', roughness: 0.5 });
-  seg.updateMatrixWorld(true); const sb = new THREE.Box3().setFromObject(sk), r = (sb.max.z - sb.min.z) / 2 * 0.95, cy = sb.max.y - r;   /* ring radius from its length (the height includes the legs) */   /* the ring's own size, so the cap fits whatever model is loaded */
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 0.96, 22, 16), tcol); cap.scale.set(1, 1, 1.35); cap.position.set(0, cy, sb.min.z + r * 0.55); tail.add(cap);   /* centred inside the ring so its surface meets the ring's rounded edge instead of ridging past it */   /* rounds off the flat back of the last ring */
-  const sting = new THREE.Mesh(new THREE.ConeGeometry(r * 0.22, r * 0.9, 12), stingM); sting.rotation.x = -Math.PI / 2 - 0.3; sting.position.set(0, cy + r * 0.15, sb.min.z - r * 1.0); tail.add(sting); tail.visible = false; seg.add(tail);
+  const TP = { capR: 1.07, capZ: 0.41, capStretch: 0.87, capY: -0.22, legLen: 3.43, legR: 0.19, legX: 0.56, legY: -0.22, legZ: 0.11, legSpread: -0.3, legDroop: -0.38, legBend: 0.14, tipLen: 0.77 };   /* tuned in tools/tail.html */
+  const tail = new THREE.Group(), tcol = std({ color: '#b8401a', roughness: 0.6 }), legM = std({ color: '#c84a1c', roughness: 0.55 }), tipM = std({ color: '#2e1309', roughness: 0.5 });
+  seg.updateMatrixWorld(true); const sb = new THREE.Box3().setFromObject(sk), r = (sb.max.z - sb.min.z) / 2 * 0.95, cy = sb.max.y - r;   /* the ring's own size, so the cap fits whatever model is loaded */
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(r * TP.capR, 22, 16), tcol); cap.scale.set(1, 1, TP.capStretch); cap.position.set(0, cy + r * TP.capY, sb.min.z + r * TP.capZ); tail.add(cap);   /* rounds off the flat back of the last ring */
+  for (const sd of [-1, 1]) { const g = new THREE.Group(); g.position.set(sd * r * TP.legX, cy + r * TP.legY, sb.min.z - r * TP.legZ); g.rotation.set(TP.legDroop, sd * TP.legSpread, 0, 'YXZ'); tail.add(g);   /* the two trailing tail legs */
+    const L = r * TP.legLen, l1 = L * (1 - TP.tipLen), l2 = L * TP.tipLen, th = r * TP.legR;
+    const a1 = new THREE.Mesh(new THREE.CylinderGeometry(th * 0.7, th, l1, 10), legM); a1.rotation.x = -Math.PI / 2; a1.position.z = -l1 / 2; g.add(a1);
+    const knee = new THREE.Group(); knee.position.z = -l1; knee.rotation.set(TP.legBend, sd * 0.15, 0); g.add(knee);
+    const b1 = new THREE.Mesh(new THREE.ConeGeometry(th * 0.7, l2, 10), tipM); b1.rotation.x = -Math.PI / 2; b1.position.z = -l2 / 2; knee.add(b1); }
+  tail.visible = false; seg.add(tail);
   u.head = head; u.seg = seg; u.tail = tail; u.mats = [segMat, headMat]; u.shadow = 1.0; return root;
 }
 function buildMantisModel() {
