@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="608">v1.106</div>
+    <div id="ver" data-b="609">v1.107</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5385,6 +5385,7 @@ const vsPaced = () => !!(S && S.vs && !S.vs.race);
 function canRush() { return S.mode === 'play' && S.active && !vsPaced() && (LV !== DAILY_LV ? (S.endless || S.wave < MAXW) : !!(S.daily && S.daily.race && S.wave < RACE_WAVES)); }   // Daily Kitchen: no sending early, so a losing run can't pad its score
 function startWave(...a) { BN_FWD++; try { return startWave0(...a); } finally { BN_FWD--; } }
 function startWave0() {
+  if (S.showcase) { const sc = S.showcase; if (sc.i >= sc.keys.length) return; const k = sc.keys[sc.i++], n0 = S.bugs.length; S.active = true; S.queue = []; S.nextT = 0; hideBelt(); spawnEntry(k, LONG_R); if (sc.shiny) for (const b of S.bugs.slice(n0)) try { makeShiny(b); } catch (e) {} return; }   /* bug viewer: one bug per tap */
   if (S.mode !== 'play' || S.over || (S.vs && S.vs.dead)) return;
   if (S.active && !canRush()) return;
   if (S.net === 'guest') { const r = S.rdy ||= [0, 0]; r[S.me] = r[S.me] ? 0 : 1; SND.play('tap'); syncGo(); netSend({ k: 'send' }); return; }
@@ -7465,6 +7466,7 @@ function syncGo() {
     if (go.innerHTML !== h) go.innerHTML = h; return;
   }
   if (!S.active) go.classList.remove('armed', 'rush');
+  if (S.showcase) { const sc = S.showcase, k = sc.keys[sc.i]; go.classList.remove('busy'); go.innerHTML = k ? `Send ${BT[k].name || k}<small>${sc.i + 1} of ${sc.keys.length}${sc.shiny ? ' · shiny' : ''}</small>` : `That's all of them<small>${sc.keys.length} sent</small>`; return; }
   if (S.active) { go.classList.add('busy'); go.innerHTML = goBusyText(S.queue.length + S.bugs.length); }
   else if (S.nextT > 0) { go.classList.remove('busy'); go.innerHTML = `Next wave early<small>+${earlyBonus()} coins · ${team ? 'you both tap · ' : ''}starts in ${Math.ceil(S.nextT)}s</small>`; }
   else if (S.daily && S.daily.race && S.wave >= RACE_WAVES) { go.classList.add('busy'); go.innerHTML = `All ${RACE_WAVES} waves sent<small>Finish them off!</small>`; }
@@ -9458,9 +9460,7 @@ toTitle();
 resize();
 /* bug viewer for testing: open the game with #show=centi,gcenti (any bug keys) and it drops you in Grandma's with those bugs strolling in every 15 s, no waves, cake can't be eaten */
 if (/^#show=/.test(location.hash)) { const want = location.hash.slice(6).split(','), shiny = want.includes('shiny'), keys = want.includes('all') ? Object.keys(BT).filter(k => k !== 'baby') : want.filter(k => BT[k]);   /* #show=all,shiny: every bug and boss, all shiny */
-  if (keys.length) setTimeout(() => { startGame(0); S.money = 9999; S.lives = 99; S.showcase = 1; let i = 0;   /* one at a time: the next one steps in once the trail is empty */
-    const tick = () => { if (!S || S.showcase !== 1) return; S.active = true; if (!S.bugs.some(b => !b.dead)) { const k = keys[i++ % keys.length], n0 = S.bugs.length; spawnEntry(k, LONG_R); if (shiny) for (const b of S.bugs.slice(n0)) try { makeShiny(b); } catch (e) {} } };
-    tick(); setInterval(tick, 700); }, 800); }
+  if (keys.length) setTimeout(() => { startGame(0); S.money = 9999; S.lives = 99; S.showcase = { keys, shiny, i: 0 }; }, 800); }   /* Send bugs sends the next one; see startWave0 */
 requestAnimationFrame(frame);
 </script>
 
