@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="598">v1.096</div>
+    <div id="ver" data-b="599">v1.097</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3532,7 +3532,11 @@ function buildCentiModel() {
   const segYaw = CENTI_M.segYaw || 0, k = 0.6 / (segYaw ? R.W : R.D), seg = new THREE.Group(); sk.scale.set(k, k, k); sk.rotation.y = segYaw; sk.position.set(segYaw ? -R.cz * k : 0, -R.mn * k, segYaw ? R.cx * k : -R.cz * k); seg.add(sk); B.add(seg);   /* the Meshy pieces face +x, the game walks along +z */
   hm.geometry.computeBoundingBox(); const hb = hm.geometry.boundingBox, kh = 1.25 / (hb.max.z - hb.min.z), head = new THREE.Group();
   const hmesh = new THREE.Mesh(hm.geometry, headMat); hmesh.scale.setScalar(kh); hmesh.rotation.y = CENTI_M.headYaw || 0; hmesh.position.set(0, -hb.min.y * kh, 0.15 - (hb.max.z + hb.min.z) / 2 * kh); head.add(hmesh); B.add(head);
-  u.head = head; u.seg = seg; u.mats = [segMat, headMat]; u.shadow = 1.0; return root;
+  const tail = new THREE.Group(), tcol = std({ color: '#b8401a', roughness: 0.6 }), stingM = std({ color: '#2e1309', roughness: 0.5 });
+  seg.updateMatrixWorld(true); const sb = new THREE.Box3().setFromObject(sk), r = (sb.max.z - sb.min.z) / 2 * 0.95, cy = sb.max.y - r;   /* ring radius from its length (the height includes the legs) */   /* the ring's own size, so the cap fits whatever model is loaded */
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 0.96, 22, 16), tcol); cap.scale.set(1, 1, 0.8); cap.position.set(0, cy, sb.min.z + r * 0.45); tail.add(cap);   /* rounds off the flat back of the last ring */
+  const sting = new THREE.Mesh(new THREE.ConeGeometry(r * 0.22, r * 0.9, 12), stingM); sting.rotation.x = -Math.PI / 2 - 0.3; sting.position.set(0, cy + r * 0.15, sb.min.z - r * 0.55); tail.add(sting); tail.visible = false; seg.add(tail);
+  u.head = head; u.seg = seg; u.tail = tail; u.mats = [segMat, headMat]; u.shadow = 1.0; return root;
 }
 function buildMantisModel() {
   const M = BUG_MODELS.mantis, root = newBugRoot(), u = root.userData, body = u.body;
@@ -4285,6 +4289,7 @@ function drawMdl(b, t, sh) {
   }
   if (u.arms) { const k = (b.armT > 0 || b.munch > 0) ? -1.2 : 0.1; u.arms.forEach(g => { g.rotation.x += (k - g.rotation.x) * 0.4; }); }
   if (u.head) u.head.visible = !b.lead || !!b.lead.dead;
+  if (u.tail) u.tail.visible = !LEADS.has(b);   /* the last ring of the chain gets the rounded end and stinger */
   if (u.seg) u.seg.visible = !u.head.visible;
   if (u.cLegs) { let n = 0; for (let q = b.lead; q && n < 40; q = q.lead) n++; u.cLegs.forEach((g, k) => { const ph = w * 1.6 - n * 0.8 + k * Math.PI; g.rotation.x = Math.sin(ph) * 0.35; g.rotation.z = (k ? 1 : -1) * Math.max(0, Math.cos(ph)) * 0.22; }); }   // centipede legs: a wave that runs from the head down the chain, each leg lifting as it swings forward   // modelled centipede: the head piece already has its own body
   u.body.position.y = base === 'centi' ? Math.sin(w * 0.8) * 0.04 : hop ? (u.crY || 0) + (b.jump > 0 ? 0 : Math.abs(Math.sin(w)) * 0.025) : 0;
@@ -6377,7 +6382,9 @@ const guardC = new THREE.Color(0.32, 0.3, 0.42), UPV = new V3(0, 1, 0), DOWN = n
 function setI(m, i, x, y, z, ry, s = 1, rx = 0, rz = 0) { tmpE.set(rx, ry, rz, 'YXZ'); tmpQ.setFromEuler(tmpE); sclV.set(s, s, s); tmpM.compose(posV.set(x, y, z), tmpQ, sclV); m.setMatrixAt(i, tmpM); return tmpM; }
 const shinyC = new THREE.Color();
 function shinyCol(b, t, l) { return BT[b.t].boss ? shinyC.setHSL(0.12, 1, l + Math.sin(t * 5) * 0.08) : shinyC.setHSL(((b.id * 0.61803) % 1), 1, l + Math.sin(t * 4 + b.id) * 0.06); }   /* each shiny glows its own colour; bosses glow gold */
+let LEADS = new Set();
 function drawBugs(t) {
+  LEADS = new Set(); for (const b of S.bugs) if (b.lead && !b.dead) LEADS.add(b.lead);
   const c = { ant: 0, antLeg: 0, fly: 0, wing: 0, spider: 0, spiderLeg: 0, dung: 0, dungLeg: 0, ball: 0, bed: 0, bedLeg: 0 }, sh = B.shadow;
   for (const b of S.bugs) {
     if (b.mdl) { if (b.mdl.userData.model) drawRegModel(b, t, sh, c); else drawMdl(b, t, sh); continue; }
