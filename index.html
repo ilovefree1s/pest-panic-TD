@@ -676,7 +676,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="609">v1.107</div>
+    <div id="ver" data-b="610">v1.108</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4267,7 +4267,7 @@ function drawRegModel(b, t, sh, c) {   /* ant / fly / spider / bed bug / dung be
   if (u.gait) gaitLegs(u.legs, u.gait, b.walk * (b.t === 'bed' ? 1.4 : 1), 0.5, 0.18);
   u.body.position.y = Math.abs(Math.sin(b.walk)) * 0.03;
   const f = b.flash > 0 ? 0.8 : 0;
-  if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(BT[b.t].boss ? 0.45 : 0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
+  if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
   else { const psn = b.psnT > 0 && !(b.flash > 0), st = !(b.flash > 0) && (b.stuck > 0 || b.glueT > 0), ang = b.t === 'dung' && b.angry && !(b.flash > 0), key = f + (psn ? 10 : 0) + (st ? 20 : 0) + (ang ? 40 : 0) + (b.guard ? 80 : 0);
     if (u.f !== key) { u.f = key; for (const m of u.mats) { if (psn) m.emissive.setRGB(0.02, 0.16, 0.03); else if (st) m.emissive.setRGB(0.05, 0.05, 0.14); else if (ang) m.emissive.setRGB(0.25, 0.04, 0.02); else if (b.guard) m.emissive.setRGB(0.12, 0.1, 0.02); else m.emissive.setRGB(f, f, f); } } }
   if (b.psnT > 0 && Math.random() < 0.18) psnBubble(b, q.scale.x);
@@ -4300,7 +4300,7 @@ function drawMdl(b, t, sh) {
   if (u.cLegs) { let n = 0; for (let q = b.lead; q && n < 40; q = q.lead) n++; u.cLegs.forEach((g, k) => { const ph = w * 1.6 - n * 0.8 + k * Math.PI; g.rotation.x = Math.sin(ph) * 0.35; g.rotation.z = (k ? 1 : -1) * Math.max(0, Math.cos(ph)) * 0.22; }); }   // centipede legs: a wave that runs from the head down the chain, each leg lifting as it swings forward   // modelled centipede: the head piece already has its own body
   u.body.position.y = base === 'centi' ? Math.sin(w * 0.8) * 0.04 : hop ? (u.crY || 0) + (b.jump > 0 ? 0 : Math.abs(Math.sin(w)) * 0.025) : 0;
   const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : b.munch > 0 ? 0.3 : 0;
-  if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(BT[b.t].boss ? 0.45 : 0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.8, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
+  if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.8, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
   else if (u.f !== f) { u.f = f; const psn = b.psnT > 0 && !(b.flash > 0) && !(b.munch > 0); for (const m of u.mats) { if (psn) m.emissive.setRGB(0.02, 0.16, 0.03); else m.emissive.setRGB(f * (b.munch > 0 ? 0.3 : 1), f * (b.munch > 0 ? 2 : 1), f * (b.munch > 0 ? 0.3 : 1)); } }
   if (b.psnT > 0 && Math.random() < 0.18) psnBubble(b, q.scale.x);   /* poisoned: a faint green sheen and bubbles rising off it, instead of turning pale */
   if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, (u.shadow || 1.4) * q.scale.x, 0, 0, 0, 0, bt.fly || b.air ? 0.25 : 0.45);
@@ -6464,7 +6464,8 @@ function drawBugs(t) {
       else u.legs.forEach((g, k) => { g.rotation.y = g.userData.yaw + Math.sin(b.walk * 0.7 + k * 1.7) * 0.25; g.rotation.z = Math.max(0, Math.sin(b.walk * 0.7 + k)) * 0.12; });
       u.body.position.y = Math.abs(Math.sin(b.walk * 1.5)) * 0.06;
       const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : 0;
-      { const psn = b.psnT > 0 && b.flash <= 0; for (const m of u.mats) { if (psn) m.emissive.setRGB(0.02, 0.16, 0.03); else m.emissive.setRGB(f, f, f); } if (psn && Math.random() < 0.3) psnBubble(b, 2.2); }
+      if (b.shiny && b.flash <= 0) { shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); }   /* shiny bosses glow like the model bugs do */
+      else { const psn = b.psnT > 0 && b.flash <= 0; for (const m of u.mats) { if (psn) m.emissive.setRGB(0.02, 0.16, 0.03); else m.emissive.setRGB(f, f, f); } if (psn && Math.random() < 0.3) psnBubble(b, 2.2); }
       if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, fy ? 4 : 6, 0, 0, 0, 0, fy ? 0.3 : 0.5);
     }
   }
