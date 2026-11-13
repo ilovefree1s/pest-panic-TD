@@ -671,7 +671,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="639">v1.137</div>
+    <div id="ver" data-b="640">v1.138</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -816,7 +816,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
       <div class="setbox">
         <label><span>Sound effects</span><b id="setSfxV">100%</b><input type="range" id="setSfx" min="0" max="100" step="5" value="100"></label>
         <label><span>Music</span><b id="setMusV">100%</b><input type="range" id="setMus" min="0" max="100" step="5" value="100"></label>
-        <div class="trk"><span>Soundtracks</span><div id="setTrk"></div><small>Tick more than one and they take turns, a few minutes each.</small></div>
+        <div class="trk"><span>Soundtracks</span><div id="setTrk"></div><small>Tick more than one and they take turns, a few minutes each. Untick them all for no music.</small></div>
         <label class="ck"><span>Show next bugs<small>The card by the Send button with the next wave's bugs.</small></span><input type="checkbox" id="setNext"></label>
         <label class="nm"><span>Your name</span><input id="dName" maxlength="16" autocomplete="off" spellcheck="false"><small>On the Daily leaderboard and in online games.</small></label>
       </div>
@@ -5119,10 +5119,10 @@ const SND = (() => {
 // switches between them on the bar line. "classic" is the original pair; the others run on a small data-driven sequencer.
 const MUSIC = (() => {
   let ac = null, bus = null, echo = null, noise = null, timer = 0, next = 0, step = 0, loop = 0, track = 'calm', want = 'calm', style = 'classic';
-  const STYLES_KEYS = ['classic', 'polka', 'arcade', 'spy', 'lofi'];
+  const STYLES_KEYS = ['classic', 'polka', 'arcade', 'spy', 'island', 'lofi'];
   let picks = ['classic'], rotT = 0;   /* the soundtracks ticked in Settings; with more than one, the band changes tune every few minutes (on a bar line) */
   const ROTATE = 150;   /* seconds per soundtrack when several are picked */
-  let off = false, mvol = 1; try { off = localStorage.getItem('ppd-music') === '0'; const v = localStorage.getItem('ppd-mvol'); if (v !== null) mvol = +v; const st = localStorage.getItem('ppd-mtrack'); if (st) { picks = st.split(',').filter(k => STYLES_KEYS.includes(k)); if (!picks.length) picks = ['classic']; style = picks[0]; } } catch (e) {}
+  let off = false, mvol = 1; try { off = localStorage.getItem('ppd-music') === '0'; const v = localStorage.getItem('ppd-mvol'); if (v !== null) mvol = +v; const st = localStorage.getItem('ppd-mtrack'); if (st) { picks = st === 'none' ? [] : st.split(',').filter(k => STYLES_KEYS.includes(k)); if (!picks.length && st !== 'none') picks = ['classic']; style = picks[0] || 'classic'; } } catch (e) {}
   const mf = m => 440 * 2 ** ((m - 69) / 12);
   const TR = {   /* the original pair */
     calm: { bpm: 112, chords: [48, 45, 41, 43], third: [4, 3, 4, 4],
@@ -5182,6 +5182,21 @@ const MUSIC = (() => {
               [12, _, _, 15, _, _, 19, _, 18, _, _, 19, _, _, 15, _], [13, _, _, 17, _, _, 20, _, 17, _, _, _, 13, _, _, _], [15, _, _, 14, _, _, 15, _, 19, _, _, 17, _, _, 15, _], [14, _, _, _, 11, _, _, _, 12, _, _, _, _, _, _, _]],
         comp: { type: 'pluck', vol: 0.16, oct: 12, pat: [4, 12], dur: 0.4, strum: true },
         drums: { kick: [0, 6, 8, 14], snare: [4, 12], snareVol: 0.16, hat: 'eighths', hatVol: 0.02, fill: true, snareKind: 'rim', hatKind: 'shaker' } } },
+    island: { name: 'Island Kitchen',   /* calypso: a ringing steel-drum tune and off-beat steel chords over a soft round bass, light rimshots */
+      calm: { bpm: 116, swing: 0.1, bass: { roots: [41, 36, 41, 46, 41, 36, 41, 41], third: [4, 4, 4, 4, 4, 4, 4, 4], pat: [0, _, _, 7, _, _, 7, _, 0, _, _, 7, _, _, 'n', _], type: 'subbass', vol: 0.5, dur: 1.6 },
+        comp: { type: 'steel', vol: 0.03, oct: 12, pat: [2, 6, 10, 14], dur: 2 },
+        lead: { base: 65, type: 'steel', vol: 0.1, dur: 5, echo: 0.2 },
+        mel: [[12, _, _, 9, _, _, 7, _, 9, _, 12, _, _, _, _, _], [14, _, _, 11, _, _, 7, _, 11, _, 14, _, _, _, _, _], [12, _, 9, _, 7, _, 9, _, 12, _, _, _, 16, _, _, _], [17, _, _, 14, _, _, 12, _, 9, _, 12, _, _, _, _, _],
+              [12, _, _, 9, _, _, 7, _, 9, _, 12, _, _, _, 9, _], [11, _, _, 14, _, _, 11, _, 7, _, 5, _, _, _, _, _], [4, _, 7, _, 9, _, 7, _, 4, _, 2, _, 0, _, _, _], [_, _, _, _, _, _, _, _, 7, _, 9, _, 11, _, _, _]],
+        mel2: [[16, _, _, 12, _, _, 9, _, 12, _, 16, _, _, _, _, _], [16, _, _, 14, _, _, 11, _, 14, _, 17, _, _, _, _, _], [16, _, 12, _, 9, _, 12, _, 16, _, _, _, 19, _, _, _], [21, _, _, 17, _, _, 14, _, 17, _, 21, _, _, _, _, _],
+               [19, _, 17, _, 16, _, _, 12, _, _, 9, _, 12, _, _, _], [14, _, _, 11, _, _, 7, _, 11, _, 14, _, 17, _, _, _], [16, _, 14, _, 12, _, 9, _, 7, _, 4, _, 0, _, _, _], [_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]],
+        drums: { kick: [0, 8], snare: [4, 12], snareVol: 0.08, hat: 'eighths', hatVol: 0.015, fill: false, kickKind: 'soft', snareKind: 'rim' } },
+      boss: { bpm: 140, swing: 0.08, bass: { roots: [38, 33, 38, 43, 38, 33, 38, 33], third: [3, 4, 3, 3, 3, 4, 3, 4], pat: [0, _, _, 7, _, _, 0, _, 0, _, _, 7, _, _, 'n', _], type: 'subbass', vol: 0.5, dur: 1.2 },
+        comp: { type: 'steel', vol: 0.032, oct: 12, pat: [2, 6, 10, 14], dur: 1.6 },
+        lead: { base: 62, type: 'steel', vol: 0.1, dur: 4, echo: 0.18 },
+        mel: [[12, _, 10, _, 7, _, 10, _, 12, _, 15, _, 12, _, _, _], [11, _, _, 14, _, _, 11, _, 7, _, 11, _, 14, _, _, _], [15, _, 12, _, 10, _, 7, _, 3, _, 7, _, 12, _, _, _], [17, _, _, 15, _, _, 12, _, 8, _, 12, _, 17, _, _, _],
+              [12, 12, _, 10, _, 7, _, 10, _, 12, _, 15, _, _, _, _], [14, _, 11, _, 9, _, _, 7, _, _, 11, _, 14, _, _, _], [15, _, 14, _, 12, _, 10, _, 7, _, 5, _, 3, _, _, _], [7, _, _, _, 11, _, _, _, 14, _, _, _, _, _, _, _]],
+        drums: { kick: [0, 6, 8, 14], snare: [4, 12], snareVol: 0.11, hat: 'eighths', hatVol: 0.02, fill: true, kickKind: 'soft', snareKind: 'rim' } } },
     lofi: { name: 'Lo-fi Lounge',   /* slow electric-piano chords, a soft round bass, rain and vinyl crackle, hardly any melody */
       calm: { bpm: 76, swing: 0.25, bass: { roots: [41, 40, 38, 36, 41, 40, 38, 43], third: [4, 3, 3, 4, 4, 3, 3, 4], sev: [11, 10, 10, 11, 11, 10, 10, 10], pat: [0, _, _, _, _, _, _, _, _, _, 7, _, _, _, _, _], type: 'subbass', vol: 0.6, dur: 5 },
         comp: { type: 'ep', vol: 0.09, oct: 12, pat: [0, 10], dur: 7, chord: true },
@@ -5226,6 +5241,10 @@ const MUSIC = (() => {
       for (const det of [-7, 0, 7]) { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; o.connect(fl); o.start(t); o.stop(t + dur + 0.05); }
       fl.connect(g).connect(out); return; }
     if (type === 'tuba') { const o = ac.createOscillator(), g = ac.createGain(), fl = ac.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 0.97, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05); fl.type = 'lowpass'; fl.frequency.setValueAtTime(900, t); fl.frequency.exponentialRampToValueAtTime(300, t + dur); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(fl).connect(g).connect(out); o.start(t); o.stop(t + dur + 0.05); return; }
+    if (type === 'steel') {   /* steel drum: a sine with a few bright overtones that die away first, a tiny pitch drop on the strike */
+      const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); g.connect(out);
+      for (const [mul, v] of [[1, 1], [2, 0.45], [3, 0.16], [4.2, 0.07]]) { const o = ac.createOscillator(), og = ac.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f * mul * 1.012, t); o.frequency.exponentialRampToValueAtTime(f * mul, t + 0.03); og.gain.setValueAtTime(v, t); og.gain.exponentialRampToValueAtTime(0.001, t + Math.max(0.06, dur / mul)); o.connect(og).connect(g); o.start(t); o.stop(t + dur + 0.02); }
+      return; }
     if (type === 'subbass') { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.03); g.gain.setValueAtTime(vol, t + dur * 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.05); return; }
     const o = ac.createOscillator(), g = ac.createGain();
     if (type.startsWith('pulse')) o.setPeriodicWave(pulseWave(+type.slice(5) / 100)); else o.type = type;
@@ -5305,7 +5324,7 @@ const MUSIC = (() => {
     fb.gain.value = 0.32; wet.gain.value = 0.5; inp.connect(bus); inp.connect(dl); dl.connect(lp).connect(fb).connect(dl); dl.connect(wet).connect(bus); echo = { in: inp, dl };
     noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
-  function level() { return off || SND.muted ? 0 : 0.16 * mvol; }
+  function level() { return off || SND.muted || !picks.length ? 0 : 0.16 * mvol; }
   function sync() { if (bus) bus.gain.setTargetAtTime(document.hidden ? 0 : level(), ac.currentTime, 0.25); if (echo) echo.dl.delayTime.value = 60 / curBpm() * 0.75; }
   function start() {
     if (ac || !SND.ctx) return;
@@ -5317,7 +5336,7 @@ const MUSIC = (() => {
     set(t) { want = t; },
     get off() { return off; }, get vol() { return off ? 0 : mvol; },
     get style() { return style; }, get styles() { return Object.keys(STYLES).map(k => [k, STYLES[k].name]); }, get picks() { return picks.slice(); },
-    setPicks(list) { picks = list.filter(k => STYLES[k]); if (!picks.length) picks = ['classic']; if (!picks.includes(style)) { style = picks[0]; step = 0; loop = 0; } rotT = ROTATE; try { localStorage.setItem('ppd-mtrack', picks.join(',')); } catch (e) {} sync(); },
+    setPicks(list) { picks = list.filter(k => STYLES[k]); if (picks.length && !picks.includes(style)) { style = picks[0]; step = 0; loop = 0; } rotT = ROTATE; try { localStorage.setItem('ppd-mtrack', picks.length ? picks.join(',') : 'none'); } catch (e) {} sync(); },   /* none ticked: no music at all */
     setStyle(k) { this.setPicks([k]); },
     setVol(v) { mvol = v; off = false; try { localStorage.setItem('ppd-mvol', String(v)); localStorage.setItem('ppd-music', '1'); } catch (e) {} sync(); },
     toggle() { off = !off; try { localStorage.setItem('ppd-music', off ? '0' : '1'); } catch (e) {} sync(); },
@@ -7284,7 +7303,7 @@ function closeSettings() {
 $('setSfx').addEventListener('input', e => { if (SND.muted) SND.toggle(); SND.setVol(e.target.value / 100); $('setSfxV').textContent = e.target.value + '%'; });
 $('setSfx').addEventListener('change', () => { SND.init(); SND.play('swat'); });
 $('setMus').addEventListener('input', e => { SND.init(); MUSIC.setVol(e.target.value / 100); $('setMusV').textContent = e.target.value + '%'; });
-$('setTrk').addEventListener('change', () => { SND.init(); const on = [...$('setTrk').querySelectorAll('input')].filter(c => c.checked).map(c => c.value); MUSIC.setPicks(on); if (MUSIC.vol === 0) MUSIC.setVol(0.6); syncSettings(); });
+$('setTrk').addEventListener('change', () => { SND.init(); const on = [...$('setTrk').querySelectorAll('input')].filter(c => c.checked).map(c => c.value); MUSIC.setPicks(on); if (on.length && MUSIC.vol === 0) MUSIC.setVol(0.6); syncSettings(); });
 $('setNext').addEventListener('change', e => { try { localStorage.setItem('ppd-next', e.target.checked ? '1' : '0'); } catch (er) {} SND.play('tap'); $('belt').classList.toggle('nope', !e.target.checked); });
 $('setDone').addEventListener('click', closeSettings);
 // field guide and achievements share one screen with two tabs
