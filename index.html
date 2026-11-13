@@ -671,7 +671,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="640">v1.138</div>
+    <div id="ver" data-b="641">v1.139</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -7637,7 +7637,7 @@ function runSavable() { return S && S.mode === 'play' && (LV !== DAILY_LV || !!S
 function saveRun() {
   if (!runSavable()) return;
   const mid = S.active;
-  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : 0, lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: mid ? S.kills0 ?? S.kills ?? 0 : S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(), daily: S.daily ? { day: S.daily.day, counts: !!S.daily.counts, bd: Math.round((mid ? S.bd0 ?? S.bossDmg : S.bossDmg) || 0), rt: S.daily.race ? +(((mid ? S.daily.wt0 : S.gt) || S.gt) - (S.daily.t0 || 0)).toFixed(1) : 0 } : null,   /* mid-wave: kills and boss damage as the wave began (it gets replayed) */
+  const d = { v: 1, lv: LV, wave: mid ? S.wave - 1 : S.wave, money: Math.floor(S.money), owed: mid ? Math.max(S.waveEarn || 0, S.owed0 || 0) : Math.max(0, Math.round(S.withhold || 0)),   /* back after a mid-wave quit and left again before replaying the wave: the gold still owed stays owed (quit, resume, quit, resume was free gold) */ lives: S.lives, lic: S.lic || 0, pack: S.proPack ? 1 : 0, jar: jarCount(), jarT: S.jarT || [], rid: S.rid, kills: mid ? S.kills0 ?? S.kills ?? 0 : S.kills || 0, early: S.earlyCalls || 0, endless: !!S.endless, stats: S.stats || {}, at: Date.now(), daily: S.daily ? { day: S.daily.day, counts: !!S.daily.counts, bd: Math.round((mid ? S.bd0 ?? S.bossDmg : S.bossDmg) || 0), rt: S.daily.race ? +(((mid ? S.daily.wt0 : S.gt) || S.gt) - (S.daily.t0 || 0)).toFixed(1) : 0 } : null,   /* mid-wave: kills and boss damage as the wave began (it gets replayed) */
     towers: S.towers.map(t => [t.t, t.c, t.r, Math.min(3, t.lv + (t.upPending && t.lv < 3 ? 1 : 0)), t.perk || (t.upPending && t.lv >= 3) ? 1 : 0, Math.round(t.dmg || 0), t.kills || 0, Math.round(t.bonus || 0), t.spent || 0]) };
   try { localStorage.setItem(runKey(), JSON.stringify(d)); } catch (e) {}
 }
