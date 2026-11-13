@@ -133,35 +133,28 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
   background:rgba(12,16,20,.96);box-shadow:0 6px 18px rgba(0,0,0,.5),inset 0 0 0 1px var(--line) !important;border-radius:14px;padding:7px 14px;box-shadow:inset 0 0 0 1px var(--line);font-weight:800;font-size:14px;line-height:1.35}
 #tip b{font-family:var(--display);font-weight:400;letter-spacing:.04em;color:var(--gold);font-size:16px}
 #tip .bad{color:#ff8a7a}
-#belt{position:absolute;left:0;right:0;top:58px;height:40px;z-index:3;pointer-events:none;display:flex;align-items:stretch;
-  background:rgba(12,16,20,.82);box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06),inset 0 -1px 0 rgba(255,255,255,.06);
-  transition:transform .5s cubic-bezier(.2,1,.3,1),opacity .35s}
-#belt.off{transform:translateX(100%);opacity:0}
-#belt .bh{flex:none;display:flex;align-items:center;gap:8px;padding:0 12px 0 14px;background:#0b0e11;box-shadow:6px 0 10px rgba(0,0,0,.45);z-index:1;line-height:1}
-#belt .bh small{font:800 10px var(--body);letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
-#belt .bh b{font:400 17px var(--display);letter-spacing:.03em;color:var(--text)}
-#belt .bh em{font:400 21px var(--display);font-style:normal;color:var(--gold);min-width:1.4em;text-align:center}
-#belt .bh em.go{font-size:12px;color:var(--dim);min-width:0}
-#belt .row{flex:1;min-width:0;overflow:hidden;position:relative;
-  background:repeating-linear-gradient(110deg,#1d242b 0 12px,#171d23 12px 24px);background-size:52px 100%;animation:belt 1.4s linear infinite}
+/* next wave: a small card in the bottom-right corner of the floor, one row per bug type, top to bottom (closable, and can be turned off in Settings) */
+#belt{position:absolute;right:10px;bottom:10px;z-index:4;width:132px;max-height:calc(100% - 120px);overflow:hidden;display:flex;flex-direction:column;background:rgba(11,14,17,.93);border-radius:14px;padding:7px 8px 8px;
+  box-shadow:0 6px 16px rgba(0,0,0,.5),inset 0 0 0 1.5px rgba(255,201,60,.42);transition:transform .35s cubic-bezier(.2,1,.3,1),opacity .3s}
+#belt.off,#belt.shut,#belt.nope{transform:translateY(18px);opacity:0;pointer-events:none}
 @keyframes belt{to{background-position:-52px 0}}
-#belt .trk{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;gap:10px;width:max-content;animation:trk var(--dur,12s) linear infinite}
-@keyframes trk{from{left:100%;transform:translateX(0)}to{left:0;transform:translateX(-100%)}}
-#belt .sep{flex:none;width:18px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);margin-right:2px}
-#belt .ch{display:flex;align-items:center;gap:3px;padding:2px 8px 2px 4px;border-radius:9px;background:rgba(255,255,255,.08);flex:none}
-#belt .ch svg{width:28px;height:28px}
-#belt .ch b{font:400 15px var(--display);color:var(--text)}
-#belt .ch .pay{font:900 11px var(--body);font-style:normal;color:var(--gold);margin-left:2px;opacity:.9}
-#belt .ch.boss{background:rgba(214,60,50,.32);box-shadow:inset 0 0 0 1px rgba(255,120,100,.55)}
+#belt .bh{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1;padding:1px 22px 0 2px}
+#belt .bh small{font:900 10px var(--body);letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+#belt .bh small em{font:400 13px var(--display);font-style:normal;color:var(--gold);letter-spacing:.02em}
+#belt .bh small em.go{font:900 10px var(--body);color:var(--dim);letter-spacing:.04em;text-transform:none}
+#belt .bh b{font:400 17px var(--display);letter-spacing:.03em;color:var(--text)}
+#beltX{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.12);color:var(--text);font:900 14px/24px var(--body);cursor:pointer;text-align:center}
+#beltX:active{background:rgba(255,255,255,.25)}
+#belt .trk{display:flex;flex-direction:column;gap:4px;margin-top:6px;min-height:0;overflow:hidden}
+#belt .ch{display:flex;align-items:center;gap:6px;padding:2px 8px 2px 4px;border-radius:9px;background:rgba(255,255,255,.15);flex:none}
+#belt .ch img,#belt .ch svg{width:30px;height:30px;object-fit:contain;flex:none;filter:drop-shadow(0 0 1.2px #fff) drop-shadow(0 0 1px rgba(255,255,255,.6))}
+#belt .ch b{font:400 17px var(--display);color:var(--text);margin-top:3px}
+#belt .ch .pay{margin-left:auto;font:900 11px var(--body);font-style:normal;color:var(--gold);opacity:.9}
+#belt .ch.boss{flex-wrap:wrap;background:rgba(214,60,50,.38);box-shadow:inset 0 0 0 1.5px rgba(255,120,100,.6)}
 #belt .ch.boss b{color:#ffb3a8}
-@media (max-width:700px){#belt{top:58px;height:34px} #belt .ch svg{width:22px;height:22px} #belt .ch b{font-size:13px} #belt .bh{padding:0 8px 0 10px;gap:6px} #belt .bh b{font-size:14px} #belt .bh em{font-size:17px}}
-/* wide screens with the stats on the tray: the belt rides along the top bar, right of the buttons, and bugs roll off at the cogwheel */
-@media (min-width:701px){
-  .tstats #belt{top:10px;left:var(--ctlR,200px);right:12px;height:40px;border-radius:12px;overflow:hidden}
-  .tstats #belt .bh{order:2;padding:0 14px 0 12px;box-shadow:-6px 0 10px rgba(0,0,0,.45)}
-  .tstats #undo{top:60px}
-}
-@media (orientation:landscape) and (max-height:560px){#belt{top:44px;height:32px} #belt .ch svg{width:22px;height:22px} #belt .ch b{font-size:13px} #belt .bh b{font-size:14px} #belt .bh em{font-size:17px}}
+#belt .ch .bn{flex-basis:100%;font:900 9px var(--body);color:#ffb3a8;letter-spacing:.05em;text-transform:uppercase;margin:-2px 0 1px 3px}
+@media (min-width:701px){ .tstats #undo{top:60px} }
+@media (orientation:landscape) and (max-height:560px){#belt{width:122px;right:8px;bottom:8px;padding:6px 7px 7px} #belt .ch img,#belt .ch svg{width:26px;height:26px} #belt .ch b{font-size:15px} #belt .bh b{font-size:15px} #belt .trk{gap:3px;margin-top:4px}}
 #tip .tl{display:block}
 #tip .td{display:block;font-weight:700;font-size:13px;color:var(--dim);max-width:52ch;margin:3px auto}
 #info .desc{margin:3px 0 0;font-size:13px;font-weight:700;color:#d9d3c6;line-height:1.35;max-width:70ch}
@@ -179,6 +172,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .setbox label b{font:400 17px var(--display);color:var(--gold)}
 .setbox label span{text-align:left}
 .setbox input{grid-column:1/3;width:100%;height:28px;accent-color:#ffc23a;cursor:pointer}
+.setbox label.ck{cursor:pointer} .setbox label.ck span small{display:block;font-weight:600;font-size:12px;opacity:.65;margin-top:2px} .setbox label.ck input{grid-column:auto;width:26px;height:26px;margin:0}
 .setbox .trk{display:grid;gap:8px;text-align:left;font-weight:800;font-size:16px}
 .setbox .trk small{font-weight:600;font-size:12px;opacity:.65}
 .setbox .trk #setTrk{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
@@ -672,10 +666,10 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="jarAsk" hidden><span id="jarQ">Sell a shiny bug?</span><em id="jarW"></em><button type="button" id="jarKeep">Sell it<small>+200 for you</small></button><button type="button" id="jarSplit">Split it<small>+100 each</small></button><button type="button" id="jarNo">Keep it<small>don't sell</small></button></div>
     <div id="slot" hidden><div class="slCard"><b class="slT">Today's twists</b><div class="slReels"><div class="slWin"><div class="slStrip"></div></div><div class="slWin"><div class="slStrip"></div></div></div><div class="slDesc"></div><button class="btn" type="button" id="slGo" hidden>Let's go!</button></div></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
-    <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
+    <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="632">v1.130</div>
+    <div id="ver" data-b="633">v1.131</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -821,6 +815,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
         <label><span>Sound effects</span><b id="setSfxV">100%</b><input type="range" id="setSfx" min="0" max="100" step="5" value="100"></label>
         <label><span>Music</span><b id="setMusV">100%</b><input type="range" id="setMus" min="0" max="100" step="5" value="100"></label>
         <div class="trk"><span>Soundtracks</span><div id="setTrk"></div><small>Tick more than one and they take turns, a few minutes each.</small></div>
+        <label class="ck"><span>Show next bugs<small>The card by the Send button with the next wave's bugs.</small></span><input type="checkbox" id="setNext"></label>
         <label class="nm"><span>Your name</span><input id="dName" maxlength="16" autocomplete="off" spellcheck="false"><small>On the Daily leaderboard and in online games.</small></label>
       </div>
       <button class="btn dark" id="setTut" type="button">Replay tutorial</button>
@@ -5508,20 +5503,18 @@ function showBelt() {
   const order = Object.keys(cnt).sort((a, b) => (BT[a].boss ? 1 : 0) - (BT[b].boss ? 1 : 0));
   $('beltW').textContent = 'Wave ' + n;
   // the wave's bugs ride the whole belt: in at the right edge, out at the left edge, over and over
-  const trk = $('beltRow'); trk.innerHTML = order.map(t => `<span class="ch${BT[t].boss ? ' boss' : ''}" title="${BELT_NAME[t] || t}">${BUGICON[t] || ''}<b>×${cnt[t]}</b><i class="pay">🪙${payAt(t, n)}</i></span>`).join('');   /* each chip also shows what one squash pays */
-  $('belt').classList.remove('off'); $('stage').classList.add('belted');
-  requestAnimationFrame(() => {
-    const rw = trk.parentElement.clientWidth || 700, tw = trk.scrollWidth || 100;
-    trk.style.setProperty('--dur', Math.max(6, (rw + tw) / 70).toFixed(1) + 's');
-    trk.style.animation = 'none'; void trk.offsetWidth; trk.style.animation = '';
-  });
+  const trk = $('beltRow'); trk.innerHTML = order.map(t => `<span class="ch${BT[t].boss ? ' boss' : ''}" title="${BELT_NAME[t] || t}">${dexIcon(t)}<b>×${cnt[t]}</b><i class="pay">🪙${payAt(t, n)}</i>${BT[t].boss ? `<small class="bn">${BT[t].name}</small>` : ''}</span>`).join('');   /* each row also shows what one squash pays */
+  const B = $('belt'); B.classList.remove('off'); B.classList.toggle('shut', BELT_SHUT === n); B.classList.toggle('nope', !nextOn()); $('stage').classList.add('belted');
   syncBeltT();
 }
+let BELT_SHUT = 0;   /* the wave whose card you closed with the X: it comes back for the wave after */
+const nextOn = () => { try { return localStorage.getItem('ppd-next') !== '0'; } catch (e) { return true; } };
+$('beltX').addEventListener('click', e => { e.stopPropagation(); SND.play('tap'); BELT_SHUT = S.wave + 1; $('belt').classList.add('shut'); });
 function hideBelt() { $('belt').classList.add('off'); $('stage').classList.remove('belted'); }
 function earlyBonus() { return S.nextT > 0 ? Math.ceil(S.nextT) * 2 : 0; }
 function syncBeltT() {
   const el = $('beltT');
-  if (S.nextT > 0) { el.className = ''; el.textContent = Math.ceil(S.nextT); }
+  if (S.nextT > 0) { el.className = ''; el.textContent = Math.ceil(S.nextT) + 's'; }
   else { el.className = 'go'; el.textContent = 'when ready'; }
 }
 function bugY(b) { return b.y0 + (BT[b.t].fly ? 0.9 + Math.sin(b.walk * 1.3) * 0.12 : 0) + (b.hy || 0); }
@@ -7274,6 +7267,7 @@ function syncSettings() {
   const sv = SND.muted ? 0 : Math.round(SND.vol * 100), mv = Math.round(MUSIC.vol * 100);
   $('setSfx').value = sv; $('setSfxV').textContent = sv + '%'; $('setMus').value = mv; $('setMusV').textContent = mv + '%';
   const box = $('setTrk'); if (!box.children.length) for (const [k, nm] of MUSIC.styles) { const l = document.createElement('label'); l.innerHTML = '<input type="checkbox" value="' + k + '"> ' + nm; box.appendChild(l); }
+  $('setNext').checked = nextOn();
   const on = MUSIC.picks; for (const l of box.children) { const c = l.firstChild; c.checked = on.includes(c.value); l.classList.toggle('on', c.checked); }
 }
 function openSettings() {
@@ -7288,6 +7282,7 @@ $('setSfx').addEventListener('input', e => { if (SND.muted) SND.toggle(); SND.se
 $('setSfx').addEventListener('change', () => { SND.init(); SND.play('swat'); });
 $('setMus').addEventListener('input', e => { SND.init(); MUSIC.setVol(e.target.value / 100); $('setMusV').textContent = e.target.value + '%'; });
 $('setTrk').addEventListener('change', () => { SND.init(); const on = [...$('setTrk').querySelectorAll('input')].filter(c => c.checked).map(c => c.value); MUSIC.setPicks(on); if (MUSIC.vol === 0) MUSIC.setVol(0.6); syncSettings(); });
+$('setNext').addEventListener('change', e => { try { localStorage.setItem('ppd-next', e.target.checked ? '1' : '0'); } catch (er) {} SND.play('tap'); $('belt').classList.toggle('nope', !e.target.checked); });
 $('setDone').addEventListener('click', closeSettings);
 // field guide and achievements share one screen with two tabs
 function syncGTabs() { for (const b of document.querySelectorAll('.gtabs button')) b.classList.toggle('on', !$(b.dataset.g).hidden); }
