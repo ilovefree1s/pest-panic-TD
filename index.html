@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="627">v1.125</div>
+    <div id="ver" data-b="628">v1.126</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4353,7 +4353,7 @@ const MANTIS_EATS = new Set(['ant', 'fly', 'bed', 'baby', 'hopper', 'moth']);
 function specialMove(b, sp, dt) {
   const bt = BT[b.t], base = bt.base || b.t, giant = !!bt.boss;
   if (base === 'centi') {
-    if (b.lead && b.lead.dead) { if (giant) b.lead = null; else { let q = b.lead; while (q && q.dead) q = q.lead; b.lead = q; } }   // giant: the bit in front got squashed, this segment is a new head. regular: the chain closes up behind the gap
+    if (b.lead && b.lead.dead) { let q = b.lead; while (q && q.dead) q = q.lead; b.lead = q; }   // the bit in front got squashed: the chain closes up behind the gap (a dead head leaves the next segment leading)
     if (b.lead) { const want = b.lead.s - (bt.gap || 0.62) * (b.giant ? 1.5 : 1), gap = want - b.s; sp = gap > 0.05 ? sp * Math.min(4, 1.35 + gap * 4) : gap < 0 ? 0 : sp; }   /* the further behind, the faster it hurries up: a hole left by a squashed segment closes in well under a second */
     if (giant) b.armor = b.lead ? 0 : 4;   // the giant's head is armored
   } else if (base === 'hopper' && S.net !== 'guest') {
@@ -7333,7 +7333,7 @@ const BUGINFO = [
   ['moth', 'Moth', 'Level 9 on', 'Flies. Drawn to the glow of a Bug Zapper: it leaves the trail and flutters around the lamp for a few seconds, and while moths crowd it the zapper fires a little slower. Then it goes back to the trail.', '1 slice'],
   ['mantis', 'Praying Mantis', 'Level 9 on', 'Tall and tough. Every so often it snatches a small bug off the trail and eats it to heal itself, so take it down fast.', '2 slices'],
   ['ghop', 'Giant Grasshopper', 'Boss, Levels 6–8 and 9', 'Every so often it hops one tile ahead. Where it lands, the shockwave stuns nearby tools for a moment.', '5 slices'],
-  ['gcenti', 'Giant Centipede', 'Boss, Levels 7–10', 'Fourteen big segments. The head is heavily armored (blocks a third of every hit), so hit the body. Break the middle and it splits in two.', '⅖ slice per segment'],
+  ['gcenti', 'Giant Centipede', 'Boss, Levels 7–10', 'Fourteen big segments. The head is heavily armored (blocks a third of every hit), so hit the body: squash middle segments and the chain closes up shorter.', '⅖ slice per segment'],
   ['gstink', 'Giant Stink Bug', 'Boss, Levels 8–10', 'Very tough shell. Every few seconds it lets out a stink cloud as it walks, and when it dies the cloud is huge. Tools in the stink work 40% slower.', '5 slices'],
   ['gmoth', 'Giant Moth', 'Boss, Levels 9–10', 'Stays on the trail, but its huge wingbeats blow out any candle it flies past. Bug Zappers it flies past flicker out for a few seconds.', '5 slices'],
   ['gmantis', 'Giant Mantis', 'Boss, Levels 9–10', 'Eats bugs often to heal, and the Broom can\'t push it.', '6 slices'],
@@ -8383,7 +8383,7 @@ function aiThink() {
 function aiSpecial(b, sp, dt) {
   const A = S.vs.bot, bt = BT[b.t], base = bt.base || b.t, giant = !!bt.boss;
   if (base === 'centi') {
-    if (b.lead && b.lead.hp <= 0) b.lead = null;
+    if (b.lead && b.lead.hp <= 0) { let q = b.lead; while (q && q.hp <= 0) q = q.lead; b.lead = q; }   /* the chain closes up over a squashed segment */
     if (b.lead) { const want = b.lead.s - (bt.gap || 0.62), gap = want - b.s; sp = gap > 0.05 ? sp * Math.min(4, 1.35 + gap * 4) : gap < 0 ? 0 : sp; }   /* the further behind, the faster it hurries up: a hole left by a squashed segment closes in well under a second */
     if (giant) b.armor = b.lead ? 0 : 4;
   } else if (base === 'hopper') {
