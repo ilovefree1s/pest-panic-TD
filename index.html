@@ -671,7 +671,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="643">v1.141</div>
+    <div id="ver" data-b="644">v1.142</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -9399,9 +9399,9 @@ function showStats() {
 const TUT = { step: -1, t: 0, ring: null };
 const TUT_STEPS = [
   { txt: () => 'Welcome, exterminator! First, pick a tool from the tray. Try the <b>Fly Swatter</b>.', hi: () => document.querySelector('.tc[data-t="swat"]'), done: () => !!S.placing || S.towers.length > 0 },
-  { txt: () => (ptrType === 'mouse' ? 'Click' : 'Tap') + ' a floor tile <b>right next to the sugar trail</b>. The glowing tile is a good spot.' + (ptrType === 'mouse' ? '' : ' Tap once to preview, again to place.'), ring: true, done: () => S.towers.length > 0 || S.wave >= 1 },
+  { txt: () => (ptrType === 'mouse' ? 'Click' : 'Tap') + ' a floor tile <b>right next to the sugar trail</b>. The glowing tile is a good spot.' + (ptrType === 'mouse' ? '' : '<br>Placing takes <b>two taps</b>: tap once to check the spot, then tap it again to confirm.'), ring: true, done: () => S.towers.length > 0 || S.wave >= 1 },
   { txt: () => 'Your <b>exterminator</b> walks over and builds it. Tools work once he finishes.', done: () => S.towers.some(t => !t.pending) || S.wave >= 1, min: 1.5 },
-  { txt: () => 'One tool can\'t stop a whole wave. Add a <b>Bug Spray</b> by the trail too: its poison cloud hits every bug in it.', hi: () => document.querySelector('.tc[data-t="spray"]'), ring: true, done: () => S.towers.length >= 2 || S.wave >= 1 },
+  { txt: () => 'One tool can\'t stop a whole wave. Add a <b>Bug Spray</b> by the trail too: its poison cloud hits every bug in it.' + (ptrType === 'mouse' ? '' : ' Same as before: tap a spot, then tap it again to place.'), hi: () => document.querySelector('.tc[data-t="spray"]'), ring: true, done: () => S.towers.length >= 2 || S.wave >= 1 },
   { txt: () => 'Ready? Tap <b>Send bugs</b> to start wave 1.', hi: () => $('go'), done: () => S.active || S.wave >= 1 },
   { txt: () => 'Bugs follow the trail to the cake. Your tools squash them, and every bug gives you <b>coins</b>.', done: () => !S.active && S.wave >= 1, min: 3 },
   { txt: () => 'Wave cleared! ' + (ptrType === 'mouse' ? 'Click' : 'Tap') + ' your <b>Fly Swatter</b> on the floor to see what it can do.', done: () => !!S.pick },
