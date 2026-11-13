@@ -671,7 +671,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="635">v1.133</div>
+    <div id="ver" data-b="636">v1.134</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3299,7 +3299,7 @@ function catSkin(mesh) {   // -> { sk, bones } replacing the plain mesh with a s
 const BOSS_MODELS = { queen: { url: 'assets/boss_queen.glb?h=0a694301', len: 5.99 }, widow: { url: 'assets/boss_widow.glb?h=8a72c460', len: 5.43, legs: 4 }, hornet: { url: 'assets/boss_hornet.glb?h=307396bc', wid: 5.3, wings: true, pitch: 0.08 }, gfly: { url: 'assets/boss_fly.glb?h=e2d479f7', wid: 4.3, wings: true, pitch: 0.45, wingRest: 0.3, wingTilt: -1.25, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 } }, gant: { url: 'assets/boss_ant.glb?h=7cf2cf34', len: 5.6 }, gbed: { url: 'assets/boss_bed.glb?h=321d373a', len: 4.6, legs: 4, legTop: 0.34, rig: { grow: true, top: 0.6 } }, herc: { url: 'assets/boss_herc.glb?h=944a4b6d', len: 5.05 }   /* every boss model sits 19% under its first fitting (two 10% cuts) */,
   /* the regular bugs wear low-poly cuts of the same models (the ant without her crown) */
   m_ant: { url: 'assets/bug_ant.glb?h=e5cbe1bf', len: 1.6, reg: 'ant' }, m_fly: { url: 'assets/bug_fly.glb?h=ca232665', wid: 1.35, wings: true, pitch: 0.45, wingRest: 0.35, wingTilt: -1.1, wingAt: { y: 0.36, x0: 0.1, x1: 0.26, px: 0.14, py: 0.5, pz: -0.03, wid: 1.66 }, reg: 'fly' },
-  m_spider: { url: 'assets/bug_spider.glb?h=e9270299', len: 2.2, legs: 4, reg: 'spider' }, m_bed: { url: 'assets/bug_bed.glb?h=aaeed3ff', len: 1.1, legs: 4, legTop: 0.34, rig: { grow: true, top: 0.6 }, reg: 'bed' }, m_dung: { url: 'assets/bug_dung.glb?h=5a4db8a9', len: 1.5, reg: 'dung' } };
+  m_spider: { url: 'assets/bug_spider.glb?h=e9270299', len: 2.2, legs: 4, reg: 'spider' }, m_bed: { url: 'assets/bug_bed.glb?h=aaeed3ff', len: 0.82, legs: 4, legTop: 0.34, rig: { grow: true, top: 0.6 }, reg: 'bed' }, m_dung: { url: 'assets/bug_dung.glb?h=5a4db8a9', len: 1.5, reg: 'dung' } };
 function insectRig(geo, per = 3, top = 0.7, opt = {}) {   // top: how high up (share of height) a leg can reach before it's body; opt.hipTop: a lower cut used only to find the hips (when the thighs sit up beside a wide belly); opt.zBand: a leg vertex must lie this close (share of length) to its hip's z, so the belly between the legs stays body
   if (geo.userData.rig) return geo.userData.rig;
   if (opt.hipTop && opt.hipTop < top) { const g2 = geo.clone(); g2.userData = {}; const r0 = insectRig(g2, per, opt.hipTop); return insectRig(geo, per, top, { ...opt, hipTop: 0, hips: r0.hips, hipY: r0.hipY }); }   /* hips from the sure lower legs, weights from the full leg */
@@ -4282,7 +4282,7 @@ function compactModel(root) {
 const MODEL_BUILD = { hopper: buildHopper, centi: buildCenti, stink: buildStink, moth: buildMoth, mantis: buildMantis }, MODEL_POOL = {};
 const DUNG_LOOK = window.__DUNG || 'herc';   /* 'herc': the Hercules model with its horn folded away; 'stink': the stink bug model in glossy black */
 MODEL_BUILD.dung = () => { const m = DUNG_LOOK === 'stink' ? buildStinkModel({ color: new THREE.Color(0.06, 0.055, 0.055), roughness: 0.3, metalness: 0.25, len: 1.5 }) : buildModelBoss('m_dung'); m.userData.model = true; m.userData.reg = 'dung'; m.userData.shadow = 1.6; m.traverse(o => { if (o.isMesh) o.castShadow = false; }); return m; };   /* the dung beetle is the stink bug model in glossy black */
-for (const k of ['ant', 'fly', 'spider', 'bed']) MODEL_BUILD[k] = () => { const m = buildModelBoss('m_' + k); m.userData.reg = k; m.userData.shadow = { ant: 1.25, fly: 1.2, spider: 2.6, bed: 0.8 }[k]; m.traverse(o => { if (o.isMesh) o.castShadow = false; }); return m; };   /* real models for the small bugs; no shadow maps on them (there can be dozens) */
+for (const k of ['ant', 'fly', 'spider', 'bed']) MODEL_BUILD[k] = () => { const m = buildModelBoss('m_' + k); m.userData.reg = k; m.userData.shadow = { ant: 1.25, fly: 1.2, spider: 2.6, bed: 0.6 }[k]; m.traverse(o => { if (o.isMesh) o.castShadow = false; }); return m; };   /* real models for the small bugs; no shadow maps on them (there can be dozens) */
 const REG_MODEL_OK = t => t === 'dung' && DUNG_LOOK === 'stink' ? !!BUG_MODELS.stink.gltf : BOSS_MODELS['m_' + t] && BOSS_MODELS['m_' + t].gltf && (t !== 'bed' || (MODEL_POOL.bed || []).filter(m => m.visible).length < 60);   /* models not loaded yet, or a Swarm Day flood of bed bugs: the old instanced bugs */
 for (const t of ['ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis']) BOSS_BUILD[t] = giantBuild(t);
 function getModel(t) {
