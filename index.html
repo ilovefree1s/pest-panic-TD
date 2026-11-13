@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="622">v1.120</div>
+    <div id="ver" data-b="623">v1.121</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1700,6 +1700,12 @@ function ringTex() {
   g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.55, 'rgba(255,255,255,.9)'); g.addColorStop(0.7, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
   x.fillStyle = g; x.fillRect(0, 0, S, S); return tex(c, false);
 }
+function fireTex() {   /* a soft, ragged puff for flame particles (the spark texture's star rays read as sparkles, not fire) */
+  const S = 128, [c, x] = cnv(S, S); x.globalCompositeOperation = 'lighter';
+  const r = rng(7); for (let i = 0; i < 9; i++) { const a = r() * TAU, d = r() * 22, cx = 64 + Math.cos(a) * d, cy = 64 + Math.sin(a) * d, rr = 26 + r() * 18, g = x.createRadialGradient(cx, cy, 0, cx, cy, rr); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(0.5, 'rgba(255,255,255,.22)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, S, S); }
+  const g = x.createRadialGradient(64, 64, 0, 64, 64, 40); g.addColorStop(0, 'rgba(255,255,255,.6)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, S, S);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
 function sparkTex() {
   const S = 128, [c, x] = cnv(S, S), g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
   g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.15, 'rgba(255,255,255,.8)'); g.addColorStop(1, 'rgba(255,255,255,0)');
@@ -1825,7 +1831,7 @@ const TEX = {
   floor: null, cab: null, top: counterTopTexture(), subway: subwayTexture(),
   crumbs: [crumbTexture('cookie', 23), crumbTexture('sprinkles', 37)],
   soft: softTex(), puff: puffTex(), splat: [splatTex(1), splatTex(2)], ring: ringTex(),
-  spark: sparkTex(), drop: dropTex(), paper: [newspaperTexture(), magazineTexture(), phonebookTexture()], sunday: sundayTexture(), swat: [swatTexture(), swatTexture('#3a86e0', '#123a7a', '#9fd0ff'), swatTexture('#9b4fe0', '#3a1260', '#f3c24a')], glue: glueTexture(),
+  spark: sparkTex(), fire: fireTex(), drop: dropTex(), paper: [newspaperTexture(), magazineTexture(), phonebookTexture()], sunday: sundayTexture(), swat: [swatTexture(), swatTexture('#3a86e0', '#123a7a', '#9fd0ff'), swatTexture('#9b4fe0', '#3a1260', '#f3c24a')], glue: glueTexture(),
   trail: trailTexture(), grid: gridTexture(), tile: tileTex(),
 };
 
@@ -2570,9 +2576,9 @@ const B = {
   goo: new Batch(TEX.drop, 700, { order: 13 }),
   psnDrop: new Batch(psnDropTex(), 300, { order: 24 }),
   fireBadge: new Batch(fireBadgeTex(), 300, { order: 24 }),
-  glow: new Batch(TEX.spark, 700, { add: true, order: 14 }),
+  glow: new Batch(TEX.spark, 700, { add: true, order: 14 }), fire: new Batch(TEX.fire, 500, { add: false, order: 15 }),   /* alpha-blended so stacked flames stay orange instead of blowing out to white */
 };
-const FX = { smoke: new Pool(B.smoke, 700), goo: new Pool(B.goo, 700), glow: new Pool(B.glow, 700) };
+const FX = { smoke: new Pool(B.smoke, 700), goo: new Pool(B.goo, 700), glow: new Pool(B.glow, 700), fire: new Pool(B.fire, 500) };
 const arcs = new Arcs(60, 12);
 
 // ---------------------------------------------------------------- the exterminator (from Pest Panic HD)
@@ -4008,7 +4014,13 @@ function drawOneExt(dt, EXTM, e, show) {
     for (let i = 0; i < 4; i++) {
       const j = (Math.random() - 0.5) * 0.9, c = Math.cos(j), sn = Math.sin(j), sp = 9 + Math.random() * 5;
       const vx = (fx * c - fz * sn) * sp, vy = -0.6 + Math.random() * 1.2, vz = (fz * c + fx * sn) * sp, st = (u.look && u.look.spray) || 'mist';
-      if (st === 'flame') { for (let q = 0; q < 2; q++) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: vx * (0.8 + q * 0.3), vy: vy + 0.8, vz: vz * (0.8 + q * 0.3), drag: 2.4, life: 0.45 + Math.random() * 0.25, s0: 0.6, s1: 2.4, c: [1, 0.28 + Math.random() * 0.3, 0.04], a0: 1 }); if (i === 0) FX.smoke.spawn({ x: tmpV.x + vx * 0.06, y: tmpV.y + 0.4, z: tmpV.z + vz * 0.06, vx: vx * 0.6, vy: 1.5, vz: vz * 0.6, drag: 2, life: 0.8, s0: 0.4, s1: 1.8, c: [0.18, 0.16, 0.15], a0: 0.35 }); }
+      if (st === 'flame') {   /* a flamethrower tongue: white-hot core at the nozzle, orange body, dark-red ragged tips curling up, embers and smoke off the end */
+        const kx = vx * 1.15, kz = vz * 1.15, vr = (Math.random() - 0.5) * 6;
+        if (i === 0) FX.fire.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: kx, vy: vy * 0.3, vz: kz, drag: 2.2, life: 0.14 + Math.random() * 0.06, s0: 0.3, s1: 0.8, c: [1, 0.95, 0.6], a0: 0.95, vr });
+        if (i < 2) FX.fire.spawn({ x: tmpV.x + kx * 0.02, y: tmpV.y, z: tmpV.z + kz * 0.02, vx: kx, vy: vy + 1.6, vz: kz, drag: 2.3, life: 0.34 + Math.random() * 0.14, s0: 0.45, s1: 1.7, c: [1, 0.5 + Math.random() * 0.15, 0.06], a0: 0.85, a1: 0, vr });
+        if (Math.random() < 0.5) FX.fire.spawn({ x: tmpV.x + kx * 0.05, y: tmpV.y + 0.1, z: tmpV.z + kz * 0.05, vx: kx * 0.9, vy: vy + 3, vz: kz * 0.9, drag: 2.0, life: 0.5 + Math.random() * 0.25, s0: 0.8, s1: 2.3, c: [0.85, 0.18, 0.03], a0: 0.7, a1: 0, vr: vr * 0.6 });
+        if (Math.random() < 0.35) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: kx * (0.7 + Math.random() * 0.5), vy: vy + 2.5 + Math.random() * 2, vz: kz * (0.7 + Math.random() * 0.5), drag: 1.6, grav: 5, life: 0.55 + Math.random() * 0.4, s0: 0.16, s1: 0.03, c: [1, 0.78, 0.25], a0: 1 });   /* embers */
+        if (i === 0 && Math.random() < 0.7) FX.smoke.spawn({ x: tmpV.x + kx * 0.1, y: tmpV.y + 0.5, z: tmpV.z + kz * 0.1, vx: kx * 0.55, vy: 2.2, vz: kz * 0.55, drag: 1.8, life: 1.0 + Math.random() * 0.4, s0: 0.5, s1: 2.4, c: [0.12, 0.1, 0.09], a0: 0.3 }); }
       else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: st === 'bolt' ? [0.72, 0.86, 1] : [0.82, 0.96, 0.85], a0: 0.5 });
     }
     if (u.look && u.look.spray === 'bolt' && Math.random() < dt * 9) { const L = 2.5 + Math.random() * 3, j = (Math.random() - 0.5) * 0.8; arcs.spawn(tmpV.clone(), new V3(tmpV.x + (fx * Math.cos(j) - fz * Math.sin(j)) * L, tmpV.y + (Math.random() - 0.5), tmpV.z + (fz * Math.cos(j) + fx * Math.sin(j)) * L), 0.2, { w: 0.35, jit: 0.45, life: 0.14 }); }
@@ -6916,7 +6928,7 @@ function drawFx(dt, t) {
   S.coins = S.coins.filter(c => (c.t += dt) < 0.7);
   for (const c of S.coins) { c.vy -= 18 * dt; c.y = Math.max(0.3, c.y + c.vy * dt); setI(IM.coin, ci++, c.x, c.y + 0.4, c.z, c.t * 14, 1.5 * (1 - Math.max(0, c.t - 0.5) * 5)); }
   IM.coin.count = ci; IM.coin.instanceMatrix.needsUpdate = true;
-  FX.smoke.update(dt); FX.goo.update(dt, 0.06); FX.glow.update(dt);
+  FX.smoke.update(dt); FX.goo.update(dt, 0.06); FX.glow.update(dt); FX.fire.update(dt);
   for (const k in B) B[k].end();
   arcs.update(dt);
   // cake bites
