@@ -671,7 +671,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="638">v1.136</div>
+    <div id="ver" data-b="639">v1.137</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5168,7 +5168,7 @@ const MUSIC = (() => {
         arp: { type: 'pulse12', vol: 0.028, oct: 12, pat: [0, 't', 7, 't'] },
         drums: { kick: [0, 4, 8, 12], snare: [4, 12], snareVol: 0.1, hat: 'all', hatVol: 0.035, fill: true, kickKind: 'chip', snareKind: 'chip' } } },
     spy: { name: 'Spy Kitchen',   /* twangy plucked guitar over a prowling bass, snare rimshots */
-      calm: { bpm: 128, swing: 0, bass: { roots: [40, 40, 45, 43, 40, 40, 47, 47], third: [3, 3, 3, 4, 3, 3, 4, 4], pat: [0, _, 0, _, 3, _, 5, _, 6, _, 5, _, 3, _, 0, _], type: 'pluck', vol: 0.5, dur: 1 },
+      calm: { bpm: 128, swing: 0, bass: { roots: [40, 40, 45, 43, 40, 40, 47, 47], third: [3, 3, 3, 4, 3, 3, 4, 4], pat: [0, _, 0, _, 3, _, 5, _, 6, _, 5, _, 3, _, 0, _], type: 'subbass', vol: 0.5, dur: 0.9 },
         lead: { base: 64, type: 'pluck', vol: 0.42, dur: 2, echo: 0.3 },
         mel: [[12, _, _, _, 11, _, _, _, 12, _, _, 15, _, 14, _, 12], [_, _, _, _, 7, _, _, _, 8, _, _, _, 7, _, 5, _], [5, _, _, _, 8, _, _, _, 12, _, _, _, 11, _, 8, _], [7, _, _, _, _, _, _, _, 10, _, _, _, 7, _, _, _],
               [12, _, _, _, _, _, 15, _, _, _, 14, _, _, 12, _, _], [11, _, _, _, _, _, 12, _, _, _, _, _, _, _, _, _], [14, _, _, _, _, _, _, _, 15, _, _, _, 14, _, 11, _], [12, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]],
@@ -5176,7 +5176,7 @@ const MUSIC = (() => {
                [12, _, _, _, 14, _, _, _, 15, _, _, _, 19, _, _, _], [17, _, _, _, _, _, 15, _, _, _, 14, _, _, _, _, _], [11, _, _, _, _, _, 12, _, 14, _, _, _, 15, _, 14, _], [12, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]],
         comp: { type: 'pluck', vol: 0.16, oct: 12, pat: [4, 12], dur: 0.6, strum: true },
         drums: { kick: [0, 8, 11], snare: [4, 12], snareVol: 0.12, hat: 'off', hatVol: 0.018, fill: true, snareKind: 'rim', hatKind: 'shaker' } },
-      boss: { bpm: 152, swing: 0, bass: { roots: [40, 41, 40, 38, 40, 41, 43, 47], third: [3, 4, 3, 4, 3, 4, 4, 4], pat: [0, _, 0, 0, 3, _, 5, _, 6, _, 6, 5, 3, _, 0, 0], type: 'pluck', vol: 0.5, dur: 0.6 },
+      boss: { bpm: 152, swing: 0, bass: { roots: [40, 41, 40, 38, 40, 41, 43, 47], third: [3, 4, 3, 4, 3, 4, 4, 4], pat: [0, _, 0, 0, 3, _, 5, _, 6, _, 6, 5, 3, _, 0, 0], type: 'subbass', vol: 0.5, dur: 0.55 },
         lead: { base: 64, type: 'pluck', vol: 0.42, dur: 1, echo: 0.22 },
         mel: [[12, _, 15, _, 12, _, 11, _, 12, _, _, _, 15, _, 17, _], [13, _, 17, _, 13, _, 12, _, 13, _, _, _, 12, _, 11, _], [12, _, 15, _, 12, _, 11, _, 12, _, _, _, 19, _, 17, _], [14, _, _, _, 17, _, 14, _, 10, _, _, _, 7, _, _, _],
               [12, _, _, 15, _, _, 19, _, 18, _, _, 19, _, _, 15, _], [13, _, _, 17, _, _, 20, _, 17, _, _, _, 13, _, _, _], [15, _, _, 14, _, _, 15, _, 19, _, _, 17, _, _, 15, _], [14, _, _, _, 11, _, _, _, 12, _, _, _, _, _, _, _]],
