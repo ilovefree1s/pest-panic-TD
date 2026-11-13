@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="625">v1.123</div>
+    <div id="ver" data-b="626">v1.124</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4021,9 +4021,15 @@ function drawOneExt(dt, EXTM, e, show) {
         if (Math.random() < 0.5) FX.fire.spawn({ x: tmpV.x + kx * 0.05, y: tmpV.y + 0.1, z: tmpV.z + kz * 0.05, vx: kx * 0.9, vy: vy + 3, vz: kz * 0.9, drag: 2.0, life: 0.5 + Math.random() * 0.25, s0: 0.8, s1: 2.3, c: [0.85, 0.18, 0.03], a0: 0.7, a1: 0, vr: vr * 0.6 });
         if (Math.random() < 0.35) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: kx * (0.7 + Math.random() * 0.5), vy: vy + 2.5 + Math.random() * 2, vz: kz * (0.7 + Math.random() * 0.5), drag: 1.6, grav: 5, life: 0.55 + Math.random() * 0.4, s0: 0.16, s1: 0.03, c: [1, 0.78, 0.25], a0: 1 });   /* embers */
         if (i === 0 && Math.random() < 0.7) FX.smoke.spawn({ x: tmpV.x + kx * 0.1, y: tmpV.y + 0.5, z: tmpV.z + kz * 0.1, vx: kx * 0.55, vy: 2.2, vz: kz * 0.55, drag: 1.8, life: 1.0 + Math.random() * 0.4, s0: 0.5, s1: 2.4, c: [0.12, 0.1, 0.09], a0: 0.3 }); }
-      else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: st === 'bolt' ? [0.72, 0.86, 1] : [0.82, 0.96, 0.85], a0: 0.5 });
+      else if (st === 'bolt') { if (i === 0) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, life: 0.08, s0: 0.5 + Math.random() * 0.4, s1: 0.2, c: [0.75, 0.88, 1], a0: 0.9 });   /* lightning: a flickering flare at the nozzle, sparks fly off the far end */
+        if (Math.random() < 0.35) FX.glow.spawn({ x: tmpV.x + vx * 0.3, y: tmpV.y + vy * 0.3, z: tmpV.z + vz * 0.3, vx: vx * 0.3 + (Math.random() - 0.5) * 4, vy: 1 + Math.random() * 3, vz: vz * 0.3 + (Math.random() - 0.5) * 4, grav: 10, drag: 1, life: 0.25 + Math.random() * 0.3, s0: 0.14, s1: 0.02, c: [0.8, 0.92, 1], a0: 1 }); }
+      else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.82, 0.96, 0.85], a0: 0.5 });
     }
-    if (u.look && u.look.spray === 'bolt' && Math.random() < dt * 9) { const L = 2.5 + Math.random() * 3, j = (Math.random() - 0.5) * 0.8; arcs.spawn(tmpV.clone(), new V3(tmpV.x + (fx * Math.cos(j) - fz * Math.sin(j)) * L, tmpV.y + (Math.random() - 0.5), tmpV.z + (fz * Math.cos(j) + fx * Math.sin(j)) * L), 0.2, { w: 0.35, jit: 0.45, life: 0.14 }); }
+    if (u.look && u.look.spray === 'bolt') {   /* a crackling cone of jagged arcs, redrawn every few frames, the odd one forking to the floor */
+      for (let k = 0; k < 2; k++) if (Math.random() < dt * 40) { const L = 2 + Math.random() * 3.5, j = (Math.random() - 0.5) * 0.9, ex = tmpV.x + (fx * Math.cos(j) - fz * Math.sin(j)) * L, ez = tmpV.z + (fz * Math.cos(j) + fx * Math.sin(j)) * L, ey = Math.max(0.1, tmpV.y - 0.3 - Math.random() * 1.4);
+        arcs.spawn(tmpV.clone(), new V3(ex, ey, ez), 0.15, { w: 0.22 + Math.random() * 0.2, jit: 0.6, life: 0.08 + Math.random() * 0.06, am: 1.3 });
+        if (Math.random() < 0.3) arcs.spawn(new V3(ex, ey, ez), new V3(ex + (Math.random() - 0.5) * 1.6, 0.05, ez + (Math.random() - 0.5) * 1.6), 0, { w: 0.14, jit: 0.4, life: 0.07, am: 1 }); }   /* fork to the floor */
+    }
   }
   if (walk && !e.held && u.look && u.look.trail !== 'none' && Math.random() < dt * 16) {   // footstep trail
     const bx = e.x - Math.sin(EXTM.rotation.y) * 0.5 + (Math.random() - 0.5) * 0.5, bz = e.z - Math.cos(EXTM.rotation.y) * 0.5 + (Math.random() - 0.5) * 0.5;
