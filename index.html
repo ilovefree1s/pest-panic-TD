@@ -36,11 +36,18 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #tut{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:15;pointer-events:none;width:min(420px,calc(100% - 24px));background:#fff6dc;color:#3a2400;border-radius:16px;
   padding:12px 16px 10px;box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 0 3px var(--gold);text-align:center;animation:tutIn .3s ease-out}
 #tut[hidden]{display:none}
+#tut button.nx{display:block;margin:2px auto 6px;padding:7px 20px;border-radius:999px;background:var(--gold);color:#3a2400;text-decoration:none;font:400 16px var(--display);letter-spacing:.04em;box-shadow:0 3px 0 #a87a10} #tut button.nx[hidden]{display:none}
+#tut .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin:0 3px 0 4px;vertical-align:-1px;box-shadow:0 0 0 1.5px rgba(0,0,0,.35)}
 #tut p{margin:0 0 6px;font-weight:800;font-size:15px;line-height:1.4}
 #tut p b{color:#b5520a}
 #tut button{pointer-events:auto;border:0;background:none;color:#8a6a3a;font:800 12px var(--body);text-decoration:underline;cursor:pointer;padding:2px 6px}
 @keyframes tutIn{from{transform:translate(-50%,10px);opacity:0}}
 #stage.tutoring #tip{display:none}
+#tut.top{top:62px;bottom:auto} @keyframes tutInTop{from{transform:translate(-50%,-10px);opacity:0}} #tut.top{animation-name:tutInTop}
+#tutArrow{position:absolute;z-index:16;width:58px;height:40px;pointer-events:none;animation:tutPoint .7s ease-in-out infinite alternate;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))}
+#tutArrow[hidden]{display:none}
+@keyframes tutPoint{from{translate:-10px 0}to{translate:0 0}}
+#belt.tut-glow{animation:tutGlow 1s ease-in-out infinite}
 .tut-hi{position:relative;z-index:6;animation:tutGlow 1s ease-in-out infinite!important}
 @keyframes tutGlow{0%,100%{box-shadow:0 0 0 3px #ffc23a,0 0 14px 4px rgba(255,190,50,.6)}50%{box-shadow:0 0 0 5px #fff1a0,0 0 26px 8px rgba(255,200,60,.85)}}
 @media (orientation:landscape) and (max-height:560px){#tut{bottom:8px;padding:8px 12px 6px} #tut p{font-size:13px}}
@@ -657,7 +664,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="dmg" aria-hidden="true"></div>
     <div id="netWarn" hidden></div>
     <div id="achToast" hidden role="status"></div>
-    <div id="tut" hidden><p id="tutTxt"></p><button type="button" id="tutSkip">Skip tutorial</button></div>
+    <div id="tut" hidden><p id="tutTxt"></p><button type="button" id="tutNext" class="nx" hidden>Got it ›</button><button type="button" id="tutSkip">Skip tutorial</button></div><div id="tutArrow" hidden><svg viewBox="0 0 58 40" width="58" height="40"><path d="M3 14h30V3l22 17-22 17V26H3z" fill="#ffc93c" stroke="#3a2400" stroke-width="3" stroke-linejoin="round"/></svg></div>
     <div id="tcard" hidden role="dialog" aria-live="polite"></div>
     <button id="abil" type="button" hidden aria-label="Backpack Spray: the exterminator runs to the front of the bugs and sprays them">
       <svg viewBox="0 0 48 48"><rect x="10" y="8" width="16" height="24" rx="5" fill="#8fd0f0"/><rect x="13" y="5" width="10" height="5" rx="2.5" fill="#5aa8d0"/><rect x="13" y="18" width="10" height="5" fill="#1c1d22"/>
@@ -671,7 +678,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="644">v1.142</div>
+    <div id="ver" data-b="645">v1.143</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -9402,6 +9409,9 @@ const TUT_STEPS = [
   { txt: () => (ptrType === 'mouse' ? 'Click' : 'Tap') + ' a floor tile <b>right next to the sugar trail</b>. The glowing tile is a good spot.' + (ptrType === 'mouse' ? '' : '<br>Placing takes <b>two taps</b>: tap once to check the spot, then tap it again to confirm.'), ring: true, done: () => S.towers.length > 0 || S.wave >= 1 },
   { txt: () => 'Your <b>exterminator</b> walks over and builds it. Tools work once he finishes.', done: () => S.towers.some(t => !t.pending) || S.wave >= 1, min: 1.5 },
   { txt: () => 'One tool can\'t stop a whole wave. Add a <b>Bug Spray</b> by the trail too: its poison cloud hits every bug in it.' + (ptrType === 'mouse' ? '' : ' Same as before: tap a spot, then tap it again to place.'), hi: () => document.querySelector('.tc[data-t="spray"]'), ring: true, done: () => S.towers.length >= 2 || S.wave >= 1 },
+  { txt: () => 'This card shows the <b>bugs coming next</b> and how many of each. Close it with the ✕, or turn it off in Settings.', arrow: () => $('belt'), top: true, next: true, done: () => S.active || S.wave >= 1 || $('belt').classList.contains('nope') || $('belt').classList.contains('off') },
+  { txt: () => 'Some tools only reach some bugs. <b>GROUND</b> tools only hit crawling bugs. <b>AIR</b> tools only hit flying bugs like flies and moths. A tool with neither tag hits <b>both</b>.', hi: () => { const t = document.querySelector('#shop .tc .reach.gnd') || document.querySelector('#shop .tc .reach.air'); return t && t.closest('.tc'); }, top: true, next: true, done: () => S.active || S.wave >= 1 },
+  { txt: () => 'The <b>dots</b> on a tool show its level: one dot per level, up to 3. Their colour shows what it hits: <i class="dot" style="background:#b5722e"></i><b>brown</b> ground only, <i class="dot" style="background:#4fc3ff"></i><b>blue</b> air only, <i class="dot" style="background:#1f9a3a"></i><b>green</b> both.', arrowPt: () => { const tw = S.towers[0]; if (!tw || !tw.o || !tw.o.root) return null; const v = tw.o.root.getWorldPosition(new THREE.Vector3()); v.y += 0.3; v.z += 1.08; v.project(camera); const c = canvas.getBoundingClientRect(), sg = $('stage').getBoundingClientRect(); return { x: c.left - sg.left + (v.x + 1) / 2 * c.width, y: c.top - sg.top + (1 - v.y) / 2 * c.height }; }, top: true, next: true, done: () => S.active || S.wave >= 1 },
   { txt: () => 'Ready? Tap <b>Send bugs</b> to start wave 1.', hi: () => $('go'), done: () => S.active || S.wave >= 1 },
   { txt: () => 'Bugs follow the trail to the cake. Your tools squash them, and every bug gives you <b>coins</b>.', done: () => !S.active && S.wave >= 1, min: 3 },
   { txt: () => 'Wave cleared! ' + (ptrType === 'mouse' ? 'Click' : 'Tap') + ' your <b>Fly Swatter</b> on the floor to see what it can do.', done: () => !!S.pick },
@@ -9409,14 +9419,22 @@ const TUT_STEPS = [
   { txt: () => 'That\'s it! <b>Hold</b> any tool in the tray to read what it does. More bugs are coming. Good luck!', done: () => false, min: 5, last: true },
 ];
 function tutDone() { try { return localStorage.getItem('ppd-tut') === '1'; } catch (e) { return false; } }
+function tutArrow(st) {   /* a bouncing arrow pointing at what the step is about, from its left: an element (the next-wave card) or a spot on the floor */
+  const a = $('tutArrow');
+  if (st.arrowPt) { const p = st.arrowPt(); a.hidden = !p; if (p) { a.style.left = Math.round(p.x - 64) + 'px'; a.style.top = Math.round(p.y - 20) + 'px'; } return; }
+  const el = st.arrow && st.arrow(); if (!el) { a.hidden = true; return; } el.classList.add('tut-glow');
+  const sg = $('stage').getBoundingClientRect(), r = el.getBoundingClientRect(); a.hidden = !r.width;
+  a.style.left = Math.round(r.left - sg.left - 62) + 'px'; a.style.top = Math.round(r.top - sg.top + Math.min(r.height / 2, 70) - 20) + 'px';
+}
 function tutStart() { if (LV !== SOLO[0] || tutDone()) return; TUT.step = 0; TUT.t = 0; tutShow(); }
 function tutEnd() {
-  TUT.step = -1; $('tut').hidden = true; $('stage').classList.remove('tutoring'); document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi'));
+  TUT.step = -1; $('tut').hidden = true; $('stage').classList.remove('tutoring'); document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi')); $('tutArrow').hidden = true; $('tut').classList.remove('top'); document.querySelectorAll('.tut-glow').forEach(e => e.classList.remove('tut-glow'));
   if (TUT.ring) TUT.ring.visible = false; try { localStorage.setItem('ppd-tut', '1'); } catch (e) {}
 }
 function tutShow() {
   const st = TUT_STEPS[TUT.step]; document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi'));
   $('tutTxt').innerHTML = st.txt(); $('tut').hidden = false; $('stage').classList.add('tutoring');
+  $('tut').classList.toggle('top', !!st.top); document.querySelectorAll('.tut-glow').forEach(e => e.classList.remove('tut-glow')); $('tutArrow').hidden = !(st.arrow || st.arrowPt); tutArrow(st); $('tutNext').hidden = !st.next;
   const h = st.hi && st.hi(); if (h) h.classList.add('tut-hi');
   if (!TUT.ring) {
     TUT.ring = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.45, 40), new THREE.MeshBasicMaterial({ color: '#ffd23a', transparent: true, depthWrite: false }));
@@ -9428,16 +9446,18 @@ function tutShow() {
 }
 function tutTick(dt) {
   if (TUT.step < 0) return;
-  if (S.mode !== 'play' || LV !== SOLO[0]) { if (S.mode === 'over' || S.mode === 'title') { $('tut').hidden = true; $('stage').classList.remove('tutoring'); TUT.step = -1; if (TUT.ring) TUT.ring.visible = false; document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi')); } return; }
+  if (S.mode !== 'play' || LV !== SOLO[0]) { if (S.mode === 'over' || S.mode === 'title') { $('tut').hidden = true; $('stage').classList.remove('tutoring'); TUT.step = -1; if (TUT.ring) TUT.ring.visible = false; document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi')); $('tutArrow').hidden = true; document.querySelectorAll('.tut-glow').forEach(e => e.classList.remove('tut-glow')); } return; }
   const st = TUT_STEPS[TUT.step]; TUT.t += dt;
   if (TUT.ring && TUT.ring.visible) { const k = 1 + Math.sin(clock * 5) * 0.08; TUT.ring.scale.set(k, k, 1); TUT.ring.material.opacity = 0.6 + Math.sin(clock * 5) * 0.3; }
   const h = st.hi && st.hi(); if (h && !h.classList.contains('tut-hi')) h.classList.add('tut-hi');
+  if (st.arrow || st.arrowPt) tutArrow(st);
   if (TUT.t >= (st.min || 0) && (st.done() || (st.last && TUT.t >= st.min))) {
     if (st.last) { tutEnd(); return; }
     TUT.step++; TUT.t = 0; tutShow();
   }
 }
 $('tutSkip').addEventListener('click', tutEnd);
+$('tutNext').addEventListener('click', () => { if (TUT.step < 0 || !TUT_STEPS[TUT.step].next) return; SND.play('tap'); TUT.step++; TUT.t = 0; tutShow(); });
 function gameOver(won) {
   if (won && !S.vs && S.lives >= 20 && !S.cheered && S.ext && S.mode === 'play') {   /* flawless: a moment to celebrate before the results */
     S.cheered = true; S.active = false; S.nextT = 0; S.ext.cheer = 2.8; S.ext.job = null; S.ext.abil = null; SND.play('up'); setTimeout(() => { if (S && S.mode === 'play') gameOver(true); }, 2800); return;
