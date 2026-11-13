@@ -671,7 +671,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="642">v1.140</div>
+    <div id="ver" data-b="643">v1.141</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3914,7 +3914,8 @@ function syncAbil() {
   el.classList.toggle('cool', cd > 0); el.classList.toggle('busy', !!S.ext.abil); el.classList.toggle('poor', cd <= 0 && S.money < ABIL.cost);
   const t = Math.ceil(cd); if (el.dataset.t !== String(t)) { el.dataset.t = t; $('abilT').textContent = cd > 0 ? t : ''; }
 }
-function doorYaw(e) {   /* standing around: face the nearest door the bugs come out of (only the doors that are open so far) */
+function doorYaw(e) {   /* standing around: eyes on the bug closest to the cake, or with no bugs out, the nearest door the bugs come out of (only the doors that are open so far) */
+  const L = S && S.bugs && S.bugs.length ? leadBug() : null; if (L && Number.isFinite(L.x) && Math.hypot(L.x - e.x, L.z - e.z) > 0.3) return Math.atan2(L.x - e.x, L.z - e.z);   /* bugs out: watch the one closest to the cake */
   if (!ROUTES.length) return 0; const open = S && LEVELS[LV] && !LEVELS[LV].team && !S.vs && (ROUTES.length > 2 || dailyStagger()) ? doorsOpen() : ROUTES.map((_, i) => i);
   let best = null, bd = 1e9; for (const i of open) { const g = ROUTES[i] && ROUTES[i].seg && ROUTES[i].seg[0]; if (!g) continue; const d = Math.hypot(g.ax - e.x, g.az - e.z); if (d < bd) { bd = d; best = g; } }
   return best && bd > 0.3 ? Math.atan2(best.ax - e.x, best.az - e.z) : e.yaw;
