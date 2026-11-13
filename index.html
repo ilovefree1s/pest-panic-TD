@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="626">v1.124</div>
+    <div id="ver" data-b="627">v1.125</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2262,17 +2262,18 @@ GEO.bedBody = mergeGeometries([
 ]);
 GEO.dungLegs = [[0.3, 0.42, 0.42, 0.75], [0.36, 0.42, 0.05, 0], [0.32, 0.42, -0.32, -0.65]];
 GEO.ball = (() => {
-  const g = new THREE.IcosahedronGeometry(1, 3), p = g.attributes.position, r = rng(31), v = new V3();
-  for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = 1 + (Math.sin(v.x * 7 + v.y * 3) * Math.cos(v.z * 6) * 0.06) + (r() - 0.5) * 0.06; p.setXYZ(i, v.x * n, v.y * n, v.z * n); }
+  const g = new THREE.SphereGeometry(1, 28, 20), p = g.attributes.position, v = new V3();   /* a lumpy packed ball: smooth sphere with low bumps, no visible facets */
+  for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const n = 1 + Math.sin(v.x * 5.1 + v.y * 2.3) * Math.cos(v.z * 4.7 - v.x * 1.9) * 0.05 + Math.sin(v.y * 9 + v.z * 7) * 0.02; p.setXYZ(i, v.x * n, v.y * n, v.z * n); }
   g.computeVertexNormals(); return g;
 })();
 TEX.dung = (() => {
-  const [c, x] = cnv(256, 128), r = rng(17);
-  x.fillStyle = '#5e3f22'; x.fillRect(0, 0, 256, 128);
-  for (let i = 0; i < 500; i++) { x.fillStyle = ['#4a311a', '#6e4b2a', '#7a5a34', '#3d2814'][i % 4]; x.fillRect(r() * 256, r() * 128, 2 + r() * 5, 2 + r() * 4); }
-  x.lineCap = 'round';
-  for (let i = 0; i < 40; i++) { const px = r() * 256, py = r() * 128, a = r() * Math.PI, L = 6 + r() * 12; x.strokeStyle = ['#b8975a', '#9a7a44'][i % 2]; x.lineWidth = 1.5; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * L, py + Math.sin(a) * L); x.stroke(); }
-  return tex(c);
+  const [c, x] = cnv(256, 128), r = rng(17);   /* packed dung: mottled browns, soft dark cracks, a few flecks of straw; nothing bright enough to read as a gap */
+  x.fillStyle = '#5a3d20'; x.fillRect(0, 0, 256, 128);
+  for (let i = 0; i < 900; i++) { x.fillStyle = ['#4e3418', '#66482a', '#6e5030', '#3f2a14', '#5f4224'][i % 5]; x.globalAlpha = 0.6 + r() * 0.4; x.beginPath(); x.arc(r() * 256, r() * 128, 1.5 + r() * 4, 0, TAU); x.fill(); }
+  x.globalAlpha = 1; x.lineCap = 'round';
+  for (let i = 0; i < 26; i++) { const px = r() * 256, py = r() * 128, a = r() * Math.PI, L = 8 + r() * 14; x.strokeStyle = 'rgba(40,24,10,.55)'; x.lineWidth = 1.2 + r(); x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + Math.cos(a + 0.5) * L * 0.5, py + Math.sin(a + 0.5) * L * 0.5, px + Math.cos(a) * L, py + Math.sin(a) * L); x.stroke(); }
+  for (let i = 0; i < 18; i++) { const px = r() * 256, py = r() * 128, a = r() * Math.PI, L = 3 + r() * 5; x.strokeStyle = 'rgba(150,120,70,.5)'; x.lineWidth = 1; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * L, py + Math.sin(a) * L); x.stroke(); }
+  const t = tex(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
 })();
 // fly wing: smoky see-through membrane with dark veins and a dark rim so it reads against the light floor
 function wingTex() {
@@ -3710,7 +3711,7 @@ function dexAdd(t) {
   if (n >= DEX_REG.length) ACH.unlock('shiny11');
 }
 const dexSvg = t => BUGICON[t] || (BT[t] && BUGICON[BT[t].base]) || BUGICON.spider;
-const DEX_V = 'assets/bugs/dung.png?h=9b2cd285';   /* stamped by the build: its hash doubles as a version for every icon URL */
+const DEX_V = 'assets/bugs/dung.png?h=a841aa35';   /* stamped by the build: its hash doubles as a version for every icon URL */
 const dexIcon = t => `<img class="shimg" src="assets/bugs/${t}.png?v=${(DEX_V.split('?h=')[1] || '0')}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{innerHTML:this.dataset.svg}).firstChild)" data-svg="${dexSvg(t).replace(/"/g, '&quot;')}">`;   /* a real picture of the in-game bug */
 const dexName = t => BUG_NAME[t] || (BT[t] && BT[t].name) || t;
 function renderLocker() {
