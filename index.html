@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="631">v1.129</div>
+    <div id="ver" data-b="632">v1.130</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5004,7 +5004,7 @@ const SND = (() => {
   let ac = null, out = null, noise = null, muted = false, vol = 1;
   try { const v = localStorage.getItem('ppd-sfx'); if (v !== null) vol = +v; } catch (e) {}
   try { muted = localStorage.getItem('ppd-muted') === '1'; } catch (e) {}
-  const last = {}; let SPRAY_SRC = null;
+  const last = {}, AMB = { on: false }; let SPRAY_SRC = null;
   function init() {
     if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
     try {
@@ -5083,6 +5083,21 @@ const SND = (() => {
     init, get muted() { return muted; }, get ctx() { return ac; }, get vol() { return vol; },
     setVol(v) { vol = v; if (out) out.gain.value = 0.55 * v; try { localStorage.setItem('ppd-sfx', String(v)); } catch (e) {} },
     toggle() { muted = !muted; try { localStorage.setItem('ppd-muted', muted ? '1' : '0'); } catch (e) {} },
+    amb(roll, flutter) {   /* bug ambience held under the action: a soft gritty rumble while dung balls roll, a papery wing flutter while moths are up. 0..1 each, eased */
+      if (!ac) return; const t = ac.currentTime, A = AMB;
+      if (!A.on) { if (!(roll > 0 || flutter > 0) || muted) return; A.on = true;
+        const n1 = ac.createBufferSource(); n1.buffer = noise; n1.loop = true; n1.playbackRate.value = 0.5; const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; lp.Q.value = 0.9;
+        const grit = ac.createBufferSource(); grit.buffer = noise; grit.loop = true; grit.playbackRate.value = 0.9; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 1.4; const gg = ac.createGain(); gg.gain.value = 0.18;
+        const wob = ac.createOscillator(), wg = ac.createGain(), rm = ac.createGain(); wob.frequency.value = 2.3; wg.gain.value = 0.35; rm.gain.value = 1; wob.connect(wg).connect(rm.gain);   /* the ball's lumpy turn */
+        A.rg = ac.createGain(); A.rg.gain.value = 0.0001; n1.connect(lp).connect(rm); grit.connect(bp).connect(gg).connect(rm); rm.connect(A.rg).connect(out);
+        const n2 = ac.createBufferSource(); n2.buffer = noise; n2.loop = true; const fb = ac.createBiquadFilter(); fb.type = 'bandpass'; fb.frequency.value = 520; fb.Q.value = 1.1;
+        const flap = ac.createOscillator(), fg = ac.createGain(), fm = ac.createGain(); flap.type = 'triangle'; flap.frequency.value = 17; fg.gain.value = 0.9; fm.gain.value = 0.05; flap.connect(fg).connect(fm.gain);   /* wingbeats */
+        A.fg = ac.createGain(); A.fg.gain.value = 0.0001; n2.connect(fb).connect(fm).connect(A.fg).connect(out);
+        A.nodes = [n1, grit, wob, n2, flap]; for (const x of A.nodes) x.start(t); }
+      const r = muted ? 0 : Math.min(1, roll), f = muted ? 0 : Math.min(1, flutter);
+      A.rg.gain.setTargetAtTime(0.0001 + r * 0.22, t, 0.25); A.fg.gain.setTargetAtTime(0.0001 + f * 0.3, t, 0.2);
+      if (!r && !f) { A.idle = (A.idle || 0) + 1; if (A.idle > 240) { const nodes = A.nodes; A.on = false; A.idle = 0; for (const x of nodes) try { x.stop(t + 1); } catch (e) {} } } else A.idle = 0;   /* a few seconds of silence: stop the loops */
+    },
     heat(k) {   // deep bass beam hum with a faint whistle on top; both rise a little as the lens heats
       if (!ac || muted) return; const now = ac.currentTime; if (last.heat && now - last.heat < 0.11) return; last.heat = now;
       try {
@@ -9479,6 +9494,9 @@ function step(now, draw) {
       else if (Math.ceil(S.nextT) !== was) { syncBeltT(); syncGo(); if (S.nextT <= 3) SND.play('tap'); }
     }
   } catch (e) { showErr('update', e); }
+  try { let roll = 0, flut = 0; const live = S.mode === 'play' && !S.paused && !S.hold && !S.over;   /* bug ambience follows what's on the floor */
+    if (live) for (const b of S.bugs) { if (b.dead) continue; if (b.t === 'dung' && b.ball && b.ball.hp > 0) roll += 0.45; else if ((BT[b.t].base || b.t) === 'moth') flut += BT[b.t].boss ? 0.8 : 0.3; }
+    SND.amb(roll, flut); } catch (e) {}
   if (draw) try {
     S.shake = Math.max(0, S.shake - dt);
     const sk = S.shake > 0 ? S.shake * 0.8 : 0;
