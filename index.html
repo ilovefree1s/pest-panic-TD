@@ -455,6 +455,8 @@ dl.res dt{color:var(--dim)} dl.res dd{margin:0;font-family:var(--display);letter
   font:900 15px/24px var(--body);text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.5);animation:morePulse 1.2s ease-in-out infinite}
 #shopWrap.has-more .more{display:block}
 #shopWrap.inf .more{display:none!important} #shopWrap.inf .stabs,#shopWrap.inf #shop{visibility:hidden} #shopWrap > #info{position:absolute;left:0;right:0;bottom:0;top:40px;z-index:2}
+/* phone held upright, a tool picked: the Tools/Pets/Items tabs go away (the stats row moves up into their spot) and the close button sits top-right by the name, so the card gets the room */
+@media (max-width:700px) and (orientation:portrait){ #shopWrap.inf .stabs{display:none} #shopWrap #info .x{position:absolute;top:0;right:0;width:34px;height:34px;border-radius:10px} #shopWrap #info .nm{padding-right:42px} #shopWrap > #info{align-content:start;justify-content:stretch;padding-top:6px} }
 @keyframes morePulse{50%{opacity:.55}}
 .stabs{display:flex;gap:4px;justify-self:start;background:rgba(20,26,32,.92);padding:3px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--line)}
 .stabs button{border:0;border-radius:999px;padding:4px 16px;font:900 13px var(--body);color:var(--dim);background:transparent;cursor:pointer}
@@ -678,7 +680,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="646">v1.144</div>
+    <div id="ver" data-b="647">v1.145</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6352,6 +6354,10 @@ function undoSell() {
   SND.play('up'); syncTray(); syncUndo();
 }
 $('undo').addEventListener('click', e => { e.stopPropagation(); SND.init(); undoSell(); });
+function tightTop() {   /* upright phone, tool picked: the card starts right under the cake/coins/wave chips (and the undo bar, when it's up) */
+  const W = $('shopWrap'), w0 = W.getBoundingClientRect().top; let b = w0; for (const c of W.querySelectorAll('.tabrow .stat, .tabrow #undo')) { const r = c.getBoundingClientRect(); if (r.height) b = Math.max(b, r.bottom); } return Math.round(b - w0 + 6);
+}
+try { new MutationObserver(() => { if (S && S.pick && !$('info').hidden && matchMedia('(max-width:700px) and (orientation:portrait)').matches) $('info').style.top = tightTop() + 'px'; }).observe($('undo'), { attributes: true, attributeFilter: ['hidden'] }); } catch (e) {}   /* the undo bar coming or going moves the card's top edge with it */
 function pick(tw) { S.pick = tw; S.placing = null; S.prev = null; syncTray(); }
 function unpick() { S.pick = null; syncTray(); }
 // roaming pets: bought straight from the tray, they walk in through a bug door and need no tile
@@ -7525,7 +7531,8 @@ function syncDmg() { const tw = S.pick; if (!tw || $('info').hidden) return; con
 function syncTray() {
   { const own = S && S.towers ? S.towers.filter(o => TT[o.t].roam && (TT[o.t].oneKitchen || (o.owner || 0) === (S.cur || 0))).map(o => o.t).sort().join() : ''; if (own !== syncTray.own) { syncTray.own = own; if (shopTab === 'pets') renderShop(); } }
   const tw = S.pick;
-  $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = (matchMedia('(orientation:landscape) and (max-height:560px)').matches ? 0 : $('shop').offsetTop) + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel; on a sideways phone the tabs hide, so the card takes their room
+  { const W = $('shopWrap'); if (tw && !W.classList.contains('inf')) W.style.minHeight = W.offsetHeight + 'px'; else if (!tw) W.style.minHeight = ''; }   /* the tray keeps its height while a tool is picked (the tabs hiding mustn't make the board jump) */
+  $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = (matchMedia('(orientation:landscape) and (max-height:560px)').matches ? 0 : matchMedia('(max-width:700px) and (orientation:portrait)').matches ? tightTop() : $('shop').offsetTop) + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel; on a sideways phone the tabs hide, so the card takes their room
   if (tw) {
     const T = TT[tw.t], max = tw.lv >= 3 && (tw.perk || !PERK[tw.t]), perkUp = tw.lv >= 3 && !max, c = max ? 0 : upCost(tw);
     $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
