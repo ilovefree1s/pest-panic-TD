@@ -675,7 +675,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><div class="bh"><small>Next</small><b id="beltW">Wave 1</b><em id="beltT"></em></div><div class="row"><div class="trk" id="beltRow"></div></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="630">v1.128</div>
+    <div id="ver" data-b="631">v1.129</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3856,12 +3856,20 @@ function abilUpdate(e, dt) {
   // keep pace with the front of the pack: walk alongside the trail just ahead of the bug closest to the cake
   const lead = a.lead = leadBug(a.lead);
   if (lead && !lead.free) {
-    let st = lead.s + 1.6; const rt = lead.route;
-    for (let i = 0; i < 40; i++) { pathAt(st, tmpP, rt); if (tmpP.flat && tmpP.y < 0.3) break; st -= 0.5; }
-    pathAt(st, tmpP, rt);
-    const offTrail = (x, z) => { const c = Math.floor((x - X0) / CS), r = Math.floor((z - Z0) / CS); return c >= 0 && r >= 0 && c < COLS && r < ROWS && !PATH.has(key(c, r)); };
-    let gx = null, gz = null;
-    for (const d of [2.9, 3.6, 4.4]) { for (const sd of [a.side || 1, -(a.side || 1)]) { const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd; if (offTrail(x, z)) { gx = x; gz = z; a.side = sd; break; } } if (gx !== null) break; }
+    const rt = lead.route, offTrail = (x, z) => { const c = Math.floor((x - X0) / CS), r = Math.floor((z - Z0) / CS); return c >= 0 && r >= 0 && c < COLS && r < ROWS && !PATH.has(key(c, r)); };
+    // pick where to stand: a few spots beside the trail around the front bug, scored by how many bugs one cone of spray would cover from there (the front bug must be in reach); re-picked a few times a second
+    a.pickT = (a.pickT || 0) - dt;
+    if (a.pickT <= 0 || a.gx == null) { a.pickT = 0.3; let bestSc = -1; a.gx = null;
+      const live = []; for (const b of S.bugs) if (!b.dead && !b.free) live.push(b);
+      for (const ds of [1.6, 3.4, 0, -1.8]) { let st = lead.s + ds; for (let i = 0; i < 40; i++) { pathAt(st, tmpP, rt); if (tmpP.flat && tmpP.y < 0.3) break; st -= 0.5; } pathAt(st, tmpP, rt);
+        for (const d of [2.9, 3.6, 4.4]) for (const sd of [1, -1]) { const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd; if (!offTrail(x, z)) continue;
+          const near = []; for (const b of live) { const bx = b.x - x, bz = b.z - z, dd = Math.hypot(bx, bz); if (dd <= ABIL.range * (bugY(b) > 0.3 ? 1.45 : 1)) near.push([bx, bz, dd, b]); }
+          if (!near.some(q => q[3] === lead)) continue;
+          let n = 0; for (const [cx, cz, cd] of near) { const ux = cx / (cd || 1), uz = cz / (cd || 1); let k = 0; for (const [bx, bz, dd] of near) if (dd < 1 || (bx * ux + bz * uz) / dd >= ABIL.cone) k++; n = Math.max(n, k); }
+          const sc = n - Math.hypot(x - e.x, z - e.z) * 0.08 + (sd === (a.side || 1) ? 0.3 : 0);   // a bit sticky: don't sprint across the kitchen for one more bug
+          if (sc > bestSc) { bestSc = sc; a.gx = x; a.gz = z; a.gside = sd; } } }
+      if (a.gx != null) a.side = a.gside; }
+    let gx = a.gx, gz = a.gz;
     const ld = Math.hypot(lead.x - e.x, lead.z - e.z), lreach = ABIL.range * (bugY(lead) > 0.3 ? 1.45 : 1);
     let mx = 0, mz = 0, md = 0;
     if (gx !== null) { mx = gx - e.x; mz = gz - e.z; md = Math.hypot(mx, mz); }
@@ -3880,8 +3888,12 @@ function abilUpdate(e, dt) {
     return;
   }
   a.idle = 0; e.state = 'spray'; a.t += dt;
-  a.tgtD = tgt ? Math.hypot(tgt.x - e.x, tgt.z - e.z) : 0;   /* how far the jet has to reach: the spray is drawn to end in the bugs, not sail past them */
-  if (tgt) { const want = Math.atan2(tgt.x - e.x, tgt.z - e.z); let da = want - e.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); e.yaw += da * Math.min(1, dt * 6); }
+  // aim down the line: of every direction that points at a reachable bug, take the one whose cone covers the most bugs (the front bug breaks ties), so he hoses along the queue instead of across it
+  let want = tgt ? Math.atan2(tgt.x - e.x, tgt.z - e.z) : null, far = tgt ? Math.hypot(tgt.x - e.x, tgt.z - e.z) : 0;
+  if (tgt) { const near = []; for (const b of S.bugs) { if (b.dead) continue; const bx = b.x - e.x, bz = b.z - e.z, d = Math.hypot(bx, bz); if (d <= reach(b)) near.push([bx, bz, d, b]); }
+    let best = -1; for (const [cx, cz, cd, cb] of near) { const ux = cx / (cd || 1), uz = cz / (cd || 1); let n = 0, fd = 0; for (const [bx, bz, d] of near) if (d < 1 || (bx * ux + bz * uz) / d >= ABIL.cone) { n += 1; fd = Math.max(fd, d); } const sc = n + (cb === tgt ? 0.5 : 0); if (sc > best) { best = sc; want = Math.atan2(cx, cz); far = fd; } } }
+  a.tgtD = far;   /* how far the jet has to reach: drawn to end at the farthest bug in the cone, not sail past */
+  if (want !== null) { let da = want - e.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); e.yaw += da * Math.min(1, dt * 6); }
   const fx = Math.sin(e.yaw), fz = Math.cos(e.yaw);
   for (const b of S.bugs) {
     if (b.dead) continue;
