@@ -671,7 +671,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="641">v1.139</div>
+    <div id="ver" data-b="642">v1.140</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3914,6 +3914,11 @@ function syncAbil() {
   el.classList.toggle('cool', cd > 0); el.classList.toggle('busy', !!S.ext.abil); el.classList.toggle('poor', cd <= 0 && S.money < ABIL.cost);
   const t = Math.ceil(cd); if (el.dataset.t !== String(t)) { el.dataset.t = t; $('abilT').textContent = cd > 0 ? t : ''; }
 }
+function doorYaw(e) {   /* standing around: face the nearest door the bugs come out of (only the doors that are open so far) */
+  if (!ROUTES.length) return 0; const open = S && LEVELS[LV] && !LEVELS[LV].team && !S.vs && (ROUTES.length > 2 || dailyStagger()) ? doorsOpen() : ROUTES.map((_, i) => i);
+  let best = null, bd = 1e9; for (const i of open) { const g = ROUTES[i] && ROUTES[i].seg && ROUTES[i].seg[0]; if (!g) continue; const d = Math.hypot(g.ax - e.x, g.az - e.z); if (d < bd) { bd = d; best = g; } }
+  return best && bd > 0.3 ? Math.atan2(best.ax - e.x, best.az - e.z) : e.yaw;
+}
 function extUpdate(dt) {
   const e = S.ext;
   if (!Number.isFinite(e.x) || !Number.isFinite(e.z)) { const d = e.home || findRest({ x: 0, z: 0 }) || { c: 0, r: 0 }; e.x = ccx(d.c); e.z = ccz(d.r); e.state = 'idle'; }   // a bad position would hide him and stall every build: put him back on the floor
@@ -3926,7 +3931,7 @@ function extUpdate(dt) {
     if (!e.rest || !restFree(e.rest.c, e.rest.r)) e.rest = findRest(e);
     if (!e.rest) { e.state = 'idle'; return; }
     const tx = ccx(e.rest.c), tz = ccz(e.rest.r), mx = tx - e.x, mz = tz - e.z, md = Math.hypot(mx, mz), step = EXT_SPEED * dt;
-    if (md <= step) { e.x = tx; e.z = tz; e.state = 'idle'; let da = 0 - e.yaw; e.yaw += Math.atan2(Math.sin(da), Math.cos(da)) * Math.min(1, dt * 6); }
+    if (md <= step) { e.x = tx; e.z = tz; e.state = 'idle'; let da = doorYaw(e) - e.yaw; e.yaw += Math.atan2(Math.sin(da), Math.cos(da)) * Math.min(1, dt * 6); }
     else { e.x += mx / md * step; e.z += mz / md * step; e.yaw = Math.atan2(mx, mz); e.phase += dt * 13; e.state = 'walk'; }
     return;
   }
@@ -5537,7 +5542,7 @@ function earlyBonus() { return S.nextT > 0 ? Math.ceil(S.nextT) * 2 : 0; }
 function syncBeltT() {
   const el = $('beltT');
   if (S.nextT > 0) { el.className = ''; el.textContent = Math.ceil(S.nextT) + 's'; }
-  else { el.className = 'go'; el.textContent = 'when ready'; }
+  else { el.className = 'go'; el.textContent = 'ready'; }
 }
 function bugY(b) { return b.y0 + (BT[b.t].fly ? 0.9 + Math.sin(b.walk * 1.3) * 0.12 : 0) + (b.hy || 0); }
 // end-of-level stats: who did the damage and who got the kills
