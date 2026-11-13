@@ -343,6 +343,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
   padding:16px;text-align:center;background:radial-gradient(ellipse at center,rgba(8,10,12,.3),rgba(8,10,12,.8))}
 /* game over: the tool tray is useless here, so the results get the whole screen; if it still doesn't fit, it scrolls instead of cutting off top and bottom */
 body:has(#over:not([hidden])) #tray{display:none}
+/* settings and backup cover the whole window, tray included (they live inside the board area, which is only the top part on an upright phone), and scroll if they don't fit */
+#settings,#backup{position:fixed;justify-content:flex-start;overflow-y:auto} #settings>:first-child,#backup>:first-child{margin-top:auto} #settings>:last-child,#backup>:last-child{margin-bottom:auto}
 #over{justify-content:flex-start;overflow-y:auto} #over>:first-child{margin-top:auto} #over>:last-child{margin-bottom:auto}
 #oBtns{display:flex;flex-direction:column;align-items:center;gap:14px}
 /* wide screens: results and buttons on the left, the damage table on the right, so it all fits without scrolling */
@@ -669,7 +671,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="633">v1.131</div>
+    <div id="ver" data-b="634">v1.132</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
