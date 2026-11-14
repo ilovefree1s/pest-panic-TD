@@ -683,7 +683,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="662">v1.160</div>
+    <div id="ver" data-b="663">v1.161</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6063,7 +6063,6 @@ function update(dt) {
       b.itchCd = 0.4;
       for (const tw of S.towers) if (!tw.pending && !TT[tw.t].roam && !TT[tw.t].support && (tw.x - b.x) ** 2 + (tw.z - b.z) ** 2 < 3.4 * 3.4) { if (!(tw.itchT > 0)) for (let i = 0; i < 8; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.6, y: 1 + Math.random() * 1.5, z: tw.z + (Math.random() - 0.5) * 1.6, vy: 1.5, life: 0.5, s0: 0.35, s1: 0.05, c: [1, 0.3, 0.3], a0: 1 }); tw.itchT = 4; }
     }
-    if (b.tutImm && b.s >= (TUT.shStop || 0)) sp = 0;   // the tutorial shiny waits a few steps out of the door
     if (TUT.step >= 0 && TUT.slow) sp *= TUT.slow ? 0.12 : 1;   // tutorial: everything crawls until you tap Spray   // tutorial: everything crawls until you tap Spray
     b.flash -= dt; b.s += sp * dt; b.walk += (b.jump > 0 ? 0 : sp) * dt * 2.6;   // no leg-flailing mid-jump
     if (S.net === 'guest' && b.gx != null) { const k = Math.min(1, dt * 10); b.x += (b.gx - b.x) * k; b.z += (b.gz - b.z) * k; b.y0 = 0; b.hy = 1; b.walk += dt * 6; continue; }
@@ -6085,7 +6084,7 @@ function update(dt) {
     if (b.s >= ROUTES[b.route].end) {
       b.dead = true;
       hideBug(b);
-      if (S.mode === 'play' && S.net !== 'guest') biteCake(bt.boss && TWX('glass') ? Math.ceil(bt.lives / 2) : bt.lives);   // Glass Cake has half the slices: a boss takes half as many, so one boss is never the whole cake
+      if (S.mode === 'play' && S.net !== 'guest' && !b.tutImm) biteCake(bt.boss && TWX('glass') ? Math.ceil(bt.lives / 2) : bt.lives);   // Glass Cake has half the slices: a boss takes half as many, so one boss is never the whole cake
     }
   }
   // citronella glow: every tool standing in a candle's glow gets its boost (two candles stack, no more)
@@ -9439,7 +9438,7 @@ const TUT_STEPS = [
   { arrow: () => $('bUp'), txt: () => '<b>Upgrade</b> it to get ready for wave 3. The exterminator walks over to do it. (Closed the card? Tap your Fly Swatter again.)', hi: () => $('bUp'), done: () => S.towers.some(t => t.t === 'swat' && (t.lv > 1 || t.upPending)) },
   { arrow: () => $('go'), txt: () => 'Stronger already. Tap <b>Send bugs</b> to start wave 3.', hi: () => $('go'), done: () => S.active && S.wave >= 3 },
   { txt: () => '✨ A <b>shiny</b> bug (the rainbow one)! They\'re super rare, about 1 bug in 2,000. This one can\'t get squashed, but normally you have to be <b>quick</b>: tap <b>Catch</b> and the exterminator runs over and grabs it before your tools squash it. This one\'s on the house!', enter: tutShiny, arrowPt: () => tutBugPt(S.bugs.find(b => b.id === TUT.shinyId && !b.dead)), glow: () => [$('catch')], top: true, done: () => jarCount() > 0 || !S.bugs.some(b => b.shiny && !b.dead), min: 0.5 },
-  { txt: () => 'Got it! It\'s in your <b>jar</b> now, and you get to choose: <b>sell</b> it any time for <b>200 coins</b> (a big boost this early), or <b>keep</b> it until the end of the game to add it to your <b>Shiny Collection</b>. Collecting shinies unlocks new <b>outfits and spray looks</b> for your exterminator in the Locker.', glow: () => [$('jar')], next: true, top: true, done: () => S.over },
+  { txt: () => 'Got it! It\'s in your <b>jar</b> now, and you get to choose: <b>sell</b> it any time for <b>200 coins</b> (a big boost this early), or <b>keep</b> it until the end of the game to add it to your <b>Shiny Collection</b>. Collecting shinies unlocks new <b>outfits and spray looks</b> for your exterminator in the Locker.', glow: () => [$('jar')], next: true, top: true, done: () => S.over || jarCount() === 0 },
   { allow: 'all', txt: () => 'That\'s it! <b>Hold</b> any tool in the tray to read what it does. More bugs are coming. Good luck!', done: () => false, min: 5, last: true },
 ];
 function tutFloorPt(tw, dz = 0) {   /* a tool on the floor, in board-area pixels (for the tutorial arrow) */
@@ -9456,7 +9455,7 @@ function tutLead() { const L = S.bugs.length ? leadBug() : null; return L && ROU
 function tutSpiders() {   /* the Spray lesson: back to 1x so they can watch (no extra bugs: it uses whatever made it this far) */
   if (S.speed > 1) { S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }
 }
-function tutShiny() {   /* the tutorial's free shiny: it walks out of the door a little way and waits there; it can't be hurt and tools don't aim at it */
+function tutShiny() {   /* the tutorial's free shiny: walks the trail like any bug; it can't be hurt, tools don't aim at it, and it can't bite the cake */
   if (!ROUTES.length) return; const d = dexGet(), t = ['ant', 'spider', 'fly'].find(k => !d[k]) || 'ant';
   const b = spawnBug(t, 0); b.tutImm = true; makeShiny(b); syncCatch(); TUT.shinyId = b.id; TUT.shStop = Math.min(7, ROUTES[0].len * 0.08);
 }
