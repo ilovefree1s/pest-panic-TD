@@ -352,6 +352,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 /* game over: the tool tray is useless here, so the results get the whole screen; if it still doesn't fit, it scrolls instead of cutting off top and bottom */
 body:has(#over:not([hidden])) #tray{display:none}
 /* settings and backup cover the whole window, tray included (they live inside the board area, which is only the top part on an upright phone), and scroll if they don't fit */
+#guide,#paused,#over,#shinies,#achs{position:fixed}   /* in-game screens cover the whole window too (on an upright phone the board is only the top part) */
+body:has(.screen:not([hidden])) #tutArrow,#stage:has(.screen:not([hidden])) #tut{display:none!important}   /* the tutorial steps aside while a menu is open */
 #settings,#backup{position:fixed;justify-content:flex-start;overflow-y:auto} #settings>:first-child,#backup>:first-child{margin-top:auto} #settings>:last-child,#backup>:last-child{margin-bottom:auto}
 #over{justify-content:flex-start;overflow-y:auto} #over>:first-child{margin-top:auto} #over>:last-child{margin-bottom:auto}
 #oBtns{display:flex;flex-direction:column;align-items:center;gap:14px}
@@ -681,7 +683,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="660">v1.158</div>
+    <div id="ver" data-b="662">v1.160</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5668,15 +5670,7 @@ function inRange(tw, b, r) { const dx = b.x - tw.x, dz = b.z - tw.z; return dx *
 function canHit(tw, b) { return !b.dead && !b.hid && !b.tutImm && (TT[tw.t].air || !(BT[b.t].fly || b.air)); }
 // Bug Spray aims at the lead bug that isn't poisoned yet (on a boss: one this spray hasn't dosed), so nothing slips by unsprayed
 const SPRAY_SPLASH = 1.4;
-function sprayTarget(tw, r) {
-  let best = null; const now = S.gt || 0;
-  for (const b of S.bugs) {
-    if (!canHit(tw, b) || !inRange(tw, b, r)) continue;
-    const dosed = BT[b.t].boss ? !!(b.psnBy && b.psnBy[tw.id] && b.psnBy[tw.id].until - now > 0.5) : b.psnT > 0.5;
-    if (!dosed && (!best || leftOf(b) < leftOf(best))) best = b;
-  }
-  return best || firstTarget(tw, r);
-}
+function sprayTarget(tw, r) { return firstTarget(tw, r); }   /* always mists the bug closest to the cake (the cone and the splash still catch the bugs bunched up behind it) */
 function frogTarget(tw, r) { let best = null; for (const b of S.bugs) if (BT[b.t].fly && canHit(tw, b) && inRange(tw, b, r) && (!best || leftOf(b) < leftOf(best))) best = b; return best || firstTarget(tw, r); }   // flyers first
 function firstTarget(tw, r) { if (tw.itchT > 0) { const c = S.bugs.filter(b => canHit(tw, b) && inRange(tw, b, r)); return c.length ? c[Math.floor(Math.random() * c.length)] : null; }   /* itchy (Bed Bug Mother): swings at any bug in reach */
   let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || leftOf(b) < leftOf(best))) best = b; return best; }
