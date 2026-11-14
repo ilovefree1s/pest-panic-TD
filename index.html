@@ -680,7 +680,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="648">v1.146</div>
+    <div id="ver" data-b="649">v1.147</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -7722,7 +7722,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   syncTray(); syncHud(); showBelt();
   $('peek').querySelector('b').textContent = S.vs && S.vs.bot ? 'AI\'s kitchen' : 'Friend\'s kitchen';
   if (S.vs) banner(S.vs.bot ? 'Bug Battle vs AI (' + AI_DIFF[S.vs.bot.diff].name + ')' : 'Bug Battle: ' + HOUSES[LV].name, S.vs.bot ? 'You and the AI get the same waves. From wave 6 you can send bugs at each other during waves. Last cake standing wins!' : 'Same waves for both of you. From wave 6 you can spend coins in the Send bugs tab to throw extra bugs at your friend. Last cake standing wins!', false, 4200); else
-  banner(LEVELS[LV].team ? 'Team Kitchen ' + (TEAM_MAPS.indexOf(LV) + 1) + ': ' + LEVELS[LV].name : HOUSES[LV].name, LEVELS[LV].team ? (S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro) : 'Level ' + soloNum(LV) + ': ' + LEVELS[LV].name + '. ' + LEVELS[LV].intro, false, 3200);
+  if (LEVELS[LV].team) banner('Team Kitchen ' + (TEAM_MAPS.indexOf(LV) + 1) + ': ' + LEVELS[LV].name, S.net === 'bot' ? 'You have the left side. Your AI teammate (red) holds the right. ' : S.net ? (S.me ? 'You are the red exterminator on the right side. ' : 'You are the blue exterminator on the left side. ') + LEVELS[LV].intro : 'Practice: you hold both lanes. ' + LEVELS[LV].intro, false, 3200);   /* solo kitchens start without the name/description banner (the name is already under the buttons); team kitchens keep it to say which side is yours */
   // player tip: the first few games, remind them they can hold a tool to read about it
   let seen = 0; try { seen = +localStorage.getItem('ppd-tip-hold') || 0; localStorage.setItem('ppd-tip-hold', String(seen + 1)); } catch (e) {}
   if (!S.vs) tutStart();
