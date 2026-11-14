@@ -681,7 +681,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="658">v1.156</div>
+    <div id="ver" data-b="659">v1.157</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5665,7 +5665,7 @@ function biteCake(n) {
   SND.play('bite');
 }
 function inRange(tw, b, r) { const dx = b.x - tw.x, dz = b.z - tw.z; return dx * dx + dz * dz <= r * r; }
-function canHit(tw, b) { return !b.dead && !b.hid && (TT[tw.t].air || !(BT[b.t].fly || b.air)); }
+function canHit(tw, b) { return !b.dead && !b.hid && !b.tutImm && (TT[tw.t].air || !(BT[b.t].fly || b.air)); }
 // Bug Spray aims at the lead bug that isn't poisoned yet (on a boss: one this spray hasn't dosed), so nothing slips by unsprayed
 const SPRAY_SPLASH = 1.4;
 function sprayTarget(tw, r) {
@@ -6069,7 +6069,8 @@ function update(dt) {
       b.itchCd = 0.4;
       for (const tw of S.towers) if (!tw.pending && !TT[tw.t].roam && !TT[tw.t].support && (tw.x - b.x) ** 2 + (tw.z - b.z) ** 2 < 3.4 * 3.4) { if (!(tw.itchT > 0)) for (let i = 0; i < 8; i++) FX.glow.spawn({ x: tw.x + (Math.random() - 0.5) * 1.6, y: 1 + Math.random() * 1.5, z: tw.z + (Math.random() - 0.5) * 1.6, vy: 1.5, life: 0.5, s0: 0.35, s1: 0.05, c: [1, 0.3, 0.3], a0: 1 }); tw.itchT = 4; }
     }
-    if (TUT.step >= 0 && (TUT.slow || TUT.freeze)) sp *= TUT.freeze ? (b.tutImm && b.s < (TUT.shStop || 0) ? 1 : 0) : 0.12;   // tutorial: everything crawls until you tap Spray; for the free shiny, everything stops (the shiny too)   // tutorial: everything crawls until you tap Spray
+    if (b.tutImm && b.s >= (TUT.shStop || 0)) sp = 0;   // the tutorial shiny waits a few steps out of the door
+    if (TUT.step >= 0 && TUT.slow) sp *= TUT.slow ? 0.12 : 1;   // tutorial: everything crawls until you tap Spray   // tutorial: everything crawls until you tap Spray
     b.flash -= dt; b.s += sp * dt; b.walk += (b.jump > 0 ? 0 : sp) * dt * 2.6;   // no leg-flailing mid-jump
     if (S.net === 'guest' && b.gx != null) { const k = Math.min(1, dt * 10); b.x += (b.gx - b.x) * k; b.z += (b.gz - b.z) * k; b.y0 = 0; b.hy = 1; b.walk += dt * 6; continue; }
     if (S.net === 'guest' && (BT[b.t].base || b.t) === 'hopper') { b.hy += ((b.ghy || 0) - (b.hy || 0)) * Math.min(1, dt * 12); b.air = b.hy > 0.2; }
@@ -9443,7 +9444,7 @@ const TUT_STEPS = [
   { arrowPt: () => tutFloorPt(S.towers.find(t => t.t === 'swat')), txt: () => 'Wave 2 cleared! ' + (ptrType === 'mouse' ? 'Click' : 'Tap') + ' your <b>Fly Swatter</b> on the floor to see what it can do.', done: () => !!S.pick },
   { arrow: () => $('bUp'), txt: () => '<b>Upgrade</b> it to get ready for wave 3. The exterminator walks over to do it. (Closed the card? Tap your Fly Swatter again.)', hi: () => $('bUp'), done: () => S.towers.some(t => t.t === 'swat' && (t.lv > 1 || t.upPending)) },
   { arrow: () => $('go'), txt: () => 'Stronger already. Tap <b>Send bugs</b> to start wave 3.', hi: () => $('go'), done: () => S.active && S.wave >= 3 },
-  { txt: () => '✨ A <b>shiny</b> bug (the rainbow one)! They\'re super rare, about 1 bug in 2,000. Everything is frozen for this one and it can\'t get squashed, but normally you have to be <b>quick</b>: tap <b>Catch</b> and the exterminator runs over and grabs it before your tools squash it. This one\'s on the house!', enter: tutShiny, freeze: true, arrowPt: () => tutBugPt(S.bugs.find(b => b.id === TUT.shinyId && !b.dead)), glow: () => [$('catch')], top: true, done: () => jarCount() > 0 || !S.bugs.some(b => b.shiny && !b.dead), min: 0.5 },
+  { txt: () => '✨ A <b>shiny</b> bug (the rainbow one)! They\'re super rare, about 1 bug in 2,000. This one can\'t get squashed, but normally you have to be <b>quick</b>: tap <b>Catch</b> and the exterminator runs over and grabs it before your tools squash it. This one\'s on the house!', enter: tutShiny, arrowPt: () => tutBugPt(S.bugs.find(b => b.id === TUT.shinyId && !b.dead)), glow: () => [$('catch')], top: true, done: () => jarCount() > 0 || !S.bugs.some(b => b.shiny && !b.dead), min: 0.5 },
   { txt: () => 'Got it! A shiny you catch goes in your <b>jar</b>. Keep it until the end of the game and it joins your <b>Shiny Collection</b>, or sell it for <b>200 coins</b> any time.', next: true, top: true, done: () => S.over },
   { allow: 'all', txt: () => 'That\'s it! <b>Hold</b> any tool in the tray to read what it does. More bugs are coming. Good luck!', done: () => false, min: 5, last: true },
 ];
@@ -9461,7 +9462,7 @@ function tutLead() { const L = S.bugs.length ? leadBug() : null; return L && ROU
 function tutSpiders() {   /* the Spray lesson: back to 1x so they can watch (no extra bugs: it uses whatever made it this far) */
   if (S.speed > 1) { S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }
 }
-function tutShiny() {   /* the tutorial's free shiny: it walks out of the door a little way and waits there, immune to damage, while everything else is frozen */
+function tutShiny() {   /* the tutorial's free shiny: it walks out of the door a little way and waits there; it can't be hurt and tools don't aim at it */
   if (!ROUTES.length) return; const d = dexGet(), t = ['ant', 'spider', 'fly'].find(k => !d[k]) || 'ant';
   const b = spawnBug(t, 0); b.tutImm = true; makeShiny(b); syncCatch(); TUT.shinyId = b.id; TUT.shStop = Math.min(7, ROUTES[0].len * 0.08);
 }
@@ -9479,6 +9480,7 @@ function tutArrow(st) {   /* a bouncing arrow (fixed to the window, so it can po
 }
 function tutStart() { if (LV !== SOLO[0] || tutDone()) return; TUT.step = 0; TUT.t = 0; tutShow(); }
 function tutEnd() {
+  if (S && S.bugs) for (const b of S.bugs) b.tutImm = false;   // skipped while the free shiny waited: it's a normal shiny again
   TUT.slow = false; TUT.freeze = false; TUT.step = -1; document.querySelectorAll('.tlock').forEach(e => e.classList.remove('tlock')); $('tut').hidden = true; $('stage').classList.remove('tutoring'); document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi')); $('tutArrow').hidden = true; $('tut').classList.remove('top'); document.querySelectorAll('.tut-glow').forEach(e => e.classList.remove('tut-glow'));
   if (TUT.ring) TUT.ring.visible = false; try { localStorage.setItem('ppd-tut', '1'); } catch (e) {}
 }
