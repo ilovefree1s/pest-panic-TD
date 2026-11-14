@@ -681,7 +681,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="655">v1.153</div>
+    <div id="ver" data-b="656">v1.154</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -9436,8 +9436,8 @@ const TUT_STEPS = [
   { txt: () => 'Bugs follow the trail to the cake. Your tools squash them, and every bug gives you <b>coins</b>.', done: () => !S.active && S.wave >= 1, min: 3 },
   { arrow: () => $('go'), txt: () => 'Wave cleared! Between waves the next one starts by itself after 10 seconds. Send it <b>early</b> for <b>bonus coins</b>: 2 for every second left on the clock. You can even send the next wave while one is still going, for a bonus too. Tap <b>Send bugs</b> for wave 2.', hi: () => $('go'), done: () => S.active && S.wave >= 2 },
   { txt: () => 'Tip: tap <b>1×</b> to play at <b>2×</b> speed. Tap it again to slow back down.', arrow: () => $('bSpeed'), top: true, next: true, done: () => S.speed > 1 || !S.active },
-  { quiet: true, txt: () => '', done: () => !S.active || tutLead() >= 0.72 || (S.queue.length === 0 && TUT.t >= 15) },   /* (bubble hidden) wait for the bugs to reach the last stretch before the cake */
-  { txt: () => '<b>Spiders</b> are almost at the cake! No time to build. Tap your <b>Spray</b>: the exterminator runs to the bugs nearest the cake and sprays them all. It\'s <b>free</b>, it just needs a minute to recharge after each use.', enter: tutSpiders, slow: true, arrow: () => $('abil'), side: 'right', top: true, done: () => (S.abilCd || 0) > 0 || !S.active || $('abil').hidden, min: 0.5 },
+  { quiet: true, txt: () => '', done: () => !S.active || tutLead() >= 0.72 || (S.queue.length === 0 && S.bugs.some(b => !b.dead) && S.bugs.filter(b => !b.dead).length <= 3) },   /* the front bug reaches the last stretch (or only the last few are left)   /* (bubble hidden) wait for the bugs to reach the last stretch before the cake */
+  { txt: () => (() => { const L = S.bugs.length ? leadBug() : null; return L ? 'That <b>' + (BUG_NAME[L.t] || (BT[L.t] && BT[L.t].name) || 'bug').toLowerCase() + '</b> is getting close to the cake!' : 'Bugs are getting close to the cake!'; })() + ' No time to build. Tap your <b>Spray</b>: the exterminator runs to the bugs nearest the cake and sprays them all. It\'s <b>free</b>, it just needs a minute to recharge after each use.', enter: tutSpiders, slow: true, arrow: () => $('abil'), side: 'right', top: true, done: () => (S.abilCd || 0) > 0 || !S.active || $('abil').hidden, min: 0.5 },
   { quiet: true, txt: () => '', done: () => !S.active && S.wave >= 2 },   /* bubble out of the way so they can watch the spray */
   { arrowPt: () => tutFloorPt(S.towers.find(t => t.t === 'swat')), txt: () => 'Wave 2 cleared! ' + (ptrType === 'mouse' ? 'Click' : 'Tap') + ' your <b>Fly Swatter</b> on the floor to see what it can do.', done: () => !!S.pick },
   { arrow: () => $('bUp'), txt: () => '<b>Upgrade</b> it to get ready for wave 3. The exterminator walks over to do it. (Closed the card? Tap your Fly Swatter again.)', hi: () => $('bUp'), done: () => S.towers.some(t => t.t === 'swat' && (t.lv > 1 || t.upPending)) },
@@ -9451,10 +9451,8 @@ function tutFloorPt(tw, dz = 0) {   /* a tool on the floor, in board-area pixels
   return { x: c.left - sg.left + (v.x + 1) / 2 * c.width - (dz ? 0 : 26), y: c.top - sg.top + (1 - v.y) / 2 * c.height };
 }
 function tutLead() { const L = S.bugs.length ? leadBug() : null; return L && ROUTES[L.route] ? 1 - leftOf(L) / ROUTES[L.route].len : 0; }
-function tutSpiders() {   /* the set piece: two spiders turn up past the tools, close to the cake (soft ones, so the free Spray can finish them), and the bugs slow right down until you tap Spray */
+function tutSpiders() {   /* the Spray lesson: back to 1x so they can watch (no extra bugs: it uses whatever made it this far) */
   if (S.speed > 1) { S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }
-  if (!S.active || !ROUTES.length || S.bugs.some(b => !b.dead && b.t === 'spider' && tutLead() >= 0.7)) return; const R = ROUTES[0];
-  for (let i = 0; i < 2; i++) { const b = spawnBug('spider', 0); b.s = R.len * (0.74 - i * 0.03); b.hp = b.max = 45; pathAt(b.s, tmpP, 0); b.x = tmpP.x; b.z = tmpP.z; b.ang = Math.atan2(tmpP.dx, tmpP.dz); }
 }
 function tutShiny() {   /* the tutorial's free shiny: it walks in partway along the trail and everything else freezes until it's caught */
   if (!S.active || !ROUTES.length) return; const d = dexGet(), t = ['ant', 'spider', 'fly'].find(k => !d[k]) || 'ant', R = ROUTES[0];
