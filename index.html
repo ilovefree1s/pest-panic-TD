@@ -680,7 +680,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="649">v1.147</div>
+    <div id="ver" data-b="650">v1.148</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -9419,9 +9419,10 @@ const TUT_STEPS = [
   { txt: () => 'This card shows the <b>bugs coming next</b> and how many of each. Close it with the ✕, or turn it off in Settings.', arrow: () => $('belt'), top: true, next: true, done: () => S.active || S.wave >= 1 || $('belt').classList.contains('nope') || $('belt').classList.contains('off') },
   { txt: () => 'Some tools only reach some bugs. <b style="color:#9a5a1c">GROUND</b> tools only hit crawling bugs. <b style="color:#1d78c0">AIR</b> tools only hit flying bugs like flies and moths. A tool with neither tag hits <b style="color:#1f8a3a">both</b>.', hi: () => { const t = document.querySelector('#shop .tc .reach.gnd') || document.querySelector('#shop .tc .reach.air'); return t && t.closest('.tc'); }, top: true, next: true, done: () => S.active || S.wave >= 1 },
   { txt: () => 'The <b>dots</b> on a tool show its level: one dot per level, up to 3. Their colour shows what it hits: <i class="dot" style="background:#b5722e"></i><b style="color:#9a5a1c">brown</b> ground only, <i class="dot" style="background:#4fc3ff"></i><b style="color:#1d78c0">blue</b> air only, <i class="dot" style="background:#1f9a3a"></i><b style="color:#1f8a3a">green</b> both.', arrowPt: () => { const tw = S.towers[0]; if (!tw || !tw.o || !tw.o.root) return null; const v = tw.o.root.getWorldPosition(new THREE.Vector3()); v.y += 0.3; v.z += 1.08; v.project(camera); const c = canvas.getBoundingClientRect(), sg = $('stage').getBoundingClientRect(); return { x: c.left - sg.left + (v.x + 1) / 2 * c.width, y: c.top - sg.top + (1 - v.y) / 2 * c.height }; }, top: true, next: true, done: () => S.active || S.wave >= 1 },
-  { txt: () => 'This is your <b>Spray</b>. Tap it when bugs get close: the exterminator runs to the bugs nearest the cake and sprays them all. It\'s <b>free</b>, it just needs a minute to recharge after each use.', arrow: () => $('abil'), side: 'right', top: true, next: true, done: () => S.active || S.wave >= 1 || $('abil').hidden },
   { txt: () => 'Ready? Tap <b>Send bugs</b> to start wave 1.', hi: () => $('go'), done: () => S.active || S.wave >= 1 },
-  { txt: () => 'Bugs follow the trail to the cake. Your tools squash them, and every bug gives you <b>coins</b>.', done: () => !S.active && S.wave >= 1, min: 3 },
+  { txt: () => 'Bugs follow the trail to the cake. Your tools squash them, and every bug gives you <b>coins</b>.', done: () => (!S.active && S.wave >= 1) || (S.bugs.length > 0 && (TUT.t >= 9 || (TUT.t >= 4 && (() => { const L = leadBug(); return L && ROUTES[L.route] && leftOf(L) < ROUTES[L.route].len * 0.7; })()))), min: 3 },   /* then the Spray step, while there are bugs out to spray */
+  { txt: () => 'Try your <b>Spray</b> now: the exterminator runs to the bugs nearest the cake and sprays them all. It\'s <b>free</b>, it just needs a minute to recharge after each use.', arrow: () => $('abil'), side: 'right', top: true, done: () => (S.abilCd || 0) > 0 || (!S.active && S.wave >= 1) || $('abil').hidden, min: 0.5 },
+  { txt: () => 'Nice! Keep squashing until the wave is cleared.', done: () => !S.active && S.wave >= 1 },
   { txt: () => 'Wave cleared! ' + (ptrType === 'mouse' ? 'Click' : 'Tap') + ' your <b>Fly Swatter</b> on the floor to see what it can do.', done: () => !!S.pick },
   { txt: () => '<b>Upgrade</b> makes it stronger, and the exterminator walks over to do it. You can also sell it here.', hi: () => $('bUp'), done: () => !S.pick || S.towers.some(t => t.lv > 1 || t.upPending) },
   { txt: () => 'That\'s it! <b>Hold</b> any tool in the tray to read what it does. More bugs are coming. Good luck!', done: () => false, min: 5, last: true },
