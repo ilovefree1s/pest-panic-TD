@@ -681,7 +681,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="659">v1.157</div>
+    <div id="ver" data-b="660">v1.158</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -9445,7 +9445,7 @@ const TUT_STEPS = [
   { arrow: () => $('bUp'), txt: () => '<b>Upgrade</b> it to get ready for wave 3. The exterminator walks over to do it. (Closed the card? Tap your Fly Swatter again.)', hi: () => $('bUp'), done: () => S.towers.some(t => t.t === 'swat' && (t.lv > 1 || t.upPending)) },
   { arrow: () => $('go'), txt: () => 'Stronger already. Tap <b>Send bugs</b> to start wave 3.', hi: () => $('go'), done: () => S.active && S.wave >= 3 },
   { txt: () => '✨ A <b>shiny</b> bug (the rainbow one)! They\'re super rare, about 1 bug in 2,000. This one can\'t get squashed, but normally you have to be <b>quick</b>: tap <b>Catch</b> and the exterminator runs over and grabs it before your tools squash it. This one\'s on the house!', enter: tutShiny, arrowPt: () => tutBugPt(S.bugs.find(b => b.id === TUT.shinyId && !b.dead)), glow: () => [$('catch')], top: true, done: () => jarCount() > 0 || !S.bugs.some(b => b.shiny && !b.dead), min: 0.5 },
-  { txt: () => 'Got it! A shiny you catch goes in your <b>jar</b>. Keep it until the end of the game and it joins your <b>Shiny Collection</b>, or sell it for <b>200 coins</b> any time.', next: true, top: true, done: () => S.over },
+  { txt: () => 'Got it! It\'s in your <b>jar</b> now, and you get to choose: <b>sell</b> it any time for <b>200 coins</b> (a big boost this early), or <b>keep</b> it until the end of the game to add it to your <b>Shiny Collection</b>. Collecting shinies unlocks new <b>outfits and spray looks</b> for your exterminator in the Locker.', glow: () => [$('jar')], next: true, top: true, done: () => S.over },
   { allow: 'all', txt: () => 'That\'s it! <b>Hold</b> any tool in the tray to read what it does. More bugs are coming. Good luck!', done: () => false, min: 5, last: true },
 ];
 function tutFloorPt(tw, dz = 0) {   /* a tool on the floor, in board-area pixels (for the tutorial arrow) */
