@@ -231,7 +231,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 @media (min-width:1100px) and (min-height:600px){
   .shCols{flex-direction:row;align-items:flex-start;justify-content:center;gap:28px;width:min(1560px,96vw)} .shCol{flex:1 1 0;min-width:0} .shLock{flex:0 0 340px}
   .shBugsH{display:block} .shCol .shgrid{width:100%;grid-template-columns:repeat(auto-fill,minmax(100px,1fr))} .shLock .lkrow{width:100%;gap:4px} .shLock .lkopts{justify-content:flex-start;gap:6px} .shLock .lk{min-height:36px;padding:5px 10px;font-size:13px}
-  .shLock{flex-basis:420px;gap:8px} .shLock #lkPrev{width:180px;height:210px} .shLock .lkrow>b{font-size:16px}
+  .shLock{flex-basis:520px;gap:10px} .shLock #lkPrev{width:300px;height:350px} .shLock .lkrow>b{font-size:19px}   /* bigger on computers: the old size was hard to see */
+  .shLock .lk{min-height:42px;padding:7px 13px;font-size:15px} .shLock .lkopts{gap:8px} .shLock .lkHint{font-size:13px}
   #shinies{padding-top:14px;gap:8px} #shinies>.t{margin:0}
 }
 .sh{background:rgba(10,13,16,.78);border-radius:14px;padding:10px 8px;display:grid;justify-items:center;gap:4px;text-align:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
@@ -719,7 +720,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="701">v1.199</div>
+    <div id="ver" data-b="702">v1.200</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
