@@ -236,6 +236,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .sh svg{width:52px;height:52px} .sh b{font:800 13px var(--body);color:var(--text)} .sh small{font-size:11px;color:var(--dim)}
 .sh .shimg{width:72px;height:72px;object-fit:contain} .sh.no .shimg{filter:brightness(0) opacity(.4)} .sh.yes .shimg{animation:shGlow 3s linear infinite}
 /* shiny capture: the caught bug's picture flies into the jar, and the jar wobbles when it lands */
+.lvSp{color:#ffc93c;text-shadow:0 0 8px rgba(255,201,60,.5)}
 .catchFly{position:fixed;z-index:60;width:58px;height:58px;pointer-events:none;filter:drop-shadow(0 0 8px #fff) drop-shadow(0 0 14px #ffd54a);animation:shGlow 1.2s linear infinite}
 .catchFly img{width:100%;height:100%;object-fit:contain}
 #jar.jarPop{animation:jarPop .55s cubic-bezier(.3,1.6,.5,1)}
@@ -714,7 +715,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="677">v1.175</div>
+    <div id="ver" data-b="678">v1.176</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4542,7 +4543,7 @@ function coaster(g) {
 let STAR_GEO = null;
 function starGeo() { if (STAR_GEO) return STAR_GEO; const sh = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = i / 10 * TAU - Math.PI / 2, r = i % 2 ? 0.45 : 1; sh[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r); } sh.closePath();
   STAR_GEO = new THREE.ExtrudeGeometry(sh, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.1, bevelSegments: 2 }); STAR_GEO.center(); return STAR_GEO; }
-const STAR_MODE = () => window.__STAR || 'after';
+const STAR_MODE = () => window.__STAR || 'big';   /* the special power: one big gold star in place of the dots */
 function perkMark(tw) {   /* a tool with its special power wears a gold star by its level dots: the "4th level" */
   const o = tw.o; if (!o || !o.pips || !o.pips.length) return; const p1 = o.pips[1], big = STAR_MODE() === 'big';
   if (!o.star) { o.star = mesh(starGeo(), TM.gold, false); o.star.rotation.x = -0.6; p1.parent.add(o.star); }
@@ -7593,11 +7594,11 @@ function syncTray() {
   $('info').hidden = !tw; $('shopWrap').classList.toggle('inf', !!tw); if (tw) $('info').style.top = (matchMedia('(orientation:landscape) and (max-height:560px)').matches ? 0 : matchMedia('(max-width:700px) and (orientation:portrait)').matches ? tightTop() : $('shop').offsetTop) + 'px';   // the tabs row (cake, coins, wave, undo) stays put above the tool panel; on a sideways phone the tabs hide, so the card takes their room
   if (tw) {
     const T = TT[tw.t], max = tw.lv >= 3 && (tw.perk || !PERK[tw.t]), perkUp = tw.lv >= 3 && !max, c = max ? 0 : upCost(tw);
-    $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t);
+    $('iIc').innerHTML = ICON[tw.t]; $('iName').textContent = T.name; $('iLv').innerHTML = (tw.perk ? '<span class="lvSp">★ Special</span>' : 'Level ' + tw.lv) + ' ' + hitTag(tw.t);
     $('iStats').innerHTML = statsHtml(tw); $('iDesc').textContent = T.d; $('iDmg').innerHTML = dmgHtml(tw);
     const busy = tw.pending || tw.upPending, theirs = S.p2 && (tw.owner || 0) !== S.cur, shared = !!TT[tw.t].oneKitchen, noUp = theirs && !shared;   // the cat and the flytrap belong to the whole kitchen: either player can upgrade them
     $('bUp').hidden = !!noUp;
-    if (theirs) $('iLv').innerHTML = 'Level ' + tw.lv + ' ' + hitTag(tw.t) + ` <span class="partner">${S.net === 'bot' ? 'AI teammate\'s' : 'Partner\'s'} tool</span>`;
+    if (theirs) $('iLv').innerHTML = (tw.perk ? '<span class="lvSp">★ Special</span>' : 'Level ' + tw.lv) + ' ' + hitTag(tw.t) + ` <span class="partner">${S.net === 'bot' ? 'AI teammate\'s' : 'Partner\'s'} tool</span>`;
     $('bSell').disabled = !!theirs;
     $('bMove').hidden = tw.t !== 'fogger';
     if (tw.t === 'fogger') { const used = tw.movedWave === moveWave(); $('bMove').disabled = !!theirs || used || tw.pending || tw.moving; $('bMoveC').textContent = tw.moving ? 'On the way' : used ? 'Moved this wave' : 'once per wave'; }
@@ -9476,7 +9477,7 @@ const TUT_STEPS = [
   { allow: ['spray'], arrow: () => document.querySelector('.tc[data-t="spray"]'), txt: () => 'One tool can\'t stop a whole wave. Add a <b>Bug Spray</b> by the trail too: its poison cloud hits every bug in it.' + (ptrType === 'mouse' ? '' : ' Same as before: tap a spot, then tap it again to place.'), hi: () => document.querySelector('.tc[data-t="spray"]'), ring: true, done: () => S.towers.length >= 2 || S.wave >= 1 },
   { txt: () => 'This card shows the <b>bugs coming next</b> and how many of each. Close it with the ✕, or turn it off in Settings.', arrow: () => $('belt'), top: true, next: true, done: () => S.active || S.wave >= 1 || $('belt').classList.contains('nope') || $('belt').classList.contains('off') },
   { txt: () => 'Some tools only reach some bugs. <b style="color:#9a5a1c">GROUND</b> tools only hit crawling bugs. <b style="color:#1d78c0">AIR</b> tools only hit flying bugs like flies and moths. A tool with neither tag hits <b style="color:#1f8a3a">both</b>.', arrow: () => { const c = document.querySelector('#shop .tc .reach.gnd'); return c && c.closest('.tc'); }, glow: () => [...document.querySelectorAll('#shop .tc .reach.gnd, #shop .tc .reach.air')], top: true, next: true, done: () => S.active || S.wave >= 1 },
-  { txt: () => 'The <b>dots</b> on a tool show its level: one dot per level, up to 3. Their colour shows what it hits: <i class="dot" style="background:#b5722e"></i><b style="color:#9a5a1c">brown</b> ground only, <i class="dot" style="background:#4fc3ff"></i><b style="color:#1d78c0">blue</b> air only, <i class="dot" style="background:#1f9a3a"></i><b style="color:#1f8a3a">green</b> both.', arrowPt: () => tutFloorPt(S.towers[0], 1.08), top: true, next: true, done: () => S.active || S.wave >= 1 },
+  { txt: () => 'The <b>dots</b> on a tool show its level: one dot per level, up to 3. After that, its <b>special power</b> swaps the dots for a big gold <b>★</b>. Their colour shows what it hits: <i class="dot" style="background:#b5722e"></i><b style="color:#9a5a1c">brown</b> ground only, <i class="dot" style="background:#4fc3ff"></i><b style="color:#1d78c0">blue</b> air only, <i class="dot" style="background:#1f9a3a"></i><b style="color:#1f8a3a">green</b> both.', arrowPt: () => tutFloorPt(S.towers[0], 1.08), top: true, next: true, done: () => S.active || S.wave >= 1 },
   { arrow: () => $('go'), txt: () => 'Ready? Tap <b>Send bugs</b> to start wave 1.', hi: () => $('go'), done: () => S.active || S.wave >= 1 },
   { txt: () => 'Bugs follow the trail to the cake. Your tools squash them, and every bug gives you <b>coins</b>.', done: () => !S.active && S.wave >= 1, min: 3 },
   { arrow: () => $('go'), txt: () => 'Wave cleared! Between waves the next one starts by itself after 10 seconds. Send it <b>early</b> for <b>bonus coins</b>: 2 for every second left on the clock. You can even send the next wave while one is still going, for a bonus too. Tap <b>Send bugs</b> for wave 2.', hi: () => $('go'), done: () => S.active && S.wave >= 2 },
