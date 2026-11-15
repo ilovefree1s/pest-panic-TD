@@ -717,7 +717,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="680">v1.178</div>
+    <div id="ver" data-b="681">v1.179</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4536,6 +4536,7 @@ const TM = {
   pink: std({ color: '#ff6f9a', roughness: 0.3, emissive: '#5a0a20', emissiveIntensity: 0.4 }),
 };
 // every tool shows its level: a silver rim at level 2, gold at level 3, plus its own makeover
+const SWAT_GOLD = std({ color: '#e0b347', metalness: 0.45, roughness: 0.62, emissive: '#5a3a00', emissiveIntensity: 0.35 });   /* the level-3 swatter frame lies flat and faces the sun: brushed gold, not a mirror */
 const RIM = [null, std({ color: '#d4dae2', metalness: 0.9, roughness: 0.2, envMapIntensity: 1.2 }), std({ color: '#f3c24a', metalness: 1, roughness: 0.18, emissive: '#6a4300', emissiveIntensity: 0.7 })];
 function coaster(g) {
   const m = mesh(cyl(1.15, 1.22, 0.14, 32), TM.cork); m.position.y = 0.07; m.receiveShadow = true; g.add(m);
@@ -4644,7 +4645,7 @@ const BUILD = {
     const hm = std({ color: '#f0ece2', roughness: 0.4 });
     const handle = mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.9, 8), hm); handle.rotation.x = Math.PI / 2; handle.position.z = 0.95; pivot.add(handle);
     // level 3: a gold frame around the head
-    const frame = mesh(new THREE.BoxGeometry(1.14, 0.1, 1.29), TM.gold); frame.position.z = 2.45; frame.scale.set(1, 0.6, 1); pivot.add(frame);
+    const frame = mesh(new THREE.BoxGeometry(1.14, 0.1, 1.29), SWAT_GOLD); frame.position.z = 2.45; frame.scale.set(1, 0.6, 1); pivot.add(frame);
     const o = { root: g, turn, pivot, rim, pips: pips(g) };
     o.setPerk = () => {   // Electrified Swatter: gunmetal black head and handle, with lightning that crackles across it now and then
       TEX.swatX ||= swatTexture('#3b3e45', '#121316', '#8f99a6');
