@@ -687,7 +687,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="669">v1.167</div>
+    <div id="ver" data-b="671">v1.169</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4308,9 +4308,14 @@ MODEL_BUILD.dung = () => { const m = DUNG_LOOK === 'stink' ? buildStinkModel({ c
 for (const k of ['ant', 'fly', 'spider', 'bed']) MODEL_BUILD[k] = () => { const m = buildModelBoss('m_' + k); m.userData.reg = k; m.userData.shadow = { ant: 1.25, fly: 1.2, spider: 2.6, bed: 0.6 }[k]; m.traverse(o => { if (o.isMesh) o.castShadow = false; }); return m; };   /* real models for the small bugs; no shadow maps on them (there can be dozens) */
 const REG_MODEL_OK = t => t === 'dung' && DUNG_LOOK === 'stink' ? !!BUG_MODELS.stink.gltf : BOSS_MODELS['m_' + t] && BOSS_MODELS['m_' + t].gltf && (t !== 'bed' || (MODEL_POOL.bed || []).filter(m => m.visible).length < 60);   /* models not loaded yet, or a Swarm Day flood of bed bugs: the old instanced bugs */
 for (const t of ['ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis']) BOSS_BUILD[t] = giantBuild(t);
+function fixNormals(q) {   /* a few squashed triangles from the low-poly cut have zero-length normals: they light up as NaN and draw black (a dark sliver on the ant's knee). Give them a sane normal */
+  q.traverse(o => { const g = o.isMesh && o.geometry, n = g && g.attributes.normal; if (!n || g.userData.nfix) return; g.userData.nfix = true; let bad = 0;
+    for (let i = 0; i < n.count; i++) { const x = n.getX(i), y = n.getY(i), z = n.getZ(i), l = Math.hypot(x, y, z); if (!(l > 1e-4) || !Number.isFinite(l)) { n.setXYZ(i, 0, 1, 0); bad++; } else if (Math.abs(l - 1) > 0.01) n.setXYZ(i, x / l, y / l, z / l); }
+    if (bad) n.needsUpdate = true; });
+}
 function getModel(t) {
   const pool = MODEL_POOL[t] ||= [];
-  let q = pool.find(m => !m.visible); if (!q) { BUILD_LO = true; try { q = compactModel(MODEL_BUILD[t]()); } finally { BUILD_LO = false; } q.traverse(o => { if (o.isMesh) o.castShadow = false; }); pool.push(q); scene.add(q); }   /* regular bugs use the blob shadows, not shadow maps: there can be dozens */
+  let q = pool.find(m => !m.visible); if (!q) { BUILD_LO = true; try { q = compactModel(MODEL_BUILD[t]()); } finally { BUILD_LO = false; } q.traverse(o => { if (o.isMesh) o.castShadow = false; }); { const ms = new Set(q.userData.mats || []); q.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m && m.emissive) ms.add(m); }); q.userData.mats = [...ms]; fixNormals(q); }   /* every material on the model gets the shiny / poison glow (some leg bits had their own) */ pool.push(q); scene.add(q); }   /* regular bugs use the blob shadows, not shadow maps: there can be dozens */
   q.visible = true; q.scale.setScalar({ mantis: 1.6, stink: 1.25, hopper: 1.25, centi: 0.85, moth: 1.1 }[t] || 1); return q;
 }
 function hideBug(b) { if (b.mesh) b.mesh.visible = false; if (b.mdl) { b.mdl.visible = false; b.mdl = null; } }
