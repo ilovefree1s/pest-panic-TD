@@ -714,7 +714,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="676">v1.174</div>
+    <div id="ver" data-b="677">v1.175</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5549,6 +5549,7 @@ const vsPaced = () => !!(S && S.vs && !S.vs.race);
 function canRush() { return S.mode === 'play' && S.active && !vsPaced() && (LV !== DAILY_LV ? (S.endless || S.wave < MAXW) : !!(S.daily && S.daily.race && S.wave < RACE_WAVES)); }   // Daily Kitchen: no sending early, so a losing run can't pad its score
 function startWave(...a) { BN_FWD++; try { return startWave0(...a); } finally { BN_FWD--; } }
 function startWave0() {
+  if (TUT.step >= 0 && S.mode === 'play' && S.wave === 2 && !S.towers.some(t => t.t === 'swat' && (t.lv > 1 || t.upPending))) { SND.play('err'); banner('Upgrade first', 'Upgrade your Fly Swatter before wave 3', true, 1600); return; }   // tutorial: the swatter upgrade comes before wave 3
   if (TUT.step >= 0 && S.mode === 'play' && S.wave === 0 && !S.active && !(S.towers.some(t => t.t === 'swat') && S.towers.some(t => t.t === 'spray'))) { SND.play('err'); banner('Build first', 'Place a Fly Swatter and a Bug Spray before sending the bugs', true, 1600); return; }   // tutorial: both tools down before wave 1
   if (S.showcase) { const sc = S.showcase; if (sc.i >= sc.keys.length) return; const k = sc.keys[sc.i++], n0 = S.bugs.length; S.active = true; S.queue = []; S.nextT = 0; hideBelt(); spawnEntry(k, LONG_R); if (sc.shiny) for (const b of S.bugs.slice(n0)) try { makeShiny(b); } catch (e) {} return; }   /* bug viewer: one bug per tap */
   if (S.mode !== 'play' || S.over || (S.vs && S.vs.dead)) return;
@@ -9505,10 +9506,8 @@ function tutSpiders() {   /* the Spray lesson: back to 1x so they can watch (no 
   if (S.speed > 1) { S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }
 }
 function tutShiny() {   /* the tutorial's free shiny: walks the trail like any bug; it can't be hurt, tools don't aim at it, and it can't bite the cake */
-  TUT.noShiny = false; let had = false; try { had = localStorage.getItem('ppd-tutshiny') === '1'; } catch (e) {}
-  if (!ROUTES.length || had) { TUT.noShiny = true; TUT.step++; TUT.t = 0; setTimeout(tutShow, 0); return; }   /* one free shiny per player, ever: replaying the tutorial skips it */
-  try { localStorage.setItem('ppd-tutshiny', '1'); } catch (e) {}
-  const t = 'ant', b = spawnBug(t, 0);   /* always an ant */ b.tutImm = true; makeShiny(b); syncCatch(); TUT.shinyId = b.id; TUT.shStop = Math.min(7, ROUTES[0].len * 0.08);
+  if (!ROUTES.length) return;
+  const t = 'ant', b = spawnBug(t, 0);   /* always an ant, so replaying the tutorial can't fish for other shinies */ b.tutImm = true; makeShiny(b); syncCatch(); TUT.shinyId = b.id; TUT.shStop = Math.min(7, ROUTES[0].len * 0.08);
 }
 function tutBugPt(b) { if (!b) return null; const v = new THREE.Vector3(b.x, 0.4, b.z).project(camera), c = canvas.getBoundingClientRect(), sg = $('stage').getBoundingClientRect(); return { x: c.left - sg.left + (v.x + 1) / 2 * c.width - 22, y: c.top - sg.top + (1 - v.y) / 2 * c.height }; }
 function tutAllowed(t) { if (TUT.step < 0) return true; const a = TUT_STEPS[TUT.step].allow; return a === 'all' || (a || []).includes(t); }
