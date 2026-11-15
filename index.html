@@ -36,7 +36,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #tut{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:15;pointer-events:none;width:min(420px,calc(100% - 24px));background:#fff6dc;color:#3a2400;border-radius:16px;
   padding:12px 16px 10px;box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 0 3px var(--gold);text-align:center;animation:tutIn .3s ease-out}
 #tut[hidden]{display:none}
-#shop .tc.tlock{opacity:.35;filter:grayscale(.8)}
+#shop .tc.tlock{opacity:.35;filter:grayscale(.8)} #stage.tutoring ~ * #bUp.tlock,#bUp.tlock{opacity:.4;filter:grayscale(.9)}
 #tut button.nx{display:block;margin:2px auto 6px;padding:7px 20px;border-radius:999px;background:var(--gold);color:#3a2400;text-decoration:none;font:400 16px var(--display);letter-spacing:.04em;box-shadow:0 3px 0 #a87a10} #tut button.nx[hidden]{display:none}
 #tut .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin:0 3px 0 4px;vertical-align:-1px;box-shadow:0 0 0 1.5px rgba(0,0,0,.35)}
 #tut p{margin:0 0 6px;font-weight:800;font-size:15px;line-height:1.4}
@@ -235,6 +235,11 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .sh{background:rgba(10,13,16,.78);border-radius:14px;padding:10px 8px;display:grid;justify-items:center;gap:4px;text-align:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .sh svg{width:52px;height:52px} .sh b{font:800 13px var(--body);color:var(--text)} .sh small{font-size:11px;color:var(--dim)}
 .sh .shimg{width:72px;height:72px;object-fit:contain} .sh.no .shimg{filter:brightness(0) opacity(.4)} .sh.yes .shimg{animation:shGlow 3s linear infinite}
+/* shiny capture: the caught bug's picture flies into the jar, and the jar wobbles when it lands */
+.catchFly{position:fixed;z-index:60;width:58px;height:58px;pointer-events:none;filter:drop-shadow(0 0 8px #fff) drop-shadow(0 0 14px #ffd54a);animation:shGlow 1.2s linear infinite}
+.catchFly img{width:100%;height:100%;object-fit:contain}
+#jar.jarPop{animation:jarPop .55s cubic-bezier(.3,1.6,.5,1)}
+@keyframes jarPop{0%{transform:scale(1)}30%{transform:scale(1.25) rotate(-8deg)}55%{transform:scale(.95) rotate(6deg)}80%{transform:scale(1.05) rotate(-3deg)}100%{transform:scale(1)}}
 @keyframes shGlow{0%{filter:drop-shadow(0 0 7px #ff4a4a)}17%{filter:drop-shadow(0 0 7px #ffb12a)}33%{filter:drop-shadow(0 0 7px #f5ff3a)}50%{filter:drop-shadow(0 0 7px #3aff7a)}67%{filter:drop-shadow(0 0 7px #3ac2ff)}83%{filter:drop-shadow(0 0 7px #b04aff)}100%{filter:drop-shadow(0 0 7px #ff4a4a)}}   /* rainbow glow around the caught bug, bug keeps its real colours */
 .sh.no svg{filter:brightness(0) opacity(.4)} .sh.no b{color:var(--dim)}
 .sh.yes{box-shadow:inset 0 0 0 2px rgba(255,216,74,.6)} .sh.yes svg{animation:shRain 2.4s ease-in-out infinite}
@@ -664,6 +669,28 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
 </style>
 </head>
 <body>
+<!-- loading screen: painted before the game script even arrives, fades out once the 3D models are in -->
+<style>
+#boot{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 38%,#2a221b 0%,#16120f 55%,#0d1013 100%);color:#f4efe4;font-family:Nunito,system-ui,sans-serif;transition:opacity .5s ease}
+#boot.gone{opacity:0;pointer-events:none}
+#boot .bl{width:min(30vmin,150px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 40%,#f2a24a,#c95a2c 70%);box-shadow:0 0 0 4px rgba(255,201,60,.9),0 0 40px rgba(255,170,60,.35),0 12px 30px rgba(0,0,0,.5);overflow:hidden;animation:bootBob 2.4s ease-in-out infinite}
+#boot .bl img{width:100%;height:100%;object-fit:cover;display:block}
+@keyframes bootBob{50%{transform:translateY(-6px)}}
+#boot .bt{margin-top:min(4vmin,22px);font:400 min(11vmin,58px)/1 'Luckiest Guy',Impact,system-ui;letter-spacing:.03em;color:#ffc93c;-webkit-text-stroke:2px #4a2e00;text-shadow:0 4px 0 #6a4400,0 8px 18px rgba(0,0,0,.5)}
+#boot .bs{margin-top:4px;font:900 min(3.4vmin,15px) Nunito,system-ui;letter-spacing:.5em;color:#cfc6b8;padding-left:.5em}
+#boot .bb{margin-top:min(5vmin,28px);width:min(62vw,300px);height:10px;border-radius:999px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);overflow:hidden}
+#boot .bb i{display:block;height:100%;width:4%;border-radius:999px;background:linear-gradient(90deg,#ffb300,#ffd54a);box-shadow:0 0 12px rgba(255,201,60,.6);transition:width .35s ease}
+#boot .bp{margin-top:10px;font:800 13px Nunito,system-ui;color:#9a9286;letter-spacing:.04em;min-height:1.2em}
+#boot .bf{position:absolute;bottom:max(18px,env(safe-area-inset-bottom));left:16px;right:16px;text-align:center;font:600 12px Nunito,system-ui;color:#7d766c}
+@media (orientation:landscape) and (max-height:500px){#boot .bl{width:24vh} #boot .bt{font-size:12vh} #boot .bb{margin-top:3vh}}
+</style>
+<div id="boot" role="status" aria-label="Loading"><div class="bl"><img src="icons/ext2-512.png" alt=""></div><div class="bt">Pest Panic</div><div class="bs">DEFENSE</div><div class="bb"><i id="bootBar"></i></div><div class="bp" id="bootTxt">Loading the kitchen…</div><div class="bf" id="bootTip"></div></div>
+<script>(function () { var tips = ['Tip: send waves early for bonus coins.', 'Tip: GROUND tools can\'t touch flying bugs.', 'Tip: catch shinies before your tools squash them!', 'Tip: hold a tool in the tray to read what it does.', 'Tip: a tool\'s 4th upgrade is its special power.'];
+  var t = document.getElementById('bootTip'); if (t) t.textContent = tips[Math.floor(Math.random() * tips.length)];
+  window.__boot = { p: 0.04, set: function (p) { p = Math.max(this.p, Math.min(1, p)); this.p = p; var b = document.getElementById('bootBar'); if (b) b.style.width = Math.round(p * 100) + '%'; var x = document.getElementById('bootTxt'); if (x) x.textContent = p >= 1 ? 'Ready!' : 'Loading the kitchen… ' + Math.round(p * 100) + '%'; },
+    done: function () { if (this.over) return; this.over = true; this.set(1); var e = document.getElementById('boot'); setTimeout(function () { e.classList.add('gone'); setTimeout(function () { e.remove(); }, 600); }, 250); } };
+  setTimeout(function () { window.__boot.done(); }, 15000);   /* never get stuck on the loader */
+})();</script>
 
 
 <div id="app">
@@ -687,7 +714,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="674">v1.172</div>
+    <div id="ver" data-b="676">v1.174</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -925,6 +952,8 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
 //  PEST PANIC DEFENSE - kitchen tower defense built on the Pest Panic HD engine
 // ============================================================================
 import * as THREE from 'three';
+{ const B = window.__boot, M = THREE.DefaultLoadingManager, t0 = performance.now(); let doneT = 0;   /* loading screen progress: every model/texture goes through the default manager */
+  if (B) { B.set(0.1); M.onStart = () => { B.seen = true; clearTimeout(doneT); }; M.onProgress = (u, a, n) => { B.seen = true; B.set(0.1 + 0.88 * a / Math.max(1, n)); clearTimeout(doneT); if (a >= n) doneT = setTimeout(() => B.done(), Math.max(300, 700 - (performance.now() - t0))); }; M.onError = () => {}; } }
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -3801,7 +3830,16 @@ function catchUpdate(e, dt) {
   for (let i = 0; i < 24; i++) { const a = Math.random() * TAU, v = 2 + Math.random() * 4; FX.glow.spawn({ x: b.x, y: 1, z: b.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 4, vz: Math.sin(a) * v, grav: 8, life: 0.8, s0: 0.6, s1: 0.1, c: [Math.random(), Math.random(), 1], a0: 1 }); }
   SND.play('clear');
   banner('Caught a ' + shinyName(b) + '!', 'Keep it to the end of the game to add it to your collection, or sell it for 200 coins.', false, 3000);
-  if (S.p2 && (S.cur || 0) !== (S.me || 0)) netSend({ k: 'caught', t: b.t }); else jarAdd(b.t);
+  if (S.p2 && (S.cur || 0) !== (S.me || 0)) netSend({ k: 'caught', t: b.t }); else { jarAdd(b.t); catchFly(b); }
+}
+function catchFly(b) {   /* a little capture flourish: the shiny's picture pops up where it was caught, swirls in an arc into the jar button, and the jar wobbles */
+  const v = new THREE.Vector3(b.x, 0.5, b.z).project(camera); requestAnimationFrame(() => { try { const J = $('jar'); if (!J || J.hidden) return;   // a frame later, once the jar button is showing
+    const c = canvas.getBoundingClientRect(), x0 = c.left + (v.x + 1) / 2 * c.width, y0 = c.top + (1 - v.y) / 2 * c.height, r = J.getBoundingClientRect(), x1 = r.left + r.width / 2, y1 = r.top + r.height / 2;
+    const el = document.createElement('div'); el.className = 'catchFly'; el.innerHTML = dexIcon(b.t); el.style.left = x0 + 'px'; el.style.top = y0 + 'px'; document.body.appendChild(el);
+    const dx = x1 - x0, dy = y1 - y0, up = -Math.min(140, 60 + Math.abs(dx) * 0.25);
+    const a = el.animate([{ transform: 'translate(-50%,-50%) scale(.3) rotate(0deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.5) rotate(-12deg)', opacity: 1, offset: 0.22 }, { transform: `translate(calc(-50% + ${dx * 0.5}px),calc(-50% + ${dy * 0.5 + up}px)) scale(1.1) rotate(180deg)`, offset: 0.62 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.25) rotate(360deg)`, opacity: 0.6 }], { duration: 1100, easing: 'cubic-bezier(.45,0,.55,1)' });
+    a.onfinish = () => { el.remove(); J.classList.remove('jarPop'); void J.offsetWidth; J.classList.add('jarPop'); SND.play('tap'); };
+  } catch (e) {} });
 }
 function sellShiny(split) {
   if (S.mode !== 'play' || jarCount() <= 0) return;
@@ -6301,6 +6339,7 @@ function removeTower(tw, usedUp) {
   if (S.pick === tw) unpick();
 }
 function upgrade(tw = S.pick) {
+  if (TUT.step >= 0 && !TUT.upOK) { SND.play('err'); banner('Not yet', 'The tutorial will show you upgrades in a moment', true, 1400); return; }   // tutorial: upgrades open at the "Upgrade it" step
   if (tw && tw.snuff) { relight(tw); return; }
   if (!tw || (tw.lv >= 3 && (tw.perk || !PERK[tw.t]))) return;
   if (S.p2 && (tw.owner || 0) !== S.cur && !TT[tw.t].oneKitchen) return;
@@ -9445,7 +9484,7 @@ const TUT_STEPS = [
   { txt: () => (() => { const L = S.bugs.length ? leadBug() : null; return L ? 'That <b>' + (BUG_NAME[L.t] || (BT[L.t] && BT[L.t].name) || 'bug').toLowerCase() + '</b> got past your Fly Swatter!' : 'A bug got past your Fly Swatter!'; })() + ' Tap your <b>Spray</b>!', enter: tutSpiders, slow: true, arrow: () => $('abil'), side: 'right', near: () => $('abil'), done: () => (S.abilCd || 0) > 0 || !S.active || $('abil').hidden, min: 0.5 },
   { quiet: true, txt: () => '', done: () => !S.active && S.wave >= 2 },   /* bubble out of the way so they can watch the spray */
   { arrowPt: () => tutFloorPt(S.towers.find(t => t.t === 'swat')), txt: () => 'Wave 2 cleared! ' + (ptrType === 'mouse' ? 'Click' : 'Tap') + ' your <b>Fly Swatter</b> on the floor to see what it can do.', done: () => !!S.pick },
-  { arrow: () => $('bUp'), txt: () => '<b>Upgrade</b> it to get ready for wave 3. The exterminator walks over to do it. (Closed the card? Tap your Fly Swatter again.)', hi: () => $('bUp'), done: () => S.towers.some(t => t.t === 'swat' && (t.lv > 1 || t.upPending)) },
+  { enter: () => { TUT.upOK = true; }, arrow: () => $('bUp'), txt: () => '<b>Upgrade</b> it to get ready for wave 3. The exterminator walks over to do it. (Closed the card? Tap your Fly Swatter again.)', hi: () => $('bUp'), done: () => S.towers.some(t => t.t === 'swat' && (t.lv > 1 || t.upPending)) },
   { arrow: () => $('go'), txt: () => 'Stronger already. Tap <b>Send bugs</b> to start wave 3.', hi: () => $('go'), done: () => S.active && S.wave >= 3 },
   { txt: () => '✨ A <b>shiny</b> bug (the rainbow one)! They\'re super rare, about 1 bug in 2,000. This one can\'t get squashed, but normally you have to be <b>quick</b>: tap <b>Catch</b> and the exterminator runs over and grabs it before your tools squash it. This one\'s on the house!', enter: tutShiny, arrowPt: () => tutBugPt(S.bugs.find(b => b.id === TUT.shinyId && !b.dead)), glow: () => [$('catch')], top: true, done: () => jarCount() > 0 || !S.bugs.some(b => b.shiny && !b.dead), min: 0.5 },
   { txt: () => 'Got it! It\'s in your <b>jar</b> now, and you get to choose: <b>sell</b> it any time for <b>200 coins</b> (a big boost this early), or <b>keep</b> it until the end of the game to add it to your <b>Shiny Collection</b>. Collecting shinies unlocks new <b>outfits and spray looks</b> for your exterminator in the Locker.', glow: () => [$('jar')], next: true, top: true, done: () => S.over || jarCount() === 0 },
@@ -9489,8 +9528,9 @@ function tutArrow(st) {   /* a bouncing arrow (fixed to the window, so it can po
   const right = st.side === 'right' || r.left < 70; a.classList.toggle('flip', right);
   a.style.left = Math.round(right ? r.right + 4 : r.left - 62) + 'px'; a.style.top = Math.round(r.top + Math.min(r.height / 2, 70) - 20) + 'px';
 }
-function tutStart() { if (LV !== SOLO[0] || tutDone()) return; TUT.step = 0; TUT.t = 0; tutShow(); }
+function tutStart() { if (LV !== SOLO[0] || tutDone()) return; TUT.upOK = false; TUT.step = 0; TUT.t = 0; tutShow(); }
 function tutEnd() {
+  TUT.upOK = true;
   TUT.slow = false; TUT.freeze = false; TUT.step = -1; document.querySelectorAll('.tlock').forEach(e => e.classList.remove('tlock')); $('tut').hidden = true; $('stage').classList.remove('tutoring'); document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi')); $('tutArrow').hidden = true; $('tut').classList.remove('top'); document.querySelectorAll('.tut-glow').forEach(e => e.classList.remove('tut-glow'));
   if (TUT.ring) TUT.ring.visible = false; try { localStorage.setItem('ppd-tut', '1'); } catch (e) {}
 }
@@ -9516,6 +9556,7 @@ function tutTick(dt) {
   const h = st.hi && st.hi(); if (h && !h.classList.contains('tut-hi')) h.classList.add('tut-hi');
   if (st.arrow || st.arrowPt || st.glow) tutArrow(st);
   if (st.near) tutPlace(st);
+  { const u = $('bUp'), lk = !TUT.upOK; if (u.classList.contains('tlock') !== lk) u.classList.toggle('tlock', lk); }
   if (S.placing && !tutAllowed(S.placing)) { S.placing = null; S.prev = null; syncTray(); }   // a tool still picked from the step before
   for (const c of document.querySelectorAll('#shop .tc[data-t]')) { const lk = !tutAllowed(c.dataset.t); if (c.classList.contains('tlock') !== lk) c.classList.toggle('tlock', lk); }
   if (TUT.t >= (st.min || 0) && (st.done() || (st.last && TUT.t >= st.min))) {
@@ -9642,6 +9683,7 @@ function placeStageTag() {
 setInterval(placeStageTag, 400); addEventListener('resize', placeStageTag);
 syncSnd();
 toTitle();
+setTimeout(() => { if (window.__boot && !window.__boot.seen) window.__boot.done(); }, 1200);   // nothing to load (all cached and instant): don't hold the loading screen
 resize();
 /* bug viewer for testing: open the game with #show=centi,gcenti (any bug keys) and it drops you in Grandma's with those bugs strolling in every 15 s, no waves, cake can't be eaten */
 if (/^#show=/.test(location.hash)) { const want = location.hash.slice(6).split(','), shiny = want.includes('shiny'), keys = want.includes('all') ? Object.keys(BT).filter(k => k !== 'baby') : want.filter(k => BT[k]);   /* #show=all,shiny: every bug and boss, all shiny */
