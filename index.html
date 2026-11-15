@@ -719,7 +719,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="693">v1.191</div>
+    <div id="ver" data-b="696">v1.194</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2807,7 +2807,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
       const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
       const mx0 = Math.max(r, g, b), sat0 = mx0 ? (mx0 - Math.min(r, g, b)) / mx0 : 0, tankish = inTank || (toxic && M.masks.tankLoose && M.masks.tankLoose[p] && lum > 0.45 && sat0 < 0.26);   /* the canister: the strict mask, plus any white/grey texel of the looser one */
       if (tankish && toxic && lum > 0.3) { const l2 = 0.62 + (Math.min(1, lum) - 0.62) * 0.3;
-        if (toxic === 'flame') { a[i] = 70 * l2; a[i + 1] = 14 * l2; a[i + 2] = 6 * l2; ga[i] = 90; ga[i + 1] = 18; ga[i + 2] = 4; ga[i + 3] = 255; continue; }   /* plain dark ember: only the live flames move on top (a painted pattern sat still underneath) */
+        if (toxic === 'flame') { a[i] = 34 * l2; a[i + 1] = 8 * l2; a[i + 2] = 4 * l2; ga[i] = 90; ga[i + 1] = 18; ga[i + 2] = 4; ga[i + 3] = 255; continue; }   /* plain dark ember: only the live flames move on top (a painted pattern sat still underneath) */
         if (toxic === 'bolt') { a[i] = 8 * l2; a[i + 1] = 16 * l2; a[i + 2] = 60 * l2; ga[i] = 10; ga[i + 1] = 30; ga[i + 2] = 110; ga[i + 3] = 255; continue; }   /* plain storm blue under the live lightning */
         a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green (flat: the sheet's brushed streaks read as lines in saturated green)
       const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35;   /* (brown leather and a dark beard have far more blue in them) */   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */
@@ -3250,12 +3250,12 @@ let BOLT = null;
 function boltDraw() {
   const B = BOLT, x = B.x, w = B.cv.width, h = B.cv.height; x.clearRect(0, 0, w, h);
   x.fillStyle = 'rgba(40,90,255,' + (0.02 + Math.random() * 0.04) + ')'; x.fillRect(0, 0, w, h);   // the glow inside flickers (faint, so the shell's edge never shows)
-  const n = 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < 0.25 ? 1 : 0);
+  const n = 2 + (Math.random() < 0.5 ? 1 : 0);
   for (let k = 0; k < n; k++) {
     let px = w * (0.15 + Math.random() * 0.7), py = 0; const pts = [[px, py]];
     while (py < h) { py += h * (0.06 + Math.random() * 0.08); px = clamp(px + (Math.random() - 0.5) * w * 0.32, 4, w - 4); pts.push([px, py]); }
     const line = (P, lw, col, blur) => { x.lineWidth = lw; x.strokeStyle = col; x.shadowColor = '#7fd4ff'; x.shadowBlur = blur; x.beginPath(); P.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); };
-    line(pts, 6, 'rgba(120,190,255,.55)', 18); line(pts, 2.2, '#ffffff', 8);
+    line(pts, 9, 'rgba(120,190,255,.6)', 20); line(pts, 3.4, '#ffffff', 10);
     const j = 1 + ((Math.random() * (pts.length - 2)) | 0), br = [pts[j]]; let bx = pts[j][0], by = pts[j][1];   // a branch forks off
     for (let i = 0; i < 3; i++) { bx += (Math.random() < 0.5 ? -1 : 1) * w * (0.08 + Math.random() * 0.1); by += h * 0.07; br.push([bx, by]); }
     line(br, 1.6, 'rgba(220,240,255,.9)', 8);
@@ -3263,14 +3263,15 @@ function boltDraw() {
   x.shadowBlur = 0; B.tex.needsUpdate = true;
 }
 let FIRE = null;
-function fireDraw() {   /* flames licking up inside the Flame tank: a row of tongues that sway and flicker */
+function fireDraw() {   /* flames filling the Flame tank, bottom to top: tall tongues that sway and flicker, plus sparks drifting up */
   const F = FIRE, x = F.x, w = F.cv.width, h = F.cv.height, t = performance.now() / 1000; x.clearRect(0, 0, w, h); x.globalCompositeOperation = 'lighter';
-  const g0 = x.createLinearGradient(0, h, 0, h * 0.45); g0.addColorStop(0, 'rgba(255,90,0,.45)'); g0.addColorStop(1, 'rgba(255,60,0,0)'); x.fillStyle = g0; x.fillRect(0, 0, w, h);   // the hot bed at the bottom
-  for (let k = 0; k < 7; k++) {
-    const cx = w * (0.08 + k * 0.14) + Math.sin(t * 3 + k * 1.7) * w * 0.04, fh = h * (0.45 + 0.3 * (0.5 + 0.5 * Math.sin(t * 5.3 + k * 2.1)) + Math.random() * 0.12), fw = w * (0.14 + Math.random() * 0.05), tip = cx + Math.sin(t * 4 + k) * w * 0.08;
-    const g = x.createLinearGradient(0, h, 0, h - fh); g.addColorStop(0, 'rgba(255,120,10,.95)'); g.addColorStop(0.45, 'rgba(255,190,40,.8)'); g.addColorStop(1, 'rgba(255,240,150,0)'); x.fillStyle = g;
-    x.beginPath(); x.moveTo(cx - fw, h); x.quadraticCurveTo(cx - fw * 0.9, h - fh * 0.55, tip, h - fh); x.quadraticCurveTo(cx + fw * 0.9, h - fh * 0.55, cx + fw, h); x.closePath(); x.fill();
+  const g0 = x.createLinearGradient(0, h, 0, 0); g0.addColorStop(0, 'rgba(255,110,0,.75)'); g0.addColorStop(0.6, 'rgba(255,60,0,.3)'); g0.addColorStop(1, 'rgba(200,30,0,.12)'); x.fillStyle = g0; x.fillRect(0, 0, w, h);   // the glow fills the whole tank
+  for (let k = 0; k < 9; k++) {
+    const cx = w * (k / 8) + Math.sin(t * 2.6 + k * 1.9) * w * 0.05, fh = h * (0.7 + 0.25 * (0.5 + 0.5 * Math.sin(t * 4.7 + k * 2.3)) + Math.random() * 0.1), fw = w * (0.11 + Math.random() * 0.04), tip = cx + Math.sin(t * 3.4 + k * 1.3) * w * 0.12;
+    const g = x.createLinearGradient(0, h, 0, h - fh); g.addColorStop(0, 'rgba(255,150,20,1)'); g.addColorStop(0.5, 'rgba(255,200,50,.9)'); g.addColorStop(0.85, 'rgba(255,120,20,.6)'); g.addColorStop(1, 'rgba(255,80,0,0)'); x.fillStyle = g;
+    x.beginPath(); x.moveTo(cx - fw, h); x.bezierCurveTo(cx - fw * 1.2, h - fh * 0.4, tip - fw * 0.6, h - fh * 0.75, tip, h - fh); x.bezierCurveTo(tip + fw * 0.6, h - fh * 0.75, cx + fw * 1.2, h - fh * 0.4, cx + fw, h); x.closePath(); x.fill();
   }
+  for (let k = 0; k < 6; k++) { const py = h - ((t * 0.5 + k / 6) % 1) * h, px = w * ((k * 0.37 + Math.sin(t + k) * 0.1 + 1) % 1); x.fillStyle = 'rgba(255,230,120,.9)'; x.fillRect(px, py, 2, 3); }   // sparks rising
   x.globalCompositeOperation = 'source-over'; F.tex.needsUpdate = true;
 }
 function boltTank(root, M, getBone, kind = 'bolt') {   /* fit the shell to the tank's own triangles (from the tank's patch of the texture) and pin it to his spine */
@@ -3280,17 +3281,91 @@ function boltTank(root, M, getBone, kind = 'bolt') {   /* fit the shell to the t
   if (!BOLT) { const cv = document.createElement('canvas'); cv.width = 96; cv.height = 128; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
     BOLT = { cv, x: cv.getContext('2d'), tex, t: 0, mat: new THREE.MeshBasicMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }) }; boltDraw(); }
   let sk = null; root.traverse(o => { if (o.isSkinnedMesh && !sk) sk = o; }); if (!sk) return null;
-  root.updateMatrixWorld(true); sk.skeleton.update();
+  root.updateMatrixWorld(true); sk.skeleton.update(); const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();   /* measured in his own space: a box measured in the world while he was turned came out lopsided and too big */
   const W = M.baseImg.width, H = M.baseImg.height, uv = sk.geometry.attributes.uv, P = sk.geometry.attributes.position, xs = [], ys = [], zs = [], v = new V3();
-  for (let i = 0; i < P.count; i++) { const tx = Math.min(W - 1, (uv.getX(i) * W) | 0), ty = Math.min(H - 1, ((M.baseFlip ? 1 - uv.getY(i) : uv.getY(i)) * H) | 0); if (!M.tankMask[ty * W + tx]) continue; sk.getVertexPosition(i, v).applyMatrix4(sk.matrixWorld); xs.push(v.x); ys.push(v.y); zs.push(v.z); }
+  for (let i = 0; i < P.count; i++) { const tx = Math.min(W - 1, (uv.getX(i) * W) | 0), ty = Math.min(H - 1, ((M.baseFlip ? 1 - uv.getY(i) : uv.getY(i)) * H) | 0); if (!M.tankMask[ty * W + tx]) continue; sk.getVertexPosition(i, v).applyMatrix4(sk.matrixWorld).applyMatrix4(inv); xs.push(v.x); ys.push(v.y); zs.push(v.z); }
   if (xs.length < 8) return null;
   const q = (a, f) => { a.sort((m, n) => m - n); return a[Math.min(a.length - 1, Math.max(0, Math.round(f * (a.length - 1))))]; }, box = new THREE.Box3(new V3(q(xs, 0.06), q(ys, 0.04), q(zs, 0)), new V3(q(xs, 0.94), q(ys, 0.96), q(zs, 1)));   /* full depth: trimming it sank the shell's middle behind the tank's bulge, so the middle never showed the effect */   /* trim stray texels (straps, the shoulder) off the edges */
   const sz = box.getSize(new V3()), c = box.getCenter(new V3()), sh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1, 28, 1, true), kind === 'flame' ? FIRE.mat : BOLT.mat);   /* a rounded shell (a box's corners stuck out past the rounded tank) */
   sh.scale.set(sz.x * 1.0, sz.y * 0.9, sz.z * 1.12); sh.position.copy(c); sh.renderOrder = 5; sh.frustumCulled = false; sh.visible = false;
-  root.add(sh); const bn = getBone('Spine2') || getBone('Spine1'); if (bn) bn.attach(sh); return sh;
+  root.add(sh); root.updateMatrixWorld(true); const bn = getBone('Spine2') || getBone('Spine1'); if (bn) bn.attach(sh); return sh;
+}
+/* The Flame and Lightning tanks: our own glass canister (metal cap, base ring, glass tube) built over his tank, with the live flames or lightning inside.
+   It is sized from his tank's own triangles and pinned to his spine, so it covers the old tank completely and moves with him. */
+function canisterSet(holder, root, M, kind) {
+  const live = kind === 'flame' || kind === 'bolt';
+  if (!live) { if (holder.can) holder.can.visible = false; return; }
+  if (holder.can === undefined) holder.can = buildCanister(root, M);
+  const C = holder.can; if (!C) return; const src = animSrc(kind);
+  if (C.userData.kind !== kind) { C.userData.kind = kind; C.userData.inner.material.map = src.tex; C.userData.inner.material.needsUpdate = true; C.userData.glass.material.color.set(kind === 'flame' ? '#ffd9b0' : '#cfe6ff'); }
+  C.visible = true;
+}
+function buildCanister(root, M) {
+  if (!M || !M.tankMask || !M.baseImg) return null; let sk = null; root.traverse(o => { if (o.isSkinnedMesh && !sk) sk = o; }); if (!sk) return null;
+  root.updateMatrixWorld(true); sk.skeleton.update(); const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  const W = M.baseImg.width, H = M.baseImg.height, uv = sk.geometry.attributes.uv, P = sk.geometry.attributes.position, xs = [], ys = [], zs = [], v = new V3();
+  for (let i = 0; i < P.count; i++) { const tx = Math.min(W - 1, (uv.getX(i) * W) | 0), ty = Math.min(H - 1, ((M.baseFlip ? 1 - uv.getY(i) : uv.getY(i)) * H) | 0); if (!M.tankMask[ty * W + tx]) continue; sk.getVertexPosition(i, v).applyMatrix4(sk.matrixWorld).applyMatrix4(inv); xs.push(v.x); ys.push(v.y); zs.push(v.z); }
+  if (xs.length < 8) return null;
+  const q = (a, f) => { a.sort((m, n) => m - n); return a[Math.round(f * (a.length - 1))]; }, lo = new V3(q(xs, 0.04), q(ys, 0.03), q(zs, 0.03)), hi = new V3(q(xs, 0.96), q(ys, 0.97), q(zs, 0.97));
+  const c = lo.clone().add(hi).multiplyScalar(0.5), rx = (hi.x - lo.x) * 0.56, rz = (hi.z - lo.z) * 0.6, h = (hi.y - lo.y) * 0.98;
+  const back = Math.atan2(c.x, c.z);   // the side facing away from his body: the texture seam goes on the other side
+  const g = new THREE.Group(); g.position.copy(c);
+  const tube = (r, ht, m, open = true, seg = 32) => { const geo = new THREE.CylinderGeometry(1, 1, 1, seg, 1, open, back + Math.PI / 2); const me = new THREE.Mesh(geo, m); me.scale.set(rx * r, ht, rz * r); me.frustumCulled = false; g.add(me); return me; };
+  const inner = tube(0.93, h * 0.84, new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false }), false);   // what's inside: the live picture
+  const glass = tube(1.0, h * 0.86, new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.28, roughness: 0.08, metalness: 0.1, depthWrite: false }));
+  glass.renderOrder = 6;
+  const metal = new THREE.MeshStandardMaterial({ color: '#3a3d44', metalness: 0.8, roughness: 0.35 });
+  const cap = tube(1.04, h * 0.1, metal, false); cap.position.y = h * 0.47; const capTop = tube(0.55, h * 0.06, metal, false); capTop.position.y = h * 0.54;
+  const base = tube(1.04, h * 0.07, metal, false); base.position.y = -h * 0.465;
+  for (const y of [-0.2, 0.2]) { const band = tube(1.015, h * 0.025, metal); band.position.y = h * y; }   // two thin hoops round the glass
+  g.userData = { inner, glass, kind: null }; g.visible = false; root.add(g); root.updateMatrixWorld(true);
+  const B = n => root.getObjectByName('mixamorig' + n) || root.getObjectByName('mixamorig:' + n), bn = B('Spine2') || B('Spine1'); if (bn) bn.attach(g);
+  return g;
+}
+function animSrc(kind) {   /* the 96x128 flame / lightning pictures, redrawn live */
+  const mk = () => { const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(2, 1); return { cv, x: cv.getContext('2d'), t: 0, tex }; };
+  if (kind === 'flame' && !FIRE) { FIRE = mk(); fireDraw(); }
+  if (kind === 'bolt' && !BOLT) { BOLT = mk(); boltDraw(); }
+  return kind === 'flame' ? FIRE : BOLT;
+}
+/* The live tank: the flames / lightning are painted straight into the tank's own patch of his texture (as glow), so they sit exactly on the canister,
+   fill it edge to edge, and move with him. The patch's "up" in the texture is worked out from the model, so the flames always rise. */
+let TANK_ANIM = null;
+function tankAnimSetup(M) {
+  if (TANK_ANIM && TANK_ANIM.M === M.baseImg) return TANK_ANIM; if (!M.tankMask || !M.baseImg || !M.m) return null;
+  const W = M.baseImg.width, H = M.baseImg.height, tm = M.tankMask; let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (tm[y * W + x]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return null; const bw = x1 - x0 + 1, bh = y1 - y0 + 1, sc = Math.min(1, 256 / Math.max(bw, bh)), cw = Math.max(8, Math.round(bw * sc)), ch = Math.max(8, Math.round(bh * sc));
+  const mk = document.createElement('canvas'); mk.width = bw; mk.height = bh; { const mx = mk.getContext('2d'), id = mx.createImageData(bw, bh); for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) if (tm[(y + y0) * W + x + x0]) id.data[(y * bw + x) * 4 + 3] = 255; mx.putImageData(id, 0, 0); }
+  // which way is up inside the patch: fit the model's height against the texture position over the tank's vertices
+  let sk = null; M.m.traverse(o => { if (o.isSkinnedMesh && !sk) sk = o; }); if (!sk) return null; const uv = sk.geometry.attributes.uv, P = sk.geometry.attributes.position;
+  let n = 0, su = 0, sv = 0, sy = 0, suu = 0, svv = 0, suv = 0, suy = 0, svy = 0; const pts = [];
+  for (let i = 0; i < P.count; i++) { const tx = uv.getX(i) * W, ty = (M.baseFlip ? 1 - uv.getY(i) : uv.getY(i)) * H, k = Math.min(H - 1, ty | 0) * W + Math.min(W - 1, tx | 0); if (!tm[k]) continue; const y = P.getY(i);
+    n++; su += tx; sv += ty; sy += y; suu += tx * tx; svv += ty * ty; suv += tx * ty; suy += tx * y; svy += ty * y; pts.push(tx, ty); }
+  if (n < 6) return null; const mu = su / n, mv = sv / n, my = sy / n, cuu = suu / n - mu * mu, cvv = svv / n - mv * mv, cuv = suv / n - mu * mv, cuy = suy / n - mu * my, cvy = svy / n - mv * my, det = cuu * cvv - cuv * cuv || 1e-9;
+  let ax = (cvv * cuy - cuv * cvy) / det, ay = (cuu * cvy - cuv * cuy) / det, al = Math.hypot(ax, ay) || 1; ax /= al; ay /= al;   // (ax, ay): the texture direction in which he gets taller
+  let uMin = 1e9, uMax = -1e9, pMin = 1e9, pMax = -1e9; for (let i = 0; i < pts.length; i += 2) { const dx = pts[i] - mu, dy = pts[i + 1] - mv, a = dx * ax + dy * ay, b = -dx * ay + dy * ax; uMin = Math.min(uMin, a); uMax = Math.max(uMax, a); pMin = Math.min(pMin, b); pMax = Math.max(pMax, b); }
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.flipY = !!M.baseFlip; tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.repeat.set(W / bw, H / bh); tex.offset.set(-x0 / bw, M.baseFlip ? (y0 + bh - H) / bh : -y0 / bh);
+  TANK_ANIM = { M: M.baseImg, cv, x: cv.getContext('2d'), tex, mk, sc, x0, y0, mu, mv, ax, ay, uMin, uMax, pMin, pMax, kind: null };
+  return TANK_ANIM;
+}
+function tankAnimDraw() {
+  const A = TANK_ANIM; if (!A || !A.kind) return; const S = animSrc(A.kind), x = A.x, w = A.cv.width, h = A.cv.height;
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, w, h);
+  // into the patch's frame: centre, then rotate so the picture's up runs along (ax, ay)
+  x.setTransform(A.sc, 0, 0, A.sc, -A.x0 * A.sc, -A.y0 * A.sc); x.translate(A.mu, A.mv); x.rotate(Math.atan2(A.ax, -A.ay));
+  const pad = 1.06; x.drawImage(S.cv, A.pMin * pad, -A.uMax * pad, (A.pMax - A.pMin) * pad, (A.uMax - A.uMin) * pad);
+  x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'destination-in'; x.drawImage(A.mk, 0, 0, w, h); x.globalCompositeOperation = 'source-over';
+  A.tex.needsUpdate = true;
+}
+function tankAnimOn(M, matB, kind, mat) {   /* switch a material's glow to the live tank (or back) */
+  const live = kind === 'flame' || kind === 'bolt', A = live ? tankAnimSetup(M) : TANK_ANIM;
+  if (live && A) { if (A.kind !== kind) { A.kind = kind; tankAnimDraw(); } if (matB.emissiveMap !== A.tex) { matB.emissiveMap = A.tex; matB.emissive.setRGB(1, 1, 1); matB.needsUpdate = true; } matB.emissiveIntensity = 1.6; return; }
+  if (A && matB.emissiveMap === A.tex) { matB.emissiveMap = mat ? mat.emissiveMap : null; matB.emissiveIntensity = mat ? mat.emissiveIntensity : 0; matB.needsUpdate = true; }
 }
 function boltTick() { const t = performance.now(); let drew = false; if (BOLT && t - BOLT.t >= 70) { BOLT.t = t; boltDraw(); drew = true; } if (FIRE && t - FIRE.t >= 60) { FIRE.t = t; fireDraw(); drew = true; }
-  if (drew && LKP && ((LKP.bolt && LKP.bolt.visible) || (LKP.fire && LKP.fire.visible)) && !$('shinies').hidden) { updateHose(LKP.hose); LKP.r.render(LKP.sc, LKP.cam); } }
+  if (drew && LKP && LKP.can && LKP.can.visible && !$('shinies').hidden) { updateHose(LKP.hose); LKP.r.render(LKP.sc, LKP.cam); } }
 function lockerPreview() {   /* the exterminator in your chosen outfit, drawn into the Locker */
   const cv = $('lkPrev'); if (!cv) return;
   const M = EXT.userData.mdl; if (!EXT_GLTF || !M) { cv.hidden = true; return; } cv.hidden = false;
@@ -3322,10 +3397,9 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
     for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, () => { drag = null; });
     lkpCam();
   }
-  { const gb = n => LKP.m.getObjectByName('mixamorig' + n) || LKP.m.getObjectByName('mixamorig:' + n); if (LKP.bolt === undefined) LKP.bolt = boltTank(LKP.m, M, gb); if (LKP.fire === undefined) LKP.fire = boltTank(LKP.m, M, gb, 'flame'); }
   let sync = true; const look = myLook(), T = outfitTextures(M, look.suit, false, tankKind(look), () => { if (!sync && LKP && !$('shinies').hidden) lockerPreview(); }); sync = false;   /* not built yet: draw again when it is */
   if (T) { if (!LKP.split && M.painted) { LKP.split = true; splitExt({ m: LKP.m, baseImg: M.baseImg, baseFlip: M.baseFlip }, M.painted); } LKP.mat.map = T.map; LKP.mat.emissiveMap = T.glow; LKP.mat.emissiveIntensity = T.glow ? (T.toxic ? 1.0 : 0.55) : 0; LKP.mat.roughnessMap = LKP.mat.metalnessMap = T.mr; LKP.mat.roughness = T.mr ? 1 : 0.8; LKP.mat.metalness = T.mr ? 1 : 0; LKP.mat.needsUpdate = true;
-    LKP.matB.map = T.mapB || T.map; LKP.matB.emissiveMap = T.glow; LKP.matB.emissiveIntensity = LKP.mat.emissiveIntensity; LKP.matB.needsUpdate = true; } if (LKP.crown) LKP.crown.visible = !!look.crown; if (LKP.bolt) LKP.bolt.visible = tankKind(look) === 'bolt'; if (LKP.fire) LKP.fire.visible = tankKind(look) === 'flame';
+    LKP.matB.map = T.mapB || T.map; LKP.matB.emissiveMap = T.glow; LKP.matB.emissiveIntensity = LKP.mat.emissiveIntensity; LKP.matB.needsUpdate = true; } if (LKP.crown) LKP.crown.visible = !!look.crown; canisterSet(LKP, LKP.m, M, tankKind(look));
   { const w = cv.clientWidth || 180, h = cv.clientHeight || 210, sz = LKP.r.getSize(new THREE.Vector2()); if (sz.x !== w || sz.y !== h) { LKP.r.setSize(w, h, false); LKP.cam.aspect = w / h; LKP.cam.updateProjectionMatrix(); } }
   updateHose(LKP.hose); LKP.r.render(LKP.sc, LKP.cam);
 }
@@ -4105,16 +4179,13 @@ const extC = new THREE.Color();
 function extLook(EXTM, look) {   /* put an outfit on a modelled exterminator (repaints only when it changes) */
   const u = EXTM.userData, M = u.mdl; u.look = look; u.trim.visible = false; u.halo.visible = false;
   if (!M) return;
-  if (tankKind(look) === 'bolt' && M.bolt === undefined && M.tankMask) M.bolt = boltTank(M.m, M, n => M.m.getObjectByName('mixamorig' + n) || M.m.getObjectByName('mixamorig:' + n));
-  if (M.bolt) M.bolt.visible = tankKind(look) === 'bolt';
-  if (tankKind(look) === 'flame' && M.fire === undefined && M.tankMask) M.fire = boltTank(M.m, M, n => M.m.getObjectByName('mixamorig' + n) || M.m.getObjectByName('mixamorig:' + n), 'flame');
-  if (M.fire) M.fire.visible = tankKind(look) === 'flame';
   const key = look.suit + '|' + tankKind(look);
   if (M.want !== key && M.baseImg) { M.want = key;   /* built in slices; he keeps his current look until the new one is ready */
     outfitTextures(M, look.suit, M.red, tankKind(look), T => { if (M.want !== key) return; M.look = key; try { const v = $('ver'); if (v && !M.red) v.dataset.outfit = key + (T.map.mipmaps && T.map.mipmaps.length > 1 ? ' mips' : ' nomips'); } catch (e) {} M.T = T; splitExt(M, M.painted); M.mat.map = T.map; M.mat.emissiveMap = T.glow; M.mat.emissiveIntensity = T.glow ? 0.9 : 0;
       M.mat.roughnessMap = M.mat.metalnessMap = T.mr; M.mat.roughness = T.mr ? 1 : 0.8; M.mat.metalness = T.mr ? 1 : 0; M.mat.needsUpdate = true;
       if (M.matB) { M.matB.map = T.mapB || T.map; M.matB.emissiveMap = T.glow; M.matB.emissiveIntensity = T.glow ? 0.9 : 0; M.matB.roughnessMap = M.matB.metalnessMap = null; M.matB.roughness = 0.8; M.matB.metalness = 0; M.matB.needsUpdate = true; } }); }   /* gold suit: metal and shine where the suit is */
   if (M.mat.emissiveMap) { const t = performance.now(); M.mat.emissiveIntensity = M.T && M.T.toxic ? 0.95 + Math.sin(t / 260) * 0.35 : 0.5 + Math.sin(t / 700) * 0.12; if (M.matB) M.matB.emissiveIntensity = M.mat.emissiveIntensity; }   // the toxic tank pulses; gold shimmers softly
+  canisterSet(M, M.m, M, tankKind(look));
   if (M.crown && M.crown.userData.glow) M.crown.userData.glow.emissiveIntensity = 0.85 + Math.sin(performance.now() / 500) * 0.25;
   if (M.crown) M.crown.visible = !!look.crown;
   if (M.tank) M.tank.visible = false;
@@ -4161,22 +4232,18 @@ function drawOneExt(dt, EXTM, e, show) {
   if (pet) { u.arms[1].rotation.x = -2.2; u.arms[1].rotation.z = Math.sin(clock * 6) * 0.35; }   // reaching up and waving to the cat
   u.body.rotation.x = work ? 0.35 : spray ? 0.12 : 0;
   u.wand.visible = !u.mdl && (spray || (walk && !!e.abil));
-  if (u.fjet) u.fjet.visible = false;
   if (spray && dt > 0) {
     u.tip.getWorldPosition(tmpV); const fx = Math.sin(EXTM.rotation.y), fz = Math.cos(EXTM.rotation.y);
     for (let i = 0; i < 4; i++) {
       const reachK = e.abil && e.abil.tgtD ? Math.max(0.45, Math.min(1, (e.abil.tgtD + 1.2) / 6)) : 1, j = (Math.random() - 0.5) * 0.9, c = Math.cos(j), sn = Math.sin(j), sp = (9 + Math.random() * 5) * reachK;   /* a bug 3 away gets a short burst, one at full range the long jet */
       const vx = (fx * c - fz * sn) * sp, vy = -0.6 + Math.random() * 1.2, vz = (fz * c + fx * sn) * sp, st = (u.look && u.look.spray) || 'mist';
-      if (st === 'flame') {   /* a flamethrower: a solid, flickering cone of fire from the nozzle to the bugs (scrolling flame texture), with fire billowing up off the far end */
-        if (i === 0) { const J = u.fjet || (u.fjet = flameJet()), reach = Math.max(2.2, Math.min(ABIL.range, (e.abil && e.abil.tgtD) || ABIL.range)) * (0.95 + Math.random() * 0.1);
-          J.visible = true; J.position.copy(tmpV); J.rotation.set(0, Math.atan2(fx, fz), (Math.random() - 0.5) * 0.3); { const wv = 0.85 + Math.random() * 0.3; J.scale.set(wv * (1.25 + Math.sin(clock * 23) * 0.12), wv, reach); } J.userData.t = clock;
-          for (const m of J.userData.mats) { m.map.offset.y = -clock * 2.6 + m.userData.ph; m.opacity = m.userData.a * (0.85 + Math.random() * 0.15); }
-          const ex = tmpV.x + fx * reach, ez = tmpV.z + fz * reach;
-          FX.fire.spawn({ heat: 1, x: ex - fx * 0.5, y: tmpV.y, z: ez - fz * 0.5, vx: (Math.random() - 0.5) * 1.5, vy: 2 + Math.random() * 1.5, vz: (Math.random() - 0.5) * 1.5, drag: 2.2, life: 0.32 + Math.random() * 0.14, s0: 0.8, s1: 1.9, a0: 0.85, a1: 0.85, vr: (Math.random() - 0.5) * 4 });   /* fire billowing up off the end */
-          for (let q = 0; q < 2; q++) { const d = reach * (0.25 + Math.random() * 0.65); FX.fire.spawn({ heat: 1, x: tmpV.x + fx * d + (Math.random() - 0.5) * 0.4, y: tmpV.y, z: tmpV.z + fz * d + (Math.random() - 0.5) * 0.4, vx: fx * 3, vy: 0.8 + Math.random(), vz: fz * 3, drag: 3, life: 0.2 + Math.random() * 0.1, s0: 0.35 + d * 0.08, s1: 0.8 + d * 0.15, a0: 0.75, a1: 0.75, vr: (Math.random() - 0.5) * 6 }); }   /* licks of flame along the jet */
-          if (Math.random() < 0.6) FX.smoke.spawn({ x: ex, y: tmpV.y + 0.9, z: ez, vx: fx * 0.6, vy: 1.8, vz: fz * 0.6, drag: 1.4, life: 1.0 + Math.random() * 0.4, s0: 0.6, s1: 2.4, c: [0.12, 0.1, 0.09], a0: 0.25 });
-          FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, life: 0.05, s0: 0.7 + Math.random() * 0.3, s1: 0.4, c: [1, 0.75, 0.35], a0: 0.8 }); }
-        if (Math.random() < 0.35) { const r = (e.abil && e.abil.tgtD) || ABIL.range, d = Math.random() * Math.min(r, ABIL.range); FX.glow.spawn({ x: tmpV.x + fx * d, y: tmpV.y, z: tmpV.z + fz * d, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 2.5, vz: (Math.random() - 0.5) * 3, drag: 1.2, grav: 5, life: 0.5 + Math.random() * 0.4, s0: 0.13, s1: 0.03, c: [1, 0.75, 0.25], a0: 1 }); } }   /* embers */
+      if (st === 'flame') {   /* a flamethrower tongue: white-hot core at the nozzle, orange body, dark-red ragged tips curling up, embers and smoke off the end */
+        const kx = vx * 1.15, kz = vz * 1.15, vr = (Math.random() - 0.5) * 6;
+        if (i === 0) FX.fire.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: kx, vy: vy * 0.3, vz: kz, drag: 2.2, life: 0.14 + Math.random() * 0.06, s0: 0.3, s1: 0.8, c: [1, 0.95, 0.6], a0: 0.95, vr });
+        if (i < 2) FX.fire.spawn({ x: tmpV.x + kx * 0.02, y: tmpV.y, z: tmpV.z + kz * 0.02, vx: kx, vy: vy + 1.6, vz: kz, drag: 2.3, life: 0.34 + Math.random() * 0.14, s0: 0.45, s1: 1.7, c: [1, 0.5 + Math.random() * 0.15, 0.06], a0: 0.85, a1: 0, vr });
+        if (Math.random() < 0.5) FX.fire.spawn({ x: tmpV.x + kx * 0.05, y: tmpV.y + 0.1, z: tmpV.z + kz * 0.05, vx: kx * 0.9, vy: vy + 3, vz: kz * 0.9, drag: 2.0, life: 0.5 + Math.random() * 0.25, s0: 0.8, s1: 2.3, c: [0.85, 0.18, 0.03], a0: 0.7, a1: 0, vr: vr * 0.6 });
+        if (Math.random() < 0.35) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: kx * (0.7 + Math.random() * 0.5), vy: vy + 2.5 + Math.random() * 2, vz: kz * (0.7 + Math.random() * 0.5), drag: 1.6, grav: 5, life: 0.55 + Math.random() * 0.4, s0: 0.16, s1: 0.03, c: [1, 0.78, 0.25], a0: 1 });   /* embers */
+        if (i === 0 && Math.random() < 0.7) FX.smoke.spawn({ x: tmpV.x + kx * 0.1, y: tmpV.y + 0.5, z: tmpV.z + kz * 0.1, vx: kx * 0.55, vy: 2.2, vz: kz * 0.55, drag: 1.8, life: 1.0 + Math.random() * 0.4, s0: 0.5, s1: 2.4, c: [0.12, 0.1, 0.09], a0: 0.3 }); }
       else if (st === 'bolt') { if (i === 0) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, life: 0.08, s0: 0.5 + Math.random() * 0.4, s1: 0.2, c: [0.75, 0.88, 1], a0: 0.9 });   /* lightning: a flickering flare at the nozzle, sparks fly off the far end */
         if (Math.random() < 0.35) FX.glow.spawn({ x: tmpV.x + vx * 0.3, y: tmpV.y + vy * 0.3, z: tmpV.z + vz * 0.3, vx: vx * 0.3 + (Math.random() - 0.5) * 4, vy: 1 + Math.random() * 3, vz: vz * 0.3 + (Math.random() - 0.5) * 4, grav: 10, drag: 1, life: 0.25 + Math.random() * 0.3, s0: 0.14, s1: 0.02, c: [0.8, 0.92, 1], a0: 1 }); }
       else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.82, 0.96, 0.85], a0: 0.5 });
