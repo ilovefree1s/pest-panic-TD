@@ -721,7 +721,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="703">v1.201</div>
+    <div id="ver" data-b="704">v1.202</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3265,11 +3265,24 @@ function boltDraw() {
   x.shadowBlur = 0; B.tex.needsUpdate = true;
 }
 let FIRE = null;
-function fireDraw() {   /* the Flame tank: the same flame pattern as the first Flame tank (deep red to yellow tongues), now drifting upward and wavering */
-  const F = FIRE, w = F.cv.width, h = F.cv.height, t = performance.now() / 1000; F.img ||= F.x.createImageData(w, h); const d = F.img.data, k = 2.6;
-  for (let v = 0; v < h; v++) for (let u = 0; u < w; u++) { const U = u * k, V = (v + t * 26) * k, f = Math.max(0, Math.min(1, 0.5 + 0.32 * Math.sin(U * 0.045 + Math.sin(V * 0.031 + t * 0.7) * 2.6) + 0.22 * Math.sin(V * 0.11 + U * 0.017 + Math.sin(U * 0.07 + t) * 1.7) + 0.12 * Math.sin((U + V) * 0.23)));
-    const i = (v * w + u) * 4; d[i] = 200 + 55 * f; d[i + 1] = 40 + 175 * f * f; d[i + 2] = 10 + 60 * f * f * f; d[i + 3] = 255; }
-  F.x.putImageData(F.img, 0, 0); F.tex.needsUpdate = true;
+function fireDraw() {   /* the Flame tank: soft glowing layered flames, white-hot cores, red edges fading to dark, a heat glow at the base and sparks */
+  const F = FIRE, x = F.x, w = F.cv.width, h = F.cv.height, t = performance.now() / 1000;   // A, but real-looking: soft glowing tongues in layers, hot white-yellow cores, red edges fading to dark, a heat glow at the base, sparks
+  x.globalCompositeOperation = 'source-over'; const bg = x.createLinearGradient(0, h, 0, 0); bg.addColorStop(0, '#4a0c03'); bg.addColorStop(0.5, '#1c0402'); bg.addColorStop(1, '#0c0201'); x.fillStyle = bg; x.fillRect(0, 0, w, h);
+  x.globalCompositeOperation = 'lighter';
+  const tongue = (cx, fh, fw, lean, cols, alpha, blur) => { const tipx = cx + lean, g = x.createLinearGradient(0, h, 0, h - fh); g.addColorStop(0, cols[0]); g.addColorStop(0.45, cols[1]); g.addColorStop(0.8, cols[2]); g.addColorStop(1, 'rgba(120,10,0,0)');
+    x.globalAlpha = alpha; x.fillStyle = g; x.filter = blur ? `blur(${blur}px)` : 'none';
+    x.beginPath(); x.moveTo(cx - fw, h + 2); x.bezierCurveTo(cx - fw * 1.15, h - fh * 0.45, tipx - fw * 0.5, h - fh * 0.7, tipx, h - fh); x.bezierCurveTo(tipx + fw * 0.5, h - fh * 0.7, cx + fw * 1.15, h - fh * 0.45, cx + fw, h + 2); x.fill(); };
+  for (let k = 0; k < 6; k++) { const cx = (k + 0.5) / 6 * w + Math.sin(t * 1.3 + k * 2) * 4, fh = h * (0.72 + 0.22 * (0.5 + 0.5 * Math.sin(t * 4.3 + k * 1.7)) + 0.06 * Math.sin(t * 11 + k)), lean = Math.sin(t * 3.1 + k * 1.3) * w * 0.07;
+    tongue(cx, fh, w * 0.14, lean, ['rgba(255,90,10,1)', 'rgba(230,40,5,.85)', 'rgba(150,15,0,.5)'], 0.85, 3); }   // outer red-orange body, soft
+  for (let k = 0; k < 7; k++) { const cx = (k + 0.25) / 7 * w + Math.sin(t * 1.7 + k) * 3, fh = h * (0.45 + 0.2 * (0.5 + 0.5 * Math.sin(t * 5.7 + k * 2.3))), lean = Math.sin(t * 4 + k * 1.9) * w * 0.06;
+    tongue(cx, fh, w * 0.09, lean, ['rgba(255,200,60,1)', 'rgba(255,130,20,.8)', 'rgba(255,60,0,.3)'], 0.8, 2); }   // orange-yellow middle
+  for (let k = 0; k < 5; k++) { const cx = (k + 0.5) / 5 * w + Math.sin(t * 2.3 + k * 1.1) * 3, fh = h * (0.22 + 0.12 * (0.5 + 0.5 * Math.sin(t * 7 + k * 2.9))), lean = Math.sin(t * 5 + k) * w * 0.04;
+    tongue(cx, fh, w * 0.07, lean, ['rgba(255,250,220,1)', 'rgba(255,220,110,.8)', 'rgba(255,160,40,.2)'], 0.75, 1.5); }   // white-hot cores
+  x.filter = 'none'; x.globalAlpha = 1;
+  const hg = x.createRadialGradient(w / 2, h * 1.05, 0, w / 2, h * 1.05, w * 0.8); hg.addColorStop(0, 'rgba(255,200,90,.6)'); hg.addColorStop(1, 'rgba(255,80,0,0)'); x.fillStyle = hg; x.fillRect(0, 0, w, h);   // heat at the base
+  for (let k = 0; k < 10; k++) { const ph = (t * (0.35 + (k % 4) * 0.08) + k * 0.11) % 1, ex = ((k * 0.618) % 1) * w + Math.sin(t * 3 + k) * 6, ey = h * 0.9 - ph * h; x.fillStyle = `rgba(255,${190 + (k % 3) * 20},90,${(1 - ph) * 0.9})`; x.fillRect(ex, ey, 1.6, 1.6); }   // sparks
+  x.globalCompositeOperation = 'source-over';
+  F.tex.needsUpdate = true;
 }
 function boltTank(root, M, getBone, kind = 'bolt') {   /* fit the shell to the tank's own triangles (from the tank's patch of the texture) and pin it to his spine */
   if (!M || !M.tankMask || !M.baseImg) return null;
@@ -3332,7 +3345,7 @@ function toxDraw() {   /* the Toxic tank: glowing green goo with bubbles rising 
 }
 function animSrc(kind) {   /* the 96x128 flame / lightning pictures, redrawn live */
   const mk = (n = 128) => { const cv = document.createElement('canvas'); cv.width = n; cv.height = n; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(2, 1); return { cv, x: cv.getContext('2d'), t: 0, tex }; };
-  if (kind === 'flame' && !FIRE) { FIRE = mk(96); fireDraw(); }
+  if (kind === 'flame' && !FIRE) { FIRE = mk(128); fireDraw(); }
   if (kind === 'bolt' && !BOLT) { BOLT = mk(); boltDraw(); }
   if (kind === 'toxic' && !TOX) { TOX = mk(); toxDraw(); }
   return kind === 'flame' ? FIRE : kind === 'bolt' ? BOLT : TOX;
