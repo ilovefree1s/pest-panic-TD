@@ -687,7 +687,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="666">v1.164</div>
+    <div id="ver" data-b="667">v1.165</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -9436,7 +9436,7 @@ const TUT_STEPS = [
   { arrow: () => $('go'), txt: () => 'Wave cleared! Between waves the next one starts by itself after 10 seconds. Send it <b>early</b> for <b>bonus coins</b>: 2 for every second left on the clock. You can even send the next wave while one is still going, for a bonus too. Tap <b>Send bugs</b> for wave 2.', hi: () => $('go'), done: () => S.active && S.wave >= 2 },
   { txt: () => 'Tip: tap <b>1×</b> to play at <b>2×</b> speed. Tap it again to slow back down.', arrow: () => $('bSpeed'), top: true, next: true, done: () => S.speed > 1 || !S.active },
   { quiet: true, txt: () => '', done: () => !S.active || ((TUT.pastAt != null || (tutPastSwat() && (TUT.pastAt = TUT.t) != null)) && TUT.t - TUT.pastAt >= 2) || (S.queue.length === 0 && S.bugs.some(b => !b.dead) && S.bugs.filter(b => !b.dead).length <= 3) },   /* the front bug reaches the last stretch (or only the last few are left)   /* (bubble hidden) wait for the bugs to reach the last stretch before the cake */
-  { txt: () => (() => { const L = S.bugs.length ? leadBug() : null; return L ? 'That <b>' + (BUG_NAME[L.t] || (BT[L.t] && BT[L.t].name) || 'bug').toLowerCase() + '</b> got past your Fly Swatter!' : 'A bug got past your Fly Swatter!'; })() + ' No time to build. Tap your <b>Spray</b>: the exterminator runs to the bugs nearest the cake and sprays them all. It\'s <b>free</b>, it just needs a minute to recharge after each use.', enter: tutSpiders, slow: true, arrow: () => $('abil'), side: 'right', near: () => $('abil'), done: () => (S.abilCd || 0) > 0 || !S.active || $('abil').hidden, min: 0.5 },
+  { txt: () => (() => { const L = S.bugs.length ? leadBug() : null; return L ? 'That <b>' + (BUG_NAME[L.t] || (BT[L.t] && BT[L.t].name) || 'bug').toLowerCase() + '</b> got past your Fly Swatter!' : 'A bug got past your Fly Swatter!'; })() + ' Tap your <b>Spray</b>!', enter: tutSpiders, slow: true, arrow: () => $('abil'), side: 'right', near: () => $('abil'), done: () => (S.abilCd || 0) > 0 || !S.active || $('abil').hidden, min: 0.5 },
   { quiet: true, txt: () => '', done: () => !S.active && S.wave >= 2 },   /* bubble out of the way so they can watch the spray */
   { arrowPt: () => tutFloorPt(S.towers.find(t => t.t === 'swat')), txt: () => 'Wave 2 cleared! ' + (ptrType === 'mouse' ? 'Click' : 'Tap') + ' your <b>Fly Swatter</b> on the floor to see what it can do.', done: () => !!S.pick },
   { arrow: () => $('bUp'), txt: () => '<b>Upgrade</b> it to get ready for wave 3. The exterminator walks over to do it. (Closed the card? Tap your Fly Swatter again.)', hi: () => $('bUp'), done: () => S.towers.some(t => t.t === 'swat' && (t.lv > 1 || t.upPending)) },
