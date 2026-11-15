@@ -717,7 +717,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="682">v1.180</div>
+    <div id="ver" data-b="683">v1.181</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5078,7 +5078,7 @@ function showRange(x, z, r, color, fill) {
 
 // ---------------------------------------------------------------- sound (synthesized, no files)
 const SND = (() => {
-  let ac = null, out = null, noise = null, LONG_NOISE = null, muted = false, vol = 1;
+  let ac = null, out = null, noise = null, LONG_NOISE = null, LONG_WHITE = null, muted = false, vol = 1;
   try { const v = localStorage.getItem('ppd-sfx'); if (v !== null) vol = +v; } catch (e) {}
   try { muted = localStorage.getItem('ppd-muted') === '1'; } catch (e) {}
   const last = {}, AMB = { on: false }; let SPRAY_SRC = null;
@@ -5114,7 +5114,8 @@ const SND = (() => {
     spray: () => hiss(0.4, 0.22, 5000, 0.6, 'highpass'),
     sprayStart: () => {   /* a steady sound held while he sprays: psssht for mist, a roar for flame, a buzzing crackle for lightning */
       if (SPRAY_SRC) return; const t = ac.currentTime, g = ac.createGain(), srcs = [], kind = (typeof EXT !== 'undefined' && EXT.userData.look && EXT.userData.look.spray) || 'mist'; let iv = null;
-      const loopNoise = () => { const src = ac.createBufferSource(); src.buffer = noise; src.loop = true; src.playbackRate.value = 0.8 + Math.random() * 0.4; srcs.push(src); return src; };
+      if (!LONG_WHITE) { LONG_WHITE = ac.createBuffer(1, ac.sampleRate * 4, ac.sampleRate); const d = LONG_WHITE.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }   /* 4 s of hiss so the held spray never audibly loops */
+      const loopNoise = () => { const src = ac.createBufferSource(); src.buffer = LONG_WHITE; src.loop = true; src.playbackRate.value = 0.8 + Math.random() * 0.4; srcs.push(src); return src; };
       if (kind === 'flame') {
         if (!LONG_NOISE) { LONG_NOISE = ac.createBuffer(1, ac.sampleRate * 4, ac.sampleRate); const d = LONG_NOISE.getChannelData(0); let b = 0; for (let i = 0; i < d.length; i++) { b = b * 0.6 + (Math.random() * 2 - 1) * 0.4; d[i] = b * 1.6; } }   /* 4 s of soft noise: no audible loop */
         const mk = r => { const x = ac.createBufferSource(); x.buffer = LONG_NOISE; x.loop = true; x.playbackRate.value = r; x.loopStart = 0; srcs.push(x); return x; };
