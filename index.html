@@ -238,6 +238,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .sh svg{width:52px;height:52px} .sh b{font:800 13px var(--body);color:var(--text)} .sh small{font-size:11px;color:var(--dim)}
 .sh .shimg{width:72px;height:72px;object-fit:contain} .sh.no .shimg{filter:brightness(0) opacity(.4)} .sh.yes .shimg{animation:shGlow 3s linear infinite}
 /* shiny capture: the caught bug's picture flies into the jar, and the jar wobbles when it lands */
+.dDay{position:absolute;top:max(10px,env(safe-area-inset-top));right:12px;z-index:2;padding:6px 12px;border-radius:999px;border:1.5px solid rgba(255,201,60,.45);background:rgba(255,201,60,.1);color:#ffd88a;font:800 12px var(--body);letter-spacing:.03em;cursor:pointer}
+.dDay:active{background:rgba(255,201,60,.25)} #daily{position:fixed} #daily > h2.t{margin-top:22px}
 .lvSp{color:#ffc93c;text-shadow:0 0 8px rgba(255,201,60,.5)}
 .catchFly{position:fixed;z-index:60;width:58px;height:58px;pointer-events:none;filter:drop-shadow(0 0 8px #fff) drop-shadow(0 0 14px #ffd54a);animation:shGlow 1.2s linear infinite}
 .catchFly img{width:100%;height:100%;object-fit:contain}
@@ -717,7 +719,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="683">v1.181</div>
+    <div id="ver" data-b="684">v1.182</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -767,6 +769,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
       <p class="rotTip">Tip: turn your phone sideways for a bigger board with your tools on the right.</p>
     </div>
     <div class="screen" id="daily" hidden>
+      <button type="button" class="dDay" id="dDay">◀ Yesterday</button>
       <h2 class="t">Daily Kitchen</h2>
       <div class="dKit"><div class="dKitTop"><canvas id="dMap" width="168" height="128"></canvas><div class="dKitB"><b id="dKitN"></b><span id="dSub"></span></div><button type="button" class="dInfo" id="dInfo" aria-label="How it works">i</button></div><div id="dTw" hidden></div></div>
       <p class="hint dTie" id="dTie" hidden></p>
@@ -8815,34 +8818,39 @@ function drawDailyMap(L) {   /* little floor plan: tiles, trails from each door,
 }
 async function renderBoard(day) {
   const ol = $('dBoard'), you = $('dYou'), mine = dailyMine(day); ol.innerHTML = '<li class="one"><span class="nm">Loading…</span></li>'; you.textContent = '';
-  if (mine && mine.sent !== 3 && !(await lbSubmit(day, mine.w, mine.k, mine.bd || 0))) you.textContent = 'Your score hasn\'t reached the board yet (' + LB_ERR + '). It will try again next time.';   /* a run that couldn't be sent gets another go */
+  if (day >= dailyDay() && mine && mine.sent !== 3 && !(await lbSubmit(day, mine.w, mine.k, mine.bd || 0))) you.textContent = 'Your score hasn\'t reached the board yet (' + LB_ERR + '). It will try again next time.';   /* a run that couldn't be sent gets another go */
   const top = await lbTop(day);
   if (!top) { ol.innerHTML = '<li class="one"><span class="nm">The leaderboard isn\'t reachable right now.</span></li>'; return; }
   const me = myPid();
   if (mine && mine.sent === 3 && top.length < 50 && !top.some(t => t.pid === me) && !renderBoard.healed) { renderBoard.healed = true; mine.sent = 0; LS.set('ppd-daily-' + day, JSON.stringify(mine)); return renderBoard(day); }   /* our score went missing from the board: send it again */
-  if (!top.length) { ol.innerHTML = '<li class="one"><span class="nm">No scores yet today. Be the first!</span></li>'; return; }
+  if (!top.length) { ol.innerHTML = '<li class="one"><span class="nm">' + (day < dailyDay() ? 'Nobody raced that day.' : 'No scores yet today. Be the first!') + '</span></li>'; return; }
   const row = t => isRace(day) ? (t.waves >= raceWaves(day) ? `<span class="wv">${raceCake(t.kills, day).perfect ? '🏁 ' : ''}${fmtT(-t.boss_dmg / 10)}</span><span class="kl">${raceCake(t.kills, day).txt.replace(' cake', '')}</span>` : `<span class="wv">Wave ${t.waves}</span><span class="kl">—</span>`) : `<span class="wv">Wave ${t.waves}</span><span class="kl">${fmtBd(t.boss_dmg)} boss dmg</span>`;
   ol.innerHTML = `<li class="hd"><span>#</span><span>Player</span><span>${isRace(day) ? 'Time' : 'Wave'}</span><span>${isRace(day) ? 'Cake' : 'Boss dmg'}</span></li>` + top.map((t, i) => `<li class="${t.pid === me ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${cleanName(t.name)}</span>${row(t)}</li>`).join('');
   { const i = top.findIndex(t => t.pid === me), el = $('dRank'); if (el && i >= 0) el.textContent = '· #' + (i + 1) + (top.length < 50 ? ' of ' + top.length : ''); }
   if (mine && mine.sent && !top.some(t => t.pid === me)) { const rk = await lbRank(day, mine.w, mine.k, mine.bd || 0); if (rk) you.textContent = 'You: #' + rk + (isRace(day) ? (mine.w >= raceWaves(day) ? ' · ' + fmtT(mine.t) + ' · ' + raceCake(mine.k, day).txt.toLowerCase() : ' · wave ' + mine.w) : ' · wave ' + mine.w + ' · ' + fmtBd(mine.bd) + ' boss dmg'); }
 }
-function openDaily() {
-  setupDaily(); const L = LEVELS[DAILY_LV], day = L.day; let mine = dailyMine(day);
+let DAILY_VIEW = 0;   /* 0 = today, -1 = yesterday's board (read-only) */
+const dayShift = (day, n) => new Date(Date.parse(day + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+function openDaily(view = 0) {
+  DAILY_VIEW = view; const today = dailyDay(); setupDaily(view ? dayShift(today, view) : today); const L = LEVELS[DAILY_LV], day = L.day; let mine = dailyMine(day); const past = !!view;
+  $('dDay').textContent = past ? 'Today ▶' : '◀ Yesterday';
   if (day === '2026-11-11' && mine && mine.w >= RACE_WAVES && mine.k < 2 && myName() === 'mrfree1') { mine.k = 11; mine.sent = 0; LS.set('ppd-daily-' + day, JSON.stringify(mine)); }   /* one-off: the run posted before slices-left were stored (9/10 that day) */
   const race = isRace(day);
   const full = L.twists.includes('glass') ? 5 : 10;
   $('dKitN').textContent = HOUSES[L.look].name; $('dSub').textContent = day.slice(5).replace('-', '/') + ' · ' + L.routes.length + (L.routes.length > 1 ? ' doors' : ' door') + ' · ' + full + ' slices · ' + (race ? 'race to wave ' + RACE_WAVES : 'endless waves'); drawDailyMap(L);
-  document.querySelector('#daily h2').textContent = race ? 'Daily Race' : 'Daily Kitchen';
+  document.querySelector('#daily h2').textContent = (past ? 'Yesterday\'s ' : 'Daily ') + (race ? 'Race' : 'Kitchen');
   $('dRule').textContent = race ? '· perfect first, then fastest' : '· waves, then boss damage';
-  const seen = LS.get('ppd-twseen') === day;   /* keep today's twists a surprise until the slot machine has rolled them */
+  const seen = past || LS.get('ppd-twseen') === day;   /* keep today's twists a surprise until the slot machine has rolled them */
   $('dTw').hidden = !L.twists.length; $('dTw').innerHTML = seen ? L.twists.map(k => `<span>${TWIST[k][1]} ${TWIST[k][2]}</span>`).join('') : `<button type="button" class="twSpin" id="twSpin"><b>🎰 Spin for today's twists</b>See them now without starting a run</button>`;
   if (!seen && $('twSpin')) $('twSpin').onclick = () => { SND.init(); slotMachine(L.twists, () => openDaily()); };   // reveal them right here, no run started
   $('dTie').innerHTML = (seen ? L.twists.map(k => `<b>${TWIST[k][1]} ${TWIST[k][2]}</b> — ${TWIST[k][3]}<br>`).join('') : '') + (race ? 'Clear ' + RACE_WAVES + ' waves as fast as you can. Runs that keep more cake rank higher, then fastest time. The clock counts game time, so speed-up doesn\'t help: calling waves early does.' : 'Same wave? Whoever did more damage to bosses ranks higher.');
   $('dTie').hidden = true; $('dInfo').classList.remove('on'); $('dInfo').onclick = () => { const h = !$('dTie').hidden; $('dTie').hidden = h; $('dInfo').classList.toggle('on', !h); };
   const cakeBar = left => `<span class="cake">${Array.from({ length: full }, (_, i) => `<i class="${i < left ? '' : 'l'}"><svg viewBox="0 0 48 48"><path d="M6 30 24 12l18 18v10H6z" fill="#f3d9a8"/><path d="M6 30 24 12l18 18v4c-3 3-5-1-8 2s-5-1-8 2-5-1-8 2-5-1-8 2z" fill="#ff8fb8"/><rect x="6" y="36" width="36" height="3" fill="#fff4e6"/><circle cx="24" cy="10" r="4" fill="#d6183c"/><path d="M24 7c1-3 3-4 5-4" stroke="#2f7d12" stroke-width="2" fill="none"/></svg></i>`).join('')}</span>`;
   const left = mine && mine.k >= 2 ? Math.min(full, mine.k - 2) : mine && mine.p ? full : null;
-  $('dMine').innerHTML = (race ? 'Your run today' : 'Your score today') + ' <em id="dRank"></em>' + (mine ? (race ? `<b class="${mine.w >= RACE_WAVES ? '' : 'sm'}">${mine.w >= RACE_WAVES ? fmtT(mine.t) + (mine.p ? ' 🏁' : '') : 'Wave ' + mine.w}</b>` : `<b>Wave ${mine.w}</b>`) : `<b class="sm">${race ? 'Not raced yet' : 'Not played yet'}</b>`)
+  $('dMine').innerHTML = (race ? 'Your run ' : 'Your score ') + (past ? 'yesterday' : 'today') + ' <em id="dRank"></em>' + (mine ? (race ? `<b class="${mine.w >= RACE_WAVES ? '' : 'sm'}">${mine.w >= RACE_WAVES ? fmtT(mine.t) + (mine.p ? ' 🏁' : '') : 'Wave ' + mine.w}</b>` : `<b>Wave ${mine.w}</b>`) : `<b class="sm">${race ? 'Not raced yet' : 'Not played yet'}</b>`)
     + `<div class="cr">${mine && race && left != null ? cakeBar(left) + `<span>${left >= full ? 'Perfect' : left + '/' + full + ' cake'}</span>` : mine && race ? '<span>' + (mine.w >= RACE_WAVES ? 'Lost cake' : 'Cake eaten') + '</span>' : ''}<span>${dailyStreak()} 🔥 streak</span></div>`;
+  $('dPlay').hidden = past; $('dMine').hidden = past && !mine;
+  if (past) { $('title').hidden = true; $('daily').hidden = false; renderBoard(day); setupDaily(today); return; }   // the game itself stays on today's kitchen
   settleOldDaily(); const sv = loadRun(DRUN_KEY);
   $('dPlay').textContent = sv ? 'Continue (after wave ' + sv.wave + ', ' + sv.lives + ' slices)' : mine ? 'Practice again' : 'Play today\'s kitchen';
   $('title').hidden = true; $('daily').hidden = false; renderBoard(day);
@@ -8879,7 +8887,8 @@ function dailyOver() {
   $('over').hidden = false; $('tip').hidden = true; $('queen').hidden = true; syncTray(); SND.play(done ? 'win' : 'lose');
 }
 $('dailyT').addEventListener('click', () => { SND.init(); openDaily(); });
-$('dBack').addEventListener('click', () => { $('daily').hidden = true; $('title').hidden = false; });
+$('dDay').addEventListener('click', () => { SND.play('tap'); openDaily(DAILY_VIEW ? 0 : -1); });
+$('dBack').addEventListener('click', () => { DAILY_VIEW = 0; setupDaily(); $('daily').hidden = true; $('title').hidden = false; });
 $('dPlay').addEventListener('click', () => { SND.init(); $('daily').hidden = true; startDaily(); });
 $('dName').addEventListener('change', () => LS.set('ppd-name', cleanName($('dName').value)));
 $('soloT').addEventListener('click', () => { SND.init(); $('title').hidden = true; $('solo').hidden = false; });
