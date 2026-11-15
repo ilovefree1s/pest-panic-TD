@@ -721,7 +721,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="704">v1.202</div>
+    <div id="ver" data-b="705">v1.203</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3197,11 +3197,17 @@ function fitExtModel(root, gltf, red) {
       // the Exterminator King's crown, sitting on top of his cap
       const head = B('Head'); let top = -1e9; for (let i = 0; i < P.count; i++) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.y > top) top = v.y; }
       const hp = head.getWorldPosition(new V3()), R = Hh * 0.1, goldM = std({ color: '#ffcc33', metalness: 1, roughness: 0.25, emissive: '#ff9d00', emissiveIntensity: 0.85 }), gem = std({ color: '#e0283a', roughness: 0.2, emissive: '#600', emissiveIntensity: 0.6 });
-      crown = new THREE.Group();
-      crown.add(mesh(new THREE.CylinderGeometry(R, R * 0.92, R * 0.45, 20, 1, true), goldM));
-      for (let k = 0; k < 6; k++) { const ang = k / 6 * TAU, sp = mesh(new THREE.ConeGeometry(R * 0.22, R * 0.62, 6), goldM); sp.position.set(Math.sin(ang) * R * 0.95, R * 0.5, Math.cos(ang) * R * 0.95); crown.add(sp); const ball = mesh(sph(R * 0.09, 8, 6), goldM); ball.position.set(Math.sin(ang) * R * 0.95, R * 0.85, Math.cos(ang) * R * 0.95); crown.add(ball); }
-      const gm = mesh(sph(R * 0.16, 10, 8), gem); gm.position.set(0, 0, R * 0.95); gm.scale.z = 0.5; crown.add(gm);
-      crown.position.set(hp.x, top - R * 0.02, hp.z - Hh * 0.01); crown.rotation.x = -0.12; crown.userData.glow = goldM; scene.add(crown); head.attach(crown); crown.visible = false;
+      crown = new THREE.Group();   /* a proper king's crown: a flared gold band with rolled rims, jewels all round, tall and short points with pearls, a red velvet cap and an orb on top */
+      const velvet = std({ color: '#9a1022', roughness: 0.85 }), gemB = std({ color: '#2a5cff', roughness: 0.15, emissive: '#0a1a60', emissiveIntensity: 0.6 }), gemG = std({ color: '#1fbf5a', roughness: 0.15, emissive: '#06401a', emissiveIntensity: 0.6 }), pearl = std({ color: '#fff6e8', roughness: 0.3 });
+      crown.add(mesh(new THREE.CylinderGeometry(R, R * 0.9, R * 0.42, 28, 1, true), goldM));
+      for (const [y, r] of [[-R * 0.21, R * 0.905], [R * 0.21, R * 1.0]]) { const rim = mesh(new THREE.TorusGeometry(r, R * 0.05, 8, 32), goldM); rim.rotation.x = Math.PI / 2; rim.position.y = y; crown.add(rim); }
+      for (let k = 0; k < 8; k++) { const ang = k / 8 * TAU, tall = k % 2 === 0, hgt = tall ? R * 0.7 : R * 0.38, sp = mesh(new THREE.ConeGeometry(R * (tall ? 0.2 : 0.15), hgt, 4), goldM);
+        sp.position.set(Math.sin(ang) * R * 0.97, R * 0.21 + hgt / 2, Math.cos(ang) * R * 0.97); sp.rotation.y = ang; crown.add(sp);
+        const ball = mesh(sph(R * (tall ? 0.09 : 0.065), 10, 8), pearl); ball.position.set(Math.sin(ang) * R * 0.97, R * 0.21 + hgt + R * 0.05, Math.cos(ang) * R * 0.97); crown.add(ball);
+        const g = mesh(sph(R * (tall ? 0.13 : 0.09), 10, 8), [gem, gemB, gemG, gemB][k % 4]); g.position.set(Math.sin(ang) * R * 0.99, 0, Math.cos(ang) * R * 0.99); g.lookAt(0, 0, 0); g.scale.z = 0.45; crown.add(g); }
+      const cap = mesh(new THREE.SphereGeometry(R * 0.9, 20, 10, 0, TAU, 0, Math.PI / 2), velvet); cap.scale.y = 0.55; cap.position.y = R * 0.15; crown.add(cap);
+      const orb = mesh(sph(R * 0.13, 12, 10), goldM); orb.position.y = R * 0.72; crown.add(orb); const cr = mesh(new THREE.BoxGeometry(R * 0.05, R * 0.22, R * 0.05), goldM); cr.position.y = R * 0.9; crown.add(cr); const cr2 = mesh(new THREE.BoxGeometry(R * 0.16, R * 0.05, R * 0.05), goldM); cr2.position.y = R * 0.92; crown.add(cr2);
+      crown.scale.setScalar(0.9); crown.position.set(hp.x, top - R * 0.12, hp.z - Hh * 0.01);   /* sits ON the cap (it used to sink into it) */ crown.rotation.x = -0.12; crown.userData.glow = goldM; scene.add(crown); head.attach(crown); crown.visible = false;
     });
   } catch (err) { console.warn('outfit setup', err); }
   if (map) { map.generateMipmaps = false; map.minFilter = THREE.LinearFilter; map.magFilter = THREE.LinearFilter; map.anisotropy = 1; map.needsUpdate = true; }   /* the first frames use the full-size sheet with no shrinking at all (driver-made mipmaps bleed); the proper sheet with its clean mip chain arrives from the outfit pump within a second */
@@ -3402,7 +3408,7 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
     let crown = null; if (M.crown) {
       const hb = m.getObjectByName(M.crown.parent.name); let top = -1e9; m.updateMatrixWorld(true); m.traverse(o => { if (o.isSkinnedMesh) { o.skeleton.update(); const P = o.geometry.attributes.position; for (let i = 0; i < P.count; i++) { const v = o.getVertexPosition(i, XV1).applyMatrix4(o.matrixWorld); if (v.y > top) top = v.y; } } });
       crown = M.crown.clone(); const ws = M.crown.getWorldScale(new V3()).x / (EXT.userData.mdl.m.getWorldScale(new V3()).x || 1);   // crown size relative to the model
-      crown.scale.setScalar(ws * m.getWorldScale(new V3()).x); const hp = hb.getWorldPosition(new V3()); crown.position.set(hp.x, top - h * 0.055, hp.z - h * 0.01); crown.rotation.set(-0.12, 0, 0); sc.add(crown); if (hb) hb.attach(crown);
+      crown.scale.setScalar(ws * m.getWorldScale(new V3()).x); const hp = hb.getWorldPosition(new V3()); crown.position.set(hp.x, top - h * 0.012, hp.z - h * 0.01); crown.rotation.set(-0.12, 0, 0); sc.add(crown); if (hb) hb.attach(crown);
     }
     /* its own little renderer, sharp on any screen: antialiased, at the phone's real pixel density, with the game's colour grading (the shared one drew it washed out and jagged) */
     const r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -4268,7 +4274,7 @@ function drawOneExt(dt, EXTM, e, show) {
         if (i === 0 && Math.random() < 0.7) FX.smoke.spawn({ x: tmpV.x + kx * 0.1, y: tmpV.y + 0.5, z: tmpV.z + kz * 0.1, vx: kx * 0.55, vy: 2.2, vz: kz * 0.55, drag: 1.8, life: 1.0 + Math.random() * 0.4, s0: 0.5, s1: 2.4, c: [0.12, 0.1, 0.09], a0: 0.3 }); }
       else if (st === 'bolt') { if (i === 0) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, life: 0.08, s0: 0.5 + Math.random() * 0.4, s1: 0.2, c: [0.75, 0.88, 1], a0: 0.9 });   /* lightning: a flickering flare at the nozzle, sparks fly off the far end */
         if (Math.random() < 0.35) FX.glow.spawn({ x: tmpV.x + vx * 0.3, y: tmpV.y + vy * 0.3, z: tmpV.z + vz * 0.3, vx: vx * 0.3 + (Math.random() - 0.5) * 4, vy: 1 + Math.random() * 3, vz: vz * 0.3 + (Math.random() - 0.5) * 4, grav: 10, drag: 1, life: 0.25 + Math.random() * 0.3, s0: 0.14, s1: 0.02, c: [0.8, 0.92, 1], a0: 1 }); }
-      else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.82, 0.96, 0.85], a0: 0.5 });
+      else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.45, 1, 0.3], a0: 0.6 });   // toxic green mist
     }
     if (u.look && u.look.spray === 'bolt') {   /* a crackling cone of jagged arcs, redrawn every few frames, the odd one forking to the floor */
       const reachB = e.abil && e.abil.tgtD ? Math.max(1.6, e.abil.tgtD + 0.8) : 5; for (let k = 0; k < 2; k++) if (Math.random() < dt * 40) { const L = reachB * (0.55 + Math.random() * 0.5), j = (Math.random() - 0.5) * 0.9, ex = tmpV.x + (fx * Math.cos(j) - fz * Math.sin(j)) * L, ez = tmpV.z + (fz * Math.cos(j) + fx * Math.sin(j)) * L, ey = Math.max(0.1, tmpV.y - 0.3 - Math.random() * 1.4);
