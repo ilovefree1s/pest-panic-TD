@@ -719,7 +719,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="692">v1.190</div>
+    <div id="ver" data-b="693">v1.191</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2590,7 +2590,24 @@ class Arcs {
     this.aPos.needsUpdate = this.aA.needsUpdate = true;
   }
 }
-const FIRE_STOPS = [[0, 1, 0.98, 0.85, 1], [0.12, 1, 0.85, 0.3, 1], [0.35, 1, 0.52, 0.06, 1], [0.65, 0.88, 0.2, 0.03, 0.85], [0.85, 0.35, 0.09, 0.05, 0.5], [1, 0.12, 0.1, 0.1, 0]], FIRE_OUT = [0, 0, 0, 0];
+function flameJetTex(seed) {   /* streaky flame for the jet cone: white-hot at the nozzle end (v=0) to orange and red at the far end, with ragged streaks that scroll */
+  const W = 64, H = 256, [c, x] = cnv(W, H), r = rng(seed), g = x.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgba(255,235,150,1)'); g.addColorStop(0.1, 'rgba(255,170,40,1)'); g.addColorStop(0.4, 'rgba(255,100,10,.95)'); g.addColorStop(0.75, 'rgba(210,40,8,.75)'); g.addColorStop(1, 'rgba(110,15,5,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.globalCompositeOperation = 'destination-out'; for (let i = 0; i < 40; i++) { const cx = r() * W, w = 3 + r() * 11, y0 = r() * H * 0.6 + H * 0.15, len = 30 + r() * 90, gg = x.createLinearGradient(0, y0, 0, y0 + len); gg.addColorStop(0, 'rgba(0,0,0,0)'); gg.addColorStop(0.5, 'rgba(0,0,0,' + (0.25 + r() * 0.45) + ')'); gg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gg; x.fillRect(cx - w / 2, y0, w, len); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping; return t;
+}
+function flameJet() {   /* two nested cones along +z, length 1 (scaled to the reach): an orange outer body and a hot inner core */
+  const g = new THREE.Group(), mats = [];
+  for (const [r0, r1, a, add, seed] of [[0.1, 0.95, 0.85, false, 3], [0.06, 0.5, 0.55, true, 9]]) {
+    const geo = new THREE.CylinderGeometry(r1, r0, 1, 20, 1, true); geo.rotateX(Math.PI / 2); geo.translate(0, 0, 0.5);
+    const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));   // v=0 at the nozzle
+    const tex = flameJetTex(seed), m = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending, toneMapped: false, opacity: a });
+    tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1, 1); m.userData = { a, ph: seed * 0.37 }; mats.push(m);
+    const mm = new THREE.Mesh(geo, m); mm.renderOrder = add ? 17 : 16; mm.frustumCulled = false; g.add(mm);
+  }
+  g.userData.mats = mats; g.visible = false; scene.add(g); return g;
+}
+const FIRE_STOPS = [[0, 1, 0.95, 0.7, 1], [0.08, 1, 0.82, 0.22, 1], [0.3, 1, 0.5, 0.04, 1], [0.6, 0.92, 0.22, 0.02, 0.9], [0.82, 0.45, 0.08, 0.02, 0.55], [1, 0.15, 0.08, 0.06, 0]], FIRE_OUT = [0, 0, 0, 0];
 function FIRE_RAMP(k) { let i = 1; while (i < FIRE_STOPS.length - 1 && FIRE_STOPS[i][0] < k) i++; const a = FIRE_STOPS[i - 1], b = FIRE_STOPS[i], t = Math.min(1, Math.max(0, (k - a[0]) / (b[0] - a[0] || 1))); for (let j = 0; j < 4; j++) FIRE_OUT[j] = a[j + 1] + (b[j + 1] - a[j + 1]) * t; return FIRE_OUT; }   /* white-hot, yellow, orange, red, dark smoke */
 class Pool {
   constructor(batch, max) {
@@ -2628,9 +2645,9 @@ const B = {
   goo: new Batch(TEX.drop, 700, { order: 13 }),
   psnDrop: new Batch(psnDropTex(), 300, { order: 24 }),
   fireBadge: new Batch(fireBadgeTex(), 300, { order: 24 }),
-  glow: new Batch(TEX.spark, 700, { add: true, order: 14 }), fire: new Batch(TEX.fire, 500, { add: false, order: 15 }),   /* alpha-blended so stacked flames stay orange instead of blowing out to white */
+  glow: new Batch(TEX.spark, 700, { add: true, order: 14 }), fire: new Batch(TEX.fire, 500, { add: false, order: 15 }), fireAdd: new Batch(TEX.fire, 500, { add: true, order: 16 }),   /* alpha-blended so stacked flames stay orange instead of blowing out to white */
 };
-const FX = { smoke: new Pool(B.smoke, 700), goo: new Pool(B.goo, 700), glow: new Pool(B.glow, 700), fire: new Pool(B.fire, 500) };
+const FX = { smoke: new Pool(B.smoke, 700), goo: new Pool(B.goo, 700), glow: new Pool(B.glow, 700), fire: new Pool(B.fire, 500), fireAdd: new Pool(B.fireAdd, 500) };
 const arcs = new Arcs(60, 12);
 
 // ---------------------------------------------------------------- the exterminator (from Pest Panic HD)
@@ -3267,9 +3284,9 @@ function boltTank(root, M, getBone, kind = 'bolt') {   /* fit the shell to the t
   const W = M.baseImg.width, H = M.baseImg.height, uv = sk.geometry.attributes.uv, P = sk.geometry.attributes.position, xs = [], ys = [], zs = [], v = new V3();
   for (let i = 0; i < P.count; i++) { const tx = Math.min(W - 1, (uv.getX(i) * W) | 0), ty = Math.min(H - 1, ((M.baseFlip ? 1 - uv.getY(i) : uv.getY(i)) * H) | 0); if (!M.tankMask[ty * W + tx]) continue; sk.getVertexPosition(i, v).applyMatrix4(sk.matrixWorld); xs.push(v.x); ys.push(v.y); zs.push(v.z); }
   if (xs.length < 8) return null;
-  const q = (a, f) => { a.sort((m, n) => m - n); return a[Math.min(a.length - 1, Math.max(0, Math.round(f * (a.length - 1))))]; }, box = new THREE.Box3(new V3(q(xs, 0.06), q(ys, 0.04), q(zs, 0.05)), new V3(q(xs, 0.94), q(ys, 0.96), q(zs, 0.95)));   /* trim stray texels (straps, the shoulder) off the edges */
+  const q = (a, f) => { a.sort((m, n) => m - n); return a[Math.min(a.length - 1, Math.max(0, Math.round(f * (a.length - 1))))]; }, box = new THREE.Box3(new V3(q(xs, 0.06), q(ys, 0.04), q(zs, 0)), new V3(q(xs, 0.94), q(ys, 0.96), q(zs, 1)));   /* full depth: trimming it sank the shell's middle behind the tank's bulge, so the middle never showed the effect */   /* trim stray texels (straps, the shoulder) off the edges */
   const sz = box.getSize(new V3()), c = box.getCenter(new V3()), sh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1, 28, 1, true), kind === 'flame' ? FIRE.mat : BOLT.mat);   /* a rounded shell (a box's corners stuck out past the rounded tank) */
-  sh.scale.set(sz.x * 1.0, sz.y * 0.9, sz.z * 1.04); sh.position.copy(c); sh.renderOrder = 5; sh.frustumCulled = false; sh.visible = false;
+  sh.scale.set(sz.x * 1.0, sz.y * 0.9, sz.z * 1.12); sh.position.copy(c); sh.renderOrder = 5; sh.frustumCulled = false; sh.visible = false;
   root.add(sh); const bn = getBone('Spine2') || getBone('Spine1'); if (bn) bn.attach(sh); return sh;
 }
 function boltTick() { const t = performance.now(); let drew = false; if (BOLT && t - BOLT.t >= 70) { BOLT.t = t; boltDraw(); drew = true; } if (FIRE && t - FIRE.t >= 60) { FIRE.t = t; fireDraw(); drew = true; }
@@ -4144,18 +4161,22 @@ function drawOneExt(dt, EXTM, e, show) {
   if (pet) { u.arms[1].rotation.x = -2.2; u.arms[1].rotation.z = Math.sin(clock * 6) * 0.35; }   // reaching up and waving to the cat
   u.body.rotation.x = work ? 0.35 : spray ? 0.12 : 0;
   u.wand.visible = !u.mdl && (spray || (walk && !!e.abil));
+  if (u.fjet) u.fjet.visible = false;
   if (spray && dt > 0) {
     u.tip.getWorldPosition(tmpV); const fx = Math.sin(EXTM.rotation.y), fz = Math.cos(EXTM.rotation.y);
     for (let i = 0; i < 4; i++) {
       const reachK = e.abil && e.abil.tgtD ? Math.max(0.45, Math.min(1, (e.abil.tgtD + 1.2) / 6)) : 1, j = (Math.random() - 0.5) * 0.9, c = Math.cos(j), sn = Math.sin(j), sp = (9 + Math.random() * 5) * reachK;   /* a bug 3 away gets a short burst, one at full range the long jet */
       const vx = (fx * c - fz * sn) * sp, vy = -0.6 + Math.random() * 1.2, vz = (fz * c + fx * sn) * sp, st = (u.look && u.look.spray) || 'mist';
-      if (st === 'flame') {   /* a flamethrower jet: each puff starts white-hot at the nozzle and cools to yellow, orange, red and smoke as it flies, swelling and rising */
-        const nj = j * 0.4, cn = Math.cos(nj), sn2 = Math.sin(nj), dx = fx * cn - fz * sn2, dz = fz * cn + fx * sn2, sp2 = sp * 1.05, kx = dx * sp2, kz = dz * sp2, vr = (Math.random() - 0.5) * 5;
-        FX.fire.spawn({ heat: 1, x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: kx, vy: 0.2 + Math.random() * 0.8, vz: kz, drag: 1.3, life: 0.5 + Math.random() * 0.22, s0: 0.3, s1: 2.0 + Math.random() * 0.6, a0: 1, a1: 1, vr });
-        if (i < 2) FX.fire.spawn({ heat: 1, x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: kx * 0.9, vy: 1.2 + Math.random() * 1.6, vz: kz * 0.9, drag: 1.1, life: 0.7 + Math.random() * 0.25, s0: 0.45, s1: 2.8, a0: 0.9, a1: 0.9, vr: vr * 0.6 });
-        if (i === 0) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, life: 0.06, s0: 0.9 + Math.random() * 0.4, s1: 0.5, c: [1, 0.75, 0.35], a0: 0.9 });   /* the nozzle flare */
-        if (Math.random() < 0.4) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: kx * (0.6 + Math.random() * 0.5), vy: 2 + Math.random() * 2.5, vz: kz * (0.6 + Math.random() * 0.5), drag: 1.3, grav: 4, life: 0.6 + Math.random() * 0.45, s0: 0.15, s1: 0.03, c: [1, 0.78, 0.25], a0: 1 });   /* embers */
-        if (i === 0 && Math.random() < 0.6) FX.smoke.spawn({ x: tmpV.x + kx * 0.3, y: tmpV.y + 0.8, z: tmpV.z + kz * 0.3, vx: kx * 0.45, vy: 2, vz: kz * 0.45, drag: 1.5, life: 1.1 + Math.random() * 0.5, s0: 0.7, s1: 2.8, c: [0.1, 0.09, 0.08], a0: 0.3 }); }
+      if (st === 'flame') {   /* a flamethrower: a solid, flickering cone of fire from the nozzle to the bugs (scrolling flame texture), with fire billowing up off the far end */
+        if (i === 0) { const J = u.fjet || (u.fjet = flameJet()), reach = Math.max(2.2, Math.min(ABIL.range, (e.abil && e.abil.tgtD) || ABIL.range)) * (0.95 + Math.random() * 0.1);
+          J.visible = true; J.position.copy(tmpV); J.rotation.set(0, Math.atan2(fx, fz), (Math.random() - 0.5) * 0.3); { const wv = 0.85 + Math.random() * 0.3; J.scale.set(wv * (1.25 + Math.sin(clock * 23) * 0.12), wv, reach); } J.userData.t = clock;
+          for (const m of J.userData.mats) { m.map.offset.y = -clock * 2.6 + m.userData.ph; m.opacity = m.userData.a * (0.85 + Math.random() * 0.15); }
+          const ex = tmpV.x + fx * reach, ez = tmpV.z + fz * reach;
+          FX.fire.spawn({ heat: 1, x: ex - fx * 0.5, y: tmpV.y, z: ez - fz * 0.5, vx: (Math.random() - 0.5) * 1.5, vy: 2 + Math.random() * 1.5, vz: (Math.random() - 0.5) * 1.5, drag: 2.2, life: 0.32 + Math.random() * 0.14, s0: 0.8, s1: 1.9, a0: 0.85, a1: 0.85, vr: (Math.random() - 0.5) * 4 });   /* fire billowing up off the end */
+          for (let q = 0; q < 2; q++) { const d = reach * (0.25 + Math.random() * 0.65); FX.fire.spawn({ heat: 1, x: tmpV.x + fx * d + (Math.random() - 0.5) * 0.4, y: tmpV.y, z: tmpV.z + fz * d + (Math.random() - 0.5) * 0.4, vx: fx * 3, vy: 0.8 + Math.random(), vz: fz * 3, drag: 3, life: 0.2 + Math.random() * 0.1, s0: 0.35 + d * 0.08, s1: 0.8 + d * 0.15, a0: 0.75, a1: 0.75, vr: (Math.random() - 0.5) * 6 }); }   /* licks of flame along the jet */
+          if (Math.random() < 0.6) FX.smoke.spawn({ x: ex, y: tmpV.y + 0.9, z: ez, vx: fx * 0.6, vy: 1.8, vz: fz * 0.6, drag: 1.4, life: 1.0 + Math.random() * 0.4, s0: 0.6, s1: 2.4, c: [0.12, 0.1, 0.09], a0: 0.25 });
+          FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, life: 0.05, s0: 0.7 + Math.random() * 0.3, s1: 0.4, c: [1, 0.75, 0.35], a0: 0.8 }); }
+        if (Math.random() < 0.35) { const r = (e.abil && e.abil.tgtD) || ABIL.range, d = Math.random() * Math.min(r, ABIL.range); FX.glow.spawn({ x: tmpV.x + fx * d, y: tmpV.y, z: tmpV.z + fz * d, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 2.5, vz: (Math.random() - 0.5) * 3, drag: 1.2, grav: 5, life: 0.5 + Math.random() * 0.4, s0: 0.13, s1: 0.03, c: [1, 0.75, 0.25], a0: 1 }); } }   /* embers */
       else if (st === 'bolt') { if (i === 0) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, life: 0.08, s0: 0.5 + Math.random() * 0.4, s1: 0.2, c: [0.75, 0.88, 1], a0: 0.9 });   /* lightning: a flickering flare at the nozzle, sparks fly off the far end */
         if (Math.random() < 0.35) FX.glow.spawn({ x: tmpV.x + vx * 0.3, y: tmpV.y + vy * 0.3, z: tmpV.z + vz * 0.3, vx: vx * 0.3 + (Math.random() - 0.5) * 4, vy: 1 + Math.random() * 3, vz: vz * 0.3 + (Math.random() - 0.5) * 4, grav: 10, drag: 1, life: 0.25 + Math.random() * 0.3, s0: 0.14, s1: 0.02, c: [0.8, 0.92, 1], a0: 1 }); }
       else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.82, 0.96, 0.85], a0: 0.5 });
@@ -7142,7 +7163,7 @@ function drawFx(dt, t) {
   S.coins = S.coins.filter(c => (c.t += dt) < 0.7);
   for (const c of S.coins) { c.vy -= 18 * dt; c.y = Math.max(0.3, c.y + c.vy * dt); setI(IM.coin, ci++, c.x, c.y + 0.4, c.z, c.t * 14, 1.5 * (1 - Math.max(0, c.t - 0.5) * 5)); }
   IM.coin.count = ci; IM.coin.instanceMatrix.needsUpdate = true;
-  FX.smoke.update(dt); FX.goo.update(dt, 0.06); FX.glow.update(dt); FX.fire.update(dt);
+  FX.smoke.update(dt); FX.goo.update(dt, 0.06); FX.glow.update(dt); FX.fire.update(dt); FX.fireAdd.update(dt);
   for (const k in B) B[k].end();
   arcs.update(dt);
   // cake bites
