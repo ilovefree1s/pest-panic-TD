@@ -92,8 +92,10 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #abil small{position:absolute;right:-6px;top:-6px;background:var(--gold);color:#3a2400;font:900 11px/1 var(--body);padding:3px 6px;border-radius:999px;box-shadow:0 2px 4px rgba(0,0,0,.4)}
 #abil.poor small{background:#6a3a36;color:#ffb3a8}
 #abil.poor{box-shadow:0 0 0 3px #6a3a36,0 6px 16px rgba(0,0,0,.5);animation:none!important}
-#abil::after{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(rgba(8,10,12,.72) var(--cd,0deg),transparent 0);pointer-events:none}
-#abil i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 24px var(--display);font-style:normal;color:#fff;text-shadow:0 2px 0 #000;z-index:1;pointer-events:none}
+#abil::after{content:'';position:absolute;inset:-1px;border-radius:50%;display:none;background:conic-gradient(from 0deg,#ffc93c calc(360deg - var(--cd,0deg)),rgba(255,255,255,.14) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));pointer-events:none}
+#abil.cool::after{display:block}   /* recharging: a gold ring fills back up around the button */
+#abil.cool svg,#abil.cool b{opacity:.18;filter:grayscale(1)} #abil.cool small{display:none}
+#abil i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 22px var(--display);font-style:normal;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);z-index:1;pointer-events:none;padding-top:2px}
 #abil.cool{box-shadow:0 0 0 3px #5a6470,0 6px 16px rgba(0,0,0,.5);cursor:default}
 #abil:not(.cool):not(.busy){animation:abilReady 1.6s ease-in-out infinite}
 @keyframes abilReady{50%{box-shadow:0 0 0 3px var(--gold),0 0 18px 4px rgba(255,200,60,.55)}}
@@ -715,7 +717,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="678">v1.176</div>
+    <div id="ver" data-b="679">v1.177</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
