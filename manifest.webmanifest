@@ -6,7 +6,7 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#d2653a",
+  "background_color": "#0d1013",
   "theme_color": "#0d1013",
   "description": "3D kitchen tower defense: swatters, sprays and zappers vs. bugs.",
   "icons": [
