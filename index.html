@@ -719,7 +719,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="700">v1.198</div>
+    <div id="ver" data-b="701">v1.199</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3263,16 +3263,11 @@ function boltDraw() {
   x.shadowBlur = 0; B.tex.needsUpdate = true;
 }
 let FIRE = null;
-function fireDraw() {   /* flames filling the Flame tank, bottom to top: tall tongues that sway and flicker, plus sparks drifting up */
-  const F = FIRE, x = F.x, w = F.cv.width, h = F.cv.height, t = performance.now() / 1000; x.clearRect(0, 0, w, h); x.globalCompositeOperation = 'lighter';
-  const g0 = x.createLinearGradient(0, h, 0, 0); g0.addColorStop(0, 'rgba(255,110,0,.75)'); g0.addColorStop(0.6, 'rgba(255,60,0,.3)'); g0.addColorStop(1, 'rgba(200,30,0,.12)'); x.fillStyle = g0; x.fillRect(0, 0, w, h);   // the glow fills the whole tank
-  for (let k = 0; k < 9; k++) {
-    const cx = w * (k / 8) + Math.sin(t * 2.6 + k * 1.9) * w * 0.05, fh = h * (0.7 + 0.25 * (0.5 + 0.5 * Math.sin(t * 4.7 + k * 2.3)) + Math.random() * 0.1), fw = w * (0.11 + Math.random() * 0.04), tip = cx + Math.sin(t * 3.4 + k * 1.3) * w * 0.12;
-    const g = x.createLinearGradient(0, h, 0, h - fh); g.addColorStop(0, 'rgba(255,150,20,1)'); g.addColorStop(0.5, 'rgba(255,200,50,.9)'); g.addColorStop(0.85, 'rgba(255,120,20,.6)'); g.addColorStop(1, 'rgba(255,80,0,0)'); x.fillStyle = g;
-    x.beginPath(); x.moveTo(cx - fw, h); x.bezierCurveTo(cx - fw * 1.2, h - fh * 0.4, tip - fw * 0.6, h - fh * 0.75, tip, h - fh); x.bezierCurveTo(tip + fw * 0.6, h - fh * 0.75, cx + fw * 1.2, h - fh * 0.4, cx + fw, h); x.closePath(); x.fill();
-  }
-  for (let k = 0; k < 6; k++) { const py = h - ((t * 0.5 + k / 6) % 1) * h, px = w * ((k * 0.37 + Math.sin(t + k) * 0.1 + 1) % 1); x.fillStyle = 'rgba(255,230,120,.9)'; x.fillRect(px, py, 2, 3); }   // sparks rising
-  x.globalCompositeOperation = 'source-over'; F.tex.needsUpdate = true;
+function fireDraw() {   /* the Flame tank: the same flame pattern as the first Flame tank (deep red to yellow tongues), now drifting upward and wavering */
+  const F = FIRE, w = F.cv.width, h = F.cv.height, t = performance.now() / 1000; F.img ||= F.x.createImageData(w, h); const d = F.img.data, k = 2.6;
+  for (let v = 0; v < h; v++) for (let u = 0; u < w; u++) { const U = u * k, V = (v + t * 26) * k, f = Math.max(0, Math.min(1, 0.5 + 0.32 * Math.sin(U * 0.045 + Math.sin(V * 0.031 + t * 0.7) * 2.6) + 0.22 * Math.sin(V * 0.11 + U * 0.017 + Math.sin(U * 0.07 + t) * 1.7) + 0.12 * Math.sin((U + V) * 0.23)));
+    const i = (v * w + u) * 4; d[i] = 200 + 55 * f; d[i + 1] = 40 + 175 * f * f; d[i + 2] = 10 + 60 * f * f * f; d[i + 3] = 255; }
+  F.x.putImageData(F.img, 0, 0); F.tex.needsUpdate = true;
 }
 function boltTank(root, M, getBone, kind = 'bolt') {   /* fit the shell to the tank's own triangles (from the tank's patch of the texture) and pin it to his spine */
   if (!M || !M.tankMask || !M.baseImg) return null;
@@ -3308,7 +3303,7 @@ function buildCanister(root, M) {
   if (xs.length < 8) return null;
   const q = (a, f) => { a.sort((m, n) => m - n); return a[Math.round(f * (a.length - 1))]; }, lo = new V3(q(xs, 0.06), q(ys, 0.03), 0), hi = new V3(q(xs, 0.94), q(ys, 0.97), 0);
   const zMed = q(zs, 0.5), sb = Math.sign(zMed) || -1, zOut = q(zs, sb > 0 ? 0.97 : 0.03), zIn = q(zs, sb > 0 ? 0.08 : 0.92);   /* the tank's outer face, and where it meets his back (the patch also catches a few far-off triangles, so no raw min/max) */
-  const zBack = q(zs, sb > 0 ? 0.01 : 0.99), rz = Math.abs(zOut - zBack) * 0.64, c = new V3((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, (zOut + zBack) / 2),   /* from the tank's outer face all the way in to his back */ rx = (hi.x - lo.x) * 0.6, h = (hi.y - lo.y) * 1.0;   /* round, and wide enough every way to swallow the old tank (from the side it peeked out between the canister and his back) */
+  const zBack = q(zs, sb > 0 ? 0.01 : 0.99), rz = Math.abs(zOut - zBack) * 0.64 + 0.035, c = new V3((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, (zOut + zBack) / 2 - sb * 0.035),   /* reaches a little into his back so no sliver of the old tank shows on the side */   /* from the tank's outer face all the way in to his back */ rx = (hi.x - lo.x) * 0.6, h = (hi.y - lo.y) * 1.0;   /* round, and wide enough every way to swallow the old tank (from the side it peeked out between the canister and his back) */
   const back = Math.atan2(c.x, c.z);   // the side facing away from his body: the texture seam goes on the other side
   const g = new THREE.Group(); g.position.copy(c);
   const tube = (r, ht, m, open = true, seg = 32) => { const geo = new THREE.CylinderGeometry(1, 1, 1, seg, 1, open, back + Math.PI / 2); geo.scale(rx * r, ht, rz * r); const me = new THREE.Mesh(geo, m); me.frustumCulled = false; g.add(me); return me; };   /* size baked into the shape: a stretched mesh got squashed when pinned to his (turned) spine bone */
@@ -3334,8 +3329,8 @@ function toxDraw() {   /* the Toxic tank: glowing green goo with bubbles rising 
   T.tex.needsUpdate = true;
 }
 function animSrc(kind) {   /* the 96x128 flame / lightning pictures, redrawn live */
-  const mk = () => { const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(2, 1); return { cv, x: cv.getContext('2d'), t: 0, tex }; };
-  if (kind === 'flame' && !FIRE) { FIRE = mk(); fireDraw(); }
+  const mk = (n = 128) => { const cv = document.createElement('canvas'); cv.width = n; cv.height = n; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(2, 1); return { cv, x: cv.getContext('2d'), t: 0, tex }; };
+  if (kind === 'flame' && !FIRE) { FIRE = mk(96); fireDraw(); }
   if (kind === 'bolt' && !BOLT) { BOLT = mk(); boltDraw(); }
   if (kind === 'toxic' && !TOX) { TOX = mk(); toxDraw(); }
   return kind === 'flame' ? FIRE : kind === 'bolt' ? BOLT : TOX;
