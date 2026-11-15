@@ -52,6 +52,10 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .tut-hi{position:relative;z-index:6;animation:tutGlow 1s ease-in-out infinite!important}
 @keyframes tutGlow{0%,100%{box-shadow:0 0 0 3px #ffc23a,0 0 14px 4px rgba(255,190,50,.6)}50%{box-shadow:0 0 0 5px #fff1a0,0 0 26px 8px rgba(255,200,60,.85)}}
 @media (orientation:landscape) and (max-height:560px){#tut{bottom:8px;padding:8px 12px 6px} #tut p{font-size:13px}}
+/* smaller, tighter tutorial bubble: less text size, and Got it + Skip share one row */
+#tut{width:min(340px,calc(100% - 24px));padding:8px 12px 6px;border-radius:13px} #tut p{font-size:13px;line-height:1.32;margin-bottom:4px}
+#tut button.nx{display:inline-block;margin:0 6px 2px;padding:4px 14px;font-size:13px;box-shadow:0 2px 0 #a87a10} #tut button.nx[hidden]{display:none} #tut #tutSkip{font-size:11px;vertical-align:middle}
+#tut.top{top:56px} @media (orientation:landscape) and (max-height:560px){#tut{width:min(380px,calc(100% - 24px));padding:6px 10px 5px} #tut p{font-size:12px} #tut.top{top:50px}}
 #tcard{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:20;width:min(420px,calc(100% - 24px));max-height:calc(100% - 28px);overflow:auto;
   background:rgba(14,18,22,.96);border-radius:18px;padding:14px 16px 12px;box-shadow:0 10px 30px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.08);animation:tcIn .22s ease-out}
 #tcard[hidden]{display:none}
@@ -683,7 +687,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="663">v1.161</div>
+    <div id="ver" data-b="664">v1.162</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -9473,7 +9477,6 @@ function tutArrow(st) {   /* a bouncing arrow (fixed to the window, so it can po
 }
 function tutStart() { if (LV !== SOLO[0] || tutDone()) return; TUT.step = 0; TUT.t = 0; tutShow(); }
 function tutEnd() {
-  if (S && S.bugs) for (const b of S.bugs) b.tutImm = false;   // skipped while the free shiny waited: it's a normal shiny again
   TUT.slow = false; TUT.freeze = false; TUT.step = -1; document.querySelectorAll('.tlock').forEach(e => e.classList.remove('tlock')); $('tut').hidden = true; $('stage').classList.remove('tutoring'); document.querySelectorAll('.tut-hi').forEach(e => e.classList.remove('tut-hi')); $('tutArrow').hidden = true; $('tut').classList.remove('top'); document.querySelectorAll('.tut-glow').forEach(e => e.classList.remove('tut-glow'));
   if (TUT.ring) TUT.ring.visible = false; try { localStorage.setItem('ppd-tut', '1'); } catch (e) {}
 }
