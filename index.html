@@ -717,7 +717,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="681">v1.179</div>
+    <div id="ver" data-b="682">v1.180</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5078,7 +5078,7 @@ function showRange(x, z, r, color, fill) {
 
 // ---------------------------------------------------------------- sound (synthesized, no files)
 const SND = (() => {
-  let ac = null, out = null, noise = null, muted = false, vol = 1;
+  let ac = null, out = null, noise = null, LONG_NOISE = null, muted = false, vol = 1;
   try { const v = localStorage.getItem('ppd-sfx'); if (v !== null) vol = +v; } catch (e) {}
   try { muted = localStorage.getItem('ppd-muted') === '1'; } catch (e) {}
   const last = {}, AMB = { on: false }; let SPRAY_SRC = null;
@@ -5116,11 +5116,14 @@ const SND = (() => {
       if (SPRAY_SRC) return; const t = ac.currentTime, g = ac.createGain(), srcs = [], kind = (typeof EXT !== 'undefined' && EXT.userData.look && EXT.userData.look.spray) || 'mist'; let iv = null;
       const loopNoise = () => { const src = ac.createBufferSource(); src.buffer = noise; src.loop = true; src.playbackRate.value = 0.8 + Math.random() * 0.4; srcs.push(src); return src; };
       if (kind === 'flame') {
-        const n = loopNoise(), lp = ac.createBiquadFilter(), bp = ac.createBiquadFilter(), fl = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
-        lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 0.7; bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 0.8;   /* deep roar plus a hissy top */
-        const top = ac.createGain(); top.gain.value = 0.25; n.connect(lp).connect(fl); n.connect(bp).connect(top).connect(fl);
-        lfo.type = 'triangle'; lfo.frequency.value = 11; lg.gain.value = 0.35; fl.gain.value = 1; lfo.connect(lg).connect(fl.gain); lfo.start(t); srcs.push(lfo); fl.connect(g);   /* the flame flutters */
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.42, t + 0.05); g.gain.exponentialRampToValueAtTime(0.3, t + 0.3);
+        if (!LONG_NOISE) { LONG_NOISE = ac.createBuffer(1, ac.sampleRate * 4, ac.sampleRate); const d = LONG_NOISE.getChannelData(0); let b = 0; for (let i = 0; i < d.length; i++) { b = b * 0.6 + (Math.random() * 2 - 1) * 0.4; d[i] = b * 1.6; } }   /* 4 s of soft noise: no audible loop */
+        const mk = r => { const x = ac.createBufferSource(); x.buffer = LONG_NOISE; x.loop = true; x.playbackRate.value = r; x.loopStart = 0; srcs.push(x); return x; };
+        const n = mk(0.9 + Math.random() * 0.1), n2 = mk(0.71 + Math.random() * 0.06), lp = ac.createBiquadFilter(), bp = ac.createBiquadFilter(), fl = ac.createGain();
+        lp.type = 'lowpass'; lp.frequency.value = 850; lp.Q.value = 0.6; bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 0.7;   /* deep roar plus a hissy top */
+        const top = ac.createGain(); top.gain.value = 0.22; n.connect(lp); n2.connect(lp); lp.connect(fl); n.connect(bp).connect(top).connect(fl);
+        for (const [hz, dep, tgt] of [[0.7, 220, lp.frequency], [3.3, 0.07, fl.gain], [5.9, 0.05, fl.gain]]) { const l = ac.createOscillator(), lg = ac.createGain(); l.type = 'sine'; l.frequency.value = hz * (0.9 + Math.random() * 0.2); lg.gain.value = dep; l.connect(lg).connect(tgt); l.start(t); srcs.push(l); }   /* a slow, uneven waver instead of a fast chop */
+        fl.gain.value = 1; fl.connect(g);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.05); g.gain.exponentialRampToValueAtTime(0.13, t + 0.3);   /* same loudness as before (the softer noise carries more of the roar) */
         tone('sine', 120, 45, 0.3, 0.45); hiss(0.25, 0.3, 600, 0.8, 'lowpass');   /* whoomp: it lights */
       } else if (kind === 'bolt') {
         const o = ac.createOscillator(), o2 = ac.createOscillator(), bp = ac.createBiquadFilter(), og = ac.createGain();
