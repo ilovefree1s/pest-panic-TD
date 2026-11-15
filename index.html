@@ -250,7 +250,7 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 .sh.yes{box-shadow:inset 0 0 0 2px rgba(255,216,74,.6)} .sh.yes svg{animation:shRain 2.4s ease-in-out infinite}
 @keyframes shRain{from{filter:drop-shadow(0 0 4px rgba(255,214,90,.55))}50%{filter:drop-shadow(0 0 10px rgba(255,214,90,.95))}to{filter:drop-shadow(0 0 4px rgba(255,214,90,.55))}}   /* caught bugs show in their real colours with a soft gold glow */
 @media (prefers-reduced-motion:reduce){.sh.yes svg,.sh.yes .shimg{animation:none}}
-.lkrow{display:grid;gap:6px;width:min(720px,92vw);text-align:left} .lkrow>b{font:400 18px var(--display);color:var(--gold);letter-spacing:.03em}
+.lkrow{display:grid;gap:6px;width:min(720px,92vw);text-align:left;margin-top:12px} .lkrow>b{font:400 18px var(--display);color:var(--gold);letter-spacing:.03em}
 .lkopts{display:flex;flex-wrap:wrap;gap:8px} .lk{min-height:44px;border-radius:12px;border:0;padding:8px 14px;background:rgba(10,13,16,.82);color:var(--text);font:800 14px var(--body);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);text-align:left}
 .lk.on{background:var(--gold);color:#2a1a00;box-shadow:0 3px 0 #8d5a00} .lk:disabled{opacity:.5;cursor:default} .lk small{display:block;font-size:11px;font-weight:700;opacity:.85}
 #lkPrev{width:220px;height:260px;border-radius:16px;background:radial-gradient(circle at 50% 40%,#3a4250,#161a20);touch-action:none;cursor:grab} #lkPrev:active{cursor:grabbing} .lkHint{margin:4px 0 0;font:700 11px var(--body);color:var(--dim);text-align:center}
@@ -719,7 +719,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="685">v1.183</div>
+    <div id="ver" data-b="687">v1.185</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2733,7 +2733,7 @@ function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), xf = x - x
    the current look until the new one is ready. */
 const OUTFIT_Q = []; let OUTFIT_PUMP = false;
 function outfitTextures(M, suit, red, toxic, cb) {
-  const key = suit + '|' + (red ? 1 : 0) + '|' + (toxic ? 1 : 0); const sh = M.masks; sh.cache ||= {}; sh.jobs ||= {}; M.cache = sh.cache; M.jobs = sh.jobs;   /* shared by every model built from this sheet: one build per outfit, not one per player */
+  const key = suit + '|' + (red ? 1 : 0) + '|' + (toxic || 0); const sh = M.masks; sh.cache ||= {}; sh.jobs ||= {}; M.cache = sh.cache; M.jobs = sh.jobs;   /* shared by every model built from this sheet: one build per outfit, not one per player */
   if (M.cache[key]) { if (cb) cb(M.cache[key]); return M.cache[key]; }
   if (M.jobs[key]) { if (cb) M.jobs[key].cbs.push(cb); return null; }
   const job = { gen: outfitGen(M, suit, red, toxic), cbs: cb ? [cb] : [] }; M.jobs[key] = job; OUTFIT_Q.push({ M, key, job });
@@ -2786,7 +2786,14 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
     for (let i = i0, iE = Math.min(a.length, i0 + SL); i < iE; i += 4) {
       const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
       const mx0 = Math.max(r, g, b), sat0 = mx0 ? (mx0 - Math.min(r, g, b)) / mx0 : 0, tankish = inTank || (toxic && M.masks.tankLoose && M.masks.tankLoose[p] && lum > 0.45 && sat0 < 0.26);   /* the canister: the strict mask, plus any white/grey texel of the looser one */
-      if (tankish && toxic && lum > 0.3) { const l2 = 0.62 + (Math.min(1, lum) - 0.62) * 0.3; a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green (flat: the sheet's brushed streaks read as lines in saturated green)
+      if (tankish && toxic && lum > 0.3) { const l2 = 0.62 + (Math.min(1, lum) - 0.62) * 0.3;
+        if (toxic === 'flame') {   /* flames licking up inside the canister: deep red at the bottom of each tongue to yellow at the tips */
+          const u = p % W, v = (p / W) | 0, f = Math.max(0, Math.min(1, 0.5 + 0.32 * Math.sin(u * 0.045 + Math.sin(v * 0.031) * 2.6) + 0.22 * Math.sin(v * 0.11 + u * 0.017 + Math.sin(u * 0.07) * 1.7) + 0.12 * Math.sin((u + v) * 0.23)));
+          a[i] = (200 + 55 * f) * l2; a[i + 1] = (40 + 175 * f * f) * l2; a[i + 2] = (10 + 60 * f * f * f) * l2; ga[i] = 255; ga[i + 1] = 60 + 150 * f * f; ga[i + 2] = 10 + 40 * f * f * f; ga[i + 3] = 255; continue; }
+        if (toxic === 'bolt') {   /* dark storm blue with bright forked lightning veins */
+          const u = p % W, v = (p / W) | 0, k1 = Math.abs(Math.sin(u * 0.028 + 3.4 * Math.sin(v * 0.022) + 1.2 * Math.sin(v * 0.09))), vein = Math.max(0, 1 - k1 * 6), halo = Math.max(0, 1 - k1 * 2.2) * 0.35;   /* fewer, bigger forks with a soft halo */
+          a[i] = (12 + 60 * halo + 200 * vein) * l2; a[i + 1] = (24 + 90 * halo + 215 * vein) * l2; a[i + 2] = (80 + 120 * halo + 175 * vein) * l2; ga[i] = 20 + 200 * vein; ga[i + 1] = 60 + 195 * vein; ga[i + 2] = 160 + 95 * vein; ga[i + 3] = 255; continue; }
+        a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green (flat: the sheet's brushed streaks read as lines in saturated green)
       const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35;   /* (brown leather and a dark beard have far more blue in them) */   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */
       const isOr = g > r * 0.22 && ((r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45)) || (r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35));   /* (g > 0.22 r: orange, not the red fittings) */
       const nk = sc && M.masks.neckMask ? M.masks.neckMask[p] : 0;
@@ -3253,7 +3260,7 @@ function lockerPreview() {   /* the exterminator in your chosen outfit, drawn in
     for (const ev of ['pointerup', 'pointercancel']) cv.addEventListener(ev, () => { drag = null; });
     lkpCam();
   }
-  let sync = true; const look = myLook(), T = outfitTextures(M, look.suit, false, look.tank === 'toxic', () => { if (!sync && LKP && !$('shinies').hidden) lockerPreview(); }); sync = false;   /* not built yet: draw again when it is */
+  let sync = true; const look = myLook(), T = outfitTextures(M, look.suit, false, tankKind(look), () => { if (!sync && LKP && !$('shinies').hidden) lockerPreview(); }); sync = false;   /* not built yet: draw again when it is */
   if (T) { if (!LKP.split && M.painted) { LKP.split = true; splitExt({ m: LKP.m, baseImg: M.baseImg, baseFlip: M.baseFlip }, M.painted); } LKP.mat.map = T.map; LKP.mat.emissiveMap = T.glow; LKP.mat.emissiveIntensity = T.glow ? (T.toxic ? 1.0 : 0.55) : 0; LKP.mat.roughnessMap = LKP.mat.metalnessMap = T.mr; LKP.mat.roughness = T.mr ? 1 : 0.8; LKP.mat.metalness = T.mr ? 1 : 0; LKP.mat.needsUpdate = true;
     LKP.matB.map = T.mapB || T.map; LKP.matB.emissiveMap = T.glow; LKP.matB.emissiveIntensity = LKP.mat.emissiveIntensity; LKP.matB.needsUpdate = true; } if (LKP.crown) LKP.crown.visible = !!look.crown;
   { const w = cv.clientWidth || 180, h = cv.clientHeight || 210, sz = LKP.r.getSize(new THREE.Vector2()); if (sz.x !== w || sz.y !== h) { LKP.r.setSize(w, h, false); LKP.cam.aspect = w / h; LKP.cam.updateProjectionMatrix(); } }
@@ -3272,7 +3279,7 @@ function suitDiag() { setTimeout(function wait() {
   const M = EXT.userData.mdl; if (!M) { setTimeout(wait, 500); return; }
   const look = myLook(); extLook(EXT, look);
   const note = document.createElement('div'); note.style.cssText = 'position:fixed;top:4px;left:4px;z-index:99998;background:#000;color:#ff0;font:13px monospace;padding:4px'; document.body.appendChild(note); let n = 0;
-  const go = () => { const T = M.T; note.textContent = 'diag: waiting for outfit ' + (++n) + ' want=' + M.want + ' look=' + M.look + ' jobs=' + Object.keys(M.jobs || {}).join(',') + ' cache=' + Object.keys(M.cache || {}).join(','); if (!T || !T.map.mipmaps || M.look !== look.suit + '|' + look.tank) { setTimeout(go, 500); return; } note.remove();
+  const go = () => { const T = M.T; note.textContent = 'diag: waiting for outfit ' + (++n) + ' want=' + M.want + ' look=' + M.look + ' jobs=' + Object.keys(M.jobs || {}).join(',') + ' cache=' + Object.keys(M.cache || {}).join(','); if (!T || !T.map.mipmaps || M.look !== look.suit + '|' + tankKind(look)) { setTimeout(go, 500); return; } note.remove();
     renderer.render(scene, camera);
     const props = renderer.properties.get(T.map), gl = renderer.getContext(); if (!props || !props.__webglTexture) { setTimeout(go, 500); return; }
     const box = document.createElement('div'); box.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;color:#fff;overflow:auto;font:14px monospace;padding:8px'; document.body.appendChild(box);
@@ -3718,12 +3725,12 @@ const DEX_BOSS = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink'
 /* the Locker: what you've earned, and what you're wearing. reg = regular shiny types caught, boss = boss shiny types caught */
 const LOCKER = [
   ['suit', 'Suit', [['standard', 'Standard issue'], ['black', 'Blackout suit', { reg: 3 }], ['hazmat', 'Hazmat suit', { reg: 7 }], ['camo', 'Camo suit', { reg: 9 }], ['gold', 'Gold suit', { reg: 11 }]]],
-  ['tank', 'Tank', [['standard', 'Standard tank'], ['toxic', 'Toxic tank', { reg: 5 }]]],
-  ['spray', 'Backpack spray', [['mist', 'Mist'], ['flame', 'Flame spray', { boss: 1 }], ['bolt', 'Lightning spray', { boss: 3 }]]],
+  ['spray', 'Tank', [['mist', 'Toxic tank · mist'], ['flame', 'Flame tank · fire', { boss: 1 }], ['bolt', 'Lightning tank · shock', { boss: 3 }]]],   /* the tank and its spray are one pick: the canister shows what it sprays */
   ['trail', 'Footsteps', [['none', 'Nothing'], ['smoke', 'Smoke trail', { boss: 5 }], ['sparks', 'Gold sparks', { reg: 11 }]]],
   ['crown', 'Headgear', [['', 'Cap'], ['crown', 'Exterminator King crown', { boss: 9 }]]],
 ];
-const LOOK_DEFAULT = { suit: 'standard', tank: 'standard', spray: 'mist', trail: 'none', crown: '' };
+const LOOK_DEFAULT = { suit: 'standard', tank: 'toxic', spray: 'mist', trail: 'none', crown: '' };
+const tankKind = l => l && l.spray === 'flame' ? 'flame' : l && l.spray === 'bolt' ? 'bolt' : 'toxic';   /* the canister's contents follow the spray */
 function dexBossTypes() { const d = dexGet(); return DEX_BOSS.filter(t => d[t]).length; }
 function sanitizeLook(l) { const out = { ...LOOK_DEFAULT }; if (l && typeof l === 'object') for (const [slot, , opts] of LOCKER) if (opts.some(o => o[0] === l[slot])) out[slot] = l[slot]; return out; }   /* only known outfit names from the other player */
 const lockAll = () => { try { return localStorage.getItem('ppd-lkall') === '1'; } catch (e) { return false; } };   // the owner's secret code opens every Locker outfit
@@ -4035,9 +4042,9 @@ const extC = new THREE.Color();
 function extLook(EXTM, look) {   /* put an outfit on a modelled exterminator (repaints only when it changes) */
   const u = EXTM.userData, M = u.mdl; u.look = look; u.trim.visible = false; u.halo.visible = false;
   if (!M) return;
-  const key = look.suit + '|' + look.tank;
+  const key = look.suit + '|' + tankKind(look);
   if (M.want !== key && M.baseImg) { M.want = key;   /* built in slices; he keeps his current look until the new one is ready */
-    outfitTextures(M, look.suit, M.red, look.tank === 'toxic', T => { if (M.want !== key) return; M.look = key; try { const v = $('ver'); if (v && !M.red) v.dataset.outfit = key + (T.map.mipmaps && T.map.mipmaps.length > 1 ? ' mips' : ' nomips'); } catch (e) {} M.T = T; splitExt(M, M.painted); M.mat.map = T.map; M.mat.emissiveMap = T.glow; M.mat.emissiveIntensity = T.glow ? 0.9 : 0;
+    outfitTextures(M, look.suit, M.red, tankKind(look), T => { if (M.want !== key) return; M.look = key; try { const v = $('ver'); if (v && !M.red) v.dataset.outfit = key + (T.map.mipmaps && T.map.mipmaps.length > 1 ? ' mips' : ' nomips'); } catch (e) {} M.T = T; splitExt(M, M.painted); M.mat.map = T.map; M.mat.emissiveMap = T.glow; M.mat.emissiveIntensity = T.glow ? 0.9 : 0;
       M.mat.roughnessMap = M.mat.metalnessMap = T.mr; M.mat.roughness = T.mr ? 1 : 0.8; M.mat.metalness = T.mr ? 1 : 0; M.mat.needsUpdate = true;
       if (M.matB) { M.matB.map = T.mapB || T.map; M.matB.emissiveMap = T.glow; M.matB.emissiveIntensity = T.glow ? 0.9 : 0; M.matB.roughnessMap = M.matB.metalnessMap = null; M.matB.roughness = 0.8; M.matB.metalness = 0; M.matB.needsUpdate = true; } }); }   /* gold suit: metal and shine where the suit is */
   if (M.mat.emissiveMap) { const t = performance.now(); M.mat.emissiveIntensity = M.T && M.T.toxic ? 0.95 + Math.sin(t / 260) * 0.35 : 0.5 + Math.sin(t / 700) * 0.12; if (M.matB) M.matB.emissiveIntensity = M.mat.emissiveIntensity; }   // the toxic tank pulses; gold shimmers softly
