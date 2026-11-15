@@ -687,7 +687,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="667">v1.165</div>
+    <div id="ver" data-b="668">v1.166</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3901,10 +3901,10 @@ function abilUpdate(e, dt) {
     return;
   }
   a.idle = 0; e.state = 'spray'; a.t += dt;
-  // aim down the line: of every direction that points at a reachable bug, take the one whose cone covers the most bugs (the front bug breaks ties), so he hoses along the queue instead of across it
+  // aim down the line: of every direction whose cone still covers the front bug, take the one that covers the most bugs, so he hoses along the queue instead of across it
   let want = tgt ? Math.atan2(tgt.x - e.x, tgt.z - e.z) : null, far = tgt ? Math.hypot(tgt.x - e.x, tgt.z - e.z) : 0;
   if (tgt) { const near = []; for (const b of S.bugs) { if (b.dead) continue; const bx = b.x - e.x, bz = b.z - e.z, d = Math.hypot(bx, bz); if (d <= reach(b)) near.push([bx, bz, d, b]); }
-    let best = -1; for (const [cx, cz, cd, cb] of near) { const ux = cx / (cd || 1), uz = cz / (cd || 1); let n = 0, fd = 0; for (const [bx, bz, d] of near) if (d < 1 || (bx * ux + bz * uz) / d >= ABIL.cone) { n += 1; fd = Math.max(fd, d); } const sc = n + (cb === tgt ? 0.5 : 0); if (sc > best) { best = sc; want = Math.atan2(cx, cz); far = fd; } } }
+    let best = -1; for (const [cx, cz, cd, cb] of near) { const ux = cx / (cd || 1), uz = cz / (cd || 1); let n = 0, fd = 0, hasT = false; for (const [bx, bz, d, bb] of near) if (d < 1 || (bx * ux + bz * uz) / d >= ABIL.cone) { n += 1; fd = Math.max(fd, d); if (bb === tgt) hasT = true; } if (!hasT) continue; const sc = n + (cb === tgt ? 0.5 : 0);   /* the front bug always has to be in the cone; extra bugs only pick which way round it */ if (sc > best) { best = sc; want = Math.atan2(cx, cz); far = fd; } } }
   a.tgtD = far;   /* how far the jet has to reach: drawn to end at the farthest bug in the cone, not sail past */
   if (want !== null) { let da = want - e.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); e.yaw += da * Math.min(1, dt * 6); }
   const fx = Math.sin(e.yaw), fz = Math.cos(e.yaw);
