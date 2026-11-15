@@ -719,7 +719,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="696">v1.194</div>
+    <div id="ver" data-b="700">v1.198</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2807,7 +2807,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
       const r = a[i], g = a[i + 1], b = a[i + 2], p = i >> 2, lum = Math.max(r, g, b) / 255, inTank = mask && mask[p];
       const mx0 = Math.max(r, g, b), sat0 = mx0 ? (mx0 - Math.min(r, g, b)) / mx0 : 0, tankish = inTank || (toxic && M.masks.tankLoose && M.masks.tankLoose[p] && lum > 0.45 && sat0 < 0.26);   /* the canister: the strict mask, plus any white/grey texel of the looser one */
       if (tankish && toxic && lum > 0.3) { const l2 = 0.62 + (Math.min(1, lum) - 0.62) * 0.3;
-        if (toxic === 'flame') { a[i] = 34 * l2; a[i + 1] = 8 * l2; a[i + 2] = 4 * l2; ga[i] = 90; ga[i + 1] = 18; ga[i + 2] = 4; ga[i + 3] = 255; continue; }   /* plain dark ember: only the live flames move on top (a painted pattern sat still underneath) */
+        if (toxic) { a[i] = 46 * l2; a[i + 1] = 48 * l2; a[i + 2] = 54 * l2; ga[i] = 0; ga[i + 1] = 0; ga[i + 2] = 0; ga[i + 3] = 255; continue; }   /* the old tank becomes the dark backpack frame the glass canister mounts on */   /* plain dark ember: only the live flames move on top (a painted pattern sat still underneath) */
         if (toxic === 'bolt') { a[i] = 8 * l2; a[i + 1] = 16 * l2; a[i + 2] = 60 * l2; ga[i] = 10; ga[i + 1] = 30; ga[i + 2] = 110; ga[i + 3] = 255; continue; }   /* plain storm blue under the live lightning */
         a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green (flat: the sheet's brushed streaks read as lines in saturated green)
       const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35;   /* (brown leather and a dark beard have far more blue in them) */   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */
@@ -3293,11 +3293,11 @@ function boltTank(root, M, getBone, kind = 'bolt') {   /* fit the shell to the t
 /* The Flame and Lightning tanks: our own glass canister (metal cap, base ring, glass tube) built over his tank, with the live flames or lightning inside.
    It is sized from his tank's own triangles and pinned to his spine, so it covers the old tank completely and moves with him. */
 function canisterSet(holder, root, M, kind) {
-  const live = kind === 'flame' || kind === 'bolt';
+  const live = kind === 'flame' || kind === 'bolt' || kind === 'toxic';
   if (!live) { if (holder.can) holder.can.visible = false; return; }
   if (holder.can === undefined) holder.can = buildCanister(root, M);
   const C = holder.can; if (!C) return; const src = animSrc(kind);
-  if (C.userData.kind !== kind) { C.userData.kind = kind; C.userData.inner.material.map = src.tex; C.userData.inner.material.needsUpdate = true; C.userData.glass.material.color.set(kind === 'flame' ? '#ffd9b0' : '#cfe6ff'); }
+  if (C.userData.kind !== kind) { C.userData.kind = kind; C.userData.inner.material.map = src.tex; C.userData.inner.material.needsUpdate = true; C.userData.glass.material.color.set(kind === 'flame' ? '#ffd9b0' : kind === 'bolt' ? '#cfe6ff' : '#d8ffcf'); }
   C.visible = true;
 }
 function buildCanister(root, M) {
@@ -3306,11 +3306,12 @@ function buildCanister(root, M) {
   const W = M.baseImg.width, H = M.baseImg.height, uv = sk.geometry.attributes.uv, P = sk.geometry.attributes.position, xs = [], ys = [], zs = [], v = new V3();
   for (let i = 0; i < P.count; i++) { const tx = Math.min(W - 1, (uv.getX(i) * W) | 0), ty = Math.min(H - 1, ((M.baseFlip ? 1 - uv.getY(i) : uv.getY(i)) * H) | 0); if (!M.tankMask[ty * W + tx]) continue; sk.getVertexPosition(i, v).applyMatrix4(sk.matrixWorld).applyMatrix4(inv); xs.push(v.x); ys.push(v.y); zs.push(v.z); }
   if (xs.length < 8) return null;
-  const q = (a, f) => { a.sort((m, n) => m - n); return a[Math.round(f * (a.length - 1))]; }, lo = new V3(q(xs, 0.04), q(ys, 0.03), q(zs, 0.03)), hi = new V3(q(xs, 0.96), q(ys, 0.97), q(zs, 0.97));
-  const c = lo.clone().add(hi).multiplyScalar(0.5), rx = (hi.x - lo.x) * 0.56, rz = (hi.z - lo.z) * 0.6, h = (hi.y - lo.y) * 0.98;
+  const q = (a, f) => { a.sort((m, n) => m - n); return a[Math.round(f * (a.length - 1))]; }, lo = new V3(q(xs, 0.06), q(ys, 0.03), 0), hi = new V3(q(xs, 0.94), q(ys, 0.97), 0);
+  const zMed = q(zs, 0.5), sb = Math.sign(zMed) || -1, zOut = q(zs, sb > 0 ? 0.97 : 0.03), zIn = q(zs, sb > 0 ? 0.08 : 0.92);   /* the tank's outer face, and where it meets his back (the patch also catches a few far-off triangles, so no raw min/max) */
+  const zBack = q(zs, sb > 0 ? 0.01 : 0.99), rz = Math.abs(zOut - zBack) * 0.64, c = new V3((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, (zOut + zBack) / 2),   /* from the tank's outer face all the way in to his back */ rx = (hi.x - lo.x) * 0.6, h = (hi.y - lo.y) * 1.0;   /* round, and wide enough every way to swallow the old tank (from the side it peeked out between the canister and his back) */
   const back = Math.atan2(c.x, c.z);   // the side facing away from his body: the texture seam goes on the other side
   const g = new THREE.Group(); g.position.copy(c);
-  const tube = (r, ht, m, open = true, seg = 32) => { const geo = new THREE.CylinderGeometry(1, 1, 1, seg, 1, open, back + Math.PI / 2); const me = new THREE.Mesh(geo, m); me.scale.set(rx * r, ht, rz * r); me.frustumCulled = false; g.add(me); return me; };
+  const tube = (r, ht, m, open = true, seg = 32) => { const geo = new THREE.CylinderGeometry(1, 1, 1, seg, 1, open, back + Math.PI / 2); geo.scale(rx * r, ht, rz * r); const me = new THREE.Mesh(geo, m); me.frustumCulled = false; g.add(me); return me; };   /* size baked into the shape: a stretched mesh got squashed when pinned to his (turned) spine bone */
   const inner = tube(0.93, h * 0.84, new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false }), false);   // what's inside: the live picture
   const glass = tube(1.0, h * 0.86, new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.28, roughness: 0.08, metalness: 0.1, depthWrite: false }));
   glass.renderOrder = 6;
@@ -3318,15 +3319,26 @@ function buildCanister(root, M) {
   const cap = tube(1.04, h * 0.1, metal, false); cap.position.y = h * 0.47; const capTop = tube(0.55, h * 0.06, metal, false); capTop.position.y = h * 0.54;
   const base = tube(1.04, h * 0.07, metal, false); base.position.y = -h * 0.465;
   for (const y of [-0.2, 0.2]) { const band = tube(1.015, h * 0.025, metal); band.position.y = h * y; }   // two thin hoops round the glass
-  g.userData = { inner, glass, kind: null }; g.visible = false; root.add(g); root.updateMatrixWorld(true);
+  g.userData = { inner, glass, kind: null, dbg: [0, 0.01, 0.02, 0.05, 0.08, 0.15, 0.3, 0.5, 0.7, 0.85, 0.92, 0.95, 0.98, 0.99, 1].map(f => +q(zs, f).toFixed(3)).join(' ') + ' | x ' + [0, 0.05, 0.5, 0.95, 1].map(f => +q(xs, f).toFixed(3)).join(' ') + ' | sb ' + sb + ' rz ' + rz.toFixed(3) + ' cz ' + c.z.toFixed(3) }; g.visible = false; root.add(g); root.updateMatrixWorld(true);
   const B = n => root.getObjectByName('mixamorig' + n) || root.getObjectByName('mixamorig:' + n), bn = B('Spine2') || B('Spine1'); if (bn) bn.attach(g);
   return g;
+}
+let TOX = null;
+function toxDraw() {   /* the Toxic tank: glowing green goo with bubbles rising and a wobbling surface near the top */
+  const T = TOX, x = T.x, w = T.cv.width, h = T.cv.height, t = performance.now() / 1000; x.clearRect(0, 0, w, h);
+  const top = h * 0.14; x.fillStyle = '#0b1a08'; x.fillRect(0, 0, w, h);   // air above the goo
+  const g = x.createLinearGradient(0, top, 0, h); g.addColorStop(0, '#9dff5a'); g.addColorStop(0.35, '#4fe02a'); g.addColorStop(1, '#1d8a10'); x.fillStyle = g;
+  x.beginPath(); x.moveTo(0, h); for (let u = 0; u <= w; u += 4) x.lineTo(u, top + Math.sin(u * 0.1 + t * 3) * 2.5 + Math.sin(u * 0.23 - t * 2.1) * 1.5); x.lineTo(w, h); x.closePath(); x.fill();
+  for (let k = 0; k < 14; k++) { const ph = (t * (0.22 + (k % 5) * 0.05) + k * 0.137) % 1, by = h - ph * (h - top - 6), bx = ((k * 0.381) % 1) * w + Math.sin(t * 2 + k) * 4, r = 1.5 + (k % 4) * 1.1;
+    x.strokeStyle = 'rgba(220,255,190,.85)'; x.lineWidth = 1.2; x.fillStyle = 'rgba(200,255,160,.25)'; x.beginPath(); x.arc(bx, by, r, 0, Math.PI * 2); x.fill(); x.stroke(); }
+  T.tex.needsUpdate = true;
 }
 function animSrc(kind) {   /* the 96x128 flame / lightning pictures, redrawn live */
   const mk = () => { const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(2, 1); return { cv, x: cv.getContext('2d'), t: 0, tex }; };
   if (kind === 'flame' && !FIRE) { FIRE = mk(); fireDraw(); }
   if (kind === 'bolt' && !BOLT) { BOLT = mk(); boltDraw(); }
-  return kind === 'flame' ? FIRE : BOLT;
+  if (kind === 'toxic' && !TOX) { TOX = mk(); toxDraw(); }
+  return kind === 'flame' ? FIRE : kind === 'bolt' ? BOLT : TOX;
 }
 /* The live tank: the flames / lightning are painted straight into the tank's own patch of his texture (as glow), so they sit exactly on the canister,
    fill it edge to edge, and move with him. The patch's "up" in the texture is worked out from the model, so the flames always rise. */
@@ -3364,7 +3376,7 @@ function tankAnimOn(M, matB, kind, mat) {   /* switch a material's glow to the l
   if (live && A) { if (A.kind !== kind) { A.kind = kind; tankAnimDraw(); } if (matB.emissiveMap !== A.tex) { matB.emissiveMap = A.tex; matB.emissive.setRGB(1, 1, 1); matB.needsUpdate = true; } matB.emissiveIntensity = 1.6; return; }
   if (A && matB.emissiveMap === A.tex) { matB.emissiveMap = mat ? mat.emissiveMap : null; matB.emissiveIntensity = mat ? mat.emissiveIntensity : 0; matB.needsUpdate = true; }
 }
-function boltTick() { const t = performance.now(); let drew = false; if (BOLT && t - BOLT.t >= 70) { BOLT.t = t; boltDraw(); drew = true; } if (FIRE && t - FIRE.t >= 60) { FIRE.t = t; fireDraw(); drew = true; }
+function boltTick() { const t = performance.now(); let drew = false; if (BOLT && t - BOLT.t >= 70) { BOLT.t = t; boltDraw(); drew = true; } if (FIRE && t - FIRE.t >= 60) { FIRE.t = t; fireDraw(); drew = true; } if (TOX && t - TOX.t >= 50) { TOX.t = t; toxDraw(); drew = true; }
   if (drew && LKP && LKP.can && LKP.can.visible && !$('shinies').hidden) { updateHose(LKP.hose); LKP.r.render(LKP.sc, LKP.cam); } }
 function lockerPreview() {   /* the exterminator in your chosen outfit, drawn into the Locker */
   const cv = $('lkPrev'); if (!cv) return;
