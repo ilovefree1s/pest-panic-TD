@@ -721,7 +721,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="709">v1.207</div>
+    <div id="ver" data-b="710">v1.208</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1775,6 +1775,19 @@ function fireBadgeTex() {   /* a little flame badge, same style as the candle's 
   flame(W * 0.56, 50, W * 0.22, 30, [[0, '#fffbe0'], [0.5, '#ffe27a'], [1, '#ffb52e']], null);
   return tex(c, true);
 }
+function boltBadgeTex() {   /* a little lightning badge for bugs hit by the Lightning tank */
+  const H = 84, [c, x] = cnv(H, H);
+  x.beginPath(); x.moveTo(48, 4); x.lineTo(20, 46); x.lineTo(38, 46); x.lineTo(30, 80); x.lineTo(64, 32); x.lineTo(45, 32); x.lineTo(56, 4); x.closePath();
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#a8dcff'); g.addColorStop(1, '#3a8fe8'); x.fillStyle = g; x.fill(); x.lineJoin = 'round'; x.lineWidth = 4; x.strokeStyle = 'rgba(10,30,80,.85)'; x.stroke();
+  return tex(c, true);
+}
+function frostBadgeTex() {   /* a little snowflake badge for bugs hit by the Frost tank */
+  const H = 84, [c, x] = cnv(H, H), cx = H / 2, cy = H / 2, L = 34; x.lineCap = 'round';
+  const flake = (lw, col) => { x.lineWidth = lw; x.strokeStyle = col; x.beginPath(); for (let q = 0; q < 6; q++) { const a = q * Math.PI / 3 - Math.PI / 2, ca = Math.cos(a), sa = Math.sin(a); x.moveTo(cx, cy); x.lineTo(cx + ca * L, cy + sa * L);
+    const bx = cx + ca * L * 0.58, by = cy + sa * L * 0.58; for (const s2 of [-1, 1]) { const b2 = a + s2 * 0.75; x.moveTo(bx, by); x.lineTo(bx + Math.cos(b2) * 12, by + Math.sin(b2) * 12); } } x.stroke(); };
+  flake(11, 'rgba(15,50,95,.85)'); flake(5.5, '#dff4ff');
+  return tex(c, true);
+}
 function psnDropTex() {   /* a green poison drop badge: pointed top, round bottom, white shine, dark outline */
   const W = 64, H = 84, [c, x] = cnv(H, H); x.translate((H - W) / 2, 0);   /* square canvas (the badge quad is square), drop centred */
   const path = () => { x.beginPath(); x.moveTo(W / 2, 4); x.bezierCurveTo(W * 0.62, H * 0.3, W - 6, H * 0.5, W - 6, H * 0.64); x.arc(W / 2, H * 0.64, W / 2 - 6, 0, Math.PI); x.bezierCurveTo(6, H * 0.5, W * 0.38, H * 0.3, W / 2, 4); x.closePath(); };
@@ -2646,7 +2659,7 @@ const B = {
   smoke: new Batch(TEX.puff, 700, { order: 12 }),
   goo: new Batch(TEX.drop, 700, { order: 13 }),
   psnDrop: new Batch(psnDropTex(), 300, { order: 24 }),
-  fireBadge: new Batch(fireBadgeTex(), 300, { order: 24 }),
+  fireBadge: new Batch(fireBadgeTex(), 300, { order: 24 }), fireMark: new Batch(fireBadgeTex(), 300, { order: 24 }), boltBadge: new Batch(boltBadgeTex(), 300, { order: 24 }), frostBadge: new Batch(frostBadgeTex(), 300, { order: 24 }),
   glow: new Batch(TEX.spark, 700, { add: true, order: 14 }), fire: new Batch(TEX.fire, 500, { add: false, order: 15 }), fireAdd: new Batch(TEX.fire, 500, { add: true, order: 16 }),   /* alpha-blended so stacked flames stay orange instead of blowing out to white */
 };
 const FX = { smoke: new Pool(B.smoke, 700), goo: new Pool(B.goo, 700), glow: new Pool(B.glow, 700), fire: new Pool(B.fire, 500), fireAdd: new Pool(B.fireAdd, 500) };
@@ -4568,7 +4581,14 @@ function getModel(t) {
   q.visible = true; q.scale.setScalar({ mantis: 1.6, stink: 1.25, hopper: 1.25, centi: 0.85, moth: 1.1 }[t] || 1); return q;
 }
 function hideBug(b) { if (b.mesh) b.mesh.visible = false; if (b.mdl) { b.mdl.visible = false; b.mdl = null; } }
-function psnBubble(b, k) { FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.6 * k, y: bugY(b) + 0.4 * k + Math.random() * 0.3, z: b.z + (Math.random() - 0.5) * 0.6 * k, vy: 0.9, life: 0.7, s0: 0.12 + 0.06 * k, s1: 0.22 + 0.08 * k, c: [0.45, 1, 0.3], a0: 0.8 }); }
+const psnKind = b => { if (b.psnSrc !== 'abil') return 'mist'; const l = (b.psnOwn || 0) === (S.me || 0) ? myLook() : (S.p2 && S.p2look) || LOOK_DEFAULT; return (l && l.spray) || 'mist'; };   /* which tank's spray is on this bug (towers and items always poison green) */
+const PSN_SHEEN = { mist: [0.02, 0.16, 0.03], flame: [0.22, 0.06, 0], bolt: [0.04, 0.09, 0.26], frost: [0.12, 0.2, 0.28] }, psnIdx = b => ['mist', 'flame', 'bolt', 'frost'].indexOf(psnKind(b));
+const psnSheen = (m, b) => { const c = PSN_SHEEN[psnKind(b)] || PSN_SHEEN.mist; m.emissive.setRGB(c[0], c[1], c[2]); };
+function psnBubble(b, k) { const kd = psnKind(b);
+  if (kd === 'flame') return FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.6 * k, y: bugY(b) + 0.3 * k, z: b.z + (Math.random() - 0.5) * 0.6 * k, vy: 1.6 + Math.random(), life: 0.6, s0: 0.14 + 0.05 * k, s1: 0.03, c: [1, 0.55, 0.15], a0: 1 });   // embers
+  if (kd === 'bolt') return FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.7 * k, y: bugY(b) + 0.3 * k + Math.random() * 0.3, z: b.z + (Math.random() - 0.5) * 0.7 * k, vx: (Math.random() - 0.5) * 3, vy: 1.5 + Math.random() * 2, vz: (Math.random() - 0.5) * 3, grav: 9, life: 0.3, s0: 0.12 + 0.04 * k, s1: 0.02, c: [0.75, 0.9, 1], a0: 1 });   // sparks
+  if (kd === 'frost') return FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.8 * k, y: bugY(b) + 0.6 * k + Math.random() * 0.3, z: b.z + (Math.random() - 0.5) * 0.8 * k, vy: -0.5, life: 0.9, s0: 0.14 + 0.05 * k, s1: 0.08, c: [0.88, 0.96, 1], a0: 0.9 });   // frost flakes drifting down
+  FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.6 * k, y: bugY(b) + 0.4 * k + Math.random() * 0.3, z: b.z + (Math.random() - 0.5) * 0.6 * k, vy: 0.9, life: 0.7, s0: 0.12 + 0.06 * k, s1: 0.22 + 0.08 * k, c: [0.45, 1, 0.3], a0: 0.8 }); }
 function drawRegModel(b, t, sh, c) {   /* ant / fly / spider / bed bug / dung beetle on their boss-style rigs */
   const q = b.mdl, u = q.userData, bt = BT[b.t], fy = bt.fly, k = b.t === 'ant' && b.guard ? 1.7 : 1;
   if (q.scale.x !== k * (b.giant ? 1.5 : 1)) q.scale.setScalar(k * (b.giant ? 1.5 : 1));
@@ -4580,8 +4600,8 @@ function drawRegModel(b, t, sh, c) {   /* ant / fly / spider / bed bug / dung be
   u.body.position.y = Math.abs(Math.sin(b.walk)) * 0.03;
   const f = b.flash > 0 ? 0.8 : 0;
   if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
-  else { const psn = b.psnT > 0 && !(b.flash > 0), st = !(b.flash > 0) && (b.stuck > 0 || b.glueT > 0), ang = b.t === 'dung' && b.angry && !(b.flash > 0), key = f + (psn ? 10 : 0) + (st ? 20 : 0) + (ang ? 40 : 0) + (b.guard ? 80 : 0);
-    if (u.f !== key) { u.f = key; for (const m of u.mats) { if (psn) m.emissive.setRGB(0.02, 0.16, 0.03); else if (st) m.emissive.setRGB(0.05, 0.05, 0.14); else if (ang) m.emissive.setRGB(0.25, 0.04, 0.02); else if (b.guard) m.emissive.setRGB(0.12, 0.1, 0.02); else m.emissive.setRGB(f, f, f); } } }
+  else { const psn = b.psnT > 0 && !(b.flash > 0), st = !(b.flash > 0) && (b.stuck > 0 || b.glueT > 0), ang = b.t === 'dung' && b.angry && !(b.flash > 0), key = f + (psn ? 10 + psnIdx(b) * 0.001 : 0) + (st ? 20 : 0) + (ang ? 40 : 0) + (b.guard ? 80 : 0);
+    if (u.f !== key) { u.f = key; for (const m of u.mats) { if (psn) psnSheen(m, b); else if (st) m.emissive.setRGB(0.05, 0.05, 0.14); else if (ang) m.emissive.setRGB(0.25, 0.04, 0.02); else if (b.guard) m.emissive.setRGB(0.12, 0.1, 0.02); else m.emissive.setRGB(f, f, f); } } }
   if (b.psnT > 0 && Math.random() < 0.18) psnBubble(b, q.scale.x);
   if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, (u.shadow || 1.4) * q.scale.x, 0, 0, 0, 0, fy ? 0.3 : 0.45);
   if (push) { ballPos(b, tmpB); tmpB.x += Math.sin(b.ang) * 0.5; tmpB.z += Math.cos(b.ang) * 0.5; tmpB.y += 0.12; const j = c.ball++, kk = b.ball.hp / b.ball.max;   /* the ball rolls just ahead, against the beetle's raised back end */
@@ -4611,9 +4631,9 @@ function drawMdl(b, t, sh) {
   if (u.seg) u.seg.visible = !u.head.visible;
   if (u.cLegs) { let n = 0; for (let q = b.lead; q && n < 40; q = q.lead) n++; u.cLegs.forEach((g, k) => { const ph = w * 1.6 - n * 0.8 + k * Math.PI; g.rotation.x = Math.sin(ph) * 0.35; g.rotation.z = (k ? 1 : -1) * Math.max(0, Math.cos(ph)) * 0.22; }); }   // centipede legs: a wave that runs from the head down the chain, each leg lifting as it swings forward   // modelled centipede: the head piece already has its own body
   u.body.position.y = base === 'centi' ? Math.sin(w * 0.8) * 0.04 : hop ? (u.crY || 0) + (b.jump > 0 ? 0 : Math.abs(Math.sin(w)) * 0.025) : 0;
-  const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : b.munch > 0 ? 0.3 : 0;
+  const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 + psnIdx(b) * 0.001 : b.munch > 0 ? 0.3 : 0;   /* (the sheen's colour is part of the key, so another tank's spray repaints it) */
   if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.8, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
-  else if (u.f !== f) { u.f = f; const psn = b.psnT > 0 && !(b.flash > 0) && !(b.munch > 0); for (const m of u.mats) { if (psn) m.emissive.setRGB(0.02, 0.16, 0.03); else m.emissive.setRGB(f * (b.munch > 0 ? 0.3 : 1), f * (b.munch > 0 ? 2 : 1), f * (b.munch > 0 ? 0.3 : 1)); } }
+  else if (u.f !== f) { u.f = f; const psn = b.psnT > 0 && !(b.flash > 0) && !(b.munch > 0); for (const m of u.mats) { if (psn) psnSheen(m, b); else m.emissive.setRGB(f * (b.munch > 0 ? 0.3 : 1), f * (b.munch > 0 ? 2 : 1), f * (b.munch > 0 ? 0.3 : 1)); } }
   if (b.psnT > 0 && Math.random() < 0.18) psnBubble(b, q.scale.x);   /* poisoned: a faint green sheen and bubbles rising off it, instead of turning pale */
   if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, (u.shadow || 1.4) * q.scale.x, 0, 0, 0, 0, bt.fly || b.air ? 0.25 : 0.45);
 }
@@ -6865,7 +6885,7 @@ function drawBugs(t) {
       u.body.position.y = Math.abs(Math.sin(b.walk * 1.5)) * 0.06;
       const f = b.flash > 0 ? 0.8 : b.psnT > 0 ? 0.25 : 0;
       if (b.shiny && b.flash <= 0) { shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); }   /* shiny bosses glow like the model bugs do */
-      else { const psn = b.psnT > 0 && b.flash <= 0; for (const m of u.mats) { if (psn) m.emissive.setRGB(0.02, 0.16, 0.03); else m.emissive.setRGB(f, f, f); } if (psn && Math.random() < 0.3) psnBubble(b, 2.2); }
+      else { const psn = b.psnT > 0 && b.flash <= 0; for (const m of u.mats) { if (psn) psnSheen(m, b); else m.emissive.setRGB(f, f, f); } if (psn && Math.random() < 0.3) psnBubble(b, 2.2); }
       if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, fy ? 4 : 6, 0, 0, 0, 0, fy ? 0.3 : 0.5);
     }
   }
@@ -7299,7 +7319,8 @@ function drawFx(dt, t) {
   for (const tw of S.towers) if (tw.amp > 0 && !tw.pending) B.glow.add(tw.x + 0.95, 0.75, tw.z + 0.95, 1.6, 0, 1, 0.6, 0.2, 0.42 + Math.sin(clock * 2.5 + tw.id) * 0.06);
   { const cr = tmpV.setFromMatrixColumn(camera.matrixWorld, 0); for (const b of S.bugs) if (b.psnT > 0 && !b.dead && !b.free) {   /* a green drop beside a poisoned bug's health bar */
     const boss = BT[b.t].boss && b.mesh, y = boss ? (BT[b.t].fly ? b.y0 + 7.0 : b.y0 + (b.t === 'widow' ? 5.6 : 4.6)) : bugY(b) + (BAR_Y[b.t] || 1.3), W = boss ? 4.2 : b.t === 'bed' ? 1.1 : b.t === 'baby' || b.t === 'centi' ? 1.2 : 1.9, d = W / 2 + (boss ? 0.55 : 0.32), sz = boss ? 0.95 : 0.55;
-    B.psnDrop.add(b.x - cr.x * d, y + Math.sin(clock * 4 + b.id) * 0.05, b.z - cr.z * d, sz, 0, 1, 1, 1, Math.min(1, b.psnT * 2)); } }
+    const k = psnKind(b), bt = k === 'flame' ? B.fireMark : k === 'bolt' ? B.boltBadge : k === 'frost' ? B.frostBadge : B.psnDrop;   /* the Backpack Spray's mark matches the tank: a flame, a bolt or a snowflake */
+    bt.add(b.x - cr.x * d, y + Math.sin(clock * 4 + b.id) * 0.05, b.z - cr.z * d, sz, k === 'frost' ? clock * 0.8 : 0, 1, 1, 1, Math.min(1, b.psnT * 2)); } }
   { const cr = tmpV.setFromMatrixColumn(camera.matrixWorld, 0); for (const b of S.bugs) if (b.fireT > 0 && !b.dead && !b.free) {   /* a flame badge at the other end of the bar while a magnifier is burning it */
     const boss = BT[b.t].boss && b.mesh, y = boss ? (BT[b.t].fly ? b.y0 + 7.0 : b.y0 + (b.t === 'widow' ? 5.6 : 4.6)) : bugY(b) + (BAR_Y[b.t] || 1.3), W = boss ? 4.2 : b.t === 'bed' ? 1.1 : b.t === 'baby' || b.t === 'centi' ? 1.2 : 1.9, d = W / 2 + (boss ? 0.55 : 0.32), sz = (boss ? 1.0 : 0.6) * (1 + Math.sin(clock * 9 + b.id) * 0.06);
     B.fireBadge.add(b.x + cr.x * d, y + 0.05, b.z + cr.z * d, sz, Math.sin(clock * 5 + b.id) * 0.1, 1, 1, 1, Math.min(1, b.fireT * 5)); } }
