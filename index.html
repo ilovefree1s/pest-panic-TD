@@ -87,9 +87,9 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #catch span{font-size:24px;line-height:1}
 #catch.busy{filter:saturate(.4);animation:none}
 @keyframes catchPulse{to{transform:scale(1.08);box-shadow:0 0 0 3px #fff,0 0 26px 10px rgba(255,220,120,.9)}}
-#jar{position:absolute;left:88px;bottom:16px;z-index:4;border:0;border-radius:14px;padding:5px 10px;cursor:pointer;background:rgba(14,18,22,.92);color:var(--text);font:800 12px var(--body);box-shadow:inset 0 0 0 2px #ffd84a,0 4px 12px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px}
+#jar{position:absolute;left:12px;top:56px;z-index:4;border:0;border-radius:14px;padding:5px 10px;cursor:pointer;background:rgba(14,18,22,.92);color:var(--text);font:800 12px var(--body);box-shadow:inset 0 0 0 2px #ffd84a,0 4px 12px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px}
 #jar b{color:#ffd84a;font:400 15px var(--display)}
-#jarAsk{position:absolute;left:88px;bottom:52px;z-index:6;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;border-radius:14px;background:rgba(14,18,22,.95);box-shadow:inset 0 0 0 2px #ffd84a,0 6px 16px rgba(0,0,0,.5)} #jarAsk span{grid-column:1/-1;font:800 12px var(--body);color:#ffd84a;text-align:center}
+#jarAsk{position:absolute;left:12px;top:94px;z-index:6;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;border-radius:14px;background:rgba(14,18,22,.95);box-shadow:inset 0 0 0 2px #ffd84a,0 6px 16px rgba(0,0,0,.5)} #jarAsk span{grid-column:1/-1;font:800 12px var(--body);color:#ffd84a;text-align:center}
 #jarAsk button{border:0;border-radius:10px;padding:6px 10px;cursor:pointer;font:900 13px var(--body);color:#fff;display:grid;gap:1px} #jarAsk small{font:700 11px var(--body);opacity:.85} #jarKeep{background:#c0732a} #jarSplit{background:#3fae5a} #jarNo{background:#3c4652;grid-column:1/-1} #jarAsk em{grid-column:1/-1;font:700 11px var(--body);font-style:normal;color:#ffd84a;text-align:center;max-width:220px} #jarAsk.solo #jarSplit{display:none} #jarAsk.solo #jarNo{grid-column:auto}
 #abil.pro .cnCap,#abil.pro .cnBase{background:linear-gradient(#ffae4a,#c0601a)}   /* Pro: orange fittings */
 #abil small{position:absolute;right:-6px;top:-6px;background:var(--gold);color:#3a2400;font:900 11px/1 var(--body);padding:3px 6px;border-radius:999px;box-shadow:0 2px 4px rgba(0,0,0,.4)}
@@ -723,7 +723,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="714">v1.212</div>
+    <div id="ver" data-b="716">v1.214</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4091,6 +4091,16 @@ function syncCatch() {
   if (el.hidden === alive) el.hidden = !alive;
   if (!alive) el.classList.remove('busy'); else el.classList.toggle('busy', !!(S.ext && S.ext.catch));
   const n = jarCount(), j = $('jar'); j.hidden = !play || n <= 0; if (j.hidden) $('jarAsk').hidden = true; if ($('jarN').textContent !== String(n)) $('jarN').textContent = n;
+  if (!j.hidden) placeJar(j);
+}
+let JAR_T = 0;
+function placeJar(j) {   /* the shiny jar sits top left, just under the cake (wherever the cake's pill is) */
+  const now = performance.now(); if (now - JAR_T < 250) return; JAR_T = now;
+  const sg = $('stage').getBoundingClientRect(), c = $('stLives'), r = c && !$('hud').hidden ? c.getBoundingClientRect() : null;
+  const inStage = r && r.width && r.left >= sg.left - 1 && r.right <= sg.right + 1 && r.top >= sg.top - 1 && r.bottom <= sg.bottom;
+  const ct = document.querySelector('#hud .ctl'), cr = ct && !$('hud').hidden ? ct.getBoundingClientRect() : null, L = inStage ? Math.round(r.left - sg.left) : 12, T = inStage ? Math.round(r.bottom - sg.top + 6) : cr && cr.height && cr.bottom > sg.top ? Math.round(cr.bottom - sg.top + 6) : 12;   /* the cake's down on the tray (phone upright): under the round buttons instead */
+  if (j.style.left !== L + 'px') j.style.left = L + 'px'; if (j.style.top !== T + 'px') j.style.top = T + 'px';
+  const a = $('jarAsk'); if (!a.hidden) { const jt = T + j.offsetHeight + 6; a.style.left = L + 'px'; a.style.top = jt + 'px'; }
 }
 $('catch').addEventListener('click', e => { e.stopPropagation(); SND.init(); startCatch(); });
 $('jar').addEventListener('click', e => { e.stopPropagation(); SND.init(); sellShiny(); });
@@ -4114,7 +4124,7 @@ function useAbility() {
   const blocked = (x, z) => S.towers.some(t => Math.hypot(t.x - x, t.z - z) < 1.6);
   let tx = tmpP.x, tz = tmpP.z;
   let side = 1;
-  pick: for (const d of [2.9, 3.6, 4.4]) for (const sd of [1, -1]) {
+  pick: for (const d of [5.9, 6.6, 4.4, 2.9]) for (const sd of [1, -1]) {   /* a tile back from the trail, closer only if there's no room */
     const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd;
     if (!onTrail(x, z) && !blocked(x, z)) { tx = x; tz = z; side = sd; break pick; }
   }
@@ -4142,11 +4152,11 @@ function abilUpdate(e, dt) {
     if (a.pickT <= 0 || a.gx == null) { a.pickT = 0.3; let bestSc = -1; a.gx = null;
       const live = []; for (const b of S.bugs) if (!b.dead && !b.free) live.push(b);
       for (const ds of [1.6, 3.4, 0, -1.8]) { let st = lead.s + ds; for (let i = 0; i < 40; i++) { pathAt(st, tmpP, rt); if (tmpP.flat && tmpP.y < 0.3) break; st -= 0.5; } pathAt(st, tmpP, rt);
-        for (const d of [2.9, 3.6, 4.4]) for (const sd of [1, -1]) { const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd; if (!offTrail(x, z)) continue;
+        for (const d of [5.9, 6.6, 4.4, 2.9]) for (const sd of [1, -1]) { const x = tmpP.x + tmpP.px * d * sd, z = tmpP.z + tmpP.pz * d * sd; if (!offTrail(x, z)) continue;
           const near = []; for (const b of live) { const bx = b.x - x, bz = b.z - z, dd = Math.hypot(bx, bz); if (dd <= ABIL.range * (bugY(b) > 0.3 ? 1.45 : 1)) near.push([bx, bz, dd, b]); }
           if (!near.some(q => q[3] === lead)) continue;
           let n = 0; for (const [cx, cz, cd] of near) { const ux = cx / (cd || 1), uz = cz / (cd || 1); let k = 0; for (const [bx, bz, dd] of near) if (dd < 1 || (bx * ux + bz * uz) / dd >= ABIL.cone) k++; n = Math.max(n, k); }
-          const sc = n - Math.hypot(x - e.x, z - e.z) * 0.08 + (sd === (a.side || 1) ? 0.3 : 0);   // a bit sticky: don't sprint across the kitchen for one more bug
+          const sc = n - Math.hypot(x - e.x, z - e.z) * 0.08 + (sd === (a.side || 1) ? 0.3 : 0) - (d < 5 ? 0.6 : 0);   /* (rather a tile back from the trail than right on its edge) */   // a bit sticky: don't sprint across the kitchen for one more bug
           if (sc > bestSc) { bestSc = sc; a.gx = x; a.gz = z; a.gside = sd; } } }
       if (a.gx != null) a.side = a.gside; }
     let gx = a.gx, gz = a.gz;
@@ -5382,12 +5392,12 @@ const SND = (() => {
         g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.05); g.gain.exponentialRampToValueAtTime(0.13, t + 0.3);   /* same loudness as before (the softer noise carries more of the roar) */
         tone('sine', 120, 45, 0.3, 0.45); hiss(0.25, 0.3, 600, 0.8, 'lowpass');   /* whoomp: it lights */
       } else if (kind === 'bolt') {
-        const o = ac.createOscillator(), o2 = ac.createOscillator(), bp = ac.createBiquadFilter(), og = ac.createGain();
-        o.type = 'sawtooth'; o.frequency.value = 62; o2.type = 'square'; o2.frequency.value = 124.7; bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 1.2; og.gain.value = 0.5;
-        o.connect(bp); o2.connect(bp); bp.connect(og).connect(g); o.start(t); o2.start(t); srcs.push(o, o2);   /* the mains-hum buzz */
-        const n = loopNoise(), hp = ac.createBiquadFilter(), ng = ac.createGain(); hp.type = 'highpass'; hp.frequency.value = 4500; ng.gain.value = 0.18; n.connect(hp).connect(ng).connect(g);
+        const o = ac.createOscillator(), o2 = ac.createOscillator(), hpB = ac.createBiquadFilter(), og = ac.createGain();
+        o.type = 'sawtooth'; o.frequency.value = 240; o2.type = 'sawtooth'; o2.frequency.value = 361; hpB.type = 'highpass'; hpB.frequency.value = 1800; hpB.Q.value = 0.7; og.gain.value = 0.22;
+        o.connect(hpB); o2.connect(hpB); hpB.connect(og).connect(g); o.start(t); o2.start(t); srcs.push(o, o2);   /* a thin, bright electric whine (the old low hum through a midrange filter sounded wet) */
+        const n = loopNoise(), hp = ac.createBiquadFilter(), ng = ac.createGain(); hp.type = 'highpass'; hp.frequency.value = 3500; ng.gain.value = 0.32; n.connect(hp).connect(ng).connect(g);   /* the dry sizzle */
         g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.24, t + 0.03);
-        iv = setInterval(() => { if (!ac) return; const k = 1 + (Math.random() * 3 | 0); for (let i = 0; i < k; i++) hiss(0.02 + Math.random() * 0.04, 0.25 + Math.random() * 0.25, 2500 + Math.random() * 5000, 3, 'bandpass', i * 0.018); }, 55);   /* crackle */
+        iv = setInterval(() => { if (!ac) return; const k = 1 + (Math.random() * 3 | 0); for (let i = 0; i < k; i++) hiss(0.008 + Math.random() * 0.018, 0.3 + Math.random() * 0.3, 4000 + Math.random() * 5000, 1.2, 'highpass', i * 0.012); if (Math.random() < 0.25) tone('square', 1800 + Math.random() * 1500, 900, 0.025, 0.06); }, 45);   /* short, dry snaps and zaps */
         tone('sawtooth', 900, 120, 0.12, 0.25); hiss(0.08, 0.4, 6000, 1.5);   /* zzzt: it arcs */
       } else if (kind === 'frost') {   /* a CO2 blast: a hard, breathy whoosh with a low rush under it and little icy tinkles */
         const n = loopNoise(), n2 = loopNoise(), bp = ac.createBiquadFilter(), lp = ac.createBiquadFilter(), hg = ac.createGain(), lg = ac.createGain();
