@@ -721,7 +721,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="706">v1.204</div>
+    <div id="ver" data-b="707">v1.205</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2792,6 +2792,11 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
     const c0 = document.createElement('canvas'); c0.width = W; c0.height = H; const x0 = c0.getContext('2d', { willReadFrequently: true }); x0.drawImage(im, 0, 0); yield;
     const px = new Uint8ClampedArray(W * H * 4), band = 128;
     for (let y = 0; y < H; y += band) { const hh = Math.min(band, H - y); px.set(x0.getImageData(0, y, W, hh).data, y * W * 4); yield; }
+    /* the little white clip that hangs under each belt pouch: paint it pouch leather (two small patches of the sheet; the buckle is elsewhere) */
+    for (const [x0b, x1b, y0b, y1b] of [[722, 773, 523, 560], [1993, 2047, 493, 561]]) {
+      const X0 = Math.floor(x0b * W / 2048), X1 = Math.min(W - 1, Math.ceil(x1b * W / 2048)), Y0 = Math.floor(y0b * H / 2048), Y1 = Math.min(H - 1, Math.ceil(y1b * H / 2048));
+      for (let y = Y0; y <= Y1; y++) for (let xx = X0; xx <= X1; xx++) { const i = (y * W + xx) * 4, r = px[i], g = px[i + 1], b = px[i + 2];
+        if (Math.min(r, g, b) > 105 && r - b < 75) { const L = Math.max(r, g, b) / 255; px[i] = 92 * L; px[i + 1] = 56 * L; px[i + 2] = 22 * L; } } }
     M.masks.basePix = px;
   }
   const D = x.createImageData(W, H), a = D.data; a.set(M.masks.basePix); const mask = M.tankMask, sc = OUTFIT_SUIT[suit] || null;
