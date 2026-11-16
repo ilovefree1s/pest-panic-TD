@@ -721,7 +721,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="708">v1.206</div>
+    <div id="ver" data-b="709">v1.207</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3361,10 +3361,13 @@ function frostDraw() {   /* the Frost tank: CO2 snow swirling in icy blue, frost
   for (let k = 0; k < 5; k++) { const cx = ((k * 0.29 + t * 0.03 * (k % 2 ? 1 : -1)) % 1 + 1) % 1 * w, cy = h * (0.2 + 0.15 * k) + Math.sin(t * 0.7 + k) * 6, r = w * 0.32;   // slow drifting fog
     const fg = x.createRadialGradient(cx, cy, 0, cx, cy, r); fg.addColorStop(0, 'rgba(255,255,255,.28)'); fg.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = fg; x.fillRect(0, 0, w, h); }
   x.strokeStyle = 'rgba(255,255,255,.92)'; x.lineCap = 'round';
-  for (let k = 0; k < 26; k++) { const sp = 0.06 + (k % 5) * 0.025, ph = (t * sp + k * 0.173) % 1, fy = ph * h, fx = ((k * 0.618) % 1) * w + Math.sin(t * 1.4 + k * 2.1) * 7, r = 1.2 + (k % 4) * 0.9, an = t * (0.6 + (k % 3) * 0.3) + k;   // flakes swirling down
-    x.lineWidth = r > 2.5 ? 1.2 : 0.9; x.globalAlpha = 0.55 + 0.45 * Math.sin(Math.PI * ph);
-    if (r < 2) { x.fillStyle = '#fff'; x.beginPath(); x.arc(fx, fy, r * 0.7, 0, 7); x.fill(); continue; }
-    x.beginPath(); for (let q = 0; q < 3; q++) { const a = an + q * Math.PI / 3, dx = Math.cos(a) * r * 1.4, dy = Math.sin(a) * r * 1.4; x.moveTo(fx - dx, fy - dy); x.lineTo(fx + dx, fy + dy); } x.stroke(); }
+  for (let k = 0; k < 18; k++) { const sp = 0.05 + (k % 5) * 0.02, ph = (t * sp + k * 0.173) % 1, fy = -8 + ph * (h + 16), fx = ((k * 0.618) % 1) * w + Math.sin(t * 1.4 + k * 2.1) * 7, r = 4 + (k % 4) * 1.8, an = t * (0.5 + (k % 3) * 0.25) + k;   // big flakes swirling down
+    x.globalAlpha = 0.6 + 0.4 * Math.sin(Math.PI * ph);
+    if (k % 6 === 5) { x.fillStyle = '#fff'; x.beginPath(); x.arc(fx, fy, 1.8, 0, 7); x.fill(); continue; }
+    x.lineWidth = r > 6 ? 2 : 1.6; x.beginPath();
+    for (let q = 0; q < 6; q++) { const a = an + q * Math.PI / 3, ca = Math.cos(a), sa = Math.sin(a), L = r * 1.5; x.moveTo(fx, fy); x.lineTo(fx + ca * L, fy + sa * L);   // six arms, each with a pair of little branches
+      const bx = fx + ca * L * 0.6, by = fy + sa * L * 0.6, bl = L * 0.32; for (const s2 of [-1, 1]) { const b2 = a + s2 * 0.8; x.moveTo(bx, by); x.lineTo(bx + Math.cos(b2) * bl, by + Math.sin(b2) * bl); } }
+    x.stroke(); }
   x.globalAlpha = 1;
   const ice = x.createLinearGradient(0, h * 0.82, 0, h); ice.addColorStop(0, 'rgba(235,248,255,0)'); ice.addColorStop(0.35, 'rgba(235,248,255,.85)'); ice.addColorStop(1, '#ffffff'); x.fillStyle = ice;   // packed snow at the bottom
   x.beginPath(); x.moveTo(0, h); for (let u = 0; u <= w; u += 6) x.lineTo(u, h * 0.86 + Math.sin(u * 0.21) * 3 + Math.sin(u * 0.53) * 2); x.lineTo(w, h); x.closePath(); x.fill();
