@@ -721,7 +721,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="710">v1.208</div>
+    <div id="ver" data-b="711">v1.209</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1775,6 +1775,14 @@ function fireBadgeTex() {   /* a little flame badge, same style as the candle's 
   flame(W * 0.56, 50, W * 0.22, 30, [[0, '#fffbe0'], [0.5, '#ffe27a'], [1, '#ffb52e']], null);
   return tex(c, true);
 }
+function snowTex() {   /* a crisp white snowflake for the Frost spray (thin blue rim so it reads on a pale floor) */
+  const H = 64, [c, x] = cnv(H, H), cx = H / 2, cy = H / 2, L = 27; x.lineCap = 'round';
+  const flake = (lw, col) => { x.lineWidth = lw; x.strokeStyle = col; x.beginPath(); for (let q = 0; q < 6; q++) { const a = q * Math.PI / 3, ca = Math.cos(a), sa = Math.sin(a); x.moveTo(cx, cy); x.lineTo(cx + ca * L, cy + sa * L);
+    for (const f of [0.45, 0.72]) { const bx = cx + ca * L * f, by = cy + sa * L * f, bl = L * (f < 0.5 ? 0.3 : 0.2); for (const s2 of [-1, 1]) { const b2 = a + s2 * 0.8; x.moveTo(bx, by); x.lineTo(bx + Math.cos(b2) * bl, by + Math.sin(b2) * bl); } } } x.stroke(); };
+  flake(7, 'rgba(60,130,200,.75)'); flake(3.4, '#ffffff');
+  x.fillStyle = '#fff'; x.beginPath(); x.arc(cx, cy, 3.5, 0, TAU); x.fill();
+  return tex(c, true);
+}
 function boltBadgeTex() {   /* a little lightning badge for bugs hit by the Lightning tank */
   const H = 84, [c, x] = cnv(H, H);
   x.beginPath(); x.moveTo(48, 4); x.lineTo(20, 46); x.lineTo(38, 46); x.lineTo(30, 80); x.lineTo(64, 32); x.lineTo(45, 32); x.lineTo(56, 4); x.closePath();
@@ -2660,9 +2668,9 @@ const B = {
   goo: new Batch(TEX.drop, 700, { order: 13 }),
   psnDrop: new Batch(psnDropTex(), 300, { order: 24 }),
   fireBadge: new Batch(fireBadgeTex(), 300, { order: 24 }), fireMark: new Batch(fireBadgeTex(), 300, { order: 24 }), boltBadge: new Batch(boltBadgeTex(), 300, { order: 24 }), frostBadge: new Batch(frostBadgeTex(), 300, { order: 24 }),
-  glow: new Batch(TEX.spark, 700, { add: true, order: 14 }), fire: new Batch(TEX.fire, 500, { add: false, order: 15 }), fireAdd: new Batch(TEX.fire, 500, { add: true, order: 16 }),   /* alpha-blended so stacked flames stay orange instead of blowing out to white */
+  glow: new Batch(TEX.spark, 700, { add: true, order: 14 }), fire: new Batch(TEX.fire, 500, { add: false, order: 15 }), snow: new Batch(snowTex(), 700, { order: 15 }), fireAdd: new Batch(TEX.fire, 500, { add: true, order: 16 }),   /* alpha-blended so stacked flames stay orange instead of blowing out to white */
 };
-const FX = { smoke: new Pool(B.smoke, 700), goo: new Pool(B.goo, 700), glow: new Pool(B.glow, 700), fire: new Pool(B.fire, 500), fireAdd: new Pool(B.fireAdd, 500) };
+const FX = { smoke: new Pool(B.smoke, 700), goo: new Pool(B.goo, 700), glow: new Pool(B.glow, 700), fire: new Pool(B.fire, 500), snow: new Pool(B.snow, 700), fireAdd: new Pool(B.fireAdd, 500) };
 const arcs = new Arcs(60, 12);
 
 // ---------------------------------------------------------------- the exterminator (from Pest Panic HD)
@@ -4315,11 +4323,12 @@ function drawOneExt(dt, EXTM, e, show) {
         if (i === 0 && Math.random() < 0.7) FX.smoke.spawn({ x: tmpV.x + kx * 0.1, y: tmpV.y + 0.5, z: tmpV.z + kz * 0.1, vx: kx * 0.55, vy: 2.2, vz: kz * 0.55, drag: 1.8, life: 1.0 + Math.random() * 0.4, s0: 0.5, s1: 2.4, c: [0.12, 0.1, 0.09], a0: 0.3 }); }
       else if (st === 'bolt') { if (i === 0) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, life: 0.08, s0: 0.5 + Math.random() * 0.4, s1: 0.2, c: [0.75, 0.88, 1], a0: 0.9 });   /* lightning: a flickering flare at the nozzle, sparks fly off the far end */
         if (Math.random() < 0.35) FX.glow.spawn({ x: tmpV.x + vx * 0.3, y: tmpV.y + vy * 0.3, z: tmpV.z + vz * 0.3, vx: vx * 0.3 + (Math.random() - 0.5) * 4, vy: 1 + Math.random() * 3, vz: vz * 0.3 + (Math.random() - 0.5) * 4, grav: 10, drag: 1, life: 0.25 + Math.random() * 0.3, s0: 0.14, s1: 0.02, c: [0.8, 0.92, 1], a0: 1 }); }
-      else if (st === 'frost') {   /* a CO2 freeze jet: a tight white blast at the nozzle billowing into cold fog that sinks, with ice glints */
-        FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: vx * 1.05, vy: vy * 0.5, vz: vz * 1.05, drag: 2.6, life: 0.5 + Math.random() * 0.25, s0: 0.25, s1: 1.9, c: [0.86, 0.95, 1], a0: 0.75 });
-        if (i < 2) FX.smoke.spawn({ x: tmpV.x + vx * 0.04, y: tmpV.y, z: tmpV.z + vz * 0.04, vx: vx * 0.7, vy: -1.2 - Math.random(), vz: vz * 0.7, drag: 1.8, life: 0.9 + Math.random() * 0.4, s0: 0.5, s1: 2.6, c: [0.6, 0.8, 0.98], a0: 0.35 });   /* cold fog rolling down to the floor */
+      else if (st === 'frost') {   /* a blast of snowflakes: spinning flakes of every size fly out and drift down, over a thin icy-white haze */
+        for (let q = 0; q < 2; q++) { const jj = (Math.random() - 0.5) * 0.25, k2 = 0.8 + Math.random() * 0.45;
+          FX.snow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: (vx + (Math.random() - 0.5) * 3) * k2 + jj, vy: vy * 0.6 + Math.random() * 1.5, vz: (vz + (Math.random() - 0.5) * 3) * k2, drag: 1.7, grav: 2.2, life: 0.75 + Math.random() * 0.5, s0: 0.2 + Math.random() * 0.15, s1: 0.4 + Math.random() * 0.45, a0: 1, a1: 0.15, vr: (Math.random() - 0.5) * 10 }); }
+        if (i === 0) FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: vx * 0.9, vy: vy * 0.4, vz: vz * 0.9, drag: 2.8, life: 0.4 + Math.random() * 0.2, s0: 0.2, s1: 1.3, c: [0.92, 0.97, 1], a0: 0.4 });   /* a thin cold haze */
         if (Math.random() < 0.45) FX.glow.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx: vx * (0.6 + Math.random() * 0.4), vy: vy + Math.random(), vz: vz * (0.6 + Math.random() * 0.4), drag: 1.4, grav: 3, life: 0.4 + Math.random() * 0.4, s0: 0.12, s1: 0.03, c: [0.85, 0.95, 1], a0: 1 }); }   /* ice glints */
-      else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.45, 1, 0.3], a0: 0.6 });   // toxic green mist
+      else FX.smoke.spawn({ x: tmpV.x, y: tmpV.y, z: tmpV.z, vx, vy, vz, drag: 2.4, life: 0.55 + Math.random() * 0.25, s0: 0.35, s1: 2.0, c: [0.3, 1, 0.16], a0: 0.68 });   // toxic green mist
     }
     if (u.look && u.look.spray === 'bolt') {   /* a crackling cone of jagged arcs, redrawn every few frames, the odd one forking to the floor */
       const reachB = e.abil && e.abil.tgtD ? Math.max(1.6, e.abil.tgtD + 0.8) : 5; for (let k = 0; k < 2; k++) if (Math.random() < dt * 40) { const L = reachB * (0.55 + Math.random() * 0.5), j = (Math.random() - 0.5) * 0.9, ex = tmpV.x + (fx * Math.cos(j) - fz * Math.sin(j)) * L, ez = tmpV.z + (fz * Math.cos(j) + fx * Math.sin(j)) * L, ey = Math.max(0.1, tmpV.y - 0.3 - Math.random() * 1.4);
@@ -7331,7 +7340,7 @@ function drawFx(dt, t) {
   S.coins = S.coins.filter(c => (c.t += dt) < 0.7);
   for (const c of S.coins) { c.vy -= 18 * dt; c.y = Math.max(0.3, c.y + c.vy * dt); setI(IM.coin, ci++, c.x, c.y + 0.4, c.z, c.t * 14, 1.5 * (1 - Math.max(0, c.t - 0.5) * 5)); }
   IM.coin.count = ci; IM.coin.instanceMatrix.needsUpdate = true;
-  FX.smoke.update(dt); FX.goo.update(dt, 0.06); FX.glow.update(dt); FX.fire.update(dt); FX.fireAdd.update(dt);
+  FX.smoke.update(dt); FX.goo.update(dt, 0.06); FX.glow.update(dt); FX.fire.update(dt); FX.fireAdd.update(dt); FX.snow.update(dt, 0.06);
   for (const k in B) B[k].end();
   arcs.update(dt);
   // cake bites
