@@ -726,7 +726,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="733">v1.231</div>
+    <div id="ver" data-b="734">v1.232</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2853,7 +2853,8 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
         if (toxic) { a[i] = 46 * l2; a[i + 1] = 48 * l2; a[i + 2] = 54 * l2; ga[i] = 0; ga[i + 1] = 0; ga[i + 2] = 0; ga[i + 3] = 255; continue; }   /* the old tank becomes the dark backpack frame the glass canister mounts on */   /* plain dark ember: only the live flames move on top (a painted pattern sat still underneath) */
         if (toxic === 'bolt') { a[i] = 8 * l2; a[i + 1] = 16 * l2; a[i + 2] = 60 * l2; ga[i] = 10; ga[i + 1] = 30; ga[i + 2] = 110; ga[i + 3] = 255; continue; }   /* plain storm blue under the live lightning */
         a[i] = 40 * l2; a[i + 1] = 210 * l2; a[i + 2] = 30 * l2; ga[i] = 40; ga[i + 1] = 255; ga[i + 2] = 20; ga[i + 3] = 255; continue; }   // the whole canister glows radioactive green (flat: the sheet's brushed streaks read as lines in saturated green)
-      const blue = b > r + 35 && b > g, orange = sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35;   /* (brown leather and a dark beard have far more blue in them) */   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */
+      const beardEdge = r < 175 && b > r * 0.22 && r - g < 62;   /* the soft edge where the beard meets his skin: reddish brown, but far more blue in it than shaded shirt (it showed as a line of suit colour under his goatee) */
+      const blue = b > r + 35 && b > g, orange = !beardEdge && (sc && M.suitMask && M.suitMask[p] && r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45) || sc && M.suitMask && M.suitMask[p] && r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35);   /* (brown leather and a dark beard have far more blue in them) */   /* orange by hue, in light and deep shadow (not skin, not the brown belt) */
       const isOr = g > r * 0.22 && ((r > 95 && r - b > 0.62 * r && g > b * 0.9 && g < r * 0.78 && (r > 150 || r - g > 45)) || (r > 70 && r < 160 && g < r * 0.42 && g > r * 0.18 && b < g * 0.35));   /* (g > 0.22 r: orange, not the red fittings) */
       const nk = sc && M.masks.neckMask ? M.masks.neckMask[p] : 0;
       if (orange && suit === 'camo' && nk === 2) { painted[p] = 1; continue; }   /* the camo suit keeps its orange collar flaps (still on the suit sheet) */
@@ -2887,6 +2888,7 @@ function* outfitGen(M, suit, red, toxic) {   // -> { map, glow, mr } through the
       if (sat < 0.09 && lum > 0.3 && b <= r + 4) return true;         // buckle, name tag, tank, metal fittings (white or warm grey; bluish grey is faded denim)
       if (sat < 0.3 && lum > 0.45 && b - r < 14 && !(r > g && g > b && (g - b) > (r - b) * 0.6 && sat > 0.2 && lum > 0.6 && r - b > 50)) return true;   // light greys, whites and warm off-whites: buckle, name tag, buttons (faded denim is bluer; the orange shirt's pale highlights are far more saturated)
       if (lum < 0.5 && sat > 0.3 && r > g && g >= b && b < r * 0.55) return true;   // leather belt and pouches
+      if (lum > 0.6 && r > g && g > b && g > r * 0.55 && b > r * 0.34) return true;   // skin and the beard's soft edge on his chin (the outfit spread onto it and showed as suit colour under his goatee)
       return false; };
     const far = W / 36, q = new Int32Array(W * H), dist = new Uint8Array(W * H); let h = 0, t = 0;
     for (let p = 0; p < W * H; p++) if (painted[p]) { dist[p] = 1; q[t++] = p; }
