@@ -725,7 +725,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="724">v1.222</div>
+    <div id="ver" data-b="725">v1.223</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4927,7 +4927,10 @@ const BUILD = {
       const bore = mesh(new THREE.CircleGeometry(0.12, 14), new THREE.MeshBasicMaterial({ color: '#000' })); bore.rotation.x = -0.12; mouth.add(bore); bore.position.y = 0.075; bore.rotation.set(-Math.PI / 2, 0, 0);   /* the open bore: a black disc just proud of the lip */
       barrels.push({ bg, barrel, mouth });
     }
-    const hose = mesh(new THREE.TorusGeometry(0.3, 0.05, 8, 20, Math.PI), dark); hose.rotation.y = Math.PI / 2; hose.position.set(0.24, 1.2, -0.32); turn.add(hose);   /* a hose arching along the tank's side, from the pump at the back to the barrels (it used to stick out sideways off the tank) */
+    const mani = mesh(new THREE.BoxGeometry(0.5, 0.22, 0.24), dark); mani.position.set(0, -0.02, -0.06); kick.add(mani);   /* the block the barrels screw into */
+    { const V = THREE.Vector3, path = new THREE.CatmullRomCurve3([new V(0.3, 0.92, -0.98), new V(0.44, 1.28, -0.92), new V(0.44, 1.56, -0.55), new V(0.3, 1.55, -0.22), new V(0.18, 1.42, -0.18)]);
+      const hose = mesh(new THREE.TubeGeometry(path, 24, 0.055, 8, false), dark); turn.add(hose);   /* the hose runs from the pump at the back, up over the tank, into the barrel block */
+      for (const [px, py, pz] of [[0.3, 0.92, -0.98], [0.18, 1.42, -0.18]]) { const cl = mesh(sph(0.085, 10, 8), TM.steel, false); cl.position.set(px, py, pz); turn.add(cl); } }   // metal fittings at both ends
     const o = { root: g, turn, kick, rim, pips: pips(g) };
     o.setLevel = lv => {
       rimLevel(o, lv);
