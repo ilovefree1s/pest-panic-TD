@@ -725,7 +725,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="722">v1.220</div>
+    <div id="ver" data-b="723">v1.221</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -3522,6 +3522,29 @@ if (/[?&]diag=suit/.test(location.search)) suitDiag();
 { let hold = 0; const v = $('ver'); if (v) { v.style.pointerEvents = 'auto'; for (const ev of ['pointerdown', 'touchstart']) v.addEventListener(ev, () => { clearTimeout(hold); hold = setTimeout(suitDiag, 2000); }); for (const ev of ['pointerup', 'pointercancel', 'touchend', 'pointerleave']) v.addEventListener(ev, () => clearTimeout(hold)); } }
 /* ---- the modelled house cat (Meshy). One model; each level repaints its fur (orange, gray, black, tiger) and collar (red, blue, gold) */
 const CATM = { gltf: null, tex: {}, base: null, flip: false };
+/* The cat's sheet has stray specks and one-texel slivers at its patch edges (from the model's bake), and junk between the patches that bleeds in
+   at the seams: they showed as little lines and dots on him. Clean both: fill the gaps between patches with each patch's own edge colour, and swap
+   any lone texel that clashes with everything around it for its neighbours' colour. */
+function catTidy(x, W, H, geo) {
+  const D = x.getImageData(0, 0, W, H), a = D.data, N = W * H;
+  const cover = new Uint8Array(N);
+  if (geo && geo.attributes.uv) { const mk = document.createElement('canvas'); mk.width = W; mk.height = H; const m = mk.getContext('2d', { willReadFrequently: true }), uv = geo.attributes.uv, I = geo.index, n = I ? I.count : uv.count;
+    m.fillStyle = '#fff'; m.strokeStyle = '#fff'; m.lineWidth = 1.2; m.lineJoin = 'round';
+    const P = i => [uv.getX(i) * W, (CATM.flip ? 1 - uv.getY(i) : uv.getY(i)) * H];
+    for (let t = 0; t < n; t += 3) { const [p0, p1, p2] = [0, 1, 2].map(k => P(I ? I.getX(t + k) : t + k)); m.beginPath(); m.moveTo(p0[0], p0[1]); m.lineTo(p1[0], p1[1]); m.lineTo(p2[0], p2[1]); m.closePath(); m.fill(); m.stroke(); }
+    const md = m.getImageData(0, 0, W, H).data; for (let i = 0; i < N; i++) cover[i] = md[i * 4 + 3] > 0 ? 1 : 0; }
+  else cover.fill(1);
+  // lone clashing texels inside the patches
+  const src = new Uint8ClampedArray(a), nb = [];
+  for (let y = 1; y < H - 1; y++) for (let x0 = 1; x0 < W - 1; x0++) { const p = y * W + x0; if (!cover[p]) continue; nb.length = 0; let sim = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const q = p + dy * W + dx; if (!cover[q]) continue; nb.push(q); if (Math.abs(src[q * 4] - src[p * 4]) + Math.abs(src[q * 4 + 1] - src[p * 4 + 1]) + Math.abs(src[q * 4 + 2] - src[p * 4 + 2]) < 60) sim++; }
+    if (nb.length < 5 || sim > 2) continue;
+    for (let c = 0; c < 3; c++) { const v = nb.map(q => src[q * 4 + c]).sort((u, w) => u - w); a[p * 4 + c] = v[v.length >> 1]; } }
+  // the gaps between patches take the nearest patch's colour (so a seam never blends in junk)
+  const q = new Int32Array(N); let h = 0, t2 = 0; const seen = new Uint8Array(N); for (let i = 0; i < N; i++) if (cover[i]) { seen[i] = 1; q[t2++] = i; }
+  if (t2 && t2 < N) while (h < t2) { const p = q[h++], px = p % W; for (const n2 of [px > 0 ? p - 1 : -1, px < W - 1 ? p + 1 : -1, p >= W ? p - W : -1, p < N - W ? p + W : -1]) { if (n2 < 0 || seen[n2]) continue; seen[n2] = 1; a[n2 * 4] = a[p * 4]; a[n2 * 4 + 1] = a[p * 4 + 1]; a[n2 * 4 + 2] = a[p * 4 + 2]; a[n2 * 4 + 3] = 255; q[t2++] = n2; } }
+  x.putImageData(D, 0, 0);
+}
 function catTexture(look) {   // look: 'l1' | 'l2' | 'l3' | 'tiger'
   if (CATM.tex[look]) return CATM.tex[look];
   const im = CATM.base, W = im.width, H = im.height, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
@@ -3541,7 +3564,9 @@ function catTexture(look) {   // look: 'l1' | 'l2' | 'l3' | 'tiger'
     }
     x.putImageData(D, 0, 0);
   }
-  const t = new THREE.CanvasTexture(cv); t.flipY = CATM.flip; t.colorSpace = THREE.SRGBColorSpace; let cg = null; CATM.gltf.scene.traverse(n => { if (n.isMesh && !cg) cg = n.geometry; }); seamSafeMips(t, cg);
+  let cg = null; CATM.gltf.scene.traverse(n => { if (n.isMesh && !cg) cg = n.geometry; });
+  try { catTidy(x, W, H, cg); } catch (e) {}
+  const t = new THREE.CanvasTexture(cv); t.flipY = CATM.flip; t.colorSpace = THREE.SRGBColorSpace; seamSafeMips(t, cg);
   return (CATM.tex[look] = std({ map: t, roughness: 0.75, metalness: 0, color: new THREE.Color(0.8, 0.8, 0.8) }));
 }
 /* the model has no skeleton, so give it one: 4 legs, a tail and a head, each owning the part of the mesh around it (the cat stands facing +z, legs at x ±0.2, z ±0.37) */
@@ -3859,7 +3884,31 @@ function layCatAsleep(o) {   // asleep on the bed: lying on his side, a bit smal
   if (!o.mdl) return; o.root.scale.set(1.15, 1.15, 1.15); o.root.position.y = 0.3; o.mdl.body.rotation.set(0, 0, Math.PI / 2); o.mdl.body.position.set(0.55, 0, 0);
 }
 function catPaint(o) { if (o.mdl) { const mat = catTexture(catLook(o)); o.mdl.m.traverse(n => { if (n.isMesh) n.material = mat; }); } }
-try { new GLTFLoader().load('assets/cat.glb?h=20946ca6', g => { let tex = null; g.scene.traverse(n => { if (n.isMesh && n.material && n.material.map) tex = n.material.map; }); if (!tex) return; CATM.base = tex.image; CATM.flip = tex.flipY; CATM.gltf = g; }, undefined, () => {}); } catch (e) {}
+/* A few tiny triangles on the cat's model take their colour from the wrong spot on its sheet (a white chip on his head, a blue fleck on his back):
+   a triangle whose colour clashes with every neighbour, while the neighbours agree, borrows the colour spot of its largest neighbour. */
+function catFixUV(geo, img, flip) {
+  const uv = geo.attributes.uv, P = geo.attributes.position; if (!uv || geo.index) return 0; const n = uv.count / 3 | 0, W = img.width, H = img.height;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0); const d = x.getImageData(0, 0, W, H).data;
+  const col = new Float32Array(n * 3), cu = new Float32Array(n * 2), area = new Float32Array(n), key = v => Math.round(P.getX(v) * 2000) + ',' + Math.round(P.getY(v) * 2000) + ',' + Math.round(P.getZ(v) * 2000), byV = new Map();
+  for (let t = 0; t < n; t++) { let u = 0, w = 0; for (let k = 0; k < 3; k++) { u += uv.getX(t * 3 + k) / 3; w += uv.getY(t * 3 + k) / 3; }
+    const px = Math.min(W - 1, Math.max(0, u * W | 0)), py = Math.min(H - 1, Math.max(0, (flip ? 1 - w : w) * H | 0)), i = (py * W + px) * 4; col[t * 3] = d[i]; col[t * 3 + 1] = d[i + 1]; col[t * 3 + 2] = d[i + 2]; cu[t * 2] = u; cu[t * 2 + 1] = w;
+    const ax = P.getX(t * 3 + 1) - P.getX(t * 3), ay = P.getY(t * 3 + 1) - P.getY(t * 3), az = P.getZ(t * 3 + 1) - P.getZ(t * 3), bx = P.getX(t * 3 + 2) - P.getX(t * 3), by = P.getY(t * 3 + 2) - P.getY(t * 3), bz = P.getZ(t * 3 + 2) - P.getZ(t * 3);
+    area[t] = Math.hypot(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx);
+    for (let k = 0; k < 3; k++) { const kk = key(t * 3 + k); let L = byV.get(kk); if (!L) byV.set(kk, L = []); L.push(t); } }
+  const dif = (a, b) => Math.abs(col[a * 3] - col[b * 3]) + Math.abs(col[a * 3 + 1] - col[b * 3 + 1]) + Math.abs(col[a * 3 + 2] - col[b * 3 + 2]); let fixed = 0;
+  for (let t = 0; t < n; t++) { const nb = new Set(); for (let k = 0; k < 3; k++) for (const o of byV.get(key(t * 3 + k))) if (o !== t) nb.add(o); const L = [...nb]; if (L.length < 3) continue;
+    if (L.some(o => dif(o, t) < 70)) continue;   // something next to it shares its colour: a real detail
+    let agree = 0; for (const o of L) if (dif(o, L[0]) < 70) agree++; if (agree < L.length * 0.7) continue;
+    let best = L[0]; for (const o of L) if (area[o] > area[best]) best = o;
+    for (let k = 0; k < 3; k++) uv.setXY(t * 3 + k, cu[best * 2], cu[best * 2 + 1]); fixed++; }
+  // pull every triangle's corners a texel and a half in toward its middle, so smoothing never reaches past its own patch into the next one (the thin lines at the seams)
+  for (let t = 0; t < n; t++) { const cx = cu[t * 2], cy = cu[t * 2 + 1]; if (fixed && uv.getX(t * 3) === cx && uv.getY(t * 3) === cy) continue;
+    for (let k = 0; k < 3; k++) { const i = t * 3 + k, dx = (cx - uv.getX(i)) * W, dy = (cy - uv.getY(i)) * H, L = Math.hypot(dx, dy); if (L < 1e-6) continue; const m = Math.min(1.5, L * 0.4) / L; uv.setXY(i, uv.getX(i) + dx * m / W, uv.getY(i) + dy * m / H); } }
+  uv.needsUpdate = true; return fixed;
+}
+try { new GLTFLoader().load('assets/cat.glb?h=20946ca6', g => { let tex = null; g.scene.traverse(n => { if (n.isMesh && n.material && n.material.map) tex = n.material.map; }); if (!tex) return; CATM.base = tex.image; CATM.flip = tex.flipY;
+  g.scene.traverse(n => { if (n.isMesh && n.geometry) { try { if (n.geometry.index) n.geometry = n.geometry.toNonIndexed(); CATM.fixed = catFixUV(n.geometry, tex.image, tex.flipY); } catch (e) { console.warn('cat uv', e); } } });
+  CATM.gltf = g; }, undefined, () => {}); } catch (e) {}
 const EXT_SPEED = 15, WORK_TIME = { perk: 1.4, build: 1.0, item: 0.55, up: 0.9, relight: 0.8, move: 1.6, wake: 1.6, shelf: 0.9 };
 const BLUE = new THREE.MeshBasicMaterial({ map: TEX.tile, transparent: true, depthWrite: false, color: '#7fd8ff', opacity: 0.85 });
 const CRATE = std({ color: '#c9a36b', roughness: 0.85 });
