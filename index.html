@@ -74,10 +74,15 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #tcard ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;font-weight:700;color:var(--dim)}
 #tcard ul b{color:var(--text)}
 #tcard small{display:block;margin-top:8px;font-size:11px;font-weight:800;color:var(--dim);text-align:center;opacity:.7}
-#abil{position:absolute;left:12px;bottom:12px;z-index:4;width:68px;height:68px;border-radius:50%;border:0;padding:0;cursor:pointer;
-  background:radial-gradient(circle at 50% 40%,#2f3a44,#151a1f);box-shadow:0 0 0 3px var(--gold),0 6px 16px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text)}
-#abil svg{width:38px;height:38px;margin-top:-4px;overflow:visible} #abil .sk-flame,#abil .sk-bolt,#abil .sk-frost{display:none} #abil[data-k="flame"] .sk-flame,#abil[data-k="bolt"] .sk-bolt,#abil[data-k="frost"] .sk-frost{display:inline} #abil[data-k="flame"] .sk-mist,#abil[data-k="bolt"] .sk-mist,#abil[data-k="frost"] .sk-mist{display:none}
-#catch{position:absolute;left:12px;bottom:90px;z-index:4;width:68px;height:68px;border-radius:50%;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+#abil{position:absolute;left:12px;bottom:12px;z-index:4;width:58px;height:84px;border:0;padding:0;cursor:pointer;background:none;color:var(--text);--cnH:84px}   /* the Spray button is a little copy of his tank: it drains when he sprays and refills as it recharges */
+#abil .cnCap{position:absolute;left:22%;right:22%;top:0;height:13%;border-radius:5px 5px 2px 2px;background:linear-gradient(#6a6e76,#2b2e34);box-shadow:0 0 0 1.5px #15171b}
+#abil .cnGlass{position:absolute;left:3%;right:3%;top:10%;bottom:9%;border-radius:12px;overflow:hidden;background:rgba(30,40,50,.55);box-shadow:inset 0 0 0 3px #2b2e34,0 0 0 1.5px #15171b,0 6px 14px rgba(0,0,0,.45)}
+#abil canvas{position:absolute;inset:0;width:100%;height:100%}
+#abil .cnShine{position:absolute;left:14%;top:7%;bottom:7%;width:10%;border-radius:4px;background:linear-gradient(90deg,rgba(255,255,255,.45),rgba(255,255,255,.12))}
+#abil .cnBase{position:absolute;left:0;right:0;bottom:0;height:13%;border-radius:3px 3px 8px 8px;background:linear-gradient(#6a6e76,#2b2e34);box-shadow:0 0 0 1.5px #15171b}
+#abil b{position:absolute;left:-8px;right:-8px;bottom:-3px;text-align:center;font:400 13px var(--display);letter-spacing:.05em;color:#fff;text-shadow:0 2px 0 #000,0 0 5px #000;z-index:2;pointer-events:none}
+
+#catch{position:absolute;left:12px;bottom:106px;z-index:4;width:68px;height:68px;border-radius:50%;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
   background:conic-gradient(from var(--rot,0deg),#ff5ad1,#ffd84a,#5aff9e,#5ac8ff,#b45aff,#ff5ad1);box-shadow:0 0 0 3px #fff,0 0 18px 6px rgba(255,220,120,.7);color:#1a1020;font:400 13px var(--display);animation:catchPulse .7s ease-in-out infinite alternate}
 #catch span{font-size:24px;line-height:1}
 #catch.busy{filter:saturate(.4);animation:none}
@@ -86,19 +91,17 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #jar b{color:#ffd84a;font:400 15px var(--display)}
 #jarAsk{position:absolute;left:88px;bottom:52px;z-index:6;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;border-radius:14px;background:rgba(14,18,22,.95);box-shadow:inset 0 0 0 2px #ffd84a,0 6px 16px rgba(0,0,0,.5)} #jarAsk span{grid-column:1/-1;font:800 12px var(--body);color:#ffd84a;text-align:center}
 #jarAsk button{border:0;border-radius:10px;padding:6px 10px;cursor:pointer;font:900 13px var(--body);color:#fff;display:grid;gap:1px} #jarAsk small{font:700 11px var(--body);opacity:.85} #jarKeep{background:#c0732a} #jarSplit{background:#3fae5a} #jarNo{background:#3c4652;grid-column:1/-1} #jarAsk em{grid-column:1/-1;font:700 11px var(--body);font-style:normal;color:#ffd84a;text-align:center;max-width:220px} #jarAsk.solo #jarSplit{display:none} #jarAsk.solo #jarNo{grid-column:auto}
-#abil b{font:400 12px var(--display);letter-spacing:.05em;margin-top:-3px}
-#abil.pro{background:radial-gradient(circle at 50% 40%,#5a3a1c,#24160a);box-shadow:0 0 0 3px #ff8a2a,0 0 14px rgba(255,138,42,.55),0 6px 16px rgba(0,0,0,.5)}
-#abil.pro svg rect:first-child{fill:#ff9a3a}
+#abil.pro .cnCap,#abil.pro .cnBase{background:linear-gradient(#ffae4a,#c0601a)}   /* Pro: orange fittings */
 #abil small{position:absolute;right:-6px;top:-6px;background:var(--gold);color:#3a2400;font:900 11px/1 var(--body);padding:3px 6px;border-radius:999px;box-shadow:0 2px 4px rgba(0,0,0,.4)}
 #abil.poor small{background:#6a3a36;color:#ffb3a8}
-#abil.poor{box-shadow:0 0 0 3px #6a3a36,0 6px 16px rgba(0,0,0,.5);animation:none!important}
-#abil::after{content:'';position:absolute;inset:-1px;border-radius:50%;display:none;background:conic-gradient(from 0deg,#ffc93c calc(360deg - var(--cd,0deg)),rgba(255,255,255,.14) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));pointer-events:none}
-#abil.cool::after{display:block}   /* recharging: a gold ring fills back up around the button */
-#abil.cool svg,#abil.cool b{opacity:.18;filter:grayscale(1)} #abil.cool small{display:none}
+#abil.poor{animation:none!important} #abil.poor .cnGlass{filter:grayscale(.7) brightness(.7)}
+
+
+#abil.cool b{opacity:.5} #abil.cool small{display:none}
 #abil i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 22px var(--display);font-style:normal;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.6);z-index:1;pointer-events:none;padding-top:2px}
-#abil.cool{box-shadow:0 0 0 3px #5a6470,0 6px 16px rgba(0,0,0,.5);cursor:default}
+#abil.cool{cursor:default}
 #abil:not(.cool):not(.busy){animation:abilReady 1.6s ease-in-out infinite}
-@keyframes abilReady{50%{box-shadow:0 0 0 3px var(--gold),0 0 18px 4px rgba(255,200,60,.55)}}
+@keyframes abilReady{50%{filter:drop-shadow(0 0 7px rgba(255,210,80,.95));transform:scale(1.05)}}
 #undo{position:absolute;left:50%;top:104px;transform:translateX(-50%);z-index:22;display:flex;align-items:center;gap:10px;border:0;cursor:pointer;
   background:rgba(14,18,22,.94);color:var(--text);border-radius:999px;padding:8px 8px 8px 16px;font:800 14px var(--body);box-shadow:0 8px 22px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.1);overflow:hidden}
 #undo b{background:var(--gold);color:#2a1600;border-radius:999px;padding:6px 14px;font:900 14px var(--body)}
@@ -106,8 +109,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 #undo{padding:3px 3px 3px 10px;font-size:11px;gap:7px;white-space:nowrap;top:12px;box-shadow:0 4px 12px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.1)} #undo b{padding:3px 9px;font-size:11px} #undo i{height:2px}
 @media (max-width:700px){#undo{top:98px}}
 @media (orientation:landscape) and (max-height:560px){#undo{top:9px}}
-@media (max-width:700px){#abil{width:58px;height:58px;left:8px;bottom:8px} #abil svg{width:32px;height:32px}}
-@media (orientation:landscape) and (max-height:560px){#abil{width:54px;height:54px;left:8px;bottom:8px} #abil svg{width:30px;height:30px}}
+@media (max-width:700px){#abil{width:50px;height:74px;left:8px;bottom:8px} #catch{bottom:92px}}
+@media (orientation:landscape) and (max-height:560px){#abil{width:46px;height:68px;left:8px;bottom:8px} #catch{bottom:84px}}
 #glLost{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(8,10,12,.92);text-align:center;padding:20px}
 #glLost[hidden]{display:none}
 #errBox{position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#5a1010;color:#fff;font:700 12px/1.35 system-ui,sans-serif;padding:8px 10px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.5);word-break:break-word}
@@ -710,8 +713,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="tut" hidden><p id="tutTxt"></p><button type="button" id="tutNext" class="nx" hidden>Got it ›</button><button type="button" id="tutSkip">Skip tutorial</button></div><div id="tutArrow" hidden><svg viewBox="0 0 58 40" width="58" height="40"><path d="M3 14h30V3l22 17-22 17V26H3z" fill="#ffc93c" stroke="#3a2400" stroke-width="3" stroke-linejoin="round"/></svg></div>
     <div id="tcard" hidden role="dialog" aria-live="polite"></div>
     <button id="abil" type="button" hidden aria-label="Backpack Spray: the exterminator runs to the front of the bugs and sprays them">
-      <svg viewBox="0 0 48 48"><rect x="10" y="8" width="16" height="24" rx="5" fill="#8fd0f0"/><rect x="13" y="5" width="10" height="5" rx="2.5" fill="#5aa8d0"/><rect x="13" y="18" width="10" height="5" fill="#1c1d22"/>
-      <path d="M18 32c0 6 4 8 9 8l12-8" stroke="#1c1d22" stroke-width="2.5" fill="none" stroke-linecap="round"/><path class="sk-mist" d="M39 32l7-5M39 32l7 1M39 32l6 6" stroke="#bff0c8" stroke-width="2.5" stroke-linecap="round"/><g class="sk-flame"><path d="M37 33c1-6 6-10 11-10-2 2-1 4 0 6 2 4 0 10-5 10s-7-3-6-6z" fill="#ff6a1a"/><path d="M40 34c1-3 3-5 6-5-1 1-1 3 0 4 1 2 0 5-3 5s-4-2-3-4z" fill="#ffd34a"/></g><path class="sk-bolt" d="M38 22h9l-5 7h6l-12 14 4-10h-5z" fill="#bfe6ff" stroke="#3a8fd8" stroke-width="1.5" stroke-linejoin="round"/><g class="sk-frost" stroke="#3a8fd8" stroke-width="5" stroke-linecap="round"><path d="M42 21v22M32.5 26.5l19 11M32.5 37.5l19-11M42 21l-3 3M42 21l3 3M42 43l-3-3M42 43l3-3"/><path d="M42 21v22M32.5 26.5l19 11M32.5 37.5l19-11M42 21l-3 3M42 21l3 3M42 43l-3-3M42 43l3-3" stroke="#e8f7ff" stroke-width="2.4"/></g></svg>
+      <span class="cnCap"></span><span class="cnGlass"><canvas id="abilCv" width="60" height="84"></canvas><span class="cnShine"></span></span><span class="cnBase"></span>
       <b>Spray</b><small>Free</small><i id="abilT"></i></button>
     <button id="catch" type="button" hidden aria-label="Catch the shiny bug"><span>✨</span>Catch</button>
     <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +200</button>
@@ -721,7 +723,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="711">v1.209</div>
+    <div id="ver" data-b="712">v1.210</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4194,6 +4196,21 @@ function syncAbil() {
   el.style.setProperty('--cd', (cd / ABIL.cd * 360).toFixed(1) + 'deg');
   el.classList.toggle('cool', cd > 0); el.classList.toggle('busy', !!S.ext.abil); el.classList.toggle('poor', cd <= 0 && S.money < ABIL.cost);
   const t = Math.ceil(cd); if (el.dataset.t !== String(t)) { el.dataset.t = t; $('abilT').textContent = cd > 0 ? t : ''; }
+  abilCanDraw(sk, S.ext && S.ext.abil ? Math.max(0, 1 - (S.ext.abil.t || 0) / ABIL.dur) : 1 - cd / ABIL.cd);
+}
+let ABIL_CV_T = 0;
+function abilCanDraw(sk, f) {   /* the tank's live contents (goo, fire, lightning or snow), filled to how charged the spray is */
+  const now = performance.now(); if (now - ABIL_CV_T < 50) return; ABIL_CV_T = now;
+  const cv = $('abilCv'); if (!cv) return; const x = cv.getContext('2d'), w = cv.width, h = cv.height, kind = sk === 'flame' || sk === 'bolt' || sk === 'frost' ? sk : 'toxic';
+  let src = null; try { src = animSrc(kind); } catch (e) {}
+  x.clearRect(0, 0, w, h); f = clamp(f, 0, 1); if (f <= 0.001) return;
+  const top = h * (1 - f), wob = f < 0.999 ? 2 : 0, t = now / 1000;
+  x.save(); x.beginPath(); x.moveTo(0, h); for (let u = 0; u <= w; u += 4) x.lineTo(u, top + Math.sin(u * 0.2 + t * 4) * wob); x.lineTo(w, h); x.closePath(); x.clip();
+  if (kind === 'bolt') { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#1a3a90'); g.addColorStop(1, '#0a1440'); x.fillStyle = g; x.fillRect(0, 0, w, h); }   /* a stormy blue behind the lightning (the tank's own picture is see-through) */
+  if (src && src.cv) { const sw = src.cv.width, sh = src.cv.height; x.drawImage(src.cv, 0, 0, kind === 'bolt' ? sw : sw / 2, sh, 0, 0, w, h); }   /* (half the picture: the canister wraps it twice round) */
+  else { x.fillStyle = '#4fe02a'; x.fillRect(0, 0, w, h); }
+  x.restore();
+  if (f < 0.999) { x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(0, top - 1, w, 2); }   // the surface line as it refills
 }
 function doorYaw(e) {   /* standing around: eyes on the bug closest to the cake, or with no bugs out, the nearest door the bugs come out of (only the doors that are open so far) */
   const L = S && S.bugs && S.bugs.length ? leadBug() : null; if (L && Number.isFinite(L.x) && Math.hypot(L.x - e.x, L.z - e.z) > 0.3) return Math.atan2(L.x - e.x, L.z - e.z);   /* bugs out: watch the one closest to the cake */
