@@ -726,7 +726,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="734">v1.232</div>
+    <div id="ver" data-b="735">v1.233</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5014,7 +5014,7 @@ const BUILD = {
       face.map = TEX.swatX; face.needsUpdate = true; side.color.set('#18191d'); side.emissive = new THREE.Color('#000'); side.emissiveIntensity = 0;
       hm.color.set('#2b2d33'); hm.metalness = 0.7; hm.roughness = 0.3; hm.emissive = new THREE.Color('#000'); hm.emissiveIntensity = 0;
       frame.material = std({ color: '#3a3d44', metalness: 0.9, roughness: 0.3 });
-      o.baseScale = 1.1; o.sparky = true;
+      o.baseScale = 1.1; o.sparky = true; o.headAt = () => head.localToWorld(new V3((Math.random() - 0.5) * 0.6, 0.06, (Math.random() - 0.5) * 0.8));   /* a random spot on the swatter head, wherever it is */
       o.zap = () => {   // little Bug Zapper arcs crackling across the swatter head
         const P = (x, z) => head.localToWorld(new V3(x, 0.06, z));
         for (let k = 0; k < 2; k++) {   /* a thin, sharp, jagged white-blue bolt over a faint wider halo, small enough to stay on the head */
@@ -7246,7 +7246,7 @@ function drawTowers(dt, t) {
       tw.boltT = (tw.boltT ?? Math.random() * 1.5) - dt;
       if (tw.boltT <= 0) { o.zap(); tw.boltT = 0.5 + Math.random() * 1.1; }
     }
-    if (o.sparky && !tw.pending && Math.random() < dt * 6) { const hx = tw.x + Math.sin(tw.yaw) * 2.6, hz = tw.z + Math.cos(tw.yaw) * 2.6; FX.glow.spawn({ x: hx + (Math.random() - 0.5), y: 1.2 + Math.random(), z: hz + (Math.random() - 0.5), vx: (Math.random() - 0.5) * 2, vy: 1, vz: (Math.random() - 0.5) * 2, life: 0.2, s0: 0.45, s1: 0.05, c: [0.5, 0.85, 1], a0: 1 }); }
+    if (o.sparky && o.headAt && !tw.pending && Math.random() < dt * 6) { const h = o.headAt(); FX.glow.spawn({ x: h.x, y: h.y, z: h.z, vx: (Math.random() - 0.5) * 2, vy: 1, vz: (Math.random() - 0.5) * 2, life: 0.2, s0: 0.45, s1: 0.05, c: [0.5, 0.85, 1], a0: 1 }); }
     if (tw.t === 'venus') {
       const hs = tw.vh || [];
       o.heads.forEach((h, k) => {
