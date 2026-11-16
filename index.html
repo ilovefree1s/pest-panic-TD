@@ -89,6 +89,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 @keyframes catchPulse{to{transform:scale(1.08);box-shadow:0 0 0 3px #fff,0 0 26px 10px rgba(255,220,120,.9)}}
 #jar{position:absolute;left:12px;top:56px;z-index:4;border:0;border-radius:14px;padding:5px 10px;cursor:pointer;background:rgba(14,18,22,.92);color:var(--text);font:800 12px var(--body);box-shadow:inset 0 0 0 2px #ffd84a,0 4px 12px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px}
 #jar b{color:#ffd84a;font:400 15px var(--display)}
+#jarImg{width:30px;height:30px;margin:-6px -2px -6px -4px;object-fit:contain;animation:jarShiny 2.4s linear infinite}   /* the shiny you caught, glowing in rainbow colours */
+@keyframes jarShiny{0%{filter:hue-rotate(0deg) saturate(1.6) drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #ff5ad1)}33%{filter:hue-rotate(120deg) saturate(1.6) drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #5aff9e)}66%{filter:hue-rotate(240deg) saturate(1.6) drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #5ac8ff)}100%{filter:hue-rotate(360deg) saturate(1.6) drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #ff5ad1)}}
 #jarAsk{position:absolute;left:12px;top:94px;z-index:6;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;border-radius:14px;background:rgba(14,18,22,.95);box-shadow:inset 0 0 0 2px #ffd84a,0 6px 16px rgba(0,0,0,.5)} #jarAsk span{grid-column:1/-1;font:800 12px var(--body);color:#ffd84a;text-align:center}
 #jarAsk button{border:0;border-radius:10px;padding:6px 10px;cursor:pointer;font:900 13px var(--body);color:#fff;display:grid;gap:1px} #jarAsk small{font:700 11px var(--body);opacity:.85} #jarKeep{background:#c0732a} #jarSplit{background:#3fae5a} #jarNo{background:#3c4652;grid-column:1/-1} #jarAsk em{grid-column:1/-1;font:700 11px var(--body);font-style:normal;color:#ffd84a;text-align:center;max-width:220px} #jarAsk.solo #jarSplit{display:none} #jarAsk.solo #jarNo{grid-column:auto}
 #abil.pro .cnCap,#abil.pro .cnBase{background:linear-gradient(#ffae4a,#c0601a)}   /* Pro: orange fittings */
@@ -716,14 +718,14 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
       <span class="cnCap"></span><span class="cnGlass"><canvas id="abilCv" width="60" height="84"></canvas><span class="cnShine"></span></span><span class="cnBase"></span>
       <b>Spray</b><small>Free</small><i id="abilT"></i></button>
     <button id="catch" type="button" hidden aria-label="Catch the shiny bug"><span>✨</span>Catch</button>
-    <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar">🫙 <b id="jarN">0</b> Sell +200</button>
+    <button id="jar" type="button" hidden aria-label="Sell a shiny bug from your jar"><img id="jarImg" alt=""> <b id="jarN">0</b> Sell +200</button>
     <div id="jarAsk" hidden><span id="jarQ">Sell a shiny bug?</span><em id="jarW"></em><button type="button" id="jarKeep">Sell it<small>+200 for you</small></button><button type="button" id="jarSplit">Split it<small>+100 each</small></button><button type="button" id="jarNo">Keep it<small>don't sell</small></button></div>
     <div id="slot" hidden><div class="slCard"><b class="slT">Today's twists</b><div class="slReels"><div class="slWin"><div class="slStrip"></div></div><div class="slWin"><div class="slStrip"></div></div></div><div class="slDesc"></div><button class="btn" type="button" id="slGo" hidden>Let's go!</button></div></div>
     <div id="glLost" hidden><b>The 3D view stopped</b><span>Your phone's browser ran low on graphics memory.</span><button class="btn" type="button" onclick="location.reload()">Reload game</button></div>
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="716">v1.214</div>
+    <div id="ver" data-b="717">v1.215</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4034,7 +4036,7 @@ function makeShiny(b) {
 }
 /* the jar lives in the run: a shiny you catch can be sold until that game ends. Only the ones you KEEP go into your collection, when the run is over */
 function jarCount() { return (S && S.jarT && S.jarT.length) || 0; }
-function jarAdd(t) { if (!S) return; (S.jarT ||= []).push(t); S.jar = S.jarT.length; syncCatch(); }
+function jarAdd(t) { if (!S) return; (S.jarT ||= []).push(t); if (t) S.jarLast = t; S.jar = S.jarT.length; syncCatch(); }
 const SHINY_SELL = 200;
 function jarPick() { const J = S.jarT || [], d = dexGet(); let i = J.findIndex(t => !t || d[t]); if (i < 0) i = J.length - 1; return i; }   // sell one you already have in your collection first, so a new one isn't sold by accident
 function jarSell() { const J = S.jarT || [], i = jarPick(); if (i >= 0) J.splice(i, 1); S.jar = J.length; syncCatch(); }
@@ -4091,7 +4093,7 @@ function syncCatch() {
   if (el.hidden === alive) el.hidden = !alive;
   if (!alive) el.classList.remove('busy'); else el.classList.toggle('busy', !!(S.ext && S.ext.catch));
   const n = jarCount(), j = $('jar'); j.hidden = !play || n <= 0; if (j.hidden) $('jarAsk').hidden = true; if ($('jarN').textContent !== String(n)) $('jarN').textContent = n;
-  if (!j.hidden) placeJar(j);
+  if (!j.hidden) { placeJar(j); const J = S.jarT || []; let t = null; for (let i = J.length - 1; i >= 0 && !t; i--) t = J[i]; t = t || (S.jarLast) || 'ant'; const im = $('jarImg'); if (im.dataset.t !== t) { im.dataset.t = t; im.src = 'assets/bugs/' + t + '.png?v=' + (DEX_V.split('?h=')[1] || '0'); } }   /* the latest shiny you caught */
 }
 let JAR_T = 0;
 function placeJar(j) {   /* the shiny jar sits top left, just under the cake (wherever the cake's pill is) */
