@@ -725,7 +725,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="720">v1.218</div>
+    <div id="ver" data-b="722">v1.220</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4815,9 +4815,10 @@ let STAR_GEO = null;
 function starGeo() { if (STAR_GEO) return STAR_GEO; const sh = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = i / 10 * TAU - Math.PI / 2, r = i % 2 ? 0.45 : 1; sh[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r); } sh.closePath();
   STAR_GEO = new THREE.ExtrudeGeometry(sh, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.1, bevelSegments: 2 }); STAR_GEO.center(); return STAR_GEO; }
 const STAR_MODE = () => window.__STAR || 'big';   /* the special power: one big gold star in place of the dots */
+let STAR_M = null;
 function perkMark(tw) {   /* a tool with its special power wears a gold star by its level dots: the "4th level" */
   const o = tw.o; if (!o || !o.pips || !o.pips.length) return; const p1 = o.pips[1], big = STAR_MODE() === 'big';
-  if (!o.star) { o.star = mesh(starGeo(), TM.gold, false); o.star.rotation.x = -0.6; p1.parent.add(o.star); }
+  if (!o.star) { STAR_M ||= std({ color: '#f2a900', emissive: new THREE.Color('#b86a00'), emissiveIntensity: 0.25, metalness: 0, roughness: 0.55 }); o.star = mesh(starGeo(), STAR_M, false);   /* bright yellow with a glow: the metal gold read as brown against the coaster */ o.star.rotation.x = -0.6; p1.parent.add(o.star); }
   const s = big ? 0.62 : 0.4; o.star.scale.set(s, s, s); o.star.position.set(big ? 0 : 0.8, p1.position.y + (big ? 0.55 : 0.36), p1.position.z + 0.05);
   o.pips.forEach((p, i) => { p.position.x = big ? (i - 1) * 0.4 : (i - 1) * 0.4 - 0.2; p.visible = !big && i < tw.lv; }); o.star.visible = true;
 }
@@ -4877,7 +4878,7 @@ const BUILD = {
       const bore = mesh(new THREE.CircleGeometry(0.12, 14), new THREE.MeshBasicMaterial({ color: '#000' })); bore.rotation.x = -0.12; mouth.add(bore); bore.position.y = 0.075; bore.rotation.set(-Math.PI / 2, 0, 0);   /* the open bore: a black disc just proud of the lip */
       barrels.push({ bg, barrel, mouth });
     }
-    const hose = mesh(new THREE.TorusGeometry(0.33, 0.05, 8, 20, Math.PI), dark); hose.position.set(0.3, 1.2, -0.3); turn.add(hose);
+    const hose = mesh(new THREE.TorusGeometry(0.3, 0.05, 8, 20, Math.PI), dark); hose.rotation.y = Math.PI / 2; hose.position.set(0.24, 1.2, -0.32); turn.add(hose);   /* a hose arching along the tank's side, from the pump at the back to the barrels (it used to stick out sideways off the tank) */
     const o = { root: g, turn, kick, rim, pips: pips(g) };
     o.setLevel = lv => {
       rimLevel(o, lv);
