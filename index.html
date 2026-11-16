@@ -259,7 +259,8 @@ html,body{height:100%;margin:0;background:var(--ink);color:var(--text);font-fami
 @media (prefers-reduced-motion:reduce){.sh.yes svg,.sh.yes .shimg{animation:none}}
 .lkrow{display:grid;gap:6px;width:min(720px,92vw);text-align:left;margin-top:12px} .lkrow>b{font:400 18px var(--display);color:var(--gold);letter-spacing:.03em}
 .lkopts{display:flex;flex-wrap:wrap;gap:8px} .lk{min-height:44px;border-radius:12px;border:0;padding:8px 14px;background:rgba(10,13,16,.82);color:var(--text);font:800 14px var(--body);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);text-align:left}
-.lk.on{background:var(--gold);color:#2a1a00;box-shadow:0 3px 0 #8d5a00} .lk:disabled{opacity:.5;cursor:default} .lk small{display:block;font-size:11px;font-weight:700;opacity:.85}
+.lk.on{background:var(--gold);color:#2a1a00;box-shadow:0 3px 0 #8d5a00} .lk{position:relative} .lkNew{position:absolute;top:-8px;right:-6px;background:#ff4a3a;color:#fff;font:900 10px/1 var(--body);font-style:normal;letter-spacing:.06em;padding:3px 6px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.4);animation:lkNew 1.2s ease-in-out infinite} @keyframes lkNew{50%{transform:scale(1.12)}}
+#shinyT{position:relative} #shinyT.hasNew::after{content:'';position:absolute;top:4px;right:4px;width:12px;height:12px;border-radius:50%;background:#ff4a3a;box-shadow:0 0 0 2px #1a1f25,0 0 8px #ff4a3a} .lk:disabled{opacity:.5;cursor:default} .lk small{display:block;font-size:11px;font-weight:700;opacity:.85}
 #lkPrev{width:220px;height:260px;border-radius:16px;background:radial-gradient(circle at 50% 40%,#3a4250,#161a20);touch-action:none;cursor:grab} #lkPrev:active{cursor:grabbing} .lkHint{margin:4px 0 0;font:700 11px var(--body);color:var(--dim);text-align:center}
 .shrew{list-style:none;margin:0;padding:0;display:grid;gap:6px;width:min(720px,92vw)} .shrew li{background:rgba(10,13,16,.78);border-radius:12px;padding:8px 12px;font-weight:700;display:flex;justify-content:space-between;gap:10px} .shrew li.on{color:var(--gold)} .shrew li span{color:var(--dim);font-weight:800}
 .gtabs{display:flex;gap:4px;background:rgba(10,13,16,.8);border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
@@ -725,7 +726,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="731">v1.229</div>
+    <div id="ver" data-b="732">v1.230</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4026,18 +4027,22 @@ function setLook(slot, val) {
   saved[slot] = val; try { localStorage.setItem('ppd-locker', JSON.stringify(saved)); } catch (e) {}
   LOOK_CACHE = null; renderLocker(); lockerPreview();
 }
+function unlockedKeys() { const out = []; for (const [slot, , opts] of LOCKER) for (const o of opts) if (o[2] && lockOpen(o[2])) out.push(slot + ':' + o[0]); return out; }
+const lkNewGet = () => { try { return JSON.parse(localStorage.getItem('ppd-lknew') || '[]') || []; } catch (e) { return []; } }, lkNewSet = a => { try { localStorage.setItem('ppd-lknew', JSON.stringify(a)); } catch (e) {} syncLkDot(); };
+function syncLkDot() { const b = $('shinyT'); if (b) b.classList.toggle('hasNew', lkNewGet().length > 0); }   /* a red dot on the Collection button until the new look's been seen */
 function unlockedList() { const out = []; for (const [, , opts] of LOCKER) for (const o of opts) if (o[2] && lockOpen(o[2])) out.push(o[1]); return out; }
 function dexRaw() { try { return JSON.parse(localStorage.getItem('ppd-shinydex') || '{}') || {}; } catch (e) { return {}; } }
 function dexGet() { return dexRaw(); }
 function dexTypes() { const d = dexGet(); return DEX_REG.filter(t => d[t]).length; }
 function dexAdd(t) {
-  const d = dexRaw(), first = !d[t], before = unlockedList();
+  const d = dexRaw(), first = !d[t], before = unlockedList(), beforeK = unlockedKeys();
   d[t] = { n: ((d[t] && d[t].n) || 0) + 1, d: (d[t] && d[t].d) || new Date().toISOString().slice(0, 10) };
   try { localStorage.setItem('ppd-shinydex', JSON.stringify(d)); } catch (e) {}
   if (!first) return;
   const boss = DEX_BOSS.includes(t), n = dexTypes();
   setTimeout(() => { banner(boss ? '🏆 Boss trophy!' : '✨ New shiny!', boss ? 'A shiny ' + (BT[t].name || t) + ' is in your collection' : 'Added to your Shiny Collection (' + n + ' / ' + DEX_REG.length + ')', false, 2600); SND.play('clear'); }, 2700);
   LOOK_CACHE = null; const fresh = unlockedList().filter(x => !before.includes(x));
+  { const fk = unlockedKeys().filter(k => !beforeK.includes(k)); if (fk.length) lkNewSet([...new Set([...lkNewGet(), ...fk])]); }   // marked NEW in the Locker
   if (fresh.length) setTimeout(() => { banner('Unlocked: ' + fresh.join(' + ') + '!', 'Put it on in Collection → Locker', false, 3400); SND.play('up'); }, 5600);
   if (boss) setTimeout(syncTrophies, 400);
   if (n >= DEX_REG.length) ACH.unlock('shiny11');
@@ -4048,7 +4053,8 @@ const dexIcon = t => `<img class="shimg" src="assets/bugs/${t}.png?v=${(DEX_V.sp
 const dexName = t => BUG_NAME[t] || (BT[t] && BT[t].name) || t;
 function renderLocker() {
   const look = myLook(), el = $('locker'); if (!el) return;
-  el.innerHTML = LOCKER.map(([slot, label, opts]) => `<div class="lkrow"><b>${label}</b><div class="lkopts">${opts.map(([v, name, req]) => { const open = lockOpen(req), on = look[slot] === v; return `<button type="button" class="lk${on ? ' on' : ''}" data-slot="${slot}" data-v="${v}"${open ? '' : ' disabled'} aria-pressed="${on}">${name}${open ? '' : `<small>🔒 ${lockNeed(req)}</small>`}</button>`; }).join('')}</div></div>`).join('');
+  const NEWK = lkNewGet();
+  el.innerHTML = LOCKER.map(([slot, label, opts]) => `<div class="lkrow"><b>${label}</b><div class="lkopts">${opts.map(([v, name, req]) => { const open = lockOpen(req), on = look[slot] === v; return `<button type="button" class="lk${on ? ' on' : ''}" data-slot="${slot}" data-v="${v}"${open ? '' : ' disabled'} aria-pressed="${on}">${name}${open ? '' : `<small>🔒 ${lockNeed(req)}</small>`}${open && NEWK.includes(slot + ':' + v) ? '<i class="lkNew">NEW</i>' : ''}</button>`; }).join('')}</div></div>`).join('');
 }
 function renderDex() {
   const d = dexGet(), n = dexTypes();
@@ -4060,7 +4066,7 @@ function renderDex() {
   renderLocker();
 }
 let shinyFrom = 'title';
-function openShinies(from) { SND.init(); SND.play('tap'); shinyFrom = from; renderDex(); setTimeout(lockerPreview, 30); $(from).hidden = true; $('shinies').hidden = false; $('shinies').scrollTop = 0; }
+function openShinies(from) { SND.init(); SND.play('tap'); shinyFrom = from; renderDex(); if (lkNewGet().length) lkNewSet([]);   /* seen: the NEW tags stay up while this screen is open */ setTimeout(lockerPreview, 30); $(from).hidden = true; $('shinies').hidden = false; $('shinies').scrollTop = 0; }
 $('shinyT').addEventListener('click', () => openShinies('title'));
 $('shinyP').addEventListener('click', () => openShinies('paused'));   /* mid-game, from the pause menu: just caught one? go look */
 $('locker').addEventListener('click', ev => { const b = ev.target.closest('.lk'); if (!b || b.disabled) return; SND.play('tap'); setLook(b.dataset.slot, b.dataset.v); });
@@ -10064,7 +10070,7 @@ function placeStageTag() {
   if (w > gap) { el.style.left = 'auto'; el.style.right = Math.round(sg.right - ctl.right) + 'px'; el.style.transform = 'none'; const bl = $('belt'), bb = bl && !bl.classList.contains('off') ? bl.getBoundingClientRect() : null; el.style.top = Math.round(Math.max(ctl.bottom, bb && bb.height ? bb.bottom : 0) - sg.top + 6) + 'px'; return; }   // no room up top: tuck it under the round buttons
   el.style.top = ''; el.style.right = 'auto'; el.style.transform = 'none'; el.style.left = Math.round(st.right - sg.left + 8 + (gap - w) / 2) + 'px';
 }
-setInterval(placeStageTag, 400); addEventListener('resize', placeStageTag);
+setInterval(placeStageTag, 400); syncLkDot(); addEventListener('resize', placeStageTag);
 syncSnd();
 toTitle();
 setTimeout(() => { if (window.__boot && !window.__boot.seen) window.__boot.done(); }, 1200);   // nothing to load (all cached and instant): don't hold the loading screen
