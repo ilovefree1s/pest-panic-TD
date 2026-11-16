@@ -725,7 +725,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="729">v1.227</div>
+    <div id="ver" data-b="730">v1.228</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4893,8 +4893,9 @@ const STAR_MODE = () => window.__STAR || 'big';   /* the special power: one big 
 let STAR_M = null;
 function perkMark(tw) {   /* a tool with its special power wears a gold star by its level dots: the "4th level" */
   const o = tw.o; if (!o || !o.pips || !o.pips.length) return; const p1 = o.pips[1], big = STAR_MODE() === 'big';
-  if (!o.star) { o.star = mesh(starGeo(), TM.gold, false); o.star.rotation.x = -0.6; p1.parent.add(o.star); }
-  const s = big ? 0.54 : 0.4;   /* the same gold as the level dots */ o.star.scale.set(s, s, s); o.star.position.set(big ? 0 : 0.8, p1.position.y + (big ? 0.55 : 0.36), p1.position.z + 0.05);
+  if (!o.star) { o.star = mesh(starGeo(), TM.gold, false); p1.parent.add(o.star); }
+  const s = big ? 0.45 : 0.34; o.star.scale.set(s, s, s);   /* lying flat on the front of the tool's base, a point to the back */
+  o.star.rotation.set(-Math.PI / 2, 0, Math.PI); o.star.position.set(big ? 0 : 0.8, 0.14 + 0.2 * s, big ? 0.68 : p1.position.z);
   if (o.pips[0] && o.star.material !== o.pips[0].material) o.star.material = o.pips[0].material;   /* the same colour as this tool's level dots */
   o.pips.forEach((p, i) => { p.position.x = big ? (i - 1) * 0.4 : (i - 1) * 0.4 - 0.2; p.visible = !big && i < tw.lv; }); o.star.visible = true;
 }
