@@ -726,7 +726,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="740">v1.238</div>
+    <div id="ver" data-b="741">v1.239</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4731,6 +4731,7 @@ function psnBubble(b, k) { const kd = psnKind(b);
   if (kd === 'bolt') return FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.7 * k, y: bugY(b) + 0.3 * k + Math.random() * 0.3, z: b.z + (Math.random() - 0.5) * 0.7 * k, vx: (Math.random() - 0.5) * 3, vy: 1.5 + Math.random() * 2, vz: (Math.random() - 0.5) * 3, grav: 9, life: 0.3, s0: 0.12 + 0.04 * k, s1: 0.02, c: [0.75, 0.9, 1], a0: 1 });   // sparks
   if (kd === 'frost') return FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.8 * k, y: bugY(b) + 0.6 * k + Math.random() * 0.3, z: b.z + (Math.random() - 0.5) * 0.8 * k, vy: -0.5, life: 0.9, s0: 0.14 + 0.05 * k, s1: 0.08, c: [0.88, 0.96, 1], a0: 0.9 });   // frost flakes drifting down
   FX.glow.spawn({ x: b.x + (Math.random() - 0.5) * 0.6 * k, y: bugY(b) + 0.4 * k + Math.random() * 0.3, z: b.z + (Math.random() - 0.5) * 0.6 * k, vy: 0.9, life: 0.7, s0: 0.12 + 0.06 * k, s1: 0.22 + 0.08 * k, c: [0.45, 1, 0.3], a0: 0.8 }); }
+const PUSH_LEG = window.__PL || { back: 0.55, up: 0.5 };
 function drawRegModel(b, t, sh, c) {   /* ant / fly / spider / bed bug / dung beetle on their boss-style rigs */
   const q = b.mdl, u = q.userData, bt = BT[b.t], fy = bt.fly, k = b.t === 'ant' && b.guard ? 1.7 : 1;
   const k2 = k * (b.giant ? 1.5 : 1) * (b.snack ? 0.72 : 1); if (q.scale.x !== k2) q.scale.setScalar(k2);
@@ -4738,7 +4739,11 @@ function drawRegModel(b, t, sh, c) {   /* ant / fly / spider / bed bug / dung be
   if (push) { q.position.set(b.x, b.y0 + 0.22, b.z); q.rotation.set(b.pitch + 0.75, b.ang + Math.PI, 0, 'YXZ'); }   /* like the real thing: head down, back end up on the ball, pushing it backwards along the trail */
   else { q.position.set(b.x, fy ? bugY(b) : b.y0, b.z); q.rotation.set(b.pitch, b.ang, fy ? Math.sin(b.walk * 0.5) * 0.08 : 0, 'YXZ'); }
   if (u.wings) u.wings.forEach((w, j) => { w.rotation.x = u.wingTilt || 0; w.rotation.z = ((u.wingRest || 0) + Math.sin(t * 55 + b.id + j) * 0.55) * w.userData.s; });
-  if (u.gait) gaitLegs(u.legs, u.gait, b.walk * (b.t === 'bed' ? 1.4 : 1), 0.5, 0.18);
+  if (push && u.legs.length === 6) {   /* pushing the ball: the back pair is up on the ball paddling it along in turn, the other four walk backwards on the floor */
+    if (!u.hind) { const zs = u.legs.map(g => g.position.z).sort((a, b2) => a - b2); u.hind = u.legs.map(g => g.position.z <= zs[1] + 1e-4); }
+    gaitLegs(u.legs, u.gait, -b.walk, 0.5, 0.18);
+    u.legs.forEach((g, k2) => { if (!u.hind[k2]) return; const sd = k2 < 3 ? -1 : 1, ph = b.walk * 1.5 + (sd > 0 ? Math.PI : 0); g.rotation.y = g.userData.yaw + sd * (PUSH_LEG.back + Math.sin(ph) * 0.3); g.rotation.z = sd * (PUSH_LEG.up + Math.max(0, Math.cos(ph)) * 0.22); });
+  } else if (u.gait) gaitLegs(u.legs, u.gait, b.walk * (b.t === 'bed' ? 1.4 : 1), 0.5, 0.18);
   u.body.position.y = Math.abs(Math.sin(b.walk)) * 0.03;
   const f = b.flash > 0 ? 0.8 : 0;
   if (b.shiny) { u.f = -1; shinyCol(b, t, 0.5); for (const m of u.mats) m.emissive.copy(shinyC).multiplyScalar(0.9); if (Math.random() < 0.25) FX.glow.spawn({ x: b.x + (Math.random() - 0.5), y: bugY(b) + 0.6 + Math.random() * 0.5, z: b.z + (Math.random() - 0.5), vy: 1.2, life: 0.5, s0: 0.45, s1: 0.05, c: [1, 0.95, 0.6], a0: 1 }); }
@@ -4746,8 +4751,8 @@ function drawRegModel(b, t, sh, c) {   /* ant / fly / spider / bed bug / dung be
     if (u.f !== key) { u.f = key; for (const m of u.mats) { if (psn) psnSheen(m, b); else if (st) m.emissive.setRGB(0.05, 0.05, 0.14); else if (ang) m.emissive.setRGB(0.25, 0.04, 0.02); else if (b.guard) m.emissive.setRGB(0.12, 0.1, 0.02); else m.emissive.setRGB(f, f, f); } } }
   if (b.psnT > 0 && Math.random() < 0.18) psnBubble(b, q.scale.x);
   if (Math.abs(b.pitch) < 0.3) sh.add(b.x, b.y0 + 0.02, b.z, (u.shadow || 1.4) * q.scale.x, 0, 0, 0, 0, fy ? 0.3 : 0.45);
-  if (push) { ballPos(b, tmpB); tmpB.x += Math.sin(b.ang) * 0.5; tmpB.z += Math.cos(b.ang) * 0.5; tmpB.y += 0.12; const j = c.ball++, kk = b.ball.hp / b.ball.max;   /* the ball rolls just ahead, against the beetle's raised back end */
-    setI(IM.ball, j, tmpB.x, tmpB.y, tmpB.z, b.ang, 0.74 * (0.75 + 0.25 * kk), b.s / 0.74); IM.ball.setColorAt(j, b.ball.flash > 0 ? flashC : ballC.setRGB(0.75 + 0.25 * kk, 0.75 + 0.25 * kk, 0.75 + 0.25 * kk)); if (Math.abs(b.pitch) < 0.3) sh.add(tmpB.x, b.y0 + 0.02, tmpB.z, 1.6, 0, 0, 0, 0, 0.45); }
+  if (push) { const kk = b.ball.hp / b.ball.max, BR = 0.74 * (0.75 + 0.25 * kk) * q.scale.x, ex = 0.42 * q.scale.x + BR * 0.9 - 1.15; ballPos(b, tmpB); tmpB.x += Math.sin(b.ang) * ex; tmpB.z += Math.cos(b.ang) * ex; tmpB.y += BR - 0.62; const j = c.ball++;   /* the ball sits on the floor right against the beetle's raised back end (however much of it is left) */
+    setI(IM.ball, j, tmpB.x, tmpB.y, tmpB.z, b.ang, BR, b.s / 0.74); IM.ball.setColorAt(j, b.ball.flash > 0 ? flashC : ballC.setRGB(0.75 + 0.25 * kk, 0.75 + 0.25 * kk, 0.75 + 0.25 * kk)); if (Math.abs(b.pitch) < 0.3) sh.add(tmpB.x, b.y0 + 0.02, tmpB.z, 1.6, 0, 0, 0, 0, 0.45); }
 }
 function drawMdl(b, t, sh) {
   const q = b.mdl, u = q.userData, bt = BT[b.t], base = bt.base || b.t;
@@ -5821,7 +5826,7 @@ const BT = {
   ant:    { hp: 30,   spd: 3.2, gold: 4,   lives: 1, goo: [0.62, 0.16, 0.1] },
   fly:    { hp: 26,   spd: 5.0, gold: 5,   lives: 1, fly: true, goo: [0.5, 0.82, 0.22] },
   spider: { hp: 120,  spd: 2.0, gold: 11,  lives: 2, armor: 3, goo: [0.45, 0.22, 0.6] },
-  bed:    { hp: 7,    spd: 3.8, gold: 1,   lives: 0.25, goo: [0.55, 0.12, 0.08], swarm: 12 },
+  bed:    { hp: 8.4,  spd: 3.8, gold: 1,   lives: 0.25, goo: [0.55, 0.12, 0.08], swarm: 12 },
   dung:   { hp: 90,   spd: 2.2, gold: 9,   lives: 1, ball: 75, goo: [0.3, 0.26, 0.2] },
   hopper: { hp: 40,   spd: 3.0, gold: 6,   lives: 1, goo: [0.45, 0.72, 0.2] },
   centi:  { hp: 15,   spd: 4.0, gold: 2,   lives: 0.23, goo: [0.5, 0.24, 0.12], segs: 12, gap: 0.46 },   /* twelve smaller segments: about the same total health and cake bite as the old eight */
