@@ -726,7 +726,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="739">v1.237</div>
+    <div id="ver" data-b="740">v1.238</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4698,6 +4698,8 @@ function dungPrep() {   /* once: shave the front horn lower, and paint the Hercu
   const M = BOSS_MODELS.m_dung; if (!M || !M.gltf || M.prepped) return; M.prepped = true; let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; }); if (!src) return;
   const P = src.geometry.attributes.position;
   for (let i = 0; i < P.count; i++) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i); if (z > 0.3 && Math.abs(x) < 0.12 && y > -0.3) P.setY(i, -0.3 + (y + 0.3) * 0.55); }
+  for (let i = 0; i < P.count; i++) { const z = P.getZ(i) * 1.093, y = P.getY(i) * 1.093 + 0.778; if (z < 0.05) continue;   /* slope the big front shield down toward the head: a curve from the top at its back edge to just above the horn (in the built model's units) */
+    const u = Math.min(1, (z - 0.05) / 0.41), cap = 0.6 + 0.4 * (1 - u * u); if (y > cap) P.setY(i, ((cap + (y - cap) * 0.12) - 0.778) / 1.093); }
   P.needsUpdate = true; src.geometry.computeBoundingBox(); src.geometry.computeBoundingSphere();
   const map = src.material.map, im = map && map.image; if (!im) return;
   const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
