@@ -726,7 +726,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="735">v1.233</div>
+    <div id="ver" data-b="736">v1.234</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6115,17 +6115,7 @@ function firstTarget(tw, r) { if (tw.itchT > 0) { const c = S.bugs.filter(b => c
   let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || leftOf(b) < leftOf(best))) best = b; return best; }
 
 const ZAP_JUMP = 6.5, ZAP_HOP = 0.13;
-function zapTarget(tw, R) {   /* aim where the chain gets the most hops; only if every shot would be a lone bug, take the one closest to the cake */
-  const T = TT[tw.t], hops = T.chain[tw.lv - 1] * (tw.perk ? 2 : 1), J2 = ZAP_JUMP * ZAP_JUMP, live = S.bugs.filter(b => !b.dead);
-  let best = null, bn = 0;
-  for (const b of live) {
-    if (!canHit(tw, b) || !inRange(tw, b, R)) continue;
-    const hit = new Set([b.id]); let o = b, n = 1;
-    while (n < hops) { let nx = null, nd = J2; for (const c of live) { if (hit.has(c.id)) continue; const d = (c.x - o.x) ** 2 + (c.z - o.z) ** 2; if (d < nd) { nd = d; nx = c; } } if (!nx) break; hit.add(nx.id); o = nx; n++; }
-    if (n > bn || (n === bn && leftOf(b) < leftOf(best))) { bn = n; best = b; }
-  }
-  return best;
-}
+function zapTarget(tw, R) { return firstTarget(tw, R); }   /* the zapper always hits the bug closest to the cake first; the chain then jumps on from there (it used to aim wherever the chain got the most hops, which could skip the lead bug) */
 function zapHop(z) {
   let b = z.next;
   if (!b || b.dead) {   // find the closest bug to the last one that hasn't been hit yet
