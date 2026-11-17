@@ -726,7 +726,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="736">v1.234</div>
+    <div id="ver" data-b="737">v1.235</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4485,7 +4485,7 @@ const TT = {
   paper: { name: 'Newspaper',   cost: 100, air: false, range: [4.8, 5.3, 5.8], dmg: [30, 50, 78], rate: [1.9, 1.7, 1.5], d: 'Slams the floor and hits every crawling bug around it at once. Great on a corner of the trail. Does 25% extra to bosses and makes them stagger. Can\'t reach flies.' },
   lens:  { name: 'Magnifying Glass', abbr: 'Magnifier', cost: 130, air: true, range: [7.5, 8.2, 9.0], dps: [8, 15, 26], mult: 4, ramp: 3,
            d: 'Focuses a sunbeam on one bug, always a boss first if one is in reach. The burn grows the longer it stays on that bug, up to 4× after 3 seconds, then holds there. Switching to a new bug starts the burn over. Burns through shells and hits flies.' },
-  zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [18, 30, 46], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). It aims for the biggest bunch of bugs so every bolt gets its full chain. Flies take 60% extra, bosses 25% extra.' },
+  zap:   { name: 'Bug Zapper',  cost: 150, air: true,  range: [8.0, 9.0, 10.0], dmg: [18, 30, 46], chain: [3, 4, 6], rate: [1.5, 1.3, 1.1], d: 'Chain lightning: the bolt hits one bug, then hops from bug to bug up to two tiles apart (3 bugs, then 4, then 6 when upgraded). It always hits the bug closest to the cake first. Flies take 60% extra, bosses 25% extra.' },
 };
 TT.broom = { name: 'Broom', cost: 60, air: false, range: [4.4, 4.8, 5.2], dmg: [4, 7, 11], push: [2.0, 2.7, 3.4], rate: [3.2, 2.8, 2.4],
   d: 'Sweeps every crawling bug around it back down the trail, so they have to walk that stretch again past your other tools. Barely hurts them. Each bug can only be swept once every few seconds, and bosses barely budge. Can\'t reach flies.' };
@@ -4538,7 +4538,7 @@ const PERK = {
   spray:  { name: 'Extra Strength', icon: '☠️', d: 'Three bright orange cans with toxic green fumes. Poison burns twice as hard and lasts 5 seconds instead of 3.' },
   paper:  { name: 'Sunday Edition', icon: '📰', range: 1.5, amp: 0.25, d: 'A giant rolled-up paper: 50% bigger slam and 25% more damage.' },
   lens:   { name: 'Wildfire', icon: '🔥', d: 'The bug it burns sets fire to bugs right next to it.' },
-  zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'Two heads take turns firing: twice as many bolts, each a full chain.' },
+  zap:    { name: 'Storm Zapper', icon: '🌩️', d: 'Two heads take turns firing: twice as many bolts, each a full chain. One head always hits the lead bug, the other aims into the biggest group.' },
   broom:  { name: 'Push Broom', icon: '🧹', range: 1.15, d: 'A wide push broom: 15% more reach and sweeps bugs 25% further back.' },
   fan:    { name: 'Hurricane Fan', icon: '🌀', range: 1.15, d: 'Gunmetal with icy blades: 15% more reach, gusts blow 25% further, gusted flies spin dizzy and stop for a moment, and the gust gives crawling bugs a light push too.' },
   candle: { name: 'Bonfire Candle', icon: '🕯️', range: 1.5, d: 'A big bonfire jar: 50% bigger glow, +10% more damage boost, and it scorches harder.' },
@@ -6115,7 +6115,18 @@ function firstTarget(tw, r) { if (tw.itchT > 0) { const c = S.bugs.filter(b => c
   let best = null; for (const b of S.bugs) if (canHit(tw, b) && inRange(tw, b, r) && (!best || leftOf(b) < leftOf(best))) best = b; return best; }
 
 const ZAP_JUMP = 6.5, ZAP_HOP = 0.13;
-function zapTarget(tw, R) { return firstTarget(tw, R); }   /* the zapper always hits the bug closest to the cake first; the chain then jumps on from there (it used to aim wherever the chain got the most hops, which could skip the lead bug) */
+function zapGroupTarget(tw, R) {   /* the shot that gets the most chain hops (ties go to the bug closest to the cake) */
+  const T = TT[tw.t], hops = T.chain[tw.lv - 1] * (tw.perk ? 2 : 1), J2 = ZAP_JUMP * ZAP_JUMP, live = S.bugs.filter(b => !b.dead);
+  let best = null, bn = 0;
+  for (const b of live) {
+    if (!canHit(tw, b) || !inRange(tw, b, R)) continue;
+    const hit = new Set([b.id]); let o = b, n = 1;
+    while (n < hops) { let nx = null, nd = J2; for (const c of live) { if (hit.has(c.id)) continue; const d = (c.x - o.x) ** 2 + (c.z - o.z) ** 2; if (d < nd) { nd = d; nx = c; } } if (!nx) break; hit.add(nx.id); o = nx; n++; }
+    if (n > bn || (n === bn && leftOf(b) < leftOf(best))) { bn = n; best = b; }
+  }
+  return best;
+}
+function zapTarget(tw, R) { return tw.perk && (tw.side || 0) === 0 ? zapGroupTarget(tw, R) : firstTarget(tw, R); }   /* Storm Zapper: the two heads take turns, one at the lead bug, the next into the biggest group */   /* the zapper always hits the bug closest to the cake first; the chain then jumps on from there (it used to aim wherever the chain got the most hops, which could skip the lead bug) */
 function zapHop(z) {
   let b = z.next;
   if (!b || b.dead) {   // find the closest bug to the last one that hasn't been hit yet
