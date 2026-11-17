@@ -726,7 +726,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="737">v1.235</div>
+    <div id="ver" data-b="738">v1.236</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -4694,7 +4694,18 @@ function compactModel(root) {
 }
 const MODEL_BUILD = { hopper: buildHopper, centi: buildCenti, stink: buildStink, moth: buildMoth, mantis: buildMantis }, MODEL_POOL = {};
 const DUNG_LOOK = window.__DUNG || 'herc';   /* 'herc': the Hercules model with its horn folded away; 'stink': the stink bug model in glossy black */
-MODEL_BUILD.dung = () => { const m = DUNG_LOOK === 'stink' ? buildStinkModel({ color: new THREE.Color(0.06, 0.055, 0.055), roughness: 0.3, metalness: 0.25, len: 1.5 }) : buildModelBoss('m_dung'); m.userData.model = true; m.userData.reg = 'dung'; m.userData.shadow = 1.6; m.traverse(o => { if (o.isMesh) o.castShadow = false; }); return m; };   /* the dung beetle is the stink bug model in glossy black */
+function dungPrep() {   /* once: shave the front horn lower, and repaint the shell glossy black with a hint of beetle green (it showed the Hercules beetle's tan) */
+  const M = BOSS_MODELS.m_dung; if (!M || !M.gltf || M.prepped) return; M.prepped = true; let src = null; M.gltf.scene.traverse(n => { if (n.isMesh && !src) src = n; }); if (!src) return;
+  const P = src.geometry.attributes.position;
+  for (let i = 0; i < P.count; i++) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i); if (z > 0.3 && Math.abs(x) < 0.12 && y > -0.3) P.setY(i, -0.3 + (y + 0.3) * 0.55); }
+  P.needsUpdate = true; src.geometry.computeBoundingBox(); src.geometry.computeBoundingSphere();
+  const map = src.material.map, im = map && map.image; if (!im) return;
+  const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
+  const D = x.getImageData(0, 0, c.width, c.height), a = D.data;
+  for (let i = 0; i < a.length; i += 4) { const L = (0.3 * a[i] + 0.59 * a[i + 1] + 0.11 * a[i + 2]) / 255; a[i] = 8 + L * 22; a[i + 1] = 10 + L * 34; a[i + 2] = 9 + L * 22; }
+  x.putImageData(D, 0, 0); const t = new THREE.CanvasTexture(c); t.flipY = map.flipY; t.colorSpace = THREE.SRGBColorSpace; t.wrapS = map.wrapS; t.wrapT = map.wrapT; src.material.map = t;
+}
+MODEL_BUILD.dung = () => { if (DUNG_LOOK !== 'stink') dungPrep(); const m = DUNG_LOOK === 'stink' ? buildStinkModel({ color: new THREE.Color(0.06, 0.055, 0.055), roughness: 0.3, metalness: 0.25, len: 1.5 }) : buildModelBoss('m_dung'); m.userData.model = true; m.userData.reg = 'dung'; m.userData.shadow = 1.6; if (DUNG_LOOK !== 'stink') for (const q of m.userData.mats || []) { q.color.setRGB(1, 1, 1); q.roughness = 0.34; q.metalness = 0.3; q.envMapIntensity = 0.8; q.emissive = new THREE.Color(0, 0.006, 0.002); }   /* a glossy shell that catches the light with a green sheen */ m.traverse(o => { if (o.isMesh) o.castShadow = false; }); return m; };   /* the dung beetle is the stink bug model in glossy black */
 for (const k of ['ant', 'fly', 'spider', 'bed']) MODEL_BUILD[k] = () => { const m = buildModelBoss('m_' + k); m.userData.reg = k; m.userData.shadow = { ant: 1.25, fly: 1.2, spider: 2.6, bed: 0.6 }[k]; m.traverse(o => { if (o.isMesh) o.castShadow = false; }); return m; };   /* real models for the small bugs; no shadow maps on them (there can be dozens) */
 const REG_MODEL_OK = t => t === 'dung' && DUNG_LOOK === 'stink' ? !!BUG_MODELS.stink.gltf : BOSS_MODELS['m_' + t] && BOSS_MODELS['m_' + t].gltf && (t !== 'bed' || (MODEL_POOL.bed || []).filter(m => m.visible).length < 60);   /* models not loaded yet, or a Swarm Day flood of bed bugs: the old instanced bugs */
 for (const t of ['ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis']) BOSS_BUILD[t] = giantBuild(t);
@@ -4848,7 +4859,7 @@ function specialMove(b, sp, dt) {
     for (const z of S.towers) if (z.mothT > 0) z.mothT -= dt;
     if (!giant && !b.free && !b.didCandle && b.s > 1) {
       let best = null, bd = 1e9;
-      for (const c of S.towers) { if (c.t !== 'zap' || c.pending) continue; const n = S.bugs.filter(o => o.free && o.free.tw === c).length; if (n >= 2) continue; const d = (c.x - b.x) ** 2 + (c.z - b.z) ** 2; if (d < bd) { bd = d; best = c; } }   // moths are drawn to the glow of a Bug Zapper
+      for (const c of S.towers) { if (c.t !== 'zap' || c.pending) continue; const n = S.bugs.filter(o => o.free && o.free.tw === c).length; if (n >= 2) continue; const d = (c.x - b.x) ** 2 + (c.z - b.z) ** 2, Rz = TT.zap.range[c.lv - 1] * (1 + (c.rmul || 0)) * PR(c); if (d > Rz * Rz) continue; if (d < bd) { bd = d; best = c; } }   // moths are drawn to the glow of a Bug Zapper, but only once they're close enough for it to hit them
       if (best) b.free = { tw: best, phase: 'go', land: 0 };
     }
     if (b.free) return 0;   // flying off the trail: position handled after the path step
