@@ -436,7 +436,8 @@ h2.t{font-family:var(--display);font-weight:400;font-size:clamp(34px,8vw,56px);m
 .lvl em{font-style:normal;font-weight:700;font-size:12px;opacity:.8}
 .lvl small{font-weight:800;font-size:12px;opacity:.75;min-height:1em}
 .lvl .lstars{display:block;font-size:20px;letter-spacing:2px;color:#7a3a00;opacity:1;line-height:1.1;text-shadow:0 1px 0 rgba(255,255,255,.4)}
-.lvl .lend{display:block;font-size:11px}
+.lvl .lend{display:block;font-size:11px} .lvl .lneed{display:block;font-size:13px;font-weight:900;color:#ffc93c;opacity:1}
+.starTot{font:400 26px var(--display);letter-spacing:.04em;color:var(--gold);text-align:center;margin:-4px 0 2px} .starTot b{font-weight:400} .starTot small{font:800 14px var(--body);color:var(--dim);letter-spacing:0}
 #ostars{display:flex;gap:10px;justify-content:center;font-size:52px;line-height:1;margin:2px 0 8px}
 #ostars[hidden]{display:none}
 #ostats{width:min(440px,92vw);background:rgba(10,13,16,.75);border-radius:16px;padding:10px 12px;margin:2px 0 10px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
@@ -726,7 +727,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="742">v1.240</div>
+    <div id="ver" data-b="743">v1.241</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -789,7 +790,8 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     </div>
     <div class="screen" id="solo" hidden>
       <h2 class="t">Solo</h2>
-      <p class="lsub">Pick a house. Beat one to unlock the next.</p>
+      <p class="lsub">Pick a house. Save more cake to earn stars, and stars unlock new houses.</p>
+      <div class="starTot" id="starTot"></div>
       <div class="lvls" id="lvls"></div>
       <p class="hint">Pick a tool below to see its range, then place it on the floor beside the trail. 25 waves, with a boss every 5th.</p>
       <h3 class="lhead2">Play with the AI</h3>
@@ -1138,10 +1140,47 @@ LEVELS[18] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugM
   LEVELS[18].bossMulW = { ...(LEVELS[18].bossMulW || {}), 5: { gbed: 0.95 }, 10: { gfly: 0.455 }, 20: { '*': 0.9 }, 25: { '*': 0.9 } };
   LEVELS[18].bugMulAfter = [15, 0.88];   // Level 12 Last Stand: from wave 16 on every bug has 12% less health, the wave 20 and 25 bosses 10% less   // Level 12 Last Stand: wave 5 Bed Bug Mother 5% less health, wave 10 Giant Housefly 35% less, then another 30% (0.65*0.7)
 }
+/* Levels 13-20 of the 20-house story: eight more kitchens, mixed in between the first twelve (see SOLO for the play order) */
+{ const base = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null }, NB1 = [['hopper', 3, 2]], NB2 = [['hopper', 3, 2], ['centi', 4, 1]], NB3 = [['hopper', 3, 2], ['centi', 4, 1], ['stink', 5, 2], ['moth', 4, 2]];
+  LEVELS[20] = { ...base, name: 'One Way In', sub: 'One fast trail from the front door', intro: 'One short trail from the front door. Every tool has to count.', hp: 1.0, money: 230, bossHp: 0.9, shift: 1, nb: null,
+    bosses: [['queen'], ['gant'], ['widow'], ['hornet'], ['herc', 'gant']],
+    routes: [[[3, 10.6], [3, 2], [8, 2], [8, 7], [12, 7], [12, -0.05]]] };
+  LEVELS[21] = { ...base, name: 'Conveyor Belt', sub: 'A loop that crosses itself', intro: 'The trail loops the room like a sushi belt and crosses over itself. Guard the crossing!', hp: 1.32, money: 185, shift: 2, nb: NB1,
+    bosses: [['widow'], ['ghop'], ['hornet'], ['gant'], ['gfly', 'queen']],
+    routes: [[[6, 10.6], [6, 8], [1, 8], [1, 1], [10, 1], [10, 6], [4, 6], [4, 4], [12, 4], [12, -0.05]]] };
+  LEVELS[22] = { ...base, name: 'Double Scoop', sub: 'Two holes in the floor', intro: 'Two holes in the floor! The trails join up for the last stretch to the cake.', hp: 1.2, money: 235, shift: 2, nb: NB2,
+    bosses: [['gant'], ['gcenti'], ['ghop'], ['hornet'], ['gbed', 'widow', 'gfly']],
+    routes: [[[2, 6], [2, 2], [6, 2], [6, 6], [10, 6], [10, 2], [12, 2], [12, -0.05]],
+             [[8, 9], [4, 9], [4, 6], [6, 6], [10, 6], [10, 2], [12, 2], [12, -0.05]]] };
+  LEVELS[23] = { ...base, name: 'Three Amigos', sub: 'Three doors, cake on the left', intro: 'Three doors and the cake is on the left. All three trails squeeze into one.', hp: 1.3, money: 225, shift: 3, nb: NB3, cakeCol: 1,
+    bosses: [['ghop'], ['gstink'], ['gbed'], ['gcenti'], ['hornet', 'queen', 'gant']],
+    routes: [[[13.6, 2], [9, 2], [9, 5], [5, 5], [5, 2], [1, 2], [1, -0.05]],
+             [[13.6, 8], [9, 8], [9, 5], [5, 5], [5, 2], [1, 2], [1, -0.05]],
+             [[7, 10.6], [7, 8], [3, 8], [3, 5], [5, 5], [5, 2], [1, 2], [1, -0.05]]] };
+  LEVELS[24] = { ...base, name: 'Tight Quarters', sub: 'One very long snake', intro: 'One very long snake, with only thin strips to build on between the bends.', hp: 1.85, money: 200, shift: 3,
+    bosses: [['gcenti'], ['gmoth'], ['gant'], ['gstink'], ['gmantis', 'gfly', 'widow']],
+    routes: [[[1, 10.6], [1, 1], [3, 1], [3, 8], [5, 8], [5, 1], [7, 1], [7, 8], [9, 8], [9, 1], [12, 1], [12, -0.05]]] };
+  LEVELS[25] = { ...base, name: 'Smoke Ring', sub: 'Two short trails that cross', intro: 'Two side doors and two short trails that cross. The bugs get here fast!', hp: 1.45, money: 235, shift: 3,
+    bosses: [['gstink'], ['gfly'], ['gmoth'], ['gmantis'], ['herc', 'gcenti', 'ghop']],
+    routes: [[[-0.6, 2], [8, 2], [8, 7], [12, 7], [12, -0.05]],
+             [[-0.6, 7], [4, 7], [4, 4], [10, 4], [10, 1], [12, 1], [12, -0.05]]] };
+  LEVELS[26] = { ...base, name: 'Zero Gravity', sub: 'Four ways in', intro: 'Four ways in: a wall hole, two doors and a floor hatch, all feeding one last stretch.', hp: 1.5, money: 240, shift: 3,
+    bosses: [['gmoth'], ['gant'], ['gmantis'], ['gbed'], ['gfly', 'gstink', 'gcenti']],
+    routes: [[[1, -0.6], [1, 4], [6, 4], [6, 7], [12, 7], [12, -0.05]],
+             [[4, 10.6], [4, 7], [6, 7], [12, 7], [12, -0.05]],
+             [[9, 2], [9, 4], [6, 4], [6, 7], [12, 7], [12, -0.05]],
+             [[13.6, 9], [10, 9], [10, 7], [12, 7], [12, -0.05]]] };
+  LEVELS[27] = { ...base, name: 'Home Turf', sub: 'They came for Hank', intro: 'The bugs have come for Hank\'s own headquarters. Three trails, and the cake is in the far corner.', hp: 1.7, money: 235, shift: 3, cakeCol: 13,
+    bosses: [['gfly'], ['gmantis'], ['gbed'], ['gmoth'], ['queen', 'widow', 'hornet', 'gant']],
+    routes: [[[1, -0.6], [1, 8], [5, 8], [5, 3], [9, 3], [9, 6], [13, 6], [13, -0.05]],
+             [[-0.6, 5], [3, 5], [3, 1], [7, 1], [7, 3], [9, 3], [9, 6], [13, 6], [13, -0.05]],
+             [[8, 10.6], [8, 8], [11, 8], [11, 6], [13, 6], [13, -0.05]]] };
+}
 const CAMPAIGN = 5, TEAM0 = 5, TEAM_MAPS = [5, 6, 7, 13, 14, 15, 16], TEAMN = TEAM_MAPS.length;
 const teamNext = lv => { const k = TEAM_MAPS.indexOf(lv); return k >= 0 && k < TEAM_MAPS.length - 1 ? TEAM_MAPS[k + 1] : null; };
 // the solo houses in play order (the last five come after the team maps in the list)
-const SOLO = [8, 0, 1, 2, 3, 4, 9, 10, 11, 12, 17, 18];   /* School Cafeteria opens the game; Grandma's Kitchen is Level 2 */
+const SOLO = [8, 0, 1, 20, 2, 3, 21, 4, 9, 22, 10, 23, 11, 24, 12, 25, 17, 26, 27, 18];   /* the 20 houses in play order: School Cafeteria opens the game, Castle Kitchen ends it */
+const SOLO_V1 = [8, 0, 1, 2, 3, 4, 9, 10, 11, 12, 17, 18];   /* the first twelve (the Daily Kitchen's looks are drawn from these, so past days stay the same) */
 const soloNum = lv => SOLO.indexOf(lv) + 1, soloNext = lv => { const i = SOLO.indexOf(lv); return i >= 0 && i < SOLO.length - 1 ? SOLO[i + 1] : null; };
 let TEAM_LV = TEAM0;
 const TEAM_ALL_OPEN = true;   // testing: every Team Kitchen map is open (set to false to bring back the unlock order)
@@ -1353,6 +1392,54 @@ HOUSES[18] = { name: 'Castle Kitchen', bg: '#0b0a09',   // Level 12: grey stone 
   fridge: { color: '#3a3c42', metal: 0.8, rough: 0.3 }, stove: { color: '#1c1d22', metal: 0.7 }, handle: '#d4a832',
   rooms: { living: '#5a4a3a', bed: '#4a3a4a', couch: '#6a2a2a', rug: '#7a1e22', blanket: '#c9a227', wood: '#3a2618', paint: '#7a7266', hall: '#4a3422' } };
 PROP_LAYOUT[18] = PROP_LAYOUT[4];
+HOUSES[20] = { name: 'Food Truck', bg: '#0e1214',   // brushed steel, orange cabinets, teal trim
+  floor: { style: 'tile', a: [150, 156, 162], b: [126, 132, 140], grout: '#4a5058', seed: 61 },
+  cab: { base: '#e8743a', handle: '#e6ebf0' }, side: '#b8562a', kick: '#2a2e33', top: '#c9cdd2', wall: '#2fa9a0', trim: '#e6ebf0',
+  fridge: { color: '#c6ccd4', metal: 0.9, rough: 0.2 }, stove: { color: '#b8bec6', metal: 0.85 }, handle: '#e6ebf0',
+  rooms: { living: '#6a7a7a', bed: '#8a6a5a', couch: '#e8743a', rug: '#2fa9a0', blanket: '#f2c46a', wood: '#7a5a3a', paint: '#e8e4d8', hall: '#9a8a6a' } };
+PROP_LAYOUT[20] = PROP_LAYOUT[2];
+HOUSES[21] = { name: 'Sushi Bar', bg: '#0c0a0a',   // black lacquer, red, bamboo
+  floor: { style: 'plank', a: [196, 168, 112], b: [178, 150, 98], grout: '#6a5230', seed: 63, big: true },
+  cab: { base: '#1c1c20', handle: '#c8302a' }, side: '#141418', kick: '#0a0a0c', top: '#2a2a2e', wall: '#b8302a', trim: '#1c1c20',
+  fridge: { color: '#2a2d33', metal: 0.75, rough: 0.3 }, stove: { color: '#1c1d22', metal: 0.7 }, handle: '#d8c28a',
+  rooms: { living: '#5a4a3a', bed: '#3a3a4a', couch: '#b8302a', rug: '#1c1c20', blanket: '#d8c28a', wood: '#3a2a1a', paint: '#e8dcc0', hall: '#6a5230' } };
+PROP_LAYOUT[21] = PROP_LAYOUT[3];
+HOUSES[22] = { name: 'Ice Cream Parlor', bg: '#141012',   // mint and pink checks, cream walls
+  floor: { style: 'tile', a: [242, 168, 192], b: [246, 240, 228], grout: '#c8a8b0', seed: 65 },
+  cab: { base: '#8fd8c4', handle: '#ffffff' }, side: '#6eb8a4', kick: '#4a8a7a', top: '#fff4e0', wall: '#fbe2ea', trim: '#f2a8c0',
+  fridge: { color: '#f6f2ea', metal: 0.2, rough: 0.35 }, stove: { color: '#f4efe4', metal: 0.2 }, handle: '#f2a8c0',
+  rooms: { living: '#c8a0b0', bed: '#a0c8c0', couch: '#f2a8c0', rug: '#8fd8c4', blanket: '#ffe08a', wood: '#c8a07a', paint: '#fbefe6', hall: '#d8b090' } };
+PROP_LAYOUT[22] = PROP_LAYOUT[11];
+HOUSES[23] = { name: 'Taco Stand', bg: '#140d09',   // terracotta tile, turquoise cabinets, sunny yellow walls
+  floor: { style: 'tile', a: [190, 96, 60], b: [170, 82, 50], grout: '#e2c8a0', seed: 67 },
+  cab: { base: '#2aa7b8', handle: '#f2ead6' }, side: '#1e8494', kick: '#12505a', top: '#d8b078', wall: '#e2a02a', trim: '#c85a3a',
+  fridge: { color: '#f2ead6', metal: 0.1, rough: 0.35 }, stove: { color: '#2a2a2a', metal: 0.5 }, handle: '#c9ced6',
+  rooms: { living: '#b8704a', bed: '#5a9aa0', couch: '#c85a3a', rug: '#2aa7b8', blanket: '#e2a02a', wood: '#7a4a2a', paint: '#f2e2c2', hall: '#b07a4a' } };
+PROP_LAYOUT[23] = PROP_LAYOUT[10];
+HOUSES[24] = { name: 'Submarine Galley', bg: '#070b0e',   // riveted steel, navy, brass fittings
+  floor: { style: 'tile', a: [58, 76, 88], b: [48, 64, 76], grout: '#1a252c', seed: 69 },
+  cab: { base: '#5a7a8c', handle: '#c9a24a' }, side: '#46626f', kick: '#16222a', top: '#8a9aa4', wall: '#34505e', trim: '#c9a24a',
+  fridge: { color: '#7a8a94', metal: 0.85, rough: 0.3 }, stove: { color: '#4a5a64', metal: 0.8 }, handle: '#c9a24a',
+  rooms: { living: '#3a4a54', bed: '#2a3a4a', couch: '#5a7a8c', rug: '#8a2a22', blanket: '#c9a24a', wood: '#3a2a1e', paint: '#7a8a8e', hall: '#3a4a50' } };
+PROP_LAYOUT[24] = PROP_LAYOUT[1];
+HOUSES[25] = { name: 'BBQ Smokehouse', bg: '#100a07',   // dark smoked wood, brick red, black iron
+  floor: { style: 'plank', a: [110, 72, 44], b: [94, 60, 36], grout: '#2a180c', seed: 71, big: true },
+  cab: { base: '#7a2a1e', handle: '#1c1c1c' }, side: '#5e2016', kick: '#1c100a', top: '#3a3632', wall: '#a8663a', trim: '#2a1a10',
+  fridge: { color: '#2a2a2c', metal: 0.7, rough: 0.4 }, stove: { color: '#1c1c1e', metal: 0.6 }, handle: '#d89a4a',
+  rooms: { living: '#6a4a32', bed: '#5a3a2e', couch: '#7a2a1e', rug: '#d89a4a', blanket: '#a8422e', wood: '#3a2414', paint: '#c8a078', hall: '#6a4426' } };
+PROP_LAYOUT[25] = PROP_LAYOUT[9];
+HOUSES[26] = { name: 'Space Station', bg: '#05070c',   // white panels, dark deck plating, blue glow
+  floor: { style: 'tile', a: [62, 68, 84], b: [50, 56, 70], grout: '#3ac8ff', seed: 73 },
+  cab: { base: '#e8eef4', handle: '#3ac8ff' }, side: '#c0c8d2', kick: '#2a3040', top: '#f4f8fc', wall: '#aab4c2', trim: '#3ac8ff',
+  fridge: { color: '#e8eef4', metal: 0.6, rough: 0.25 }, stove: { color: '#c6ccd4', metal: 0.8 }, handle: '#3ac8ff',
+  rooms: { living: '#4a5468', bed: '#3a4460', couch: '#e8eef4', rug: '#3ac8ff', blanket: '#ff8a3a', wood: '#5a6070', paint: '#c8d0dc', hall: '#4a5060' } };
+PROP_LAYOUT[26] = PROP_LAYOUT[8];
+HOUSES[27] = { name: 'Exterminator HQ', bg: '#0b0b0c',   // Hank's place: hazard yellow and black, grey concrete
+  floor: { style: 'tile', a: [140, 144, 150], b: [122, 126, 132], grout: '#2a2c30', seed: 75 },
+  cab: { base: '#ffc93c', handle: '#1c1d22' }, side: '#d8a420', kick: '#1c1d22', top: '#3a3c42', wall: '#5a5e66', trim: '#ffc93c',
+  fridge: { color: '#3a3c42', metal: 0.8, rough: 0.3 }, stove: { color: '#1c1d22', metal: 0.7 }, handle: '#ffc93c',
+  rooms: { living: '#4a4c52', bed: '#3a3c44', couch: '#ffc93c', rug: '#1c1d22', blanket: '#ff8a2a', wood: '#3a3028', paint: '#8a8e96', hall: '#4a4a4e' } };
+PROP_LAYOUT[27] = PROP_LAYOUT[4];
 // ---------------------------------------------------------------- Daily Kitchen: a fresh random kitchen every day, the same for everyone
 const DAILY_LV = 19, DAILY_LIVES = 10, RACE_WAVES = 10, RACE_FROM = '2026-11-07', raceWaves = day => day < '2026-11-08' ? 15 : RACE_WAVES;   /* (the first race day was 15 waves) */   /* Daily Kitchen is a race from 7 Nov: 15 waves, fastest perfect run wins (game time, so speed-up doesn't matter) */
 const isRace = day => day >= RACE_FROM;
@@ -1480,7 +1567,7 @@ function setupDaily(day = dailyDay()) {
   if (!two && twists.includes('doors')) { const r3 = rng(dayHash('ppd-doors-' + day)); for (let k = 0; k < 2; k++) { let t2 = null; for (let i = 0; i < 20 && !t2; i++) t2 = genTrail(r3, cake, taken, 10, 26, t1); if (t2) { t2.forEach(([a, b]) => taken.add(a + ',' + b)); routes.push(trailRoute(t2, t1.slice(0, t2.joinAt + 1).reverse())); } } }   // Three Doors twist
   const BOSSES = ['queen', 'widow', 'hornet', 'herc', 'ghop', 'gcenti', 'gstink', 'gmoth', 'gmantis', 'gant', 'gfly', 'gbed'].map(t => [t, r()]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   const early = BOSSES.slice(0, 4).sort((a, b) => BT[a].hp - BT[b].hp);
-  const look = SOLO[Math.floor(r() * SOLO.length)];
+  const look = SOLO_V1[Math.floor(r() * SOLO_V1.length)];
   LEVELS[DAILY_LV] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null, name: 'Daily Kitchen', sub: day, intro: isRace(day) ? 'Today\'s kitchen: the same for everyone. Clear ' + RACE_WAVES + ' waves as fast as you can without losing a slice. Call waves early to save time!' : 'Today\'s kitchen: the same for everyone. 10 slices of cake, endless waves. How far can you get?', hp: 1.3125 * 1.07 * (day >= '2026-11-06' ? 1.1 : 1) * (day >= '2026-11-08' ? 0.92 : 1) * (day >= '2026-11-16' ? 1.1 : 1), bossHp: (LEVELS[12].bossHp || 1) * (day >= '2026-11-16' ? 1.1 : 1),   /* from 16 Nov: 10% tougher bugs and bosses (today's board keeps the rules it started with) */   /* 8% off from Nov 8: the first race day ran a little too hard */ money: 210, cakeCol: cake, shift: 1,
     nb: [['hopper', 4, 2], ['centi', 7, 1], ['stink', 9, 1], ['moth', 11, 2], ['mantis', 14, 1]], bosses: [...early.map(t => [t]), [BOSSES[4], BOSSES[5]]], routes, look, day, twists, mystery: twists.includes('mystery') ? mysteryTools(day) : null };
   HOUSES[DAILY_LV] = { ...HOUSES[look] }; PROP_LAYOUT[DAILY_LV] = PROP_LAYOUT[look]; delete houseTex[DAILY_LV];
@@ -5919,8 +6006,12 @@ function saveNum(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {
 // stars for saving the cake: 3 = lost 3 slices or fewer, 2 = lost 10 or fewer, 1 = any win
 function starsFor(lives) { return lives >= 17 ? 3 : lives >= 10 ? 2 : 1; }
 const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
-const SOLO_ALL_OPEN = true;   // testing: every solo level is open (set to false to bring back the unlock order)
-function unlocked(lv) { const i = SOLO.indexOf(lv); return SOLO_ALL_OPEN || i <= 0 || loadBest(SOLO[i - 1]) >= MAXW; }
+/* Stars unlock the houses: level 2 needs 1 star, level 3 needs 3, then 2 more for every level after (level 20: 36 of the 57 you could have by then).
+   A house you've already beaten stays open. Secret code OPENHOUSE (Settings > Backup) opens every house for testing. */
+const STAR_NEED = SOLO.map((lv, i) => i === 0 ? 0 : i === 1 ? 1 : i === 2 ? 3 : 2 * i - 2);
+const soloAllOpen = () => { try { return localStorage.getItem('ppd-allopen') === '1'; } catch (e) { return false; } };
+function totalStars() { let n = 0; for (const lv of SOLO) if (loadBest(lv) >= MAXW) n += Math.max(1, Math.min(3, loadNum(starKey(lv)))); return n; }
+function unlocked(lv) { const i = SOLO.indexOf(lv); return i <= 0 || soloAllOpen() || loadBest(lv) >= MAXW || totalStars() >= STAR_NEED[i]; }
 
 let S = null;
 function newState(mode) {
@@ -8111,10 +8202,11 @@ function toTitle() {
   for (const [t, c, r, lv] of [['paper', 2, 5, 2], ['spray', 5, 5, 3], ['zap', 8, 5, 3], ['lens', 11, 6, 3]]) { S.money = 9999; if (!placeTower(t, c, r)) continue; const tw = S.towers[S.towers.length - 1]; tw.lv = lv; tw.o.setLevel(lv); tw.o.pips.forEach((p, i) => p.visible = i < lv); }
   S.money = 0; setCake(20); hideBelt();
   syncResume(); $('title').hidden = false; $('over').hidden = true; $('paused').hidden = true; $('peek').hidden = true; $('hud').hidden = true; $('tray').hidden = true; $('tip').hidden = true;
+  { const have = totalStars(), nx = SOLO.findIndex(lv => !unlocked(lv)); $('starTot').innerHTML = `<b>★ ${have}</b> / ${SOLO.length * 3}` + (nx > 0 ? ` <small>· ${STAR_NEED[nx] - have} more to unlock Level ${nx + 1}</small>` : ''); }
   SOLO.forEach((lv, i) => {
     const L = LEVELS[lv], b = loadBest(lv), el = $('best' + lv);
     const st = loadNum(starKey(lv)), en = loadNum(endKey(lv));
-    el.innerHTML = !unlocked(lv) ? '🔒 Beat Level ' + i + ' to unlock' : b >= MAXW ? `<span class="lstars">${starStr(Math.max(1, st))}</span>${en > MAXW ? `<span class="lend">Endless best: wave ${en}</span>` : ''}` : b ? 'Best: wave ' + b : L.sub;
+    el.innerHTML = !unlocked(lv) ? `<span class="lneed">🔒 Needs ★ ${STAR_NEED[i]}</span>` : b >= MAXW ? `<span class="lstars">${starStr(Math.max(1, st))}</span>${en > MAXW ? `<span class="lend">Endless best: wave ${en}</span>` : ''}` : b ? 'Best: wave ' + b : L.sub;
     $(i ? 'play' + (i + 1) : 'play').disabled = !unlocked(lv);
   });
   requestAnimationFrame(resize);
@@ -9165,6 +9257,7 @@ try { if (navigator.storage && navigator.storage.persist) navigator.storage.pers
 function backupCode() { const o = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('ppd-')) o[k] = localStorage.getItem(k); } } catch (e) {} return 'PPD1.' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
 function loadBackup(code) {
   code = (code || '').trim();
+  if (code.toUpperCase() === 'OPENHOUSE') { const on = !soloAllOpen(); try { localStorage.setItem('ppd-allopen', on ? '1' : '0'); } catch (e) {} return on ? '🔓 Secret code accepted: every house is open. Enter it again to go back to star unlocks.' : '🔒 Houses are back to star unlocks.'; }
   if (code.toUpperCase() === 'GOLDENSWATTER') { const on = !lockAll(); try { localStorage.setItem('ppd-lkall', on ? '1' : '0'); } catch (e) {} renderLocker(); return on ? '🔓 Secret code accepted: every Locker outfit is unlocked. Enter it again to lock them back up.' : '🔒 Locker outfits are back to normal: unlocked by catching shinies.'; }   // owner's secret code (shown as a message, nothing restarts) if (!code.startsWith('PPD1.')) return 'That doesn\'t look like a Pest Panic backup code.';
   let o; try { o = JSON.parse(decodeURIComponent(escape(atob(code.slice(5))))); } catch (e) { return 'That code is damaged or incomplete.'; }
   if (!o || typeof o !== 'object') return 'That code is damaged or incomplete.';
@@ -9799,9 +9892,9 @@ const ACH_LIST = [
   ['gbed', 'Sleep Tight', 'Squash a Bed Bug Mother.'],
   ['bosses', 'Big Game Hunter', 'Squash every one of the 12 bosses.'],
   ['win', 'Cake Saver', 'Beat any level.'],
-  ['lv11', 'Farm Fresh', 'Beat Level 11 (Farmhouse).'],
-  ['lv12', 'Last Stand', 'Beat Level 12 (Castle Kitchen), the final kitchen.'],
-  ['allwin', 'House Calls', 'Beat all twelve houses.'],
+  ['lv11', 'Farm Fresh', 'Beat the Farmhouse.'],
+  ['lv12', 'Last Stand', 'Beat Castle Kitchen, the final kitchen.'],
+  ['allwin', 'House Calls', 'Beat all twenty houses.'],
   ['star3', 'Perfect Party', 'Get 3 stars on any level.'],
   ['allstar', 'Gold Standard', 'Get 3 stars on every house.'],
   ['flawless', 'Not a Crumb', 'Beat a level without losing a single slice.'],
@@ -9858,7 +9951,7 @@ function achWin() {
   if (!used.has('lens')) ACH.unlock('nolens');
   if (used.size && [...used].every(t => t === 'swat')) ACH.unlock('swatonly');
   if ((S.built || 0) <= 6) ACH.unlock('thrifty');
-  if (SOLO.indexOf(LV) === 10) ACH.unlock('lv11'); if (SOLO.indexOf(LV) === 11) ACH.unlock('lv12');
+  if (LV === 17) ACH.unlock('lv11'); if (LV === 18) ACH.unlock('lv12');
   if (SOLO.every(i => i === LV || loadBest(i) >= MAXW)) ACH.unlock('allwin');
   if (SOLO.every(i => (i === LV ? starsFor(S.lives) : loadNum(starKey(i))) >= 3)) ACH.unlock('allstar');
 }
@@ -9994,7 +10087,7 @@ function gameOver(won) {
   if (S.net === 'host') netSend({ k: 'over', won, l: S.lives, w: S.wave, kills: S.kills, st: (S.p2 && S.p2.stats) || {} });   // the partner's own damage chart
   bankLive(); stopSpray(); S.mode = 'over'; S.active = false; S.placing = null; S.pick = null; S.nextT = 0; hideBelt();
   if (S.daily) { dailyOver(); return; }
-  const reached = won ? MAXW : S.wave, NX = LEVELS[LV].team ? teamNext(LV) : soloNext(LV), wasLocked = LEVELS[LV].team ? NX != null && !teamUnlocked(NX) : NX != null && !unlocked(NX);
+  const reached = won ? MAXW : S.wave, NX = LEVELS[LV].team ? teamNext(LV) : soloNext(LV), wasLocked = LEVELS[LV].team ? NX != null && !teamUnlocked(NX) : NX != null && !unlocked(NX), lockedBefore = LEVELS[LV].team ? [] : SOLO.filter(lv => !unlocked(lv));
   if (Math.min(reached, MAXW) > loadBest()) saveBest(Math.min(reached, MAXW));
   const ostars = $('ostars'); ostars.hidden = !won; $('endless').hidden = !won || !!S.net;
   $('again').hidden = S.net === 'guest'; $('again').textContent = S.net === 'host' ? 'Play again together' : 'Play again';
@@ -10015,9 +10108,12 @@ function gameOver(won) {
     return;
   }
   $('overt').textContent = won ? 'Cake saved!' : 'Cake devoured!';
-  const team = !!LEVELS[LV].team, hasNext = won && (team ? NX != null && S.net !== 'guest' : NX != null);
+  const team = !!LEVELS[LV].team, hasNext = won && (team ? NX != null && S.net !== 'guest' : NX != null && unlocked(NX));
   $('nextLv').hidden = !hasNext; $('nextLv').textContent = hasNext ? (team ? 'Next map: ' + LEVELS[NX].name : 'Next: ' + HOUSES[NX].name) : '';
-  if (hasNext && wasLocked) banner(team ? 'New team map unlocked!' : 'New house unlocked!', team ? LEVELS[NX].name + ' · ' + LEVELS[NX].sub : HOUSES[NX].name + ' · Level ' + soloNum(NX), false, 2600);
+  if (team) { if (hasNext && wasLocked) banner('New team map unlocked!', LEVELS[NX].name + ' · ' + LEVELS[NX].sub, false, 2600); }
+  else if (won) { const fresh = lockedBefore.filter(lv => unlocked(lv));   /* the stars from this win may open one house, several, or none yet */
+    if (fresh.length) banner(fresh.length > 1 ? fresh.length + ' new houses unlocked!' : 'New house unlocked!', fresh.map(lv => HOUSES[lv].name + ' · Level ' + soloNum(lv)).slice(0, 2).join('   '), false, 2800);
+    else if (NX != null && !unlocked(NX)) banner('★ ' + (STAR_NEED[SOLO.indexOf(NX)] - totalStars()) + ' more to unlock ' + HOUSES[NX].name, 'Replay a house and save more cake to earn stars', false, 3200); }
   if (won && team && S.net === 'guest' && NX != null) banner('Next map unlocked!', 'Waiting for the host to start ' + LEVELS[NX].name, false, 3000);
   showStats();
   $('ores').innerHTML = `<dt>Waves survived</dt><dd>${won ? MAXW : Math.max(0, S.wave - 1)} / ${MAXW}</dd><dt>Bugs squashed</dt><dd>${S.kills}</dd><dt>Slices left</dt><dd>${S.lives} / 20</dd><dt>House</dt><dd>${HOUSES[LV].name}</dd><dt>Best</dt><dd>Wave ${loadBest()}</dd>`;
