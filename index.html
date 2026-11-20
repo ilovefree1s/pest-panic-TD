@@ -727,7 +727,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="743">v1.241</div>
+    <div id="ver" data-b="744">v1.242</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -1142,12 +1142,13 @@ LEVELS[18] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugM
 }
 /* Levels 13-20 of the 20-house story: eight more kitchens, mixed in between the first twelve (see SOLO for the play order) */
 { const base = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugMulAfter: null }, NB1 = [['hopper', 3, 2]], NB2 = [['hopper', 3, 2], ['centi', 4, 1]], NB3 = [['hopper', 3, 2], ['centi', 4, 1], ['stink', 5, 2], ['moth', 4, 2]];
-  LEVELS[20] = { ...base, name: 'One Way In', sub: 'One fast trail from the front door', intro: 'One short trail from the front door. Every tool has to count.', hp: 1.0, money: 230, bossHp: 0.9, shift: 1, nb: null,
+  LEVELS[20] = { ...base, name: 'Drive-Thru', sub: 'A trail that loops over itself', intro: 'The trail loops round and crosses over itself. A tool by the crossing hits the bugs twice!', hp: 1.05, money: 190, shift: 1, nb: null,
     bosses: [['queen'], ['gant'], ['widow'], ['hornet'], ['herc', 'gant']],
-    routes: [[[3, 10.6], [3, 2], [8, 2], [8, 7], [12, 7], [12, -0.05]]] };
-  LEVELS[21] = { ...base, name: 'Conveyor Belt', sub: 'A loop that crosses itself', intro: 'The trail loops the room like a sushi belt and crosses over itself. Guard the crossing!', hp: 1.32, money: 185, shift: 2, nb: NB1,
+    routes: [[[2, 10.6], [2, 6], [8, 6], [8, 2], [4, 2], [4, 8], [10, 8], [10, 4], [12, 4], [12, -0.05]]] };
+  LEVELS[21] = { ...base, name: 'Chopsticks', sub: 'Two trails that cross twice', intro: 'Two side doors, and the trails cross each other twice like chopsticks. Guard the crossings!', hp: 1.2, money: 200, shift: 2, nb: NB1,
     bosses: [['widow'], ['ghop'], ['hornet'], ['gant'], ['gfly', 'queen']],
-    routes: [[[6, 10.6], [6, 8], [1, 8], [1, 1], [10, 1], [10, 6], [4, 6], [4, 4], [12, 4], [12, -0.05]]] };
+    routes: [[[-0.6, 8], [2, 8], [2, 4], [7, 4], [7, 9], [11, 9], [11, 3], [12, 3], [12, -0.05]],
+             [[-0.6, 1], [4, 1], [4, 7], [9, 7], [9, 3], [12, 3], [12, -0.05]]] };
   LEVELS[22] = { ...base, name: 'Double Scoop', sub: 'Two holes in the floor', intro: 'Two holes in the floor! The trails join up for the last stretch to the cake.', hp: 1.2, money: 235, shift: 2, nb: NB2,
     bosses: [['gant'], ['gcenti'], ['ghop'], ['hornet'], ['gbed', 'widow', 'gfly']],
     routes: [[[2, 6], [2, 2], [6, 2], [6, 6], [10, 6], [10, 2], [12, 2], [12, -0.05]],
@@ -1157,9 +1158,11 @@ LEVELS[18] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugM
     routes: [[[13.6, 2], [9, 2], [9, 5], [5, 5], [5, 2], [1, 2], [1, -0.05]],
              [[13.6, 8], [9, 8], [9, 5], [5, 5], [5, 2], [1, 2], [1, -0.05]],
              [[7, 10.6], [7, 8], [3, 8], [3, 5], [5, 5], [5, 2], [1, 2], [1, -0.05]]] };
-  LEVELS[24] = { ...base, name: 'Tight Quarters', sub: 'One very long snake', intro: 'One very long snake, with only thin strips to build on between the bends.', hp: 1.85, money: 200, shift: 3,
+  LEVELS[24] = { ...base, name: 'Open Hatches', sub: 'Two floor hatches and a door', intro: 'Bugs climb out of two hatches in the middle of the floor, and a long trail from the door cuts across both!', hp: 1.5, money: 225, shift: 3,
     bosses: [['gcenti'], ['gmoth'], ['gant'], ['gstink'], ['gmantis', 'gfly', 'widow']],
-    routes: [[[1, 10.6], [1, 1], [3, 1], [3, 8], [5, 8], [5, 1], [7, 1], [7, 8], [9, 8], [9, 1], [12, 1], [12, -0.05]]] };
+    routes: [[[1, 10.6], [1, 3], [6, 3], [6, 7], [11, 7], [11, 2], [12, 2], [12, -0.05]],
+             [[3, 5], [3, 8], [8, 8], [8, 2], [12, 2], [12, -0.05]],
+             [[10, 8], [10, 5], [5, 5], [5, 2], [8, 2], [12, 2], [12, -0.05]]] };
   LEVELS[25] = { ...base, name: 'Smoke Ring', sub: 'Two short trails that cross', intro: 'Two side doors and two short trails that cross. The bugs get here fast!', hp: 1.45, money: 235, shift: 3,
     bosses: [['gstink'], ['gfly'], ['gmoth'], ['gmantis'], ['herc', 'gcenti', 'ghop']],
     routes: [[[-0.6, 2], [8, 2], [8, 7], [12, 7], [12, -0.05]],
@@ -1170,11 +1173,12 @@ LEVELS[18] = { ...LEVELS[12], bossMul: null, bossMulW: null, bugMulW: null, bugM
              [[4, 10.6], [4, 7], [6, 7], [12, 7], [12, -0.05]],
              [[9, 2], [9, 4], [6, 4], [6, 7], [12, 7], [12, -0.05]],
              [[13.6, 9], [10, 9], [10, 7], [12, 7], [12, -0.05]]] };
-  LEVELS[27] = { ...base, name: 'Home Turf', sub: 'They came for Hank', intro: 'The bugs have come for Hank\'s own headquarters. Three trails, and the cake is in the far corner.', hp: 1.7, money: 235, shift: 3, cakeCol: 13,
+  LEVELS[27] = { ...base, name: 'Home Turf', sub: 'They came for Hank', intro: 'The bugs have come for Hank\'s own headquarters. Three doors, a hole in the floor, and the cake is in the far corner.', hp: 1.62, money: 235, shift: 3, cakeCol: 13,
     bosses: [['gfly'], ['gmantis'], ['gbed'], ['gmoth'], ['queen', 'widow', 'hornet', 'gant']],
     routes: [[[1, -0.6], [1, 8], [5, 8], [5, 3], [9, 3], [9, 6], [13, 6], [13, -0.05]],
              [[-0.6, 5], [3, 5], [3, 1], [7, 1], [7, 3], [9, 3], [9, 6], [13, 6], [13, -0.05]],
-             [[8, 10.6], [8, 8], [11, 8], [11, 6], [13, 6], [13, -0.05]]] };
+             [[8, 10.6], [8, 8], [11, 8], [11, 6], [13, 6], [13, -0.05]],
+             [[6, 6], [6, 5], [11, 5], [11, 1], [13, 1], [13, -0.05]]] };   // a 4th way in: up through the floor, across the main trail, and a short cut to the cake
 }
 const CAMPAIGN = 5, TEAM0 = 5, TEAM_MAPS = [5, 6, 7, 13, 14, 15, 16], TEAMN = TEAM_MAPS.length;
 const teamNext = lv => { const k = TEAM_MAPS.indexOf(lv); return k >= 0 && k < TEAM_MAPS.length - 1 ? TEAM_MAPS[k + 1] : null; };
