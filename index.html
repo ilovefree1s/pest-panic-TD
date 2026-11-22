@@ -727,7 +727,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="747">v1.245</div>
+    <div id="ver" data-b="748">v1.246</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -8039,7 +8039,8 @@ addEventListener('pointerup', e => {
 }, true);
 for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => { syncFull(); requestAnimationFrame(resize); });
 $('guideBack').addEventListener('click', closeGuide);
-function toggleSpeed() { if (S.net === 'guest') { netSend({ k: 'speed', v: S.speed > 1 ? 1 : 2 }); return; } S.speed = S.speed > 1 ? 1 : 2; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
+function toggleSpeed() { const nx = S.speed >= 3 ? 1 : S.speed + 1;   /* 1× → 2× → 3× → 1× */
+  if (S.net === 'guest') { netSend({ k: 'speed', v: nx }); return; } S.speed = nx; $('bSpeed').textContent = S.speed + '×'; $('bSpeed').classList.toggle('on', S.speed > 1); }
 function setPaused(p, remote) { if (S.mode !== 'play') return; S.paused = p; if (p) try { SND.play('sprayStop'); for (const e of [S.ext, S.p2 && S.p2.ext]) if (e && e.abil) e.abil.sndOn = false; } catch (err) {}   /* the held spray hiss stops with the game and picks up again on resume */ if (p) { syncPauseMenu(); if (S.net !== 'guest') S.speed = 1; $('bSpeed').textContent = '1×'; $('bSpeed').classList.remove('on'); }   /* pausing drops back to normal speed */ $('paused').hidden = !p; if (S.net && !remote) netSend({ k: 'pause', p }); }
 function toggleSound() { SND.init(); SND.toggle(); syncSnd(); }
 function syncSnd() { if ($('setSfx')) syncSettings(); }
