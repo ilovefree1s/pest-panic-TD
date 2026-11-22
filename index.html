@@ -727,7 +727,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="746">v1.244</div>
+    <div id="ver" data-b="747">v1.245</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -5018,8 +5018,8 @@ function perkMark(tw) {   /* a tool with its special power wears a gold star by 
   const o = tw.o; if (!o || !o.pips || !o.pips.length) return; const p1 = o.pips[1], big = STAR_MODE() === 'big';
   if (!o.star) { o.star = mesh(starGeo(), TM.gold, false); p1.parent.add(o.star); const bk = mesh(starGeo(), TM.dark, false); bk.scale.set(1.32, 1.32, 0.8); bk.position.z = -0.06; o.star.add(bk); }   /* a dark rim behind it, so a gold star still shows on the gold base (the candle's was invisible) */
   const s = big ? 0.38 : 0.3; o.star.scale.set(s, s, s);   /* lying flat on the front of the tool's base, a point to the back */
-  o.star.rotation.set(-Math.PI / 2, 0, Math.PI); o.star.position.set(big ? 0 : 0.8, 0.14 + 0.2 * s, big ? 1.04 : p1.position.z);
-  if (o.pips[0] && o.star.material !== o.pips[0].material) o.star.material = o.pips[0].material;   /* the same colour as this tool's level dots */
+  o.star.rotation.set(-Math.PI / 4, 0, Math.PI); o.star.position.set(big ? 0 : 0.8, 0.14 + 0.75 * s, big ? 1.04 : p1.position.z);   /* tilted 45 degrees up toward the camera */
+  if (o.pips[0]) { const pm = o.pips[0].material, mm = pm.userData.starM ||= (() => { const c = pm.clone(); c.metalness = 0; c.roughness = 0.75; c.envMapIntensity = 0.2; c.emissiveIntensity = (pm.emissiveIntensity || 0) * 0.35; c.userData = {}; return c; })(); if (o.star.material !== mm) o.star.material = mm; }   /* the same colour as this tool's level dots, but matte: facing the camera, the shiny one glared out to white */
   o.pips.forEach((p, i) => { p.position.x = big ? (i - 1) * 0.4 : (i - 1) * 0.4 - 0.2; p.visible = !big && i < tw.lv; }); o.star.visible = true;
 }
 function pips(g, y = 0.2) { const out = []; for (let i = 0; i < 3; i++) { const p = mesh(sph(0.16, 12, 9), TM.gold, false); p.position.set((i - 1) * 0.4, y + 0.02, 1.08); g.add(p); out.push(p); } return out; }   /* a third bigger: they're read from the top-down camera */
