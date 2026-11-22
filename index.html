@@ -727,7 +727,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="744">v1.242</div>
+    <div id="ver" data-b="745">v1.243</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -6763,7 +6763,7 @@ function itemsAct(dt) {
     }
   }
 }
-const UNLOCK_AT = { frog: 1, venus: 1, fan: 2, cat: 2, fogger: 3 };   /* solo story: frog and fly trap at level 2, desk fan and cat at 3, fogger at 4 */
+const UNLOCK_AT = { frog: 1, venus: 1, fan: 2, cat: 3, fogger: 5 };   /* solo story: frog and fly trap at level 2, desk fan at 3, cat at 4, fogger at 6 */
 function toolLocked(t) { if (t === 'fogger' && S && LV === DAILY_LV && LEVELS[DAILY_LV] && LEVELS[DAILY_LV].day > '2026-10-30') return true;
   if (S && LV === DAILY_LV && LEVELS[DAILY_LV]) { if (TWX('nopets') && PETS.includes(t)) return true; const my = LEVELS[DAILY_LV].mystery; if (my && SHOP.includes(t) && !my.includes(t)) return true; }   // Daily twists: No Pets, Mystery Tools   /* the Fogger is too strong for the Daily Kitchen (from 31 Oct) */
   return !!UNLOCK_AT[t] && !!S && !LEVELS[LV].team && !S.vs && SOLO.indexOf(LV) >= 0 && SOLO.indexOf(LV) < UNLOCK_AT[t]; }
