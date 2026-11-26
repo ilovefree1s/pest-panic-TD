@@ -727,7 +727,7 @@ body:has(#shinies:not([hidden])) #tray,body:has(#settings:not([hidden])) #tray,b
     <div id="belt" class="off" aria-live="polite"><button id="beltX" type="button" aria-label="Hide next wave">✕</button><div class="bh"><small>Next · <em id="beltT"></em></small><b id="beltW">Wave 1</b></div><div class="trk" id="beltRow"></div></div>
     <div id="stageTag" hidden></div>
     <div id="goldFlash" aria-hidden="true"></div>
-    <div id="ver" data-b="749">v1.247</div>
+    <div id="ver" data-b="750">v1.248</div>
     <div id="vign"></div>
     <div id="hurt"></div>
     <div id="hud" hidden>
@@ -2311,11 +2311,14 @@ function doorSignTex(n, sub, dim) { const c = document.createElement('canvas'); 
 function setDoorSigns() {
   for (const sp of KIT.signs || []) { scene.remove(sp); sp.material.map?.dispose(); sp.material.dispose(); } KIT.signs = [];
   let st = null; try { st = S; } catch (e) { return; }   /* (the first level loads before the game state exists) */
-  if (!st || !(LV === DAILY_LV && S && S.daily && S.daily.day >= '2026-11-09' && ROUTES.length === 2) || S.wave >= 1) return;   /* door signs only before the first wave */
-  const order = [LONG_R, 1 - LONG_R], open = dailyStagger() ? doorsOpen() : order;
-  order.forEach((ri, k) => { const R = ROUTES[ri], [c0, r0] = R.wp[0], side = c0 < 0 ? -1 : c0 > COLS - 1 ? 1 : 0; let x, z;
+  if (!st) return;
+  const daily2 = LV === DAILY_LV && S && S.daily && S.daily.day >= '2026-11-09' && ROUTES.length === 2, solo = SOLO.includes(LV) && !S.vs && !(LEVELS[LV] && LEVELS[LV].team) && (ROUTES.length > 1 || floorDoor(ROUTES[0].wp[0]));
+  if (!st || !(daily2 || solo) || S.mode !== 'play' || S.wave >= 1) return;   /* door signs only before the first wave: every solo house with more than one way in (or a hole in the floor), and the two-door Daily */
+  const order = daily2 ? [LONG_R, 1 - LONG_R] : (() => { const o = [LONG_R]; for (let i = 0; i < ROUTES.length; i++) if (i !== LONG_R) o.push(i); return o; })();
+  const many = !daily2 && ROUTES.length > 2 && !TWX('doors'), open = dailyStagger() ? doorsOpen() : many ? [LONG_R] : order, seen = new Set();
+  order.forEach((ri, k) => { const R = ROUTES[ri], [c0, r0] = R.wp[0], kk = c0 + ',' + r0; if (seen.has(kk)) return; seen.add(kk); const side = c0 < 0 ? -1 : c0 > COLS - 1 ? 1 : 0; let x, z;
     if (floorDoor(R.wp[0])) { x = ccx(c0); z = ccz(r0); } else if (side) { x = side * (BOARD.ex - 1.3); z = ccz(r0); } else if (r0 > ROWS - 1) { x = ccx(c0); z = 13.6; } else { x = ccx(c0); z = -13.6; }
-    const isOpen = open.includes(ri), sub = isOpen ? (k === 0 && dailyStagger() && S.wave < DOOR2_WAVE ? 'bugs start here' : '') : 'opens wave ' + DOOR2_WAVE;
+    const isOpen = open.includes(ri), sub = isOpen ? (k === 0 && (dailyStagger() ? S.wave < DOOR2_WAVE : true) ? 'bugs start here' : '') : 'opens wave ' + (many ? (k === 1 ? 6 : 11) : DOOR2_WAVE);   /* a solo house with 3+ doors opens its 2nd at wave 6 and the rest at 11 (see doorsOpen) */
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: doorSignTex(k + 1, sub, !isOpen), transparent: true, depthTest: false })); sp.scale.set(5.6, 2.8, 1); sp.renderOrder = 15; sp.position.set(x, 3.8, z); scene.add(sp); KIT.signs.push(sp); });
 }
 
@@ -8268,7 +8271,7 @@ function startGame(lv = LV, net = null, aiDiff = 1) {
   if (!RESUMING) clearRun(runKey(lv));
   $('rsAsk').hidden = true;
   ZM.z = 1; ZM.px = ZM.pz = 0; ZM.pinch = null;
-  clearBoard(); loadLevel(lv); S = newState('play'); MOOD.cur = null;   /* the light snaps to the game's morning instead of easing in from the title's midday glare (a dark floor flashed white for a few seconds) */ shown = {}; lastTray = ''; shopTab = 'tools'; requestAnimationFrame(syncBeltPos);
+  clearBoard(); loadLevel(lv); S = newState('play'); setTimeout(setDoorSigns, 0); MOOD.cur = null;   /* the light snaps to the game's morning instead of easing in from the title's midday glare (a dark floor flashed white for a few seconds) */ shown = {}; lastTray = ''; shopTab = 'tools'; requestAnimationFrame(syncBeltPos);
   if (LEVELS[lv].team) {
     S.ext.x = ccx(4); S.ext.z = ccz(9);
     if (net) {
@@ -10189,13 +10192,14 @@ function placeStageTag() {
   if (!MQ_SIDE.matches || $('hud').hidden) {
     el.style.left = el.style.right = el.style.transform = el.style.top = ''; el.style.visibility = '';
     const sg = stage.getBoundingClientRect(); if (el.hidden) return;
-    for (const id of ['belt', 'queen']) { const q = $(id); if (!q || q.hidden || q.classList.contains('off')) continue; const a = el.getBoundingClientRect(), b = q.getBoundingClientRect(); if (b.height && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) el.style.top = Math.round(b.bottom - sg.top + 6) + 'px'; }   /* the next-bugs belt or a boss bar is up there: step below it */
+    for (const id of ['belt', 'queen']) { const q = $(id); if (!q || q.hidden || q.classList.contains('off')) continue; const a = el.getBoundingClientRect(), b = q.getBoundingClientRect(); if (b.height && b.top < sg.top + sg.height / 2 && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) el.style.top = Math.round(b.bottom - sg.top + 6) + 'px'; }   /* the next-bugs belt or a boss bar is up there: step below it */
     return;
   }
   const stE = document.querySelector('#hud .stats'), ctE = document.querySelector('#hud .ctl'); if (!stE || !ctE) return;   /* mid-rotate the stats row can still be on the tray: try again next tick */
-  const st = stE.getBoundingClientRect(), ctl = ctE.getBoundingClientRect(), sg = stage.getBoundingClientRect(), w = el.offsetWidth, gap = ctl.left - st.right - 16;
+  let stR = 0; for (const k of stE.children) { const r = k.getBoundingClientRect(); if (r.width && r.right > stR) stR = r.right; }   /* the pills' own right edge (the stats row itself stretches right up to the buttons) */
+  const st = { right: stR || stE.getBoundingClientRect().right }, ctl = ctE.getBoundingClientRect(), sg = stage.getBoundingClientRect(), w = el.offsetWidth, gap = ctl.left - st.right - 16;
   el.style.visibility = $('undo').hidden === false && w > gap ? 'hidden' : '';   /* when it has to drop down, the Undo pill gets that spot while it shows */
-  if (w > gap) { el.style.left = 'auto'; el.style.right = Math.round(sg.right - ctl.right) + 'px'; el.style.transform = 'none'; const bl = $('belt'), bb = bl && !bl.classList.contains('off') ? bl.getBoundingClientRect() : null; el.style.top = Math.round(Math.max(ctl.bottom, bb && bb.height ? bb.bottom : 0) - sg.top + 6) + 'px'; return; }   // no room up top: tuck it under the round buttons
+  if (w > gap) { el.style.left = 'auto'; el.style.right = Math.round(sg.right - ctl.right) + 'px'; el.style.transform = 'none'; const bl = $('belt'), bb = bl && !bl.hidden && !bl.classList.contains('off') ? bl.getBoundingClientRect() : null, up = bb && bb.height && bb.top < ctl.bottom + 40; el.style.top = Math.round(Math.max(ctl.bottom, up ? bb.bottom : 0) - sg.top + 6) + 'px'; return; }   // (the next-bugs card only counts when it's up top: it now sits bottom right)   // no room up top: tuck it under the round buttons
   el.style.top = ''; el.style.right = 'auto'; el.style.transform = 'none'; el.style.left = Math.round(st.right - sg.left + 8 + (gap - w) / 2) + 'px';
 }
 setInterval(placeStageTag, 400); syncLkDot(); addEventListener('resize', placeStageTag);
